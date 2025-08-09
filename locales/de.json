@@ -1,0 +1,20 @@
+{
+  "no_permission": "Keine Berechtigung für Standortzugriff",
+  "title": "GPS Koordinaten",
+  "latitude": "Breitengrad:",
+  "longitude": "Längengrad:",
+  "waiting": "Lade Standort...",
+  "refreshing": "Aktualisieren",
+  "map": "Karte",
+  "profile": "Profil",
+  "settings": "Einstellung",
+  "Update_log": "Updates",
+  "about_us": "Über uns",
+  "credits": "Impressum",
+  "bug_report": "Fehler melden",
+  "Home": "Home",
+  "german": "Deutsch",
+  "english": "Englisch",
+  "v1.0.8": "Das Onboarding wurde verbessert und kleiner",
+  "v1.0.82": "Fehler wurden behoben."
+}

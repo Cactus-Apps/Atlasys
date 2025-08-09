@@ -1,0 +1,20 @@
+{
+  "no_permission": "No authorization for location access",
+  "title": "GPS coordinates",
+  "latitude": "Latitude:",
+  "longitude": "Longitude:",
+  "waiting": "Load location... ",
+  "refreshing": "Refresh",
+  "map": "Map",
+  "profile": "Profile",
+  "settings": "Settings",
+  "update_log": "Updates",
+  "about_us": "About us",
+  "credits": "Imprint",
+  "bug_report": "Bug Report",
+  "Home": "Home",
+  "german": "German",
+  "english": "English",
+  "v1.0.8": "Onboarding has been improved and minor ",
+  "v1.0.82": "bugs have been fixed."
+}
