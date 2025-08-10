@@ -1,5 +1,4 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import * as MapLibreGL from "@maplibre/maplibre-react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -14,12 +13,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import MapView, { UrlTile } from "react-native-maps";
 import "./i18n.js";
 
 function HomeScreen() {
   const [location, setLocation] = useState<GeolocationCoordinates | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { t, i18n } = useTranslation();
+  const LANGUAGE_KEY = "user_language";
 
   const requestLocationPermission = async () => {
     if (Platform.OS === "android") {
@@ -85,21 +86,17 @@ function HomeScreen() {
 }
 
 function MapScreen() {
-  const MAPTILER_API_KEY = "YOUR_MAPTILER_API_KEY_HERE";
+  const MAPTILER_API_KEY = "0I4OJd1qI6EDbqGbnHgZ";
 
   return (
     <View style={styles.page}>
       <View style={styles.container}>
-        <MapLibreGL.MapView
-          style={styles.map}
-          styleURL={`https://api.maptiler.com/maps/basic-v2/?key=0I4OJd1qI6EDbqGbnHgZ#3.4/49.85912/10.90898`}
-          logoEnabled={false}
-          attributionPosition={{ bottom: 8, right: 8 }}
-        >
-          <MapLibreGL.Camera
-            defaultSettings={{ centerCoordinate: [2, 41.5], zoomLevel: 8 }}
+        <MapView style={styles.map}>
+          <UrlTile
+            urlTemplate="https://api.maptiler.com/maps/basic-v2/?key=0I4OJd1qI6EDbqGbnHgZ#3.4/49.85912/10.90898"
+            maximumZ={19}
           />
-        </MapLibreGL.MapView>
+        </MapView>
       </View>
     </View>
   );
@@ -136,7 +133,7 @@ function ProfileScreen() {
         </View>
         <View style={styles.line} />
         <View>
-          <Link href="/impressum" style={styles.link}>
+          <Link href="/credits" style={styles.link}>
             {t("credits")}
           </Link>
         </View>
@@ -178,6 +175,7 @@ function App() {
           }
           return <MaterialIcons name={iconName} size={size} color={color} />;
         },
+        tabBarActiveTintColor: "#466483ff",
       })}
     >
       <Tab.Screen
@@ -269,9 +267,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  page: {
-
-  },
+  page: {},
 });
 
 export default App;

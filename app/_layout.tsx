@@ -23,7 +23,7 @@ export default function RootLayout() {
     options={{headerShown: false}}
     />
         <Stack.Screen
-    name='impressum'
+    name='credits'
     options={{headerShown: false}}
     />
             <Stack.Screen
