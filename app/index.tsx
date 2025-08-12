@@ -1,4 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -14,6 +15,8 @@ import {
   View,
 } from "react-native";
 import MapView, { UrlTile } from "react-native-maps";
+import onboarding from "./app_intro_slider";
+import { loadLanguage } from "./i18n";
 import "./i18n.js";
 
 function HomeScreen() {
@@ -152,6 +155,26 @@ const Tab = createBottomTabNavigator();
 
 function App() {
   const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    checkFirstLaunch();
+  }, []);
+
+  const checkFirstLaunch = async () => {
+    try {
+      const isFirstLaunch = await AsyncStorage.getItem("isFirstLaunch");
+      if (isFirstLaunch === null) {
+        await AsyncStorage.setItem("isFirstLaunch", "true");
+        useEffect(() => {
+          onboarding;
+        }, []);
+      }
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    loadLanguage()
+  }, []);
 
   return (
     <Tab.Navigator
