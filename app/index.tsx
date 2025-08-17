@@ -1,5 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import "@maptiler/sdk/dist/maptiler-sdk.css";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import MapLibreGL from '@react-native-mapbox-gl/maps';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -14,7 +16,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { UrlTile } from "react-native-maps";
 import onboarding from "./app_intro_slider";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
@@ -91,15 +92,18 @@ function HomeScreen() {
 function MapScreen() {
   const MAPTILER_API_KEY = "0I4OJd1qI6EDbqGbnHgZ";
 
-  return (
+    return (
     <View style={styles.page}>
       <View style={styles.container}>
-        <MapView style={styles.map}>
-          <UrlTile
-            urlTemplate="https://api.maptiler.com/maps/basic-v2/?key=0I4OJd1qI6EDbqGbnHgZ#3.4/49.85912/10.90898"
-            maximumZ={19}
+        <MapLibreGL.MapView
+          style={styles.map}
+          styleURL={`https://api.maptiler.com/maps/basic-v2/?key=0I4OJd1qI6EDbqGbnHgZ#3.4/49.85912/10.90898`}
+          logoEnabled={false}
+          attributionPosition={{bottom: 8, right: 8}}>
+          <MapLibreGL.Camera
+            defaultSettings={{centerCoordinate: [2, 41.5], zoomLevel: 8}}
           />
-        </MapView>
+        </MapLibreGL.MapView>
       </View>
     </View>
   );
