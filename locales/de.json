@@ -16,5 +16,8 @@
   "german": "Deutsch",
   "english": "Englisch",
   "v1.0.8": "Das Onboarding wurde verbessert und kleiner",
-  "v1.0.82": "Fehler wurden behoben."
+  "v1.0.82": "Fehler wurden behoben.",
+  "not_signed_in": "Sie sind nicht angemeldet.",
+  "signing_in_not_ready": "Anmelden noch nicht möglich",
+  "in the next update": "Erst im nächsten Update."
 }

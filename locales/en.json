@@ -16,5 +16,9 @@
   "german": "German",
   "english": "English",
   "v1.0.8": "Onboarding has been improved and minor ",
-  "v1.0.82": "bugs have been fixed."
+  "v1.0.82": "bugs have been fixed.",
+  "not_signed_in": "You are not logged in.",
+  "signing_in_not_ready": "Login not yet possible",
+  "in the next update": "Only in the next update."
+
 }

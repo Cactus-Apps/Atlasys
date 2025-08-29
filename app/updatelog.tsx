@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import * as React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import './i18n';
 
 const updatelog = () => {
   return (

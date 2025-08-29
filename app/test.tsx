@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -18,7 +17,6 @@ const settings = () => {
   return (
     <>
       <View style={styles.icon}>
-        <Ionicons name="settings-outline" size={35} color="black" />
         <Text style={styles.title}>{t("settings")}</Text>
       </View>
       <PaperProvider>
@@ -32,14 +30,23 @@ const settings = () => {
           <Menu
             visible={visible}
             onDismiss={closeMenu}
+            style={styles.menu}
             anchor={
               <TouchableOpacity onPress={openMenu}>
                 <Text style={styles.test}> Language </Text>
               </TouchableOpacity>
             }
           >
-            <Menu.Item leadingIcon="web" onPress={() => changeLanguage("de")} title="German" />
-            <Menu.Item leadingIcon="web" onPress={() => changeLanguage("en")} title="English" />
+            <Menu.Item
+              leadingIcon="web"
+              onPress={() => changeLanguage("de")}
+              title="German"
+            />
+            <Menu.Item
+              leadingIcon="web"
+              onPress={() => changeLanguage("en")}
+              title="English"
+            />
             <Divider />
             <Menu.Item
               disabled={true}
@@ -72,7 +79,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 52,
-    paddingLeft: 40,
   },
   title: {
     fontSize: 35,
@@ -80,6 +86,10 @@ const styles = StyleSheet.create({
   },
   test: {
     fontSize: 30,
-    fontFamily: 'Light'
+    fontFamily: "Light",
   },
+  menu: {
+    backgroundColor: "#ff0000ff",
+  },
+  container: {},
 });

@@ -1,7 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import "@maptiler/sdk/dist/maptiler-sdk.css";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import MapLibreGL from '@react-native-mapbox-gl/maps';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -90,22 +88,15 @@ function HomeScreen() {
 }
 
 function MapScreen() {
-  const MAPTILER_API_KEY = "0I4OJd1qI6EDbqGbnHgZ";
-
     return (
-    <View style={styles.page}>
-      <View style={styles.container}>
-        <MapLibreGL.MapView
-          style={styles.map}
-          styleURL={`https://api.maptiler.com/maps/basic-v2/?key=0I4OJd1qI6EDbqGbnHgZ#3.4/49.85912/10.90898`}
-          logoEnabled={false}
-          attributionPosition={{bottom: 8, right: 8}}>
-          <MapLibreGL.Camera
-            defaultSettings={{centerCoordinate: [2, 41.5], zoomLevel: 8}}
-          />
-        </MapLibreGL.MapView>
-      </View>
-    </View>
+      <View></View>
+//    <View style={styles.page}>
+//      <MapView style={styles.container}>
+//        <UrlTile 
+//        urlTemplate="https://www.openstreetmap.org/#map=5/50.82/6.55" maximumZ={19}
+//        />
+//      </MapView>c
+//    </View>
   );
 }
 
@@ -148,6 +139,12 @@ function ProfileScreen() {
         <View>
           <Link href="/bugreport" style={styles.link}>
             {t("bug_report")}
+          </Link>
+        </View>
+        <View style={styles.line} />
+        <View>
+          <Link href="/test" style={styles.link}>
+            {t("test")}
           </Link>
         </View>
       </ScrollView>
