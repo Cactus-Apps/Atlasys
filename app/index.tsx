@@ -1,14 +1,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PermissionsAndroid,
   Platform,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,6 +15,7 @@ import {
 import onboarding from "./app_intro_slider";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
+import Profilescreen from "./profilescreen";
 
 function HomeScreen() {
   const [location, setLocation] = useState<GeolocationCoordinates | null>(null);
@@ -88,69 +87,19 @@ function HomeScreen() {
 }
 
 function MapScreen() {
-    return (
-      <View></View>
-//    <View style={styles.page}>
-//      <MapView style={styles.container}>
-//        <UrlTile 
-//        urlTemplate="https://www.openstreetmap.org/#map=5/50.82/6.55" maximumZ={19}
-//        />
-//      </MapView>c
-//    </View>
-  );
-}
-
-function ProfileScreen() {
-  const { t, i18n } = useTranslation();
-
   return (
-    <SafeAreaView>
-      <ScrollView style={styles.settings}>
-        <View>
-          <Link href="/account" style={styles.link}>
-            {t("profile")}
-          </Link>
-        </View>
-        <View style={styles.line} />
-        <View>
-          <Link href="/settings" style={styles.link}>
-            {t("settings")}
-          </Link>
-        </View>
-        <View style={styles.line} />
-        <View>
-          <Link href="/updatelog" style={styles.link}>
-            {t("update_log")}
-          </Link>
-        </View>
-        <View style={styles.line} />
-        <View>
-          <Link href="/about" style={styles.link}>
-            {t("about_us")}
-          </Link>
-        </View>
-        <View style={styles.line} />
-        <View>
-          <Link href="/credits" style={styles.link}>
-            {t("credits")}
-          </Link>
-        </View>
-        <View style={styles.line} />
-        <View>
-          <Link href="/bugreport" style={styles.link}>
-            {t("bug_report")}
-          </Link>
-        </View>
-        <View style={styles.line} />
-        <View>
-          <Link href="/test" style={styles.link}>
-            {t("test")}
-          </Link>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <View></View>
+    //    <View style={styles.page}>
+    //      <MapView style={styles.container}>
+    //        <UrlTile
+    //        urlTemplate="https://www.openstreetmap.org/#map=5/50.82/6.55" maximumZ={19}
+    //        />
+    //      </MapView>c
+    //    </View>
   );
 }
+
+
 
 const Tab = createBottomTabNavigator();
 
@@ -174,7 +123,7 @@ function App() {
   };
 
   useEffect(() => {
-    loadLanguage()
+    loadLanguage();
   }, []);
 
   return (
@@ -215,7 +164,7 @@ function App() {
       <Tab.Screen
         name="Profile"
         options={{ tabBarLabel: t("profile"), headerShown: false }}
-        component={ProfileScreen}
+        component={Profilescreen}
       />
     </Tab.Navigator>
   );
@@ -262,16 +211,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  link: {
-    color: "#292828ff",
-    fontSize: 20,
-    paddingLeft: 50,
-  },
   line: {
     height: 1,
     backgroundColor: "#ccc",
     alignSelf: "stretch",
-    marginVertical: 16,
+    marginVertical: 12,
+    marginHorizontal: 17,
   },
   settings: {
     borderColor: "#292828ff",
@@ -282,16 +227,6 @@ const styles = StyleSheet.create({
     marginLeft: 23,
     marginRight: 23,
   },
-  containerm: {
-    flex: 1,
-  },
-  map: {
-    top: 0,
-    bottom: 0,
-    width: "100%",
-    height: "100%",
-  },
-  page: {},
 });
 
 export default App;

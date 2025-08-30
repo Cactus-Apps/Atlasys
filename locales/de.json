@@ -9,7 +9,7 @@
   "profile": "Profil",
   "settings": "Einstellung",
   "Update_log": "Updates",
-  "about_us": "Über uns",
+  "about_gps": "Über GPS",
   "credits": "Impressum/Lizenzen",
   "bug_report": "Fehler melden",
   "Home": "Home",
@@ -19,5 +19,7 @@
   "v1.0.82": "Fehler wurden behoben.",
   "not_signed_in": "Sie sind nicht angemeldet.",
   "signing_in_not_ready": "Anmelden noch nicht möglich",
-  "in the next update": "Erst im nächsten Update."
+  "in the next update": "Erst im nächsten Update.",
+  "invite": "Freunde einladen",
+  "share": "App teilen"
 }

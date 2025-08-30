@@ -1,95 +1,101 @@
-import * as React from "react";
-import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Divider, Menu, PaperProvider } from "react-native-paper";
-import "./i18n";
+import React from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 
-const settings = () => {
-  const { t, i18n } = useTranslation();
-  const [visible, setVisible] = React.useState(false);
-  const openMenu = () => setVisible(true);
-  const closeMenu = () => setVisible(false);
+const {width, height} = Dimensions.get('window');
 
-  const changeLanguage = (lng: any) => {
-    i18n.changeLanguage(lng);
-  };
+const ASPECT_RATIO = width / height;
+const LATITUDE = 37.78825;
+const LONGITUDE = -122.4324;
+const LATITUDE_DELTA = 0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-  return (
-    <>
-      <View style={styles.icon}>
-        <Text style={styles.title}>{t("settings")}</Text>
+class ThemeMap extends React.Component<any, any> {
+  constructor(props: any) {
+    super(props);
+
+    this.state = {
+      region: {
+        latitude: LATITUDE,
+        longitude: LONGITUDE,
+        latitudeDelta: LATITUDE_DELTA,
+        longitudeDelta: LONGITUDE_DELTA,
+      },
+    };
+  }
+
+  render() {
+    return (
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollview}>
+          <Text>System</Text>
+          <MapView
+            provider={this.props.provider}
+            style={styles.map}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+            initialRegion={this.state.region}>
+            <Marker
+              title="This is a title"
+              description="This is a description"
+              coordinate={this.state.region}
+            />
+          </MapView>
+
+          <Text>{'\n'}Light</Text>
+          <MapView
+            provider={this.props.provider}
+            style={styles.map}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+            initialRegion={this.state.region}
+            userInterfaceStyle="light">
+            <Marker
+              title="This is a title"
+              description="This is a description"
+              coordinate={this.state.region}
+            />
+          </MapView>
+          <Text>{'\n'}Dark</Text>
+          <MapView
+            provider={this.props.provider}
+            style={styles.map}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+            initialRegion={this.state.region}
+            userInterfaceStyle="dark">
+            <Marker
+              title="This is a title"
+              description="This is a description"
+              coordinate={this.state.region}
+            />
+          </MapView>
+        </ScrollView>
       </View>
-      <PaperProvider>
-        <View
-          style={{
-            paddingTop: 50,
-            flexDirection: "row",
-            justifyContent: "center",
-          }}
-        >
-          <Menu
-            visible={visible}
-            onDismiss={closeMenu}
-            style={styles.menu}
-            anchor={
-              <TouchableOpacity onPress={openMenu}>
-                <Text style={styles.test}> Language </Text>
-              </TouchableOpacity>
-            }
-          >
-            <Menu.Item
-              leadingIcon="web"
-              onPress={() => changeLanguage("de")}
-              title="German"
-            />
-            <Menu.Item
-              leadingIcon="web"
-              onPress={() => changeLanguage("en")}
-              title="English"
-            />
-            <Divider />
-            <Menu.Item
-              disabled={true}
-              leadingIcon="web"
-              onPress={() => {}}
-              title="French"
-            />
-          </Menu>
-        </View>
-      </PaperProvider>
-    </>
-  );
-};
-
-export default settings;
+    );
+  }
+}
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: "#466483ff",
-    borderRadius: 8,
-    marginBottom: 12,
+  container: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
-  text: {
-    fontSize: 22,
-    padding: 14,
-    paddingHorizontal: 90,
-    color: "#ffffffff",
+  scrollview: {
+    alignItems: 'center',
+    paddingVertical: 70,
   },
-  icon: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 52,
+  map: {
+    width: 200,
+    height: 200,
   },
-  title: {
-    fontSize: 35,
-    marginLeft: 15,
-  },
-  test: {
-    fontSize: 30,
-    fontFamily: "Light",
-  },
-  menu: {
-    backgroundColor: "#ff0000ff",
-  },
-  container: {},
 });
+
+export default ThemeMap;

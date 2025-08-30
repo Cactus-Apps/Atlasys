@@ -15,6 +15,7 @@ const settings = () => {
     i18n.changeLanguage(lng);
   };
 
+
   return (
     <>
       <View style={styles.icon}>

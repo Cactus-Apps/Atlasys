@@ -7,10 +7,11 @@ export default function RootLayout() {
       <Stack.Screen name="about" options={{ headerShown: false }} />
       <Stack.Screen name="account" options={{ headerShown: false }} />
       <Stack.Screen name="bugreport" options={{ headerShown: false }} />
-      <Stack.Screen name="credits" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="updatelog" options={{ headerShown: false }} />
+      <Stack.Screen name="invite" options={{ headerShown: false }} />
       <Stack.Screen name="test" options={{ headerShown: false }} />
+      <Stack.Screen name="profilescreen" options={{ headerShown: false }} />
     </Stack>
   );
 }

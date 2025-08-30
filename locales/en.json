@@ -9,7 +9,7 @@
   "profile": "Profile",
   "settings": "Settings",
   "update_log": "Updates",
-  "about_us": "About us",
+  "about_gps": "About GPS",
   "credits": "Imprint/License",
   "bug_report": "Bug Report",
   "Home": "Home",
@@ -19,6 +19,7 @@
   "v1.0.82": "bugs have been fixed.",
   "not_signed_in": "You are not logged in.",
   "signing_in_not_ready": "Login not yet possible",
-  "in the next update": "Only in the next update."
-
+  "in the next update": "Only in the next update.",
+  "invite": "Invite Friends",
+  "share": "Share App"
 }

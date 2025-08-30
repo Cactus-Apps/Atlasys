@@ -1,17 +1,33 @@
 import { t } from "i18next";
 import * as React from "react";
-import { Image, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import "./i18n";
 
 const about = () => {
   return (
     <SafeAreaView>
       <View>
-        <Text style={styles.title}>{t("about_us")}</Text>
+        <Text style={styles.title}>{t("about_gps")}</Text>
         <Text> </Text>
         <View style={styles.imagecontainer}>
           <Image source={require("../assets/images/cactus_apps_icon.jpeg")} style={styles.image}/>
         </View>
+      </View>
+      <View>
+        <Text
+                style={styles.maptiler}
+                onPress={() => Linking.openURL("https://www.maptiler.com/copyright/")}
+              >
+                &copy; MapTiler
+              </Text>
+              <Text
+                style={styles.osm}
+                onPress={() =>
+                  Linking.openURL("https://www.openstreetmap.org/copyright")
+                }
+              >
+                &copy; OpenStreetMap contributors
+              </Text>
       </View>
     </SafeAreaView>
   );
@@ -34,5 +50,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginLeft: 240,
     marginTop: 25,
+  },
+  ontainer: {
+
+  },
+  maptiler: {
+
+  },
+  osm: {
+
   },
 });
