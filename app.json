@@ -45,21 +45,12 @@
             {
               "fontFamily": "Nunito",
               "fontDefinitions": [
-                {
-                  "path": "./assets/fonts/Nunito-Bold.ttf",
-                  "weight": 700,
-                  "style": "Bold"
-                },
+                
                 {
                   "path":"./assets/fonts/Nunito-Regular.ttf",
-                  "weight": 700,
-                  "style": "Regular"
-                },
-                {
-                  "path":"./assets/fonts/Nunito-Light.ttf",
-                  "weight": 700,
-                  "style": "Light"
+                  "weight": 700
                 }
+                
               ]
             }
           ]
