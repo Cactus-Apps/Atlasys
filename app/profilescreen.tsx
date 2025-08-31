@@ -33,14 +33,14 @@ function ProfileScreen() {
           style={styles.page}
           onPress={() => router.navigate("/account")}
         >
-          <User style={styles.icon} />
+          <User strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("profile")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
           onPress={() => router.navigate("/settings")}
         >
-          <Bolt style={styles.icon} />
+          <Bolt strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("settings")}</Text>
         </TouchableOpacity>
         <View style={styles.line} />
@@ -48,28 +48,28 @@ function ProfileScreen() {
           style={styles.page}
           onPress={() => router.navigate("/updatelog")}
         >
-          <List style={styles.icon} />
+          <List strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("update_log")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
           onPress={() => router.navigate("/about")}
         >
-          <Info style={styles.icon} />
+          <Info strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("about_gps")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
           onPress={() => router.navigate("/bugreport")}
         >
-          <Bug style={styles.icon} />
+          <Bug strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("bug_report")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
           onPress={() => router.navigate("/invite")}
         >
-          <Users style={styles.icon} />
+          <Users strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("invite")}</Text>
         </TouchableOpacity>
         <View style={styles.line} />
@@ -77,7 +77,7 @@ function ProfileScreen() {
           style={styles.page}
           onPress={() => router.navigate("/test")}
         >
-          <TestTube style={styles.icon} />
+          <TestTube strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("test")}</Text>
         </TouchableOpacity>
       </View>

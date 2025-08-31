@@ -87,19 +87,9 @@ function HomeScreen() {
 }
 
 function MapScreen() {
-  return (
-    <View></View>
-    //    <View style={styles.page}>
-    //      <MapView style={styles.container}>
-    //        <UrlTile
-    //        urlTemplate="https://www.openstreetmap.org/#map=5/50.82/6.55" maximumZ={19}
-    //        />
-    //      </MapView>c
-    //    </View>
-  );
+//  return <GoogleMaps.View style={{ flex: 1 }} />;
+return <View> </View>
 }
-
-
 
 const Tab = createBottomTabNavigator();
 

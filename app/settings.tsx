@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Bolt, ChevronDown } from "lucide-react-native";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -15,11 +15,10 @@ const settings = () => {
     i18n.changeLanguage(lng);
   };
 
-
   return (
     <>
-      <View style={styles.icon}>
-        <Ionicons name="settings-outline" size={35} color="black" />
+      <View style={styles.header}>
+        <Bolt size={40} strokeWidth={2} style={styles.icon} />
         <Text style={styles.title}>{t("settings")}</Text>
       </View>
       <PaperProvider>
@@ -34,13 +33,22 @@ const settings = () => {
             visible={visible}
             onDismiss={closeMenu}
             anchor={
-              <TouchableOpacity onPress={openMenu}>
-                <Text style={styles.test}> Language </Text>
+              <TouchableOpacity style={styles.button} onPress={openMenu}>
+                <Text style={styles.test}> {t('language')} </Text>
+                <ChevronDown size={28} color="#ffffffff" strokeWidth={2} />
               </TouchableOpacity>
             }
           >
-            <Menu.Item leadingIcon="web" onPress={() => changeLanguage("de")} title="German" />
-            <Menu.Item leadingIcon="web" onPress={() => changeLanguage("en")} title="English" />
+            <Menu.Item
+              leadingIcon="web"
+              onPress={() => changeLanguage("de")}
+              title="German"
+            />
+            <Menu.Item
+              leadingIcon="web"
+              onPress={() => changeLanguage("en")}
+              title="English"
+            />
             <Divider />
             <Menu.Item
               disabled={true}
@@ -58,29 +66,33 @@ const settings = () => {
 export default settings;
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: "#466483ff",
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  text: {
-    fontSize: 22,
-    padding: 14,
-    paddingHorizontal: 90,
-    color: "#ffffffff",
-  },
   icon: {
+    marginRight: 28,
+  },
+  header: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 52,
     paddingLeft: 40,
   },
   title: {
-    fontSize: 35,
     marginLeft: 15,
+    fontSize: 30,
+    fontWeight: "600",
   },
   test: {
-    fontSize: 30,
-    fontFamily: 'Light'
+    fontSize: 25,
+    fontFamily: "Light",
+    color: "#ffffffff",
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    borderColor: "#466483ff",
+    borderWidth: 2,
+    paddingHorizontal: 60,
+    paddingVertical: 8,
+    backgroundColor: "#466483ff",
   },
 });

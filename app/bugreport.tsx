@@ -1,4 +1,5 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { t } from "i18next";
 import * as React from "react";
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, } from "react-native-safe-area-context";
@@ -12,15 +13,15 @@ const bugreport = () => {
 
   return (
     <SafeAreaView>
-      <Text style={styles.title}>Fehler Melden</Text>
+      <Text style={styles.title}>{t('bug_report')}</Text>
       <View style={styles.container}>
       <Text style={styles.text}>
-        Bitte melden sie Fehler auf
-        <AntDesign name="github" size={24} color="black" />
+        {t('please_report_on')}
+      </Text>
+        <AntDesign style={styles.icon} name="github" size={24} color="black" />
         <TouchableOpacity onPress={openLink}>
           <Text style={styles.link}>GitHub</Text>
         </TouchableOpacity>
-      </Text>
       </View>
     </SafeAreaView>
   );
@@ -32,20 +33,26 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-
+    marginVertical: 40,
   },
   link: {
     fontSize: 17,
     fontWeight: "500",
+    textDecorationLine: 'underline',
   },
   title: {
     fontSize: 30,
     paddingTop: 15,
     alignSelf: "center",
+    fontWeight: "600",
+
   },
   text: {
+    marginHorizontal: 12,
     fontSize: 17,
-    paddingLeft: 12,
-    paddingTop: 12,
+  },
+  icon:{
+    marginLeft: 10,
+    marginRight: 3,
   },
 });
