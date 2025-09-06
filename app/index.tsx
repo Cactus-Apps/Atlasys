@@ -1,60 +1,72 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React, { useEffect, useState } from "react";
+import * as Location from "expo-location";
+import { t } from "i18next";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  PermissionsAndroid,
+  Image,
   Platform,
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { Button } from "react-native-paper";
+import { WebView } from "react-native-webview";
 import onboarding from "./app_intro_slider";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
 import Profilescreen from "./profilescreen";
 
 function HomeScreen() {
-  const [location, setLocation] = useState<GeolocationCoordinates | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { t, i18n } = useTranslation();
-  const LANGUAGE_KEY = "user_language";
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [subscription, setSubscription] =
+    useState<Location.LocationSubscription | null>(null);
 
-  const requestLocationPermission = async () => {
-    if (Platform.OS === "android") {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+  const startWatching = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Location authorization denied");
+        return;
+      }
+
+      const sub = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 2000,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          setLocation(loc);
+          setErrorMsg(null);
+        }
       );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
+
+      setSubscription(sub);
+    } catch (err: any) {
+      setErrorMsg(err.message);
     }
-    return true;
   };
 
-  const getLocation = async () => {
-    const hasPermission = await requestLocationPermission();
-    if (!hasPermission) {
-      setError("Keine Berechtigung für Standortzugriff");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation(pos.coords);
-        setError(null);
-      },
-      (err) => setError(err.message),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-    );
+  const stopWatching = () => {
+    subscription?.remove();
+    setSubscription(null);
   };
 
   useEffect(() => {
-    getLocation();
+    startWatching();
+    return () => stopWatching();
   }, []);
 
   return (
     <SafeAreaView style={styles.screen}>
+      <Image source={require("../assets/images/logo.png")} style={styles.image}/>
       <View style={styles.containerl}>
         <Text style={styles.title}>{t("title")}</Text>
         <View
@@ -66,29 +78,180 @@ function HomeScreen() {
           }}
         />
         {location ? (
-          <>
-            <Text>
-              {t("latitude")} {location.latitude}
-            </Text>
-            <Text>
-              {t("longitude")} {location.longitude}
-            </Text>
-          </>
+          <Text style={{fontSize: 15, fontWeight: '500'}}>
+           {t('latitude')} {location.coords.latitude}, {t('longitude')} {" "}
+            {location.coords.longitude}
+          </Text>
+        ) : errorMsg ? (
+          <Text style={{ color: "red" }}>{errorMsg}</Text>
         ) : (
-          <Text>{t("waiting")}</Text>
+          <Text>{t('waiting')}</Text>
         )}
-        {error && <Text style={styles.error}>{error}</Text>}
-        <TouchableOpacity style={styles.button} onPress={getLocation}>
-          <Text style={styles.buttonText}>{t("refreshing")}</Text>
-        </TouchableOpacity>
+
+        <View style={{ flexDirection: "row", marginTop: 20 }}>
+          <Button
+            onPress={startWatching}
+            disabled={subscription !== null}
+            mode="contained"
+            buttonColor="#466483ff"
+          ><Text style={styles.buttonText} >{t('start')}</Text></Button>
+          <View style={{paddingHorizontal: 8,}} />
+          <Button
+            onPress={stopWatching}
+            disabled={subscription === null}
+            mode="contained"
+            buttonColor="#466483ff"
+          > <Text style={styles.buttonText}>{t('stop')}</Text></Button>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 function MapScreen() {
-//  return <GoogleMaps.View style={{ flex: 1 }} />;
-return <View> </View>
+  const webref = useRef<WebView>(null);
+  const lastLocRef = useRef<Location.LocationObject | null>(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
+
+  const leafletHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    html,body,#map { height:100%; margin:0; }
+    .marker-accuracy { color:#555; background:rgba(255,255,255,.85); padding:2px 6px; border-radius:4px; font:12px/1.2 system-ui,sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', { zoomControl: true }).setView([0,0], 2);
+    L.tileLayer('https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=0I4OJd1qI6EDbqGbnHgZ', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://www.maptiler.com/">MapTiler</a>',
+      maxZoom: 20
+
+    }).addTo(map);
+
+    const pinSvg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#2b6cb0" d="M12 2c-3.866 0-7 3.134-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>');
+    const pinIcon = L.icon({
+      iconUrl: 'data:image/svg+xml;utf8,' + pinSvg,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],   // Spitze unten mittig
+      popupAnchor: [0, -28]
+    });
+
+    let marker = null, accuracyCircle = null;
+
+    function handleIncoming(evt){
+      const raw = evt && (evt.data || (evt.originalEvent && evt.originalEvent.data));
+      if (!raw) return;
+      let data = null;
+      try { data = JSON.parse(raw); } catch(_) { return; }
+
+      const c = data.coords || data; // toleranter Parser
+      if (!c || typeof c.latitude !== 'number' || typeof c.longitude !== 'number') return;
+
+      const lat = c.latitude, lng = c.longitude, acc = c.accuracy;
+
+      if (!marker) {
+        marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
+        marker.bindTooltip('<div class="marker-accuracy">Du bist hier</div>');
+        map.setView([lat, lng], 16, { animate: true });
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+
+      if (acc) {
+        if (!accuracyCircle) {
+          accuracyCircle = L.circle([lat, lng], { radius: acc, weight: 1, fillOpacity: 0.1 });
+          accuracyCircle.addTo(map);
+        } else {
+          accuracyCircle.setLatLng([lat, lng]);
+          accuracyCircle.setRadius(acc);
+        }
+      }
+    }
+
+    window.addEventListener('message', handleIncoming);
+    document.addEventListener('message', handleIncoming);
+
+    window.onload = () => {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ ready: true }));
+      }
+    };
+  </script>
+</body>
+</html>
+  `;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setError("Location authorization denied");
+        return;
+      }
+
+      const s = await Location.watchPositionAsync(
+        {
+          accuracy:
+            Platform.OS === "android"
+              ? Location.Accuracy.Balanced
+              : Location.Accuracy.High,
+          timeInterval: 2000,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          if (cancelled) return;
+          lastLocRef.current = loc;
+          if (ready && webref.current) {
+            webref.current.postMessage(JSON.stringify(loc));
+          }
+        }
+      );
+      if (!cancelled) setSub(s);
+    })().catch((e: any) => setError(e?.message ?? "Unknown error"));
+
+    return () => {
+      cancelled = true;
+      sub?.remove();
+      setSub(null);
+    };
+  }, [ready]);
+
+  const onWebMessage = (e: any) => {
+    let msg: any = null;
+    try {
+      msg = JSON.parse(e.nativeEvent.data);
+    } catch {}
+    if (msg?.ready) {
+      setReady(true);
+      if (lastLocRef.current && webref.current) {
+        webref.current.postMessage(JSON.stringify(lastLocRef.current));
+      }
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <WebView
+        ref={webref}
+        originWhitelist={["*"]}
+        source={{ html: leafletHTML }}
+        onMessage={onWebMessage}
+        style={styles.map}
+      />
+    </View>
+  );
 }
 
 const Tab = createBottomTabNavigator();
@@ -161,26 +324,14 @@ function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 7,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffffff",
-  },
   title: {
     fontSize: 24,
+    fontWeight: '500',
     paddingRight: 150,
   },
   error: {
     color: "red",
     marginTop: 10,
-  },
-  button: {
-    backgroundColor: "#466483ff",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 20,
   },
   buttonText: {
     color: "#fff",
@@ -191,13 +342,12 @@ const styles = StyleSheet.create({
   containerl: {
     paddingVertical: 12,
     borderColor: "#292828ff",
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 8,
     bottom: 230,
     padding: 16,
   },
   screen: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -216,6 +366,32 @@ const styles = StyleSheet.create({
     top: 55,
     marginLeft: 23,
     marginRight: 23,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
+    padding: 12,
+  },
+  title2: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  error2: {
+    color: "red",
+    marginTop: 6,
+  },
+  map: {
+    flex: 1,
+  },
+  image: {
+    width: 200,
+    height: 100,
+    borderRadius: 12,
+    marginBottom: 230,
+    marginTop: 34,
+    justifyContent:'center'
   },
 });
 

@@ -1,8 +1,8 @@
 {
   "no_permission": "Keine Berechtigung für Standortzugriff",
   "title": "GPS Koordinaten",
-  "latitude": "Breitengrad:",
-  "longitude": "Längengrad:",
+  "latitude": "Breite:",
+  "longitude": "Länge:",
   "waiting": "Lade Standort...",
   "refreshing": "Aktualisieren",
   "map": "Karte",
@@ -15,13 +15,17 @@
   "Home": "Home",
   "german": "Deutsch",
   "english": "Englisch",
-  "v1.1.9": "Erster Release der App und kleiner",
+  "v1.1.9": "Erster Release der App und kleinere",
   "v1.1.92": "Fehler wurden behoben.",
+  "v1.2.0": "Die Map wurde hinzugefügt und",
+  "v1.2.02": "kleinere Fehler wurden behoben",
   "not_signed_in": "Sie sind nicht angemeldet.",
   "signing_in_not_ready": "Anmelden noch nicht möglich",
   "in the next update": "Erst im nächsten Update.",
   "invite": "Freunde einladen",
   "share": "App teilen",
   "please_report_on": "Bitte melden sie Fehler auf",
-  "language": "Sprachen"
+  "language": "Sprachen",
+  "start": "Starten",
+  "stop": "Stoppen"
 }

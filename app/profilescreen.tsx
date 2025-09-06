@@ -5,18 +5,17 @@ import {
   ChevronRight,
   Info,
   List,
-  TestTube,
-  User,
-  Users,
+  Users
 } from "lucide-react-native";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Image,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import "./i18n.js";
 
@@ -26,16 +25,11 @@ function ProfileScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.all}>
+    <SafeAreaView>
+      <Image source={require("../assets/images/logo.png")} style={styles.image}/>
+      <View style={styles.all}>
       <View>
         <View style={styles.placeholder} />
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/account")}
-        >
-          <User strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("profile")}</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
           onPress={() => router.navigate("/settings")}
@@ -72,20 +66,9 @@ function ProfileScreen() {
           <Users strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("invite")}</Text>
         </TouchableOpacity>
-        <View style={styles.line} />
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/test")}
-        >
-          <TestTube strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("test")}</Text>
-        </TouchableOpacity>
       </View>
       <View>
         <View style={styles.placeholder} />
-        <TouchableOpacity onPress={() => router.navigate("/account")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
         <TouchableOpacity onPress={() => router.navigate("/settings")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
@@ -102,11 +85,8 @@ function ProfileScreen() {
         <TouchableOpacity onPress={() => router.navigate("/invite")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
-        <View style={styles.line} />
-        <TouchableOpacity onPress={() => router.navigate("/test")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
       </View>
+    </View>
     </SafeAreaView>
   );
 }
@@ -116,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   placeholder: {
-    marginTop: 34,
+    marginTop: 8,
   },
   line: {
     height: 1,
@@ -141,6 +121,13 @@ const styles = StyleSheet.create({
   arrow: {
     paddingHorizontal: 130,
     marginVertical: 23,
+  },
+  image: {
+    width: 200,
+    height: 100,
+    marginTop: 25,
+    justifyContent:'center',
+    alignSelf: 'center',
   },
 });
 

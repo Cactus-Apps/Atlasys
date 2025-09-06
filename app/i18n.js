@@ -1,10 +1,7 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import de from "../locales/de.json";
 import en from "../locales/en.json";
-
-const LANGUAGE_KEY = "user_language";
 
 i18n.use(initReactI18next).init({
   resources: {

@@ -11,9 +11,10 @@ const settings = () => {
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
 
-  const changeLanguage = (lng: any) => {
+  const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
   };
+
 
   return (
     <>

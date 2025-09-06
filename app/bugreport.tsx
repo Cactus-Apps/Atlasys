@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: 17,
-    fontWeight: "500",
+    fontWeight: "600",
     textDecorationLine: 'underline',
   },
   title: {
@@ -50,6 +50,7 @@ const styles = StyleSheet.create({
   text: {
     marginHorizontal: 12,
     fontSize: 17,
+    fontWeight: '500',
   },
   icon:{
     marginLeft: 10,

@@ -1,32 +1,34 @@
-import { t } from "i18next";
-import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from "expo-router";
+import * as React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../lib/auth-context";
 import "./i18n.js";
 
 const account = () => {
+  const router = useRouter();
+  const {signOut} = useAuth();
 
   return (
     <SafeAreaView>
-    <View style={styles.container}>
-      <Text style={styles.text}>{t('not_signed_in')}</Text>
-      <Text>{t('signing_in_not_ready')}.</Text>
-      <Text>{t('in the next update')}</Text>
-    </View>
+      <View style={styles.container}>
+        <TouchableOpacity style={styles.signin} onPress={() => router.replace("/auth")}>
+            <Text>Sign Up</Text>
+        </TouchableOpacity>
+          <Button mode="text" onPress={signOut} icon={"logout"}> Sign Out</Button>
+      </View>
     </SafeAreaView>
-    
   );
 };
 
-export default account ;
+export default account;
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 330,
   },
-  text: {
-    fontSize: 23
-  },
+  signin: {
+    paddingLeft: 50,
+    padding: 40,
+  }
 });

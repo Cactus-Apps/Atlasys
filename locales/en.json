@@ -17,11 +17,15 @@
   "english": "English",
   "v1.1.9": "First release of the app and minor ",
   "v1.1.92": "bugs have been fixed.",
+  "v1.2.0": "The map has been added and",
+  "v1.2.02": "minor bugs have been fixed",
   "not_signed_in": "You are not logged in.",
   "signing_in_not_ready": "Login not yet possible",
   "in the next update": "Only in the next update.",
   "invite": "Invite Friends",
   "share": "Share App",
   "please_report_on": "Please report bugs on",
-  "language": "Language"
+  "language": "Language",
+  "start": "Start",
+  "stop": "Stop"
 }
