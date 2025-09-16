@@ -48,3 +48,8 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and 
+
+<div style="background-color: #fff3cd; border-left: 4px solid #ffeeba; padding: 10px; border-radius: 5px;">
+⚠️ <strong>Warning</strong><br>
+The Apk is commingv1.0.0.
+</div>
