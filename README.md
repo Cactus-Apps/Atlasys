@@ -1,4 +1,4 @@
-![Alt-Text](./assets/images/banner.png)
+![Alt-Text](./assets/images/banner.jpeg)
 
 # GPS
 Your smart navigation App.
