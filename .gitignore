@@ -40,3 +40,4 @@ yarn-error.*
 
 app-example
 credentials.json
+.env.local

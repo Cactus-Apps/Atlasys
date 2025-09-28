@@ -1,5 +1,4 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as Location from "expo-location";
 import { t } from "i18next";
@@ -11,11 +10,11 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  View
+  View,
+  useColorScheme,
 } from "react-native";
 import { Button } from "react-native-paper";
 import { WebView } from "react-native-webview";
-import onboarding from "./app_intro_slider";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
 import Profilescreen from "./profilescreen";
@@ -27,6 +26,9 @@ function HomeScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
+    const scheme = useColorScheme(); 
+    const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
+    
 
   const startWatching = async () => {
     try {
@@ -78,14 +80,14 @@ function HomeScreen() {
           }}
         />
         {location ? (
-          <Text style={{fontSize: 15, fontWeight: '500'}}>
+          <Text style={{fontSize: 15, fontWeight: '500', color: scheme === "dark" ? "#d8d8d8ff" : "#000"}}>
            {t('latitude')} {location.coords.latitude}, {t('longitude')} {" "}
             {location.coords.longitude}
           </Text>
         ) : errorMsg ? (
           <Text style={{ color: "red" }}>{errorMsg}</Text>
         ) : (
-          <Text>{t('waiting')}</Text>
+          <Text style={{color: scheme === "dark" ? "#d8d8d8ff" : "#000"}}>{t('waiting')}</Text>
         )}
 
         <View style={{ flexDirection: "row", marginTop: 20 }}>
@@ -114,6 +116,8 @@ function MapScreen() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
+  const scheme = useColorScheme(); 
+  const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
 
   const leafletHTML = `
 <!DOCTYPE html>
@@ -124,7 +128,7 @@ function MapScreen() {
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     html,body,#map { height:100%; margin:0; }
-    .marker-accuracy { color:#555; background:rgba(255,255,255,.85); padding:2px 6px; border-radius:4px; font:12px/1.2 system-ui,sans-serif; }
+    .marker-accuracy { color:#555; background:rgba(255, 255, 255, 0.85); padding:2px 6px; border-radius:4px; font:12px/1.2 system-ui,sans-serif; }
   </style>
 </head>
 <body>
@@ -142,7 +146,7 @@ function MapScreen() {
     const pinIcon = L.icon({
       iconUrl: 'data:image/svg+xml;utf8,' + pinSvg,
       iconSize: [32, 32],
-      iconAnchor: [16, 32],   // Spitze unten mittig
+      iconAnchor: [16, 32],   
       popupAnchor: [0, -28]
     });
 
@@ -161,7 +165,7 @@ function MapScreen() {
 
       if (!marker) {
         marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
-        marker.bindTooltip('<div class="marker-accuracy">Du bist hier</div>');
+        marker.bindTooltip('<div class="marker-accuracy">You are here</div>');
         map.setView([lat, lng], 16, { animate: true });
       } else {
         marker.setLatLng([lat, lng]);
@@ -258,22 +262,8 @@ const Tab = createBottomTabNavigator();
 
 function App() {
   const { t, i18n } = useTranslation();
-
-  useEffect(() => {
-    checkFirstLaunch();
-  }, []);
-
-  const checkFirstLaunch = async () => {
-    try {
-      const isFirstLaunch = await AsyncStorage.getItem("isFirstLaunch");
-      if (isFirstLaunch === null) {
-        await AsyncStorage.setItem("isFirstLaunch", "true");
-        useEffect(() => {
-          onboarding;
-        }, []);
-      }
-    } catch (error) {}
-  };
+  const scheme = useColorScheme(); 
+  const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
 
   useEffect(() => {
     loadLanguage();
@@ -282,6 +272,7 @@ function App() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        tabBarStyle: { backgroundColor: scheme === "dark" ? '#2c2a2aff' :  "#ffffffff"},
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
           let iconName: React.ComponentProps<typeof MaterialIcons>["name"];
@@ -323,33 +314,37 @@ function App() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (scheme: "light" | "dark" | null) =>
+ StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '500',
     paddingRight: 150,
+    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
   },
   error: {
     color: "red",
     marginTop: 10,
   },
   buttonText: {
-    color: "#fff",
+    color: "#d8d8d8ff",
     fontSize: 16,
     fontWeight: "bold",
     marginHorizontal: "auto",
   },
   containerl: {
     paddingVertical: 12,
-    borderColor: "#292828ff",
+    borderColor: scheme === "dark" ? "#d8d8d8ff" : "#000",
     borderWidth: 2,
     borderRadius: 8,
     bottom: 230,
     padding: 16,
+    backgroundColor: scheme === "dark" ? "#333333ff" : "#ffffffff",
   },
   screen: {
-    justifyContent: "center",
     alignItems: "center",
+    flex: 1,
+    backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
   },
   line: {
     height: 1,
@@ -377,6 +372,7 @@ const styles = StyleSheet.create({
   title2: {
     fontSize: 16,
     fontWeight: "600",
+    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
   },
   error2: {
     color: "red",

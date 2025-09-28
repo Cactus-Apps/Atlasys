@@ -2,12 +2,18 @@
   "expo": {
     "name": "GPS",
     "slug": "GPS",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "backgroundColor": "#2c2a2aff"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cactus-apps.GPS"
@@ -37,29 +43,33 @@
         }
       ],
       "expo-maps",
-       ["expo-font",
-      {
-        "fonts": ["./assets/fonts/Nunito-Regular.ttf"],
-        "android": {
+      [
+        "expo-font",
+        {
           "fonts": [
-            {
-              "fontFamily": "Nunito",
-              "fontDefinitions": [
-                
-                {
-                  "path":"./assets/fonts/Nunito-Regular.ttf",
-                  "weight": 700
-                }
-                
-              ]
-            }
-          ]
-        },
-        "ios": {
-          "fonts": ["./assets/fonts/Nunito-Regular.ttf"]
+            "./assets/fonts/Nunito-Regular.ttf"
+          ],
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Nunito",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Nunito-Regular.ttf",
+                    "weight": 700
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/Nunito-Regular.ttf"
+            ]
+          }
         }
-      }
-    ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

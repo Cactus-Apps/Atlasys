@@ -5,7 +5,8 @@ import {
   ChevronRight,
   Info,
   List,
-  Users
+  User,
+  Users,
 } from "lucide-react-native";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +16,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  useColorScheme,
 } from "react-native";
 import "./i18n.js";
 
@@ -23,13 +25,23 @@ import "./i18n.js";
 function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const scheme = useColorScheme(); 
+  const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
+  
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={styles.container}>
       <Image source={require("../assets/images/logo.png")} style={styles.image}/>
       <View style={styles.all}>
       <View>
         <View style={styles.placeholder} />
+        <TouchableOpacity
+          style={styles.page}
+          onPress={() => router.navigate("/account")}
+        >
+          <User strokeWidth={3} style={styles.icon} />
+          <Text style={styles.link}>{t("profile")}</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
           onPress={() => router.navigate("/settings")}
@@ -69,6 +81,9 @@ function ProfileScreen() {
       </View>
       <View>
         <View style={styles.placeholder} />
+        <TouchableOpacity onPress={() => router.navigate("/account")}>
+        <ChevronRight style={styles.arrow} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => router.navigate("/settings")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
@@ -85,18 +100,26 @@ function ProfileScreen() {
         <TouchableOpacity onPress={() => router.navigate("/invite")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.navigate("/test")}>
+        <ChevronRight style={styles.arrow} />
+        </TouchableOpacity>
       </View>
     </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (scheme: "light" | "dark" | null) =>
+ StyleSheet.create({
   all: {
     flexDirection: "row",
   },
   placeholder: {
     marginTop: 8,
+  },
+  container: {
+    backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
+    flex: 1,
   },
   line: {
     height: 1,
@@ -109,6 +132,7 @@ const styles = StyleSheet.create({
   link: {
     fontSize: 21,
     fontWeight: "600",
+    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
   },
   page: {
     flexDirection: "row",
@@ -117,10 +141,12 @@ const styles = StyleSheet.create({
   icon: {
     marginHorizontal: 23,
     marginVertical: 23,
+    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
   },
   arrow: {
     paddingHorizontal: 130,
     marginVertical: 23,
+    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
   },
   image: {
     width: 200,

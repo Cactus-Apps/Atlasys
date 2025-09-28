@@ -8,25 +8,23 @@ import {
   StyleSheet,
   Text,
   View,
+  useColorScheme,
 } from "react-native";
 import "./i18n";
 
 const about = () => {
+  const scheme = useColorScheme();
+  const styles = getStyles(
+    scheme === "light" || scheme === "dark" ? scheme : null
+  );
+
   return (
-    <SafeAreaView>
+    <SafeAreaView style={styles.container}>
       <ScrollView>
+        <View style={{justifyContent: 'center', flexDirection: 'row'}}>
         <Text style={styles.title}>{t("about_gps")}</Text>
-        <Text
-          style={{
-            fontSize: 26,
-            alignSelf: "center",
-            fontWeight: "600",
-            paddingVertical: 20,
-            paddingTop: 30,
-          }}
-        >
-          Development
-        </Text>
+        </View>
+        <Text style={styles.development}>Development</Text>
         <View
           style={{
             height: 1,
@@ -41,29 +39,22 @@ const about = () => {
             style={styles.image}
           />
           <View>
-          <Text
-            style={styles.link}
-            onPress={() =>
-              Linking.openURL("https://github.com/Cactus-Apps/GPS")
-            }
-          >
-            &copy; Cactus Apps
-          </Text>
-          <Text style={{fontSize: 15, paddingLeft: 18, fontWeight: '600'}}>We are Cactus Apps, a company {"\n"} 
-             that develops apps with a focus {"\n"} 
-             on customer satisfaction.</Text>
+            <Text
+              style={styles.link}
+              onPress={() =>
+                Linking.openURL("https://github.com/Cactus-Apps/GPS")
+              }
+            >
+              &copy; Cactus Apps
+            </Text>
+            <Text style={styles.text}>
+              We are Cactus Apps, a company {"\n"}
+              that develops apps with a focus {"\n"}
+              on customer satisfaction.
+            </Text>
           </View>
         </View>
-        <Text
-          style={{
-            fontSize: 26,
-            alignSelf: "center",
-            fontWeight: "600",
-            paddingVertical: 20,
-          }}
-        >
-          Credits
-        </Text>
+        <Text style={styles.credits}>Credits</Text>
         <View
           style={{
             height: 1,
@@ -127,43 +118,69 @@ const about = () => {
 
 export default about;
 
-const styles = StyleSheet.create({
-  container: {},
-  title: {
-    fontSize: 30,
-    paddingTop: 40,
-    alignSelf: "center",
-    fontWeight: "600",
-  },
-  imagecontainer: {},
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    marginLeft: 30,
-    marginTop: 30,
-  },
-  maptiler: {},
-  link: {
-    fontSize: 15,
-    fontWeight: "600",
-    paddingLeft: 25,
-    textDecorationLine: "underline",
-  },
-  all1: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  all2: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  all3: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  all4: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-});
+const getStyles = (scheme: "light" | "dark" | null) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
+    },
+    title: {
+      fontSize: 30,
+      paddingTop: 40,
+      alignSelf: "center",
+      fontWeight: "600",
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    credits: {
+      fontSize: 26,
+      alignSelf: "center",
+      fontWeight: "600",
+      paddingVertical: 20,
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    text: {
+      fontSize: 15,
+      paddingLeft: 18,
+      fontWeight: "600",
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    development: {
+      fontSize: 26,
+      alignSelf: "center",
+      fontWeight: "600",
+      paddingVertical: 20,
+      paddingTop: 30,
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    imagecontainer: {},
+    image: {
+      width: 100,
+      height: 100,
+      borderRadius: 12,
+      marginLeft: 30,
+      marginTop: 30,
+    },
+    maptiler: {},
+    link: {
+      fontSize: 15,
+      fontWeight: "600",
+      paddingLeft: 25,
+      textDecorationLine: "underline",
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    all1: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    all2: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    all3: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    all4: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+  });
