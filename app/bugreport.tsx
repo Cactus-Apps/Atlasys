@@ -36,7 +36,6 @@ export default bugreport;
 const getStyles = (scheme: "light" | "dark" | null) =>
  StyleSheet.create({
   all: {
-    backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
     flex: 1,
   },
   container: {

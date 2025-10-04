@@ -3,6 +3,7 @@ import {
   Bolt,
   Bug,
   ChevronRight,
+  CreativeCommons,
   Info,
   List,
   User,
@@ -78,6 +79,14 @@ function ProfileScreen() {
           <Users strokeWidth={3} style={styles.icon} />
           <Text style={styles.link}>{t("invite")}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.page}
+          onPress={() => router.navigate("/licenses")}
+        >
+          <CreativeCommons strokeWidth={3} style={styles.icon} />
+          <Text style={styles.link}>{t("licenses")}</Text>
+        </TouchableOpacity>
+
       </View>
       <View>
         <View style={styles.placeholder} />
@@ -100,6 +109,9 @@ function ProfileScreen() {
         <TouchableOpacity onPress={() => router.navigate("/invite")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.navigate("/licenses")}>
+        <ChevronRight style={styles.arrow} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => router.navigate("/test")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
@@ -118,8 +130,8 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     marginTop: 8,
   },
   container: {
-    backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
     flex: 1,
+    backgroundColor: '#000'
   },
   line: {
     height: 1,

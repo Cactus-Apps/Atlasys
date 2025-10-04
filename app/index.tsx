@@ -2,18 +2,26 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as Location from "expo-location";
 import { t } from "i18next";
+import { Search, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
+  Keyboard,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
+import Modal from "react-native-modal";
 import { Button } from "react-native-paper";
+import Toast from "react-native-toast-message";
 import { WebView } from "react-native-webview";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
@@ -26,9 +34,10 @@ function HomeScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
-    const scheme = useColorScheme(); 
-    const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
-    
+  const scheme = useColorScheme();
+  const styles = getStyles(
+    scheme === "light" || scheme === "dark" ? scheme : null
+  );
 
   const startWatching = async () => {
     try {
@@ -67,8 +76,13 @@ function HomeScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <Image source={require("../assets/images/logo.png")} style={styles.image}/>
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={styles.image}
+        />
+      </View>
       <View style={styles.containerl}>
         <Text style={styles.title}>{t("title")}</Text>
         <View
@@ -80,14 +94,22 @@ function HomeScreen() {
           }}
         />
         {location ? (
-          <Text style={{fontSize: 15, fontWeight: '500', color: scheme === "dark" ? "#d8d8d8ff" : "#000"}}>
-           {t('latitude')} {location.coords.latitude}, {t('longitude')} {" "}
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "500",
+              color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+            }}
+          >
+            {t("latitude")} {location.coords.latitude}, {t("longitude")}{" "}
             {location.coords.longitude}
           </Text>
         ) : errorMsg ? (
           <Text style={{ color: "red" }}>{errorMsg}</Text>
         ) : (
-          <Text style={{color: scheme === "dark" ? "#d8d8d8ff" : "#000"}}>{t('waiting')}</Text>
+          <Text style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}>
+            {t("waiting")}
+          </Text>
         )}
 
         <View style={{ flexDirection: "row", marginTop: 20 }}>
@@ -95,29 +117,122 @@ function HomeScreen() {
             onPress={startWatching}
             disabled={subscription !== null}
             mode="contained"
-            buttonColor="#466483ff"
-          ><Text style={styles.buttonText} >{t('start')}</Text></Button>
-          <View style={{paddingHorizontal: 8,}} />
+            buttonColor="#FFE8D1"
+          >
+            <Text style={styles.buttonText}>{t("start")}</Text>
+          </Button>
+          <View style={{ paddingHorizontal: 8 }} />
           <Button
             onPress={stopWatching}
             disabled={subscription === null}
             mode="contained"
-            buttonColor="#466483ff"
-          > <Text style={styles.buttonText}>{t('stop')}</Text></Button>
+            buttonColor="#FFE8D1"
+          >
+            {" "}
+            <Text style={styles.buttonText}>{t("stop")}</Text>
+          </Button>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
+const { width, height } = Dimensions.get("window");
+
+const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY;
+const RAPIDAPI_HOST = process.env.EXPO_PUBLIC_RAPIDAPI_HOST;
+
+type CityResult = {
+  id: number | string;
+  city: string;
+  name?: string;
+  country: string;
+  region?: string;
+  latitude: number;
+  longitude: number;
+  population?: number;
+};
+
 function MapScreen() {
-  const webref = useRef<WebView>(null);
+  const webRef = useRef<WebView>(null);
+  const [query, setQuery] = useState("");
   const lastLocRef = useRef<Location.LocationObject | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
-  const scheme = useColorScheme(); 
-  const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
+  const scheme = useColorScheme();
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [results, setResults] = useState<CityResult[]>([]);
+  const [selected, setSelected] = useState<CityResult | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const styles = getStyles(
+    scheme === "light" || scheme === "dark" ? scheme : null
+  );
+
+  useEffect(() => {
+    if (!query || query.length < 2) {
+      setResults([]);
+      return;
+    }
+    const t = setTimeout(() => searchCities(query), 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  async function searchCities(q: string) {
+    setLoadingSearch(true);
+    try {
+      const url = `https://${RAPIDAPI_HOST}/v1/geo/cities?namePrefix=${encodeURIComponent(
+        q
+      )}&limit=8&sort=-population`;
+      const resp = await fetch(url, {
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY ?? "",
+          "X-RapidAPI-Host": RAPIDAPI_HOST ?? "",
+        },
+      });
+      if (!resp.ok) {
+        console.warn("GeoDB error", resp.status);
+        setResults([]);
+        setLoadingSearch(false);
+        return;
+      }
+      const json = await resp.json();
+      const arr = (json.data || []).map((it: any) => ({
+        id: it.id ?? `${it.latitude}-${it.longitude}`,
+        city: it.city || it.name || `${it.city}, ${it.country}`,
+        name: it.name ?? it.city,
+        country: it.country,
+        region: it.region,
+        latitude: it.latitude,
+        longitude: it.longitude,
+        population: it.population,
+      }));
+      setResults(arr);
+    } catch (err) {
+      console.error("Search error", err);
+      setResults([]);
+    } finally {
+      setLoadingSearch(false);
+    }
+  }
+
+  function onSelectCity(city: CityResult) {
+    setSelected(city);
+    setModalVisible(true);
+    Keyboard.dismiss();
+
+    const payload = {
+      type: "goto",
+      lat: city.latitude,
+      lng: city.longitude,
+      zoom: 12,
+      title: city.name ?? city.city,
+      subtitle: `${city.region ? city.region + ", " : ""}${city.country}`,
+    };
+    webRef.current?.postMessage(JSON.stringify(payload));
+    setResults([]);
+    setQuery(city.name ?? city.city);
+  }
 
   const leafletHTML = `
 <!DOCTYPE html>
@@ -136,6 +251,7 @@ function MapScreen() {
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const map = L.map('map', { zoomControl: true }).setView([0,0], 2);
+
     L.tileLayer('https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=0I4OJd1qI6EDbqGbnHgZ', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://www.maptiler.com/">MapTiler</a>',
       maxZoom: 20
@@ -151,6 +267,28 @@ function MapScreen() {
     });
 
     let marker = null, accuracyCircle = null;
+
+    function goto(lat, lng, zoom, title, subtitle) {
+        map.setView([lat, lng], zoom || 12);
+        if (!tempMarker) {
+          tempMarker = L.marker([lat, lng]).addTo(map);
+        } else {
+          tempMarker.setLatLng([lat, lng]);
+        }
+        const popupHtml = '<b>' + (title||'Ort') + '</b><br/>' + (subtitle||'');
+        if (tempMarker.getPopup()) tempMarker.setPopupContent(popupHtml);
+        else tempMarker.bindPopup(popupHtml);
+        tempMarker.openPopup();
+      }
+
+      document.addEventListener('message', function(e) {
+        try {
+          const d = JSON.parse(e.data);
+          if (d && d.type === 'goto') {
+            goto(d.lat, d.lng, d.zoom, d.title, d.subtitle);
+          }
+        } catch (err) {}
+      });
 
     function handleIncoming(evt){
       const raw = evt && (evt.data || (evt.originalEvent && evt.originalEvent.data));
@@ -184,6 +322,14 @@ function MapScreen() {
 
     window.addEventListener('message', handleIncoming);
     document.addEventListener('message', handleIncoming);
+    window.addEventListener('message', function(e) {
+        try {
+          const d = JSON.parse(e.data);
+          if (d && d.type === 'goto') {
+            goto(d.lat, d.lng, d.zoom, d.title, d.subtitle);
+          }
+        } catch (err) {}
+      });
 
     window.onload = () => {
       if (window.ReactNativeWebView) {
@@ -217,8 +363,8 @@ function MapScreen() {
         (loc) => {
           if (cancelled) return;
           lastLocRef.current = loc;
-          if (ready && webref.current) {
-            webref.current.postMessage(JSON.stringify(loc));
+          if (ready && webRef.current) {
+            webRef.current.postMessage(JSON.stringify(loc));
           }
         }
       );
@@ -239,21 +385,117 @@ function MapScreen() {
     } catch {}
     if (msg?.ready) {
       setReady(true);
-      if (lastLocRef.current && webref.current) {
-        webref.current.postMessage(JSON.stringify(lastLocRef.current));
+      if (lastLocRef.current && webRef.current) {
+        webRef.current.postMessage(JSON.stringify(lastLocRef.current));
       }
     }
   };
 
+  const clearInput = () => {
+    setQuery("");
+    !modalVisible;
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container2}>
+      <View style={styles.searchContainer}>
+        <Search
+          size={25}
+          strokeWidth={3}
+          color={scheme === "dark" ? "#d8d8d8ff" : "#666"}
+          style={styles.icon}
+        />
+        <TextInput
+          placeholder="Search"
+          placeholderTextColor={scheme === "dark" ? "#d8d8d8ff" : "#666"}
+          style={styles.input}
+          value={query}
+          onChangeText={(value) => setQuery(value)}
+        />
+        {loadingSearch && query.length > 0 ? (
+          <></>
+        ) : (
+          <Button onPress={clearInput}>
+            <X
+              size={25}
+              strokeWidth={3}
+              color={scheme === "dark" ? "#d8d8d8ff" : "#666"}
+              style={styles.loader}
+            />
+          </Button>
+        )}
+        {loadingSearch && (
+          <View style={styles.loader}>
+            <ActivityIndicator size="small" />
+          </View>
+        )}
+      </View>
+
+      {results.length > 0 && !modalVisible && (
+        <View style={styles.suggestionBox}>
+          <FlatList
+            data={results}
+            keyExtractor={(item) => String(item.id)}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.suggestionItem}
+                onPress={() => onSelectCity(item)}
+              >
+                <Text style={styles.suggTitle}>{item.name ?? item.city}</Text>
+                <Text style={styles.suggSub}>
+                  {item.region ? item.region + ", " : ""}
+                  {item.country}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+
       <WebView
-        ref={webref}
+        ref={webRef}
         originWhitelist={["*"]}
         source={{ html: leafletHTML }}
+        style={styles.webview}
+        javaScriptEnabled
+        domStorageEnabled
         onMessage={onWebMessage}
-        style={styles.map}
+        mixedContentMode="compatibility"
       />
+      <Modal
+        isVisible={modalVisible}
+        onBackdropPress={() => setModalVisible(false)}
+        style={styles.modal}
+        coverScreen={false}
+      >
+        <View style={styles.modalContent}>
+          {selected ? (
+            <>
+              <Text style={styles.cityTitle}>
+                {selected.name ?? selected.city}
+              </Text>
+              <Text style={styles.citySub}>
+                {selected.region ? selected.region + ", " : ""}
+                {selected.country}
+              </Text>
+              <Text style={styles.cityCoords}>
+                {selected.latitude.toFixed(5)}, {selected.longitude.toFixed(5)}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={{ color: "#fff" }}>Schließen</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <Text>Kein Ort ausgewählt</Text>
+          )}
+        </View>
+      </Modal>
+      <Toast />
     </View>
   );
 }
@@ -262,8 +504,10 @@ const Tab = createBottomTabNavigator();
 
 function App() {
   const { t, i18n } = useTranslation();
-  const scheme = useColorScheme(); 
-  const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
+  const scheme = useColorScheme();
+  const styles = getStyles(
+    scheme === "light" || scheme === "dark" ? scheme : null
+  );
 
   useEffect(() => {
     loadLanguage();
@@ -272,7 +516,9 @@ function App() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarStyle: { backgroundColor: scheme === "dark" ? '#2c2a2aff' :  "#ffffffff"},
+        tabBarStyle: {
+          backgroundColor: scheme === "dark" ? "#2c2a28ff" : "#e2d7d7ff",
+        },
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
           let iconName: React.ComponentProps<typeof MaterialIcons>["name"];
@@ -315,80 +561,164 @@ function App() {
 }
 
 const getStyles = (scheme: "light" | "dark" | null) =>
- StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '500',
-    paddingRight: 150,
-    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-  },
-  error: {
-    color: "red",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#d8d8d8ff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginHorizontal: "auto",
-  },
-  containerl: {
-    paddingVertical: 12,
-    borderColor: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    borderWidth: 2,
-    borderRadius: 8,
-    bottom: 230,
-    padding: 16,
-    backgroundColor: scheme === "dark" ? "#333333ff" : "#ffffffff",
-  },
-  screen: {
-    alignItems: "center",
-    flex: 1,
-    backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
-  },
-  line: {
-    height: 1,
-    backgroundColor: "#ccc",
-    alignSelf: "stretch",
-    marginVertical: 12,
-    marginHorizontal: 17,
-  },
-  settings: {
-    borderColor: "#292828ff",
-    borderWidth: 2,
-    paddingVertical: 12,
-    borderRadius: 8,
-    top: 55,
-    marginLeft: 23,
-    marginRight: 23,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    padding: 12,
-  },
-  title2: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-  },
-  error2: {
-    color: "red",
-    marginTop: 6,
-  },
-  map: {
-    flex: 1,
-  },
-  image: {
-    width: 200,
-    height: 100,
-    borderRadius: 12,
-    marginBottom: 230,
-    marginTop: 34,
-    justifyContent:'center'
-  },
-});
+  StyleSheet.create({
+    title: {
+      fontSize: 24,
+      fontWeight: "500",
+      paddingRight: 150,
+      color: scheme === "dark" ? "#FFE8D1" : "#24262E",
+    },
+    error: {
+      color: "red",
+      marginTop: 10,
+    },
+    icon: {
+      marginLeft: 13,
+    },
+    buttonText: {
+      color: "#FFE8D1",
+      fontSize: 16,
+      fontWeight: "bold",
+      marginHorizontal: "auto",
+    },
+    containerl: {
+      paddingVertical: 12,
+      borderColor: scheme === "dark" ? "#d8d8d8ff" : "#24262E",
+      borderWidth: 2,
+      borderRadius: 8,
+      marginTop: 30,
+      padding: 16,
+      backgroundColor: scheme === "dark" ? "#4D7EA8" : "#ffffffff",
+    },
+    screen: {
+      backgroundColor: scheme === "dark" ? "#272625ff" : "#ffffffff",
+      alignItems: "center",
+      flex: 1,
+    },
+    line: {
+      height: 1,
+      backgroundColor: "#ccc",
+      alignSelf: "stretch",
+      marginVertical: 12,
+      marginHorizontal: 17,
+    },
+    settings: {
+      borderColor: "#24262E",
+      borderWidth: 2,
+      paddingVertical: 12,
+      borderRadius: 8,
+      top: 55,
+      marginLeft: 23,
+      marginRight: 23,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: "#fff",
+    },
+    header: {
+      backgroundColor: "#FFE8D1",
+      width: "100%",
+      borderBottomColor: "#fff",
+      borderWidth: 1,
+    },
+    title2: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: scheme === "dark" ? "#d8d8d8ff" : "#24262E",
+    },
+    error2: {
+      color: "red",
+      marginTop: 6,
+    },
+    image: {
+      width: 170,
+      height: 60,
+      marginTop: 40,
+      marginBottom: 15,
+      marginRight: 190,
+    },
+    container2: { flex: 1 },
+    searchContainer: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 50 : 40,
+      left: 12,
+      right: 12,
+      zIndex: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: 8,
+      backgroundColor: scheme === "dark" ? "#24262E" : "#d8d8d8ff",
+      elevation: 3,
+      shadowColor: "#000",
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    input: {
+      flex: 1,
+      height: 44,
+      paddingHorizontal: 12,
+      color: scheme === "dark" ? "#fff" : "#000",
+    },
+    loader: {
+      position: "absolute",
+      right: 18,
+    },
+    suggestionBox: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 100 : 83,
+      left: 12,
+      right: 12,
+      maxHeight: 220,
+      backgroundColor: scheme === "dark" ? "#24262E" : "#d8d8d8ff",
+      borderRadius: 8,
+      zIndex: 25,
+      elevation: 6,
+      shadowColor: "#000",
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+    },
+    suggestionItem: {
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: "#eee",
+    },
+    suggTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: scheme === "dark" ? "#ffffffff" : "#4d4b4bff",
+    },
+    suggSub: {
+      fontSize: 12,
+      color: scheme === "dark" ? "#d8d8d8ff" : "#666",
+      marginTop: 2,
+    },
+    webview: {
+      flex: 1,
+      marginTop: 0,
+      width,
+      height,
+    },
+    modal: {
+      justifyContent: "flex-end",
+      margin: 0,
+    },
+    modalContent: {
+      backgroundColor: "#fff",
+      padding: 20,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      alignItems: "center",
+    },
+    cityTitle: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
+    citySub: { fontSize: 14, color: "#555" },
+    cityCoords: { marginTop: 8, color: "#666" },
+    closeButton: {
+      marginTop: 14,
+      backgroundColor: "#e53935",
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+  });
 
 export default App;

@@ -127,7 +127,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
     },
     image: {
       width: 100,

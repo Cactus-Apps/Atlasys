@@ -30,7 +30,7 @@ export default function RootLayout() {
           screenOptions={{
             animation: "fade",
             contentStyle: {
-              backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#e2d7d7ff",
+              backgroundColor: scheme === "dark" ? "#181717ff" : "#e2d7d7ff",
             },
           }}
         >
@@ -43,6 +43,7 @@ export default function RootLayout() {
           <Stack.Screen name="invite" options={{ headerShown: false }} />
           <Stack.Screen name="profilescreen" options={{ headerShown: false }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="licenses" options={{ headerShown: false }} />
           <Stack.Screen name="test" options={{ headerShown: false }} />
         </Stack>
       </RouteGuard>

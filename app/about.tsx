@@ -121,7 +121,6 @@ export default about;
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
-      backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
     },
     title: {
       fontSize: 30,

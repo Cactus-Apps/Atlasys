@@ -31,7 +31,6 @@ export default updatelog;
 const getStyles = (scheme: "light" | "dark" | null) =>
  StyleSheet.create({
   view: {
-    backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
     flex: 1,
   },
   titlet: {

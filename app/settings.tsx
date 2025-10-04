@@ -1,4 +1,4 @@
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import BottomSheet from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";
 import { Bolt, ChevronDown, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
@@ -11,7 +11,6 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Divider, Menu, PaperProvider } from "react-native-paper";
 import "./i18n";
 
@@ -41,7 +40,6 @@ const settings = () => {
   }
 
   return (
-    <GestureHandlerRootView>
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.back}>
@@ -56,14 +54,6 @@ const settings = () => {
         <Bolt size={40} strokeWidth={2} style={styles.icon} />
         <Text style={styles.title}>{t("settings")}</Text>
       </View>
-        <BottomSheet ref={bottomSheetRef} onChange={() => {}}>
-          <BottomSheetView>
-            <Text>Awesome 🎉</Text>
-          </BottomSheetView>
-        </BottomSheet>
-        <TouchableOpacity onPress={openBottomSheet}>
-          <Text> Hallo </Text>
-        </TouchableOpacity>
 
       <PaperProvider>
         <View
@@ -104,7 +94,6 @@ const settings = () => {
         </View>
       </PaperProvider>
     </View>
-    </GestureHandlerRootView>
   );
 };
 
@@ -113,7 +102,6 @@ export default settings;
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
-      backgroundColor: scheme === "dark" ? "#2c2a2aff" : "#fff",
       flex: 1,
     },
     back: {
