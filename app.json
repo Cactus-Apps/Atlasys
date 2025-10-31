@@ -2,6 +2,7 @@
   "expo": {
     "name": "GPS",
     "slug": "GPS",
+    "jsEngine": "hermes",
     "version": "1.2.2",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
@@ -79,6 +80,8 @@
       "eas": {
         "projectId": "1df05076-b7f1-4ef3-8204-b3b14e42fe68"
       }
-    }
-  }
+    },
+    "sdkVersion": "54.0.0"
+  },
+  "name": "test"
 }

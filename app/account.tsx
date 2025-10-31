@@ -146,7 +146,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     },
     signoutbutton: {
       borderRadius: 8,
-      backgroundColor: "#466483ff",
+      backgroundColor: "#d84646ff", 
       color: "#d8d8d8ff" ,
       paddingHorizontal: 70,
       paddingVertical: 20,

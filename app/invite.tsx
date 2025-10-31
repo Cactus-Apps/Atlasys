@@ -56,17 +56,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     color: scheme === "dark" ? "#2c2a2aff" : "#fff",
     flex: 1,
   },
-  back: {
-    paddingLeft: 20,
-  },
-  backbutton: {
-    width: 30,
-    height: 30,
-    borderRadius: 35,
-    backgroundColor: "#466583aa", 
-    justifyContent: "center",
-    alignItems: "center",
-  },
   share: {
     fontSize: 21,
     fontWeight: "600",
@@ -85,6 +74,17 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     fontSize: 30,
     fontWeight: "600",
     color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+  },
+  back: {
+    paddingLeft: 20,
+  },
+  backbutton: {
+    width: 30,
+    height: 30,
+    borderRadius: 35,
+    backgroundColor: "#466583aa", 
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     flexDirection: "row",

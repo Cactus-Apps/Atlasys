@@ -3,11 +3,10 @@ import {
   Bolt,
   Bug,
   ChevronRight,
-  CreativeCommons,
   Info,
   List,
   User,
-  Users,
+  Users
 } from "lucide-react-native";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -81,11 +80,13 @@ function ProfileScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.page}
-          onPress={() => router.navigate("/licenses")}
+          onPress={() => router.navigate("/AdminPanel")}
         >
-          <CreativeCommons strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("licenses")}</Text>
+          <Users strokeWidth={3} style={styles.icon} />
+          <Text style={styles.link}>{t("Admin Panel")}</Text>
         </TouchableOpacity>
+
+
 
       </View>
       <View>
@@ -109,10 +110,10 @@ function ProfileScreen() {
         <TouchableOpacity onPress={() => router.navigate("/invite")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/licenses")}>
+        <TouchableOpacity onPress={() => router.navigate("/test")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/test")}>
+        <TouchableOpacity onPress={() => router.navigate("/test2")}>
         <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
       </View>
