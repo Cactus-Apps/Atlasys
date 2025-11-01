@@ -2,13 +2,19 @@ import Clock from "@/components/clock";
 import Weather from "@/components/weather";
 import { MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import * as Device from "expo-device";
 import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Image, StyleSheet, Text, View, useColorScheme } from "react-native";
-import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  ScrollView,
+} from "react-native-gesture-handler";
 import { Button } from "react-native-paper";
+import { supabase } from "../lib/supabase";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
 import MapScreen from "./mapscreen";
@@ -62,88 +68,110 @@ function HomeScreen() {
     return () => stopWatching();
   }, []);
 
-  return (
-    <GestureHandlerRootView>
-    <ScrollView>
-      <View style={styles.screen}>
-      <View style={styles.header}>
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.image}
-        />
+  if (Device.isDevice) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontSize: 18, color: "#000" }}>
+          Admin Panel Entwicklungsversion
+        </Text>
+        <Text style={{ color: "#000" }}>Benachrichtigungen aktiv.</Text>
       </View>
-      <View style={styles.containerl}>
-        <Text style={styles.title}>{t("title")}</Text>
-        <View
-          style={{
-            height: 1,
-            backgroundColor: "#ccc",
-            alignSelf: "stretch",
-            marginVertical: 16,
-          }}
-        />
-        {location ? (
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: "500",
-              color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-            }}
-          >
-            {t("latitude")} {location.coords.latitude}, {t("longitude")}{" "}
-            {location.coords.longitude}
-          </Text>
-        ) : errorMsg ? (
-          <Text style={{ color: "red" }}>{errorMsg}</Text>
-        ) : (
-          <Text style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}>
-            {t("waiting")}
-          </Text>
-        )}
+    );
+  } else {
+    return (
+      <GestureHandlerRootView>
+        <ScrollView>
+          <View style={styles.screen}>
+            <View style={styles.header}>
+              <Image
+                source={require("../assets/images/logo.png")}
+                style={styles.image}
+              />
+            </View>
+            <View style={styles.containerl}>
+              <Text style={styles.title}>{t("title")}</Text>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: "#ccc",
+                  alignSelf: "stretch",
+                  marginVertical: 16,
+                }}
+              />
+              {location ? (
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "500",
+                    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+                  }}
+                >
+                  {t("latitude")} {location.coords.latitude}, {t("longitude")}{" "}
+                  {location.coords.longitude}
+                </Text>
+              ) : errorMsg ? (
+                <Text style={{ color: "red" }}>{errorMsg}</Text>
+              ) : (
+                <Text
+                  style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}
+                >
+                  {t("waiting")}
+                </Text>
+              )}
 
-        <View style={{ flexDirection: "row", marginTop: 20 }}>
-          <Button
-            onPress={startWatching}
-            disabled={subscription !== null}
-            mode="contained"
-            buttonColor="#FFE8D1"
-          >
-            <Text style={styles.buttonText}>{t("start")}</Text>
-          </Button>
-          <View style={{ paddingHorizontal: 8 }} />
-          <Button
-            onPress={stopWatching}
-            disabled={subscription === null}
-            mode="contained"
-            buttonColor="#FFE8D1"
-          >
-            {" "}
-            <Text style={styles.buttonText}>{t("stop")}</Text>
-          </Button>
-        </View>
-      </View>
-      <View style={styles.containerlr}>
-        <Text style={styles.title}> Uhr</Text>
-        <View
-          style={{
-            height: 1,
-            backgroundColor: "#ccc",
-            alignSelf: "stretch",
-            marginVertical: 16,
-          }}
-        />
-        <Clock />
-        </View>
-        <View>
-          <Weather />
-        </View>
-        </View>
-    </ScrollView>
-    </GestureHandlerRootView>
-  );
+              <View style={{ flexDirection: "row", marginTop: 20 }}>
+                <Button
+                  onPress={startWatching}
+                  disabled={subscription !== null}
+                  mode="contained"
+                  buttonColor="#FFE8D1"
+                >
+                  <Text style={styles.buttonText}>{t("start")}</Text>
+                </Button>
+                <View style={{ paddingHorizontal: 8 }} />
+                <Button
+                  onPress={stopWatching}
+                  disabled={subscription === null}
+                  mode="contained"
+                  buttonColor="#FFE8D1"
+                >
+                  {" "}
+                  <Text style={styles.buttonText}>{t("stop")}</Text>
+                </Button>
+              </View>
+            </View>
+            <View style={styles.containerlr}>
+              <Text style={styles.title}> Uhr</Text>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: "#ccc",
+                  alignSelf: "stretch",
+                  marginVertical: 16,
+                }}
+              />
+              <Clock />
+            </View>
+            <View>
+              <Weather />
+            </View>
+          </View>
+        </ScrollView>
+      </GestureHandlerRootView>
+    );
+  }
 }
 
 const Tab = createBottomTabNavigator();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -155,6 +183,60 @@ function App() {
   useEffect(() => {
     loadLanguage();
   }, []);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+    const unsubscribe = subscribeToNewRequests();
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const subscribeToNewRequests = () => {
+    console.log("checking");
+
+    const channel = supabase
+      .channel("delete-requests")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "delete_requests" },
+        async (payload: any) => {
+          console.log("🚨 Neuer Antrag:", payload.new);
+
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: "🧹 Neuer Löschantrag",
+              body: `Von ${payload.new.email}`,
+              sound: "default",
+            },
+            trigger: null,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  };
+
+  async function registerForPushNotificationsAsync() {
+    if (Device.isDevice) {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== "granted") {
+        alert("Benachrichtigungen sind deaktiviert 😕");
+        return;
+      }
+      console.log("Berechtigung erteilt!");
+    } else {
+      alert("Push funktioniert nur auf echten Geräten");
+    }
+  }
 
   return (
     <Tab.Navigator

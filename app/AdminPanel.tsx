@@ -1,277 +1,182 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Button,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
+  TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
+import { supabase } from "../lib/supabase";
 
-type RequestInfo = {
-  requestId: string;
+interface DeleteRequest {
+  id: string;
   email: string;
-  userId: string;
-  status: 'pending' | 'verified' | 'completed' | string;
-  createdAt: string;
-  expiresAt: string;
-  verifiedAt?: string | null;
-  completedAt?: string | null;
-};
-
-// ------------------------------------------------------------------
-// CONFIG: setze BASE_URL auf deine Server-URL (ohne trailing slash)
-// z.B. const BASE_URL = 'https://dein-host.example.com'
-// Du kannst das hier auch aus env/config ziehen
-// ------------------------------------------------------------------
-const BASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const Path = process.env.EXPO_PUBLIC_PATH;
+  status: "pending" | "approved" | "completed";
+  requested_at: string;
+  updated_at: string;
+}
 
 export default function AdminPanel() {
-  const [requestId, setRequestId] = useState('');
-  const [code, setCode] = useState('');
-  const [adminToken, setAdminToken] = useState(''); // Optional: Falls dein Server Admin-Token erwartet
+  const [requests, setRequests] = useState<DeleteRequest[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingVerify, setLoadingVerify] = useState(false);
-  const [requestData, setRequestData] = useState<RequestInfo | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  async function safeFetch(path: string, options: RequestInit = {}) {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> || {}),
-    };
-    if (adminToken) {
-      headers['X-Admin-Token'] = adminToken;
-    }
-    const res = await fetch(`${BASE_URL}${Path}`, { ...options, headers });
-    const contentType = res.headers.get('content-type') || '';
-    const text = await res.text();
-    let json: any = null;
-    if (contentType.includes('application/json')) {
-      try { json = JSON.parse(text); } catch (e) { json = null; }
-    }
-    return { ok: res.ok, status: res.status, json, text };
-  }
-
-  async function handleLoadRequest() {
-    if (!requestId.trim()) {
-      Alert.alert('Bitte Request ID eingeben');
-      return;
-    }
+  const loadRequests = async () => {
     setLoading(true);
-    setRequestData(null);
-    try {
-      const payload = { requestId: requestId.trim() };
-      const { ok, status, json, text } = await safeFetch('/request-info', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      if (!ok) {
-        const msg = json?.message || json?.error || text || `Fehler ${status}`;
-        Alert.alert('Fehler beim Laden', String(msg));
-        setLoading(false);
-        return;
-      }
-      if (!json?.success || !json?.data) {
-        Alert.alert('Keine Daten', 'Server hat keine Request-Daten zurückgegeben.');
-        setLoading(false);
-        return;
-      }
-      setRequestData(json.data as RequestInfo);
-    } catch (err: any) {
-      console.error('load request error', err);
-      Alert.alert('Fehler', err?.message || 'Netzwerkfehler');
-    } finally {
-      setLoading(false);
-    }
-  }
+    const { data, error } = await supabase
+      .from("delete_requests")
+      .select("*")
+      .order("requested_at", { ascending: false });
 
-  async function handleVerifyCode() {
-    if (!requestId.trim() || !code.trim()) {
-      Alert.alert('Bitte Request ID und Code eingeben');
-      return;
-    }
-    setLoadingVerify(true);
-    try {
-      const body = { requestId: requestId.trim(), code: code.trim() };
-      const { ok, status, json, text } = await safeFetch('/verify-delete', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-      if (!ok) {
-        const msg = json?.message || json?.error || text || `Fehler ${status}`;
-        Alert.alert('Verifikation fehlgeschlagen', String(msg));
-        setLoadingVerify(false);
-        return;
-      }
-      const message = json?.message || 'Code validiert';
-      Alert.alert('Erfolg', String(message));
-      if (requestData?.requestId === requestId.trim()) {
-        await handleLoadRequest();
-      }
-    } catch (err: any) {
-      console.error('verify error', err);
-      Alert.alert('Fehler', err?.message || 'Netzwerkfehler');
-    } finally {
-      setLoadingVerify(false);
-    }
-  }
+    if (error) console.error(error);
+    else setRequests(data || []);
+    setLoading(false);
+  };
 
-  function formatDate(iso?: string | null) {
-    if (!iso) return '-';
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString();
-    } catch {
-      return iso;
+  useEffect(() => {
+    loadRequests();
+
+    const channel = supabase
+      .channel("delete_requests-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "delete_requests" },
+        (payload: any) => {
+          loadRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const updateStatus = async (
+    id: string,
+    newStatus: DeleteRequest["status"]
+  ) => {
+    const { error } = await supabase
+      .from("delete_requests")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      Alert.alert("Fehler", "Status konnte nicht geändert werden.");
+    } else {
+      Alert.alert("Erfolg", "Status wurde geändert.");
+      loadRequests();
     }
-  }
+  };
+
+  const renderItem = ({ item }: { item: DeleteRequest }) => (
+    <TouchableOpacity
+      style={styles.container}
+      onPress={() =>
+        Alert.alert(
+          "Antragsdetails",
+          `📧 ${item.email}\n📅 Angefragt: ${new Date(
+            item.requested_at
+          ).toLocaleString()}\n📦 Status: ${item.status}`,
+          [
+            { text: "Abbrechen", style: "cancel" },
+            {
+              text: "Status ändern",
+              onPress: () => {
+                Alert.prompt(
+                  "Neuer Status",
+                  "pending / approved / completed",
+                  [
+                    { text: "Abbrechen", style: "cancel" },
+                    {
+                      text: "Speichern",
+                      onPress: (status: any) => {
+                        const validStatuses = [
+                          "pending",
+                          "approved",
+                          "completed",
+                        ];
+                        if (validStatuses.includes(status)) {
+                          updateStatus(
+                            item.id,
+                            status as DeleteRequest["status"]
+                          );
+                        } else {
+                          Alert.alert(
+                            "Ungültiger Status",
+                            "Bitte einen gültigen Status eingeben."
+                          );
+                        }
+                      },
+                    },
+                  ],
+                  "plain-text",
+                  item.status
+                );
+              },
+            },
+          ]
+        )
+      }
+    >
+      <Text style={styles.text3}>{item.email}</Text>
+      <Text style={styles.text5}>Status: {item.status}</Text>
+      <Text style={styles.text4}>
+        {new Date(item.requested_at).toLocaleString()}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.header}>Admin Panel — Account Lösch-Requests</Text>
-
-        <Text style={styles.label}>Admin Token (optional)</Text>
-        <TextInput
-          value={adminToken}
-          onChangeText={setAdminToken}
-          placeholder="X-Admin-Token (nicht in Code speichern)"
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Admin Token"
-        />
-
-        <Text style={styles.label}>Request ID</Text>
-        <TextInput
-          value={requestId}
-          onChangeText={setRequestId}
-          placeholder="z. B. 123e4567-e89b-12d3-a456-426614174000"
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Request ID"
-        />
-
-        <View style={styles.row}>
-          <View style={styles.buttonWrap}>
-            <Button title="Request laden" onPress={handleLoadRequest} disabled={loading} />
-          </View>
-
-          <View style={styles.buttonWrap}>
-            {loading ? <ActivityIndicator /> : null}
-          </View>
-        </View>
-
-        <View style={{ height: 16 }} />
-
-        <Text style={styles.label}>Bestätigungscode</Text>
-        <TextInput
-          value={code}
-          onChangeText={setCode}
-          placeholder="6-stelliger Code"
-          style={styles.input}
-          keyboardType="number-pad"
-          autoCapitalize="none"
-          accessibilityLabel="Bestätigungscode"
-        />
-
-        <View style={styles.row}>
-          <View style={styles.buttonWrap}>
-            <Button title="Code verifizieren" onPress={handleVerifyCode} disabled={loadingVerify} />
-          </View>
-          <View style={styles.buttonWrap}>
-            {loadingVerify ? <ActivityIndicator /> : null}
-          </View>
-        </View>
-
-        <View style={{ height: 24 }} />
-
-        <Text style={styles.subHeader}>Request Details</Text>
-
-        {loading ? (
-          <ActivityIndicator />
-        ) : requestData ? (
-          <View style={styles.card}>
-            <Text style={styles.field}><Text style={styles.bold}>ID:</Text> {requestData.requestId}</Text>
-            <Text style={styles.field}><Text style={styles.bold}>E-Mail:</Text> {requestData.email}</Text>
-            <Text style={styles.field}><Text style={styles.bold}>User ID:</Text> {requestData.userId}</Text>
-            <Text style={styles.field}><Text style={styles.bold}>Status:</Text> {requestData.status}</Text>
-            <Text style={styles.field}><Text style={styles.bold}>Erstellt:</Text> {formatDate(requestData.createdAt)}</Text>
-            <Text style={styles.field}><Text style={styles.bold}>Läuft ab:</Text> {formatDate(requestData.expiresAt)}</Text>
-            {requestData.verifiedAt ? <Text style={styles.field}><Text style={styles.bold}>Verifiziert:</Text> {formatDate(requestData.verifiedAt)}</Text> : null}
-            {requestData.completedAt ? <Text style={styles.field}><Text style={styles.bold}>Abgeschlossen:</Text> {formatDate(requestData.completedAt)}</Text> : null}
-          </View>
-        ) : (
-          <Text style={styles.muted}>Keine Request geladen. Klicke auf „Request laden“ oder verifiziere direkt mit ID+Code.</Text>
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <View style={styles.text}>
+      <Text style={styles.text2}>Löschanträge</Text>
+      <FlatList
+        data={requests}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={loadRequests} />
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    paddingBottom: 80,
+    margin: 8,
+    backgroundColor: "white",
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.5,
+    elevation: 5,
   },
-  header: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 12,
+  text: {
+    padding: 1,
+    fontSize: 18,
+    fontWeight: "bold",
   },
-  subHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+  text2: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 12,
+    color: "#fff",
+    marginTop: 30,
   },
-  label: {
-    fontSize: 13,
-    color: '#444',
-    marginBottom: 6,
+  text3: {
+    fontSize: 18,
+    fontWeight: "bold",
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: '#fff',
+  text4: {
+    fontSize: 12,
+    color: "#6B7280",
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  buttonWrap: {
-    flex: 1,
-    marginRight: 8,
-  },
-  card: {
-    backgroundColor: '#fafafa',
-    borderWidth: 1,
-    borderColor: '#eee',
-    padding: 12,
-    borderRadius: 10,
-  },
-  field: {
-    marginBottom: 6,
-    fontSize: 14,
-  },
-  bold: {
-    fontWeight: '700',
-  },
-  muted: {
-    color: '#666',
-    fontStyle: 'italic',
-  },
+  text5: {},
 });
