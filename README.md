@@ -1,7 +1,7 @@
 ![Alt-Text](./assets/images/banner.jpeg)
 
 # GPS
-Your smart navigation App.
+## Explore the world
 
 ## What is GPS
 
@@ -25,3 +25,6 @@ GPS is a smart navigation app that can be used for hiking or other activities.
 ## License
 This project is licensed under the GNU General Public License v3.0 (GPLv3).  
 See the [LICENSE](LICENSE.md) file for details.
+
+old slogan
+Your smart navigation App.
