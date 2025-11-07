@@ -12,14 +12,17 @@ import {
 } from "react-native";
 import { Button, Text, TextInput, useTheme } from "react-native-paper";
 
+const token = process.env.EXPO_PUBLIC_HCAPTCHA__SECRET!;
+
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [error, setError] = useState<string | null>("");
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const router = useRouter();
   const scheme = useColorScheme();
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
@@ -28,85 +31,94 @@ export default function AuthScreen() {
 
   const handleAuth = async () => {
     if (!email || !password) {
-      setError("Please fill in all fields.");
+      setError("Bitte fülle alle Felder aus.");
       return;
     }
     if (password.length < 6) {
-      setError("Passwords must be at least 6 characters long.");
+      setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
       return;
     }
+
     setError(null);
 
     if (isSignUp) {
-      const error = await signUp(email, password);
-      if (error) {
-        setError(error);
+      const err = await signUp(email, password);
+      if (err) {
+        setError(err);
         return;
       }
+      setIsSignUp(false);
     } else {
-      const error = await signIn(email, password);
-      if (error) {
-        setError(error);
+      const err = await signIn(email, password);
+      if (err) {
+        setError(err);
         return;
       }
       router.replace("/");
     }
   };
 
-  if (scheme === "dark") {
-  }
-
   const handleSwitchMode = () => {
     setIsSignUp((prev) => !prev);
+    setError(null);
   };
 
-  const backgroundImage =
-    scheme === "dark"
-      ? require("../assets/images/auth.png")
-      : require("../assets/images/auth.png");
+  const backgroundImage = require("../assets/images/auth.png");
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "android" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <ImageBackground source={backgroundImage} style={{flex: 1}}>
-          <Image source={require('../assets/images/logo.png')} style={styles.image} />
+      <ImageBackground source={backgroundImage} style={{ flex: 1 }}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        </View>
+
         <View style={styles.content}>
           <Text style={styles.title} variant="headlineMedium">
-            {isSignUp ? "Create Account" : "Welcome Back"}
+            {isSignUp ? "Konto erstellen" : "Willkommen zurück"}
           </Text>
 
           <TextInput
             label="E-Mail"
             autoCapitalize="none"
             keyboardType="email-address"
-            placeholder="exapmle@gmail.com"
+            placeholder="example@gmail.com"
             mode="outlined"
-            style={styles.input}
+            value={email}
             onChangeText={setEmail}
+            style={styles.input}
             outlineColor="#466483ff"
             selectionColor="#466483ff"
             activeOutlineColor="#466483ff"
           />
           <TextInput
-            label="Password"
+            label="Passwort"
             autoCapitalize="none"
             secureTextEntry
             mode="outlined"
-            style={styles.input}
+            value={password}
             onChangeText={setPassword}
+            style={styles.input}
             outlineColor="#466483ff"
             selectionColor="#466483ff"
             activeOutlineColor="#466483ff"
           />
-
-          {error && <Text style={{ color: theme.colors.error }}>{error}</Text>}
+          {error ? (
+            <Text style={{ color: theme.colors.error, textAlign: "center" }}>
+              {error}
+            </Text>
+          ) : null}
 
           <Button mode="contained" style={styles.button} onPress={handleAuth}>
-            {" "}
-            {isSignUp ? "Sign Up" : "Sign In"}
+            {isSignUp ? "Registrieren" : "Einloggen"}
           </Button>
+
           <Button
             mode="text"
             style={styles.switchModeButton}
@@ -114,8 +126,8 @@ export default function AuthScreen() {
             textColor="#466483ff"
           >
             {isSignUp
-              ? "Already have an account? Sign In"
-              : "Dont't have an account? Sign Up "}
+              ? "Schon ein Konto? Jetzt einloggen"
+              : "Noch kein Konto? Jetzt registrieren"}
           </Button>
         </View>
       </ImageBackground>
@@ -127,15 +139,19 @@ const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: scheme === "dark" ? "#000" : "#fff",
+    },
+    logoContainer: {
+      alignItems: "center",
+      marginTop: 80,
     },
     image: {
-      width: 100,
-      height: 10,
-      flex: 1,
+      width: 120,
+      height: 120,
     },
     content: {
       flex: 1,
-      padding: 16,
+      padding: 20,
       justifyContent: "center",
     },
     title: {
@@ -145,7 +161,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     },
     input: {
       marginBottom: 16,
-      color: "#466483ff",
     },
     button: {
       marginTop: 8,

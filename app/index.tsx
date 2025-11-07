@@ -202,11 +202,11 @@ function App() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "delete_requests" },
         async (payload: any) => {
-          console.log("🚨 Neuer Antrag:", payload.new);
+          console.log("Neuer Antrag:", payload.new);
 
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: "🧹 Neuer Löschantrag",
+              title: "Neuer Löschantrag",
               body: `Von ${payload.new.email}`,
               sound: "default",
             },
@@ -232,9 +232,7 @@ function App() {
         alert("Benachrichtigungen sind deaktiviert 😕");
         return;
       }
-      console.log("Berechtigung erteilt!");
     } else {
-      alert("Push funktioniert nur auf echten Geräten");
     }
   }
 

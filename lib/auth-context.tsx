@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { ID, Models } from "react-native-appwrite";
-import { account } from "./appwrite";
+import { User } from "@supabase/supabase-js";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 type AuthContextType = {
-  user: Models.User<Models.Preferences> | null;
-  isLoadingUser: boolean
+  user: User | null;
+  isLoadingUser: boolean;
   signUp: (email: string, password: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -13,64 +13,69 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser ] = useState<Models.User<Models.Preferences> | null>(
-        null
-    );
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true);
+  const [captchaToken, setCaptchaToken] = useState()
 
-    const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true);
+  useEffect(() => {
+    getUser();
 
-    useEffect(() => {
-        getUser();
-    }, [])
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setUser(session?.user ?? null);
+    });
 
-    const getUser = async () => {
-        try{
-          const session = await account.get()
-            setUser(session)
-        } catch (error) {
-            setUser(null)
-        } finally{
-          setIsLoadingUser(false);
-        }
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const getUser = async () => {
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      setUser(data.user ?? null);
+    } catch (error) {
+      console.log("Fehler beim Abrufen des Benutzers:", error);
+      setUser(null);
+    } finally {
+      setIsLoadingUser(false);
     }
+  };
+
 
   const signUp = async (email: string, password: string) => {
     try {
-      await account.create(ID.unique(), email, password);
-      await signIn(email, password);
+      const { error } = await supabase.auth.signUp({ email, password ,options: { captchaToken },});
+      if (error) throw error;
       return null;
-    } catch (error) {
-      if (error instanceof Error) {
-        return error.message;
-      }
-      return "An error occured during sign up";
+    } catch (error: any) {
+      return error.message || "Fehler bei der Registrierung";
     }
   };
+
   const signIn = async (email: string, password: string) => {
     try {
-      await account.createEmailPasswordSession(email, password);
-      const session = await account.get();
-      setUser(session);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      await getUser();
       return null;
-    } catch (error) {
-      if (error instanceof Error) {
-        return error.message;
-      }
-      return "An error occured during sign in";
+    } catch (error: any) {
+      return error.message || "Fehler beim Login";
     }
   };
 
   const signOut = async () => {
     try {
-    await account.deleteSession("current");
-    setUser(null);
-    } catch(error) {
-      console.log(error)
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+    } catch (error) {
+      console.error("Fehler beim Logout:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{user,isLoadingUser, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoadingUser, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -78,9 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be inside of the AuthProvider.");
+  if (!context) {
+    throw new Error("useAuth muss innerhalb von <AuthProvider> verwendet werden.");
   }
-
   return context;
 }
