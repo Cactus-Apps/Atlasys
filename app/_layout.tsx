@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { useColorScheme } from "react-native";
 
@@ -26,6 +27,7 @@ export default function RootLayout() {
   return (
       <AuthProvider>
         <RouteGuard>
+          <StatusBar style={scheme ===  "dark" ? "light" : "dark"} />
           <Stack
             screenOptions={{
               animation: "fade",
@@ -47,6 +49,7 @@ export default function RootLayout() {
             <Stack.Screen name="test" options={{ headerShown: false }} />
             <Stack.Screen name="test2" options={{ headerShown: false }} />
             <Stack.Screen name="AdminPanel" options={{ headerShown: false }} />
+            <Stack.Screen name="requestdelete" options={{ headerShown: false }} />
           </Stack>
         </RouteGuard>
       </AuthProvider>

@@ -9,7 +9,6 @@ import * as React from "react";
 import {
   Image,
   Linking,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import "./i18n";
 
 const about = () => {

@@ -12,13 +12,13 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import "./i18n.js";
 
 

@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Button, Text, TextInput, useTheme } from "react-native-paper";
 
-const token = process.env.EXPO_PUBLIC_HCAPTCHA__SECRET!;
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
@@ -22,7 +21,6 @@ export default function AuthScreen() {
   const theme = useTheme();
   const router = useRouter();
   const scheme = useColorScheme();
-  const [captchaToken, setCaptchaToken] = useState<string | undefined>();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
@@ -57,6 +55,7 @@ export default function AuthScreen() {
       router.replace("/");
     }
   };
+
 
   const handleSwitchMode = () => {
     setIsSignUp((prev) => !prev);

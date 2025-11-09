@@ -52,6 +52,8 @@ export default function AdminPanel() {
       <FlatList
         data={requests}
         keyExtractor={(item) => item.id}
+        onRefresh={() => updateStatus}
+        refreshing={false}
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => {

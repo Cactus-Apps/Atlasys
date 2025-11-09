@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const STORAGE_KEY = '@cards_order_v1';
 

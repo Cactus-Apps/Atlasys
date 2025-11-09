@@ -15,18 +15,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true);
-  const [captchaToken, setCaptchaToken] = useState()
 
   useEffect(() => {
-    getUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user ?? null);
+      setIsLoadingUser(false);
     };
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    loadUser();
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const getUser = async () => {
@@ -42,10 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-
   const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password ,options: { captchaToken },});
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       return null;
     } catch (error: any) {
@@ -55,7 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error) throw error;
       await getUser();
       return null;
@@ -75,7 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoadingUser, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, isLoadingUser, signUp, signIn, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -84,7 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth muss innerhalb von <AuthProvider> verwendet werden.");
+    throw new Error(
+      "useAuth muss innerhalb von <AuthProvider> verwendet werden."
+    );
   }
   return context;
 }

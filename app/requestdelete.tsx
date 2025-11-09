@@ -2,15 +2,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Frown, Info } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme
 } from "react-native";
 import { supabase } from "../lib/supabase";
 
@@ -23,7 +22,8 @@ interface DeleteRequest {
 }
 
 export default function UserDeleteScreen() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const [loading, setLoading] = useState(false);
   const [loading2, setLoading2] = useState(false);
@@ -53,12 +53,14 @@ export default function UserDeleteScreen() {
     }
   };
 
+useEffect(() => {
   const checkRequestStatus = async () => {
-    if (!email) return;
+    if (!userId) return;
     setLoading2(true);
     const { data, error } = await supabase
       .from("delete_requests")
       .select("*")
+      .eq("user_id", userId)
       .eq("email", email)
       .order("requested_at", { ascending: false })
       .limit(1)
@@ -73,10 +75,22 @@ export default function UserDeleteScreen() {
     }
     setLoading2(false);
   };
+  checkRequestStatus();
+}, [userId, email]);
+
+  useEffect(() => {
+    const fetchUserIdAndEmail = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      const user = data?.user;
+      setUserId(user?.id ?? null);
+      setEmail(user?.email ?? null);
+    };
+    fetchUserIdAndEmail();
+  }, []);
 
   const createDeleteRequest = async () => {
-    if (!email) {
-      Alert.alert("Fehler", "Bitte gib deine E-Mail-Adresse ein.");
+    if (!userId || !email) {
+      Alert.alert("Fehler", "Benutzer-ID oder E-Mail konnte nicht abgerufen werden.");
       return;
     }
 
@@ -88,7 +102,7 @@ export default function UserDeleteScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from("delete_requests")
-      .insert([{ verification_code, status: "pending", email }]);
+      .insert([{ user_id: userId, email, verification_code, status: "pending" }]);
 
     if (error) {
       console.error(error);
@@ -102,14 +116,15 @@ export default function UserDeleteScreen() {
   };
 
   useEffect(() => {
-    if (!email) return;
+    if (!userId) return;
+
     const channel = supabase
       .channel("delete_requests-live")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "delete_requests" },
         (payload: any) => {
-          if (payload.new.email === email) {
+          if (payload.new.user_id === userId && payload.new.email === email) {
             const updated = payload.new as DeleteRequest;
             setRequest(updated);
             updateProgress(updated.status);
@@ -117,23 +132,15 @@ export default function UserDeleteScreen() {
         }
       )
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [email]);
+  }, [userId, email]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Konto löschen</Text>
-      <TextInput
-        placeholder="Deine E-Mail-Adresse"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={styles.container2}
-      />
-
       <TouchableOpacity
         onPress={createDeleteRequest}
         disabled={loading}
@@ -143,13 +150,6 @@ export default function UserDeleteScreen() {
           <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.text2}>Löschung beantragen</Text>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity onPress={checkRequestStatus} style={styles.button2}>
-        {loading2 ? (
-          <ActivityIndicator color="#3b82f6" />
-        ) : (
-          <Text style={styles.text3}>Aktuellen Status abrufen</Text>
         )}
       </TouchableOpacity>
 
@@ -308,9 +308,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       paddingVertical: 12,
       width: "100%",
     },
-    button2: {
-      margin: 12,
-    },
     button3: {
       borderRadius: 16,
       paddingHorizontal: 20,
@@ -340,11 +337,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontWeight: "700",
       fontSize: 18,
       alignSelf: "center",
-    },
-    text3: {
-      color: "#3b82f6",
-      textAlign: "center",
-      textDecorationLine: "underline",
     },
     container3: {
       marginTop: 24,

@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Avatar } from "@kolking/react-native-avatar";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { CirclePlus, LogOut } from "lucide-react-native";
+import { LogOut } from "lucide-react-native";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import {
@@ -38,7 +38,10 @@ export default function AccountScreen() {
 
   const copy = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    Alert.alert("Kopiert", "Fehlermeldung wurde in die Zwischenablage kopiert.");
+    Alert.alert(
+      "Kopiert",
+      "Fehlermeldung wurde in die Zwischenablage kopiert."
+    );
   };
 
   useEffect(() => {
@@ -58,7 +61,10 @@ export default function AccountScreen() {
           `Bitte melde dich neu an.\n\n${err.message || err}`,
           [
             { text: "Neu anmelden", onPress: () => router.replace("/auth") },
-            { text: "Fehler kopieren", onPress: () => copy(err.message || "Unknown error") },
+            {
+              text: "Fehler kopieren",
+              onPress: () => copy(err.message || "Unknown error"),
+            },
             { text: "Abbrechen", style: "cancel" },
           ]
         );
@@ -108,23 +114,21 @@ export default function AccountScreen() {
         )}
       </View>
 
-      <TouchableOpacity onPress={signOut} style={styles.signoutbutton}>
-        <LogOut strokeWidth={3} style={styles.icon} />
-        <Text style={styles.text}>Sign Out</Text>
-      </TouchableOpacity>
+      <View style={styles.buttons}>
 
       <TouchableOpacity
-        style={styles.signupbutton}
-        onPress={() => router.replace("/auth")}
+        style={styles.deleteAccount}
+        onPress={() => router.replace("/requestdelete")}
       >
-        <CirclePlus strokeWidth={3} style={styles.icon} />
-        <Text style={styles.text}>Sign Up</Text>
+        <Text style={styles.text}>Delete Account</Text>
       </TouchableOpacity>
 
+      </View>
       <View style={styles.placeholder} />
-      <Text style={styles.textMini}>
-        Sign up only works if you are not logged in
-      </Text>
+      <TouchableOpacity onPress={signOut} style={styles.signoutbutton}>
+        <LogOut strokeWidth={3} color={"#d84646ff"} style={styles.icon} />
+        <Text style={styles.text}>Sign Out</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -135,12 +139,17 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginTop: 70,
     },
     placeholder: {
-      marginVertical: 140,
+      marginVertical: 210,
+    },
+    buttons: {
+      alignItems: 'flex-start',
+      flexDirection: 'column',
+      marginLeft: 35,
     },
     text: {
-      fontSize: 21,
+      fontSize: 15,
       fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#fff",
+      color: "#d84646ff",
     },
     textMini: {
       fontSize: 14,
@@ -149,28 +158,19 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       alignSelf: "center",
     },
     signoutbutton: {
-      borderRadius: 8,
-      backgroundColor: "#d84646ff",
-      paddingHorizontal: 70,
-      paddingVertical: 20,
-      alignSelf: "center",
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 70,
+      flexDirection: 'row',
+      padding: 3,
+      alignSelf:'center',
     },
-    signupbutton: {
-      borderRadius: 8,
-      backgroundColor: "#466483ff",
-      paddingHorizontal: 72,
-      paddingVertical: 20,
-      alignSelf: "center",
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 40,
+    deleteAccount: {
+      flexDirection:'row',
+      padding: 3,
+      marginVertical: 20,
     },
     container: {
       marginTop: 50,
       alignSelf: "center",
+      marginVertical: 20,
     },
     all: {
       flex: 1,

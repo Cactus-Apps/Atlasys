@@ -6,6 +6,7 @@ import {
   Dimensions,
   FlatList,
   Keyboard,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -14,7 +15,6 @@ import {
   View,
   useColorScheme
 } from "react-native";
-import Modal from "react-native-modal";
 import { Button } from "react-native-paper";
 import Toast from "react-native-toast-message";
 import { WebView } from "react-native-webview";
@@ -350,10 +350,10 @@ export default function MapScreen() {
         mixedContentMode="compatibility"
       />
       <Modal
-        isVisible={modalVisible}
-        onBackdropPress={() => setModalVisible(false)}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
         style={styles.modal}
-        coverScreen={false}
+        transparent
       >
         <View style={styles.modalContent}>
           {selected ? (
