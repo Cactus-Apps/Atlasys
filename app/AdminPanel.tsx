@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Button, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Button,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { supabase } from "../lib/supabase";
 
 interface DeleteRequest {
@@ -12,7 +20,9 @@ interface DeleteRequest {
 
 export default function AdminPanel() {
   const [requests, setRequests] = useState<DeleteRequest[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<DeleteRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<DeleteRequest | null>(
+    null
+  );
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
 
@@ -84,8 +94,14 @@ export default function AdminPanel() {
                 <Text>Code: {selectedRequest.verification_code}</Text>
 
                 <View style={styles.modalButtonRow}>
-                  <Button title="Abbrechen" onPress={() => setDetailsModalVisible(false)} />
-                  <Button title="Status ändern" onPress={() => setStatusModalVisible(true)} />
+                  <Button
+                    title="Abbrechen"
+                    onPress={() => setDetailsModalVisible(false)}
+                  />
+                  <Button
+                    title="Status ändern"
+                    onPress={() => setStatusModalVisible(true)}
+                  />
                 </View>
               </>
             )}
@@ -115,7 +131,11 @@ export default function AdminPanel() {
               title="🔴 Abgelehnt"
               onPress={() => updateStatus(selectedRequest!.id, "rejected")}
             />
-            <Button title="Zurück" color="gray" onPress={() => setStatusModalVisible(false)} />
+            <Button
+              title="Zurück"
+              color="gray"
+              onPress={() => setStatusModalVisible(false)}
+            />
           </View>
         </View>
       </Modal>

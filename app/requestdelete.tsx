@@ -2,14 +2,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Frown, Info } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useColorScheme
+  ActivityIndicator,
+  Alert,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 
@@ -53,30 +53,30 @@ export default function UserDeleteScreen() {
     }
   };
 
-useEffect(() => {
-  const checkRequestStatus = async () => {
-    if (!userId) return;
-    setLoading2(true);
-    const { data, error } = await supabase
-      .from("delete_requests")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("email", email)
-      .order("requested_at", { ascending: false })
-      .limit(1)
-      .single();
+  useEffect(() => {
+    const checkRequestStatus = async () => {
+      if (!userId) return;
+      setLoading2(true);
+      const { data, error } = await supabase
+        .from("delete_requests")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("email", email)
+        .order("requested_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (error) {
-      console.log(error);
-      setRequest(null);
-    } else {
-      setRequest(data);
-      updateProgress(data.status);
-    }
-    setLoading2(false);
-  };
-  checkRequestStatus();
-}, [userId, email]);
+      if (error) {
+        console.log(error);
+        setRequest(null);
+      } else {
+        setRequest(data);
+        updateProgress(data.status);
+      }
+      setLoading2(false);
+    };
+    checkRequestStatus();
+  }, [userId, email]);
 
   useEffect(() => {
     const fetchUserIdAndEmail = async () => {
@@ -90,7 +90,10 @@ useEffect(() => {
 
   const createDeleteRequest = async () => {
     if (!userId || !email) {
-      Alert.alert("Fehler", "Benutzer-ID oder E-Mail konnte nicht abgerufen werden.");
+      Alert.alert(
+        "Fehler",
+        "Benutzer-ID oder E-Mail konnte nicht abgerufen werden."
+      );
       return;
     }
 
@@ -102,7 +105,9 @@ useEffect(() => {
     setLoading(true);
     const { data, error } = await supabase
       .from("delete_requests")
-      .insert([{ user_id: userId, email, verification_code, status: "pending" }]);
+      .insert([
+        { user_id: userId, email, verification_code, status: "pending" },
+      ]);
 
     if (error) {
       console.error(error);
@@ -317,7 +322,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       backgroundColor: "#466483ff",
     },
     button4: {
-      alignSelf: 'flex-end',
+      alignSelf: "flex-end",
     },
     text2: {
       color: "#ffffff",

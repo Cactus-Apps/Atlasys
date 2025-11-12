@@ -1,10 +1,6 @@
 import { useRouter } from "expo-router";
 import { t } from "i18next";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Copyright
-} from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Copyright } from "lucide-react-native";
 import * as React from "react";
 import {
   Image,
@@ -151,6 +147,7 @@ const about = () => {
               <ChevronRight style={styles.arrow} />
             </TouchableOpacity>
           </View>
+          
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -33,11 +33,11 @@ const settings = () => {
 
   const closeBottomSheet = () => {
     bottomSheetRef.current?.close();
-  }
+  };
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.close();
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -62,7 +62,7 @@ const settings = () => {
             flexDirection: "row",
             justifyContent: "center",
           }}
-          >
+        >
           <Menu
             visible={visible}
             onDismiss={closeMenu}
@@ -72,24 +72,24 @@ const settings = () => {
                 <ChevronDown size={28} color="#d8d8d8ff" strokeWidth={2} />
               </TouchableOpacity>
             }
-            >
+          >
             <Menu.Item
               leadingIcon="web"
               onPress={() => changeLanguage("de")}
               title="German"
-              />
+            />
             <Menu.Item
               leadingIcon="web"
               onPress={() => changeLanguage("en")}
               title="English"
-              />
+            />
             <Divider />
             <Menu.Item
               disabled={true}
               leadingIcon="web"
               onPress={() => {}}
               title="French"
-              />
+            />
           </Menu>
         </View>
       </PaperProvider>

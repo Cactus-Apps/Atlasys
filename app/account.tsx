@@ -115,14 +115,12 @@ export default function AccountScreen() {
       </View>
 
       <View style={styles.buttons}>
-
-      <TouchableOpacity
-        style={styles.deleteAccount}
-        onPress={() => router.replace("/requestdelete")}
-      >
-        <Text style={styles.text}>Delete Account</Text>
-      </TouchableOpacity>
-
+        <TouchableOpacity
+          style={styles.deleteAccount}
+          onPress={() => router.replace("/requestdelete")}
+        >
+          <Text style={styles.text}>Delete Account</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.placeholder} />
       <TouchableOpacity onPress={signOut} style={styles.signoutbutton}>
@@ -142,8 +140,8 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginVertical: 210,
     },
     buttons: {
-      alignItems: 'flex-start',
-      flexDirection: 'column',
+      alignItems: "flex-start",
+      flexDirection: "column",
       marginLeft: 35,
     },
     text: {
@@ -158,12 +156,12 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       alignSelf: "center",
     },
     signoutbutton: {
-      flexDirection: 'row',
+      flexDirection: "row",
       padding: 3,
-      alignSelf:'center',
+      alignSelf: "center",
     },
     deleteAccount: {
-      flexDirection:'row',
+      flexDirection: "row",
       padding: 3,
       marginVertical: 20,
     },

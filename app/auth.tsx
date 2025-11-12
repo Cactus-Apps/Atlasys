@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Button, Text, TextInput, useTheme } from "react-native-paper";
 
-
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
@@ -55,7 +54,6 @@ export default function AuthScreen() {
       router.replace("/");
     }
   };
-
 
   const handleSwitchMode = () => {
     setIsSignUp((prev) => !prev);

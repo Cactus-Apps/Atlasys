@@ -13,13 +13,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 import { Button } from "react-native-paper";
 import Toast from "react-native-toast-message";
 import { WebView } from "react-native-webview";
 import "./i18n.js";
-
 
 const { width, height } = Dimensions.get("window");
 
@@ -100,7 +99,6 @@ export default function MapScreen() {
       setLoadingSearch(false);
     }
   }
-
 
   function onSelectCity(city: CityResult) {
     setSelected(city);
@@ -282,7 +280,7 @@ export default function MapScreen() {
     !modalVisible;
   };
 
-  return ( 
+  return (
     <View style={styles.container2}>
       <View style={styles.searchContainer}>
         <Search
@@ -465,7 +463,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     },
     cityTitle: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
     citySub: { fontSize: 14, color: "#555" },
-    cityCoords: { marginTop: 8, color: "#666" },
+    cityCoords: { marginTop: 8, color: "#667" },
     closeButton: {
       marginTop: 14,
       backgroundColor: "#e53935",

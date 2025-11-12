@@ -6,7 +6,7 @@ import {
   Info,
   List,
   User,
-  Users
+  Users,
 } from "lucide-react-native";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -21,153 +21,153 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import "./i18n.js";
 
-
 function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme(); 
-  const styles = getStyles(scheme === "light" || scheme === "dark" ? scheme : null);
-  
+  const scheme = useColorScheme();
+  const styles = getStyles(
+    scheme === "light" || scheme === "dark" ? scheme : null
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Image source={require("../assets/images/logo.png")} style={styles.image}/>
+      <Image
+        source={require("../assets/images/logo.png")}
+        style={styles.image}
+      />
       <View style={styles.all}>
-      <View>
-        <View style={styles.placeholder} />
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/account")}
-        >
-          <User strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("profile")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/settings")}
-        >
-          <Bolt strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("settings")}</Text>
-        </TouchableOpacity>
-        <View style={styles.line} />
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/updatelog")}
-        >
-          <List strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("update_log")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/about")}
-        >
-          <Info strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("about_gps")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/bugreport")}
-        >
-          <Bug strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("bug_report")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/invite")}
-        >
-          <Users strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("invite")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/AdminPanel")}
-        >
-          <Users strokeWidth={3} style={styles.icon} />
-          <Text style={styles.link}>{t("Admin Panel")}</Text>
-        </TouchableOpacity>
-
-
-
+        <View>
+          <View style={styles.placeholder} />
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/account")}
+          >
+            <User strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("profile")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/settings")}
+          >
+            <Bolt strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("settings")}</Text>
+          </TouchableOpacity>
+          <View style={styles.line} />
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/updatelog")}
+          >
+            <List strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("update_log")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/about")}
+          >
+            <Info strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("about_gps")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/bugreport")}
+          >
+            <Bug strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("bug_report")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/invite")}
+          >
+            <Users strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("invite")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/AdminPanel")}
+          >
+            <Users strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link}>{t("Admin Panel")}</Text>
+          </TouchableOpacity>
+        </View>
+        <View>
+          <View style={styles.placeholder} />
+          <TouchableOpacity onPress={() => router.navigate("/account")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/settings")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <View style={styles.line} />
+          <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/about")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/bugreport")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/invite")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/test")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/test2")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+        </View>
       </View>
-      <View>
-        <View style={styles.placeholder} />
-        <TouchableOpacity onPress={() => router.navigate("/account")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/settings")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <View style={styles.line} />
-        <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/about")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/bugreport")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/invite")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/test")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.navigate("/test2")}>
-        <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-      </View>
-    </View>
     </SafeAreaView>
   );
 }
 
 const getStyles = (scheme: "light" | "dark" | null) =>
- StyleSheet.create({
-  all: {
-    flexDirection: "row",
-  },
-  placeholder: {
-    marginTop: 8,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#000'
-  },
-  line: {
-    height: 1,
-    backgroundColor: "#ccc",
-    alignSelf: "stretch",
-    marginVertical: 12,
-    marginHorizontal: 0,
-  },
+  StyleSheet.create({
+    all: {
+      flexDirection: "row",
+    },
+    placeholder: {
+      marginTop: 8,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: "#000",
+    },
+    line: {
+      height: 1,
+      backgroundColor: "#ccc",
+      alignSelf: "stretch",
+      marginVertical: 12,
+      marginHorizontal: 0,
+    },
 
-  link: {
-    fontSize: 21,
-    fontWeight: "600",
-    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-  },
-  page: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  icon: {
-    marginHorizontal: 23,
-    marginVertical: 23,
-    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-  },
-  arrow: {
-    paddingHorizontal: 130,
-    marginVertical: 23,
-    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-  },
-  image: {
-    width: 200,
-    height: 100,
-    marginTop: 25,
-    justifyContent:'center',
-    alignSelf: 'center',
-  },
-});
+    link: {
+      fontSize: 21,
+      fontWeight: "600",
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    page: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    icon: {
+      marginHorizontal: 23,
+      marginVertical: 23,
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    arrow: {
+      paddingHorizontal: 130,
+      marginVertical: 23,
+      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    image: {
+      width: 200,
+      height: 100,
+      marginTop: 25,
+      justifyContent: "center",
+      alignSelf: "center",
+    },
+  });
 
 export default ProfileScreen;
