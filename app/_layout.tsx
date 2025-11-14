@@ -32,7 +32,7 @@ export default function RootLayout() {
           screenOptions={{
             animation: "fade",
             contentStyle: {
-              backgroundColor: scheme === "dark" ? "#181717ff" : "#e2d7d7ff",
+              backgroundColor: scheme === "dark" ? "#0D1117" : "#e2d7d7ff",
             },
           }}
         >
@@ -49,7 +49,6 @@ export default function RootLayout() {
           <Stack.Screen name="test" options={{ headerShown: false }} />
           <Stack.Screen name="test2" options={{ headerShown: false }} />
           <Stack.Screen name="AdminPanel" options={{ headerShown: false }} />
-          <Stack.Screen name="requestdelete" options={{ headerShown: false }} />
         </Stack>
       </RouteGuard>
     </AuthProvider>

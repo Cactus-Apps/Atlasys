@@ -3,14 +3,14 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  TextInput,
   View,
   useColorScheme,
 } from "react-native";
-import { Button, Text, TextInput, useTheme } from "react-native-paper";
+import { Button, Text, useTheme } from "react-native-paper";
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
@@ -18,6 +18,8 @@ export default function AuthScreen() {
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
+  const [isFocused, setisFocused] = useState(false);
+  const [isFocused2, setisFocused2] = useState(false);
   const router = useRouter();
   const scheme = useColorScheme();
   const styles = getStyles(
@@ -60,74 +62,75 @@ export default function AuthScreen() {
     setError(null);
   };
 
-  const backgroundImage = require("../assets/images/auth.png");
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <ImageBackground source={backgroundImage} style={{ flex: 1 }}>
+      <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image
-            source={require("../assets/images/logo.png")}
+            source={require("../assets/images/logo2.png")}
             style={styles.image}
             resizeMode="contain"
           />
-        </View>
 
-        <View style={styles.content}>
-          <Text style={styles.title} variant="headlineMedium">
-            {isSignUp ? "Konto erstellen" : "Willkommen zurück"}
+          <Text style={styles.text}> {isSignUp ? "Sign up to GPS" : "Sign in to GPS"}</Text>
+        </View>
+        <Text style={styles.info}>E-Mail</Text>
+        <TextInput
+          autoCapitalize="none"
+          keyboardType="email-address"
+          inputMode="email"
+          value={email}
+          onChangeText={setEmail}
+          style={[
+            styles.input,
+            { borderColor: isFocused ? "#466583aa" : "#3D444D" },
+            { borderWidth: isFocused ? 2 : 1 },
+          ]}
+          selectionColor="#466483ff"
+          autoComplete="email"
+          onFocus={() => setisFocused(true)}
+          onBlur={() => setisFocused(false)}
+        />
+        <Text style={styles.info}>Password</Text>
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry={true}
+          value={password}
+          onChangeText={setPassword}
+          style={[
+            styles.input,
+            { borderColor: isFocused2 ? "#466583aa" : "#3D444D" },
+            { borderWidth: isFocused2 ? 2 : 1 },
+          ]}
+          selectionColor="#466483ff"
+          onFocus={() => setisFocused2(true)}
+          onBlur={() => setisFocused2(false)}
+        />
+        {error ? (
+          <Text style={{ color: theme.colors.error, textAlign: "center" }}>
+            {error}
           </Text>
+        ) : null}
 
-          <TextInput
-            label="E-Mail"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="example@gmail.com"
-            mode="outlined"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            outlineColor="#466483ff"
-            selectionColor="#466483ff"
-            activeOutlineColor="#466483ff"
-          />
-          <TextInput
-            label="Passwort"
-            autoCapitalize="none"
-            secureTextEntry
-            mode="outlined"
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            outlineColor="#466483ff"
-            selectionColor="#466483ff"
-            activeOutlineColor="#466483ff"
-          />
-          {error ? (
-            <Text style={{ color: theme.colors.error, textAlign: "center" }}>
-              {error}
-            </Text>
-          ) : null}
+        <Button mode="contained" style={styles.button} onPress={handleAuth}>
+          {isSignUp ? "Registrieren" : "Einloggen"}
+        </Button>
 
-          <Button mode="contained" style={styles.button} onPress={handleAuth}>
-            {isSignUp ? "Registrieren" : "Einloggen"}
-          </Button>
-
-          <Button
-            mode="text"
-            style={styles.switchModeButton}
-            onPress={handleSwitchMode}
-            textColor="#466483ff"
-          >
-            {isSignUp
-              ? "Schon ein Konto? Jetzt einloggen"
-              : "Noch kein Konto? Jetzt registrieren"}
-          </Button>
-        </View>
-      </ImageBackground>
+        <Button
+          mode="text"
+          style={styles.switchModeButton}
+          onPress={handleSwitchMode}
+          textColor="#466483ff"
+        >
+          {isSignUp
+            ? "Schon ein Konto? Jetzt einloggen"
+            : "Noch kein Konto? Jetzt registrieren"}
+        </Button>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -136,19 +139,31 @@ const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: scheme === "dark" ? "#000" : "#fff",
+      backgroundColor: scheme === "dark" ? "#0D1117" : "#fff",
     },
     logoContainer: {
       alignItems: "center",
-      marginTop: 80,
+      marginTop: 0,
+    },
+    info: {
+      fontSize: 17,
+      fontWeight: "bold",
+      color: "#FEFFFE",
+      paddingVertical: 8,
+    },
+    text: {
+      fontSize: 25,
+      paddingBottom: 40,
+      fontWeight: "bold",
+      color: "#FEFFFE",
     },
     image: {
-      width: 120,
-      height: 120,
+      width: 100,
+      height: 100,
     },
     content: {
       flex: 1,
-      padding: 20,
+      padding: 22,
       justifyContent: "center",
     },
     title: {
@@ -158,10 +173,14 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     },
     input: {
       marginBottom: 16,
+      borderRadius: 6,
+      color: "#fff",
     },
     button: {
       marginTop: 8,
-      backgroundColor: "#466483ff",
+      backgroundColor: "#238636",
+      color: "#FEFFFE",
+      borderRadius: 6,
     },
     switchModeButton: {
       marginTop: 16,

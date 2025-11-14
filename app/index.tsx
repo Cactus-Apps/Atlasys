@@ -25,6 +25,7 @@ function HomeScreen() {
     null
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [Admin, setAdmin] = useState(false)
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
   const scheme = useColorScheme();
@@ -68,7 +69,7 @@ function HomeScreen() {
     return () => stopWatching();
   }, []);
 
-  if (Device.isDevice) {
+  if (Admin) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text style={{ fontSize: 18, color: "#000" }}>
@@ -299,7 +300,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginLeft: 13,
     },
     buttonText: {
-      color: "#FFE8D1",
+      color: "#d49a6a",
       fontSize: 16,
       fontWeight: "bold",
       marginHorizontal: "auto",
@@ -311,7 +312,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       borderRadius: 8,
       marginTop: 30,
       padding: 16,
-      backgroundColor: scheme === "dark" ? "#2a2b2cff" : "#ffffffff",
     },
     containerlr: {
       paddingVertical: 12,
@@ -320,7 +320,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       borderRadius: 8,
       marginTop: 30,
       padding: 16,
-      backgroundColor: scheme === "dark" ? "#2d2e30ff" : "#ffffffff",
       paddingHorizontal: 70,
     },
     screen: {
@@ -349,7 +348,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       backgroundColor: "#fff",
     },
     header: {
-      backgroundColor: "#FFE8D1",
+      backgroundColor: "#2b2b2b",
       width: "100%",
       borderBottomColor: "#fff",
       borderWidth: 1,
