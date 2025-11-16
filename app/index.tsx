@@ -1,4 +1,3 @@
-import Clock from "@/components/clock";
 import Weather from "@/components/weather";
 import { MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -6,6 +5,7 @@ import * as Device from "expo-device";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import { t } from "i18next";
+import { Clock4, MapPin } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Image, StyleSheet, Text, View, useColorScheme } from "react-native";
@@ -13,7 +13,6 @@ import {
   GestureHandlerRootView,
   ScrollView,
 } from "react-native-gesture-handler";
-import { Button } from "react-native-paper";
 import { supabase } from "../lib/supabase";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
@@ -25,7 +24,8 @@ function HomeScreen() {
     null
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [Admin, setAdmin] = useState(false)
+  const [Admin, setAdmin] = useState(false);
+  const [time, setTime] = useState(new Date());
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
   const scheme = useColorScheme();
@@ -59,6 +59,15 @@ function HomeScreen() {
     }
   };
 
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, []);
+
+
   const stopWatching = () => {
     subscription?.remove();
     setSubscription(null);
@@ -68,6 +77,9 @@ function HomeScreen() {
     startWatching();
     return () => stopWatching();
   }, []);
+
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 
   if (Admin) {
     return (
@@ -81,77 +93,64 @@ function HomeScreen() {
   } else {
     return (
       <GestureHandlerRootView>
-        <ScrollView>
-          <View style={styles.screen}>
+        <ScrollView >
+          <View style={styles.screen} >
             <View style={styles.header}>
               <Image
                 source={require("../assets/images/logo.png")}
                 style={styles.image}
               />
-            </View>
-            <View style={styles.containerl}>
-              <Text style={styles.title}>{t("title")}</Text>
-              <View
-                style={{
-                  height: 1,
-                  backgroundColor: "#ccc",
-                  alignSelf: "stretch",
-                  marginVertical: 16,
-                }}
-              />
-              {location ? (
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontWeight: "500",
-                    color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-                  }}
-                >
-                  {t("latitude")} {location.coords.latitude}, {t("longitude")}{" "}
-                  {location.coords.longitude}
-                </Text>
-              ) : errorMsg ? (
-                <Text style={{ color: "red" }}>{errorMsg}</Text>
-              ) : (
-                <Text
-                  style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}
-                >
-                  {t("waiting")}
-                </Text>
-              )}
-
-              <View style={{ flexDirection: "row", marginTop: 20 }}>
-                <Button
-                  onPress={startWatching}
-                  disabled={subscription !== null}
-                  mode="contained"
-                  buttonColor="#FFE8D1"
-                >
-                  <Text style={styles.buttonText}>{t("start")}</Text>
-                </Button>
-                <View style={{ paddingHorizontal: 8 }} />
-                <Button
-                  onPress={stopWatching}
-                  disabled={subscription === null}
-                  mode="contained"
-                  buttonColor="#FFE8D1"
-                >
-                  {" "}
-                  <Text style={styles.buttonText}>{t("stop")}</Text>
-                </Button>
+              </View>
+            <View style={styles.card}>
+              <View>
+                <Text style={styles.gps}> GPS Koordinaten</Text>
+                {location ? (
+                  <View>
+                    <Text style={styles.gpskoords}>
+                      {" "}
+                      {location.coords.latitude}° N{" "}
+                    </Text>
+                    <Text style={styles.gpskoords2}>
+                      {" "}
+                      {location.coords.longitude}° E
+                    </Text>
+                  </View>
+                ) : errorMsg ? (
+                  <Text style={{ color: "red" }}>{errorMsg}</Text>
+                ) : (
+                  <Text
+                    style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}
+                  >
+                    {t("waiting")}
+                  </Text>
+                )}
+              </View>
+              <View>
+                <MapPin
+                  style={{ marginLeft: 120, marginTop: 22 }}
+                  color="#EF4444"
+                  strokeWidth={3}
+                  size={36}
+                />
               </View>
             </View>
-            <View style={styles.containerlr}>
-              <Text style={styles.title}> Uhr</Text>
-              <View
-                style={{
-                  height: 1,
-                  backgroundColor: "#ccc",
-                  alignSelf: "stretch",
-                  marginVertical: 16,
-                }}
-              />
-              <Clock />
+            <View style={styles.card}>
+              <View>
+                <Text style={styles.time}> Aktuelle Zeit</Text>
+                <Text style={styles.timetime}>
+                  {" "}
+                  {time.toLocaleTimeString()}
+                </Text>
+                <Text style={styles.timezone}> {timezone}</Text>
+              </View>
+              <View>
+                <Clock4
+                  style={{ marginLeft: 157, marginTop: 22 }}
+                  color="#3B82F6"
+                  strokeWidth={3}
+                  size={36}
+                />
+              </View>
             </View>
             <View>
               <Weather />
@@ -299,6 +298,50 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     icon: {
       marginLeft: 13,
     },
+    card: {
+      borderColor: "#E5E7EB",
+      backgroundColor: "#fff",
+      borderRadius: 16,
+      borderWidth: 1,
+      width: 340,
+      height: 120,
+      elevation: 1,
+      marginVertical: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 13,
+      flexDirection: "row",
+    },
+    gps: {
+      color: "#4B5563",
+      fontSize: 19,
+      fontWeight: "500",
+    },
+    gpskoords: {
+      marginBottom: 2,
+      marginTop: 6,
+      color: '#252E3C',
+      fontSize: 15,
+      fontWeight: "500",
+    },
+    gpskoords2: {
+      fontSize: 15,
+      fontWeight: "500",
+    },
+    time: {
+      color: "#4B5563",
+      fontSize: 18,
+      fontWeight: "500",
+    },
+    timetime: {
+      color: '#1F2937',
+      fontSize: 26,
+      fontWeight: "700",
+    },
+    timezone: {
+      color: '#6B7280',
+      fontSize: 17,
+      fontWeight: '500',
+    },
     buttonText: {
       color: "#d49a6a",
       fontSize: 16,
@@ -323,7 +366,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       paddingHorizontal: 70,
     },
     screen: {
-      backgroundColor: scheme === "dark" ? "#272625ff" : "#ffffffff",
+      backgroundColor: scheme === "dark" ? "#F7F9FA" : "#ffffffff",
       alignItems: "center",
       flex: 1,
     },
@@ -348,10 +391,12 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       backgroundColor: "#fff",
     },
     header: {
-      backgroundColor: "#2b2b2b",
+      backgroundColor: "#fff",
       width: "100%",
       borderBottomColor: "#fff",
       borderWidth: 1,
+      flex: 1,
+      elevation: 2,
     },
     title2: {
       fontSize: 16,

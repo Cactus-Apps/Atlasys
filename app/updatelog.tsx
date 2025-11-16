@@ -21,14 +21,46 @@ const updatelog = () => {
         <Text style={styles.titlet}>{t("update_log")}</Text>
       </View>
       <View style={styles.container}>
-        <Text style={styles.title}>v1.1.9</Text>
-        <Text style={styles.text}>{t("v1.1.9")}</Text>
-        <Text style={styles.text}>{t("v1.1.92")}</Text>
+        <Text style={styles.title}>v1.2.8</Text>
+        <Text style={styles.text}>Besseres Design und </Text>
+        <Text style={styles.text}>Neuer Anmelde Screen</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.2.7</Text>
+        <Text style={styles.text}>Sicherheits Verbesserung und </Text>
+        <Text style={styles.text}>und kleinere Verbesserung</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.2.6</Text>
+        <Text style={styles.text}>Account löschen verbessert </Text>
+        <Text style={styles.text}>und kleinere Verbesserung</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.2.4</Text>
+        <Text style={styles.text}>Account per E-Mail löschen </Text>
+        <Text style={styles.text}>eingestellt, neues Account löschen system und kleinere Verbesserung</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.2.3</Text>
+        <Text style={styles.text}>Neues Backend, kleine Verbesserung</Text>
+        <Text style={styles.text}>und neuer Home screen und</Text>
+        <Text style={styles.text}>account löschen per E-Mail</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.2.2</Text>
+        <Text style={styles.text}>Karten such funktion</Text>
+        <Text style={styles.text}>und kleinere Verbesserung</Text>
+        <Text style={styles.text}></Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.2.1</Text>
+        <Text style={styles.text}>Acount, Auth und</Text>
+        <Text style={styles.text}>anmelde möglichkeit</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.0</Text>
         <Text style={styles.text}>{t("v1.2.0")}</Text>
-        <Text style={styles.text}>{t("v1.2.02")}</Text>
+        <Text style={styles.text}>Beta realease der App</Text>
       </View>
     </ScrollView>
   );
@@ -55,6 +87,10 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       borderRadius: 8,
       borderColor: scheme === "dark" ? "#d8d8d8ff" : "#292828ff",
       alignSelf: "center",
+      width: 350,
+      height: 130,
+      justifyContent: 'center',
+      alignItems: 'center',
       borderWidth: 2,
       marginBottom: 12,
       marginHorizontal: 15,

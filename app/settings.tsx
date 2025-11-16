@@ -1,25 +1,22 @@
-import BottomSheet from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";
-import { Bolt, ChevronDown, ChevronLeft } from "lucide-react-native";
+import { Bolt, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
-import { useRef } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
-import { Divider, Menu, PaperProvider } from "react-native-paper";
 import "./i18n";
 
 const settings = () => {
+  const [ModalVisible, setModalVisible] = useState(false);
   const { t, i18n } = useTranslation();
-  const [visible, setVisible] = React.useState(false);
   const router = useRouter();
-  const openMenu = () => setVisible(true);
-  const closeMenu = () => setVisible(false);
   const scheme = useColorScheme();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
@@ -27,16 +24,6 @@ const settings = () => {
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
-  };
-
-  const bottomSheetRef = useRef<BottomSheet>(null);
-
-  const closeBottomSheet = () => {
-    bottomSheetRef.current?.close();
-  };
-
-  const openBottomSheet = () => {
-    bottomSheetRef.current?.close();
   };
 
   return (
@@ -51,48 +38,43 @@ const settings = () => {
             />
           </TouchableOpacity>
         </View>
+        <View style={{alignSelf: 'center', flexDirection: 'row'}}>
         <Bolt size={40} strokeWidth={2} style={styles.icon} />
         <Text style={styles.title}>{t("settings")}</Text>
-      </View>
-
-      <PaperProvider>
-        <View
-          style={{
-            paddingTop: 50,
-            flexDirection: "row",
-            justifyContent: "center",
-          }}
-        >
-          <Menu
-            visible={visible}
-            onDismiss={closeMenu}
-            anchor={
-              <TouchableOpacity style={styles.button} onPress={openMenu}>
-                <Text style={styles.menu}> {t("language")} </Text>
-                <ChevronDown size={28} color="#d8d8d8ff" strokeWidth={2} />
-              </TouchableOpacity>
-            }
-          >
-            <Menu.Item
-              leadingIcon="web"
-              onPress={() => changeLanguage("de")}
-              title="German"
-            />
-            <Menu.Item
-              leadingIcon="web"
-              onPress={() => changeLanguage("en")}
-              title="English"
-            />
-            <Divider />
-            <Menu.Item
-              disabled={true}
-              leadingIcon="web"
-              onPress={() => {}}
-              title="French"
-            />
-          </Menu>
         </View>
-      </PaperProvider>
+      </View>
+        <View>
+        <TouchableOpacity style={styles.button3} onPress={() => setModalVisible(true)}>
+          <Text style={styles.text2}> Laguage</Text>
+        </TouchableOpacity>
+        </View>
+
+      <Modal
+        visible={ModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalBox}>
+            <Text style={styles.text9}> Sprache </Text>
+            <View>
+              <TouchableOpacity style={styles.button3} onPress={() => changeLanguage("de")}>
+                <Text style={styles.text2}> German </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button3} onPress={() => changeLanguage("en")}>
+                <Text style={styles.text2}> English </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.button2}
+              >
+                <Text style={styles.text2}> OK </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -104,8 +86,47 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     container: {
       flex: 1,
     },
+    modalBackground: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.4)",
+    },
+    modalBox: {
+      width: "85%",
+      backgroundColor: "#fff",
+      borderRadius: 12,
+      padding: 20,
+    },
+    button3: {
+      borderRadius: 16,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      marginTop: 20,
+      width: "100%",
+      backgroundColor: "#466483ff",
+    },
+    button2: {
+      borderRadius: 16,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      marginTop: 20,
+      width: "100%",
+      backgroundColor: "#9198A1",
+    },
+    text2: {
+      color: "#ffffff",
+      textAlign: "center",
+      fontWeight: "600",
+    },
+    text9: {
+      fontSize: 24,
+      fontWeight: "bold",
+      marginBottom: 16,
+      textAlign: "center",
+    },
     back: {
-      paddingLeft: 20,
+      marginRight: 55,
     },
     backbutton: {
       width: 30,
@@ -116,14 +137,15 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       alignItems: "center",
     },
     icon: {
-      marginRight: 28,
+      marginRight: 0,
       color: scheme === "dark" ? "#d8d8d8ff" : "#000",
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 52,
-      paddingLeft: 40,
+      marginTop: 57,
+      marginBottom: 30,
+      paddingLeft: 10,
     },
     title: {
       marginLeft: 15,

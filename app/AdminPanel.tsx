@@ -16,6 +16,7 @@ interface DeleteRequest {
   status: string;
   verification_code: string;
   created_at: string;
+  expires_at: string;
 }
 
 export default function AdminPanel() {
@@ -38,6 +39,11 @@ export default function AdminPanel() {
 
     if (error) console.error("❌ Fehler beim Laden:", error);
     else setRequests(data || []);
+  }
+
+  function getDaysLeft(expires_at: string) {
+    const ms = new Date(expires_at).getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
   }
 
   async function updateStatus(id: string, newStatus: string) {
@@ -92,6 +98,7 @@ export default function AdminPanel() {
                 <Text>Email: {selectedRequest.email}</Text>
                 <Text>Status: {selectedRequest.status}</Text>
                 <Text>Code: {selectedRequest.verification_code}</Text>
+                <Text>{getDaysLeft(selectedRequest.expires_at)} Tage</Text>
 
                 <View style={styles.modalButtonRow}>
                   <Button
@@ -120,15 +127,20 @@ export default function AdminPanel() {
             <Text style={styles.modalTitle}>Neuen Status auswählen</Text>
 
             <Button
-              title="🟡 In Bearbeitung"
-              onPress={() => updateStatus(selectedRequest!.id, "in_progress")}
+              title="Deleted"
+              onPress={() => updateStatus(selectedRequest!.id, "deleted")}
             />
             <Button
-              title="🟢 Abgeschlossen"
+              title="Pending"
+              onPress={() => updateStatus(selectedRequest!.id, "pending")}
+            />
+
+            <Button
+              title="Abgeschlossen"
               onPress={() => updateStatus(selectedRequest!.id, "completed")}
             />
             <Button
-              title="🔴 Abgelehnt"
+              title="Abgelehnt"
               onPress={() => updateStatus(selectedRequest!.id, "rejected")}
             />
             <Button

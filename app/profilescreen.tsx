@@ -4,9 +4,9 @@ import {
   Bug,
   ChevronRight,
   Info,
-  List,
+  ShieldUser,
   User,
-  Users,
+  Users
 } from "lucide-react-native";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -55,17 +55,10 @@ function ProfileScreen() {
           <View style={styles.line} />
           <TouchableOpacity
             style={styles.page}
-            onPress={() => router.navigate("/updatelog")}
-          >
-            <List strokeWidth={3} style={styles.icon} />
-            <Text style={styles.link}>{t("update_log")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
             onPress={() => router.navigate("/about")}
           >
             <Info strokeWidth={3} style={styles.icon} />
-            <Text style={styles.link}>{t("about_gps")}</Text>
+            <Text style={styles.link}>About</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.page}
@@ -85,7 +78,7 @@ function ProfileScreen() {
             style={styles.page}
             onPress={() => router.navigate("/AdminPanel")}
           >
-            <Users strokeWidth={3} style={styles.icon} />
+            <ShieldUser strokeWidth={3} style={styles.icon} />
             <Text style={styles.link}>{t("Admin Panel")}</Text>
           </TouchableOpacity>
         </View>
@@ -98,9 +91,6 @@ function ProfileScreen() {
             <ChevronRight style={styles.arrow} />
           </TouchableOpacity>
           <View style={styles.line} />
-          <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.navigate("/about")}>
             <ChevronRight style={styles.arrow} />
           </TouchableOpacity>
@@ -111,9 +101,6 @@ function ProfileScreen() {
             <ChevronRight style={styles.arrow} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.navigate("/test")}>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.navigate("/test2")}>
             <ChevronRight style={styles.arrow} />
           </TouchableOpacity>
         </View>

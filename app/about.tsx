@@ -1,6 +1,12 @@
 import { useRouter } from "expo-router";
 import { t } from "i18next";
-import { ChevronLeft, ChevronRight, Copyright } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copyright,
+  Heart,
+  List,
+} from "lucide-react-native";
 import * as React from "react";
 import {
   Image,
@@ -67,63 +73,6 @@ const about = () => {
             </Text>
           </View>
         </View>
-        <Text style={styles.credits}>Special Thanks</Text>
-        <View
-          style={{
-            height: 1,
-            backgroundColor: "#ccc",
-            alignSelf: "stretch",
-            marginVertical: 16,
-          }}
-        />
-        <View style={styles.all2}>
-          <Image
-            source={require("../assets/images/maptiler.png")}
-            style={styles.image}
-          />
-          <Text
-            style={styles.link}
-            onPress={() =>
-              Linking.openURL("https://www.maptiler.com/copyright/")
-            }
-          >
-            &copy; MapTiler
-          </Text>
-        </View>
-        <View style={styles.all3}>
-          <Image
-            source={require("../assets/images/Openstreetmap_logo.png")}
-            style={styles.image}
-          />
-          <Text
-            style={styles.link}
-            onPress={() =>
-              Linking.openURL("https://www.openstreetmap.org/copyright")
-            }
-          >
-            &copy; OpenStreetMap contributors
-          </Text>
-        </View>
-        <View style={styles.all4}>
-          <Image
-            source={require("../assets/images/logo-leaflet.png")}
-            style={styles.image}
-          />
-          <View>
-            <Text
-              style={styles.link}
-              onPress={() => Linking.openURL("https://leafletjs.com/")}
-            >
-              &copy; Leaflet
-            </Text>
-            <Text
-              style={styles.link}
-              onPress={() => Linking.openURL("https://agafonkin.com/")}
-            >
-              &copy; Volodymyr Agafonkin. Maps
-            </Text>
-          </View>
-        </View>
         <View
           style={{
             height: 1,
@@ -141,13 +90,32 @@ const about = () => {
               <Copyright strokeWidth={3} style={styles.icon} />
               <Text style={styles.link2}>{t("licenses")}</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.page}
+              onPress={() => router.navigate("/updatelog")}
+            >
+              <List strokeWidth={3} style={styles.icon} />
+              <Text style={styles.link2}>{t("update_log")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.page}
+              onPress={() => router.navigate("/thanks")}
+            >
+              <Heart strokeWidth={3} style={styles.icon} />
+              <Text style={styles.link2}>Thanks</Text>
+            </TouchableOpacity>
           </View>
           <View>
             <TouchableOpacity onPress={() => router.navigate("/licenses")}>
               <ChevronRight style={styles.arrow} />
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
+              <ChevronRight style={styles.arrow} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.navigate("/thanks")}>
+              <ChevronRight style={styles.arrow} />
+            </TouchableOpacity>
           </View>
-          
         </View>
       </ScrollView>
     </SafeAreaView>

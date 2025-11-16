@@ -24,9 +24,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 interface DeleteRequest {
   id: string;
   email: string;
-  status: "pending" | "approved" | "completed" | "rejected";
+  status: "pending" | "completed" | "rejected" | 'deleted';
   requested_at: string;
   updated_at: string;
+  expires_at?: string;
 }
 
 export default function AccountScreen() {
@@ -43,6 +44,7 @@ export default function AccountScreen() {
   const [progress, setProgress] = useState(0);
   const [ModalVisible, setModalVisible] = useState(false);
   const [ModalVisible2, setModalVisible2] = useState(false);
+  const [daysLeft, setdaysLeft] = useState<number | null>(null);
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
@@ -100,8 +102,8 @@ export default function AccountScreen() {
       case "rejected":
         setProgress(1);
         break;
-      case "approved":
-        setProgress(0.5);
+      case "deleted":
+        setProgress(1);
         break;
       case "completed":
         setProgress(1);
@@ -124,6 +126,22 @@ export default function AccountScreen() {
         .limit(1)
         .single();
 
+      if (data?.expires_at) {
+        const now = new Date();
+        const expires = new Date(data.expires_at);
+        const utc1 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const utc2 = Date.UTC(
+          expires.getFullYear(),
+          expires.getMonth(),
+          expires.getDate()
+        );
+        const days = Math.max(
+          0,
+          Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24))
+        );
+        setdaysLeft(days);
+      }
+
       if (error) {
         console.log(error);
         setRequest(null);
@@ -135,6 +153,13 @@ export default function AccountScreen() {
     };
     checkRequestStatus();
   }, [userId, email]);
+
+  useEffect(() => {
+  if (daysLeft !== null) {
+    const prog = Math.max(0, Math.min(1, (10 - daysLeft) / 10));
+    setProgress(prog);
+  }
+}, [daysLeft]);
 
   useEffect(() => {
     const fetchUserIdAndEmail = async () => {
@@ -163,17 +188,40 @@ export default function AccountScreen() {
         return;
       }
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+
+      const { data: existing, error: errorExisting } = await supabase
+        .from("delete_requests")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("requested_at", today.toISOString())
+        .lt("requested_at", tomorrow.toISOString());
+
+      if (existing && existing.length > 0) {
+        Alert.alert(
+          "Limit erreicht",
+          "Du kannst nur einen Löschantrag pro Tag stellen."
+        );
+        return;
+      }
       const verification_code = Math.random()
         .toString(36)
         .substring(2, 10)
         .toUpperCase();
 
       setLoading(true);
-      const { data, error } = await supabase
-        .from("delete_requests")
-        .insert([
-          { user_id: userId, email, verification_code, status: "pending" },
-        ]);
+
+      const { data, error } = await supabase.from("delete_requests").insert([
+        {
+          user_id: userId,
+          email,
+          verification_code,
+          status: "pending",
+        },
+      ]);
 
       if (error) {
         console.error(error);
@@ -267,17 +315,13 @@ export default function AccountScreen() {
         </View>
 
         {request &&
-          (request.status === "pending" ||
-          request.status === "approved" ||
-          request.status === "completed" ? (
+          (request.status === "pending" || request.status === "completed" ? (
             <>
               <View style={styles.container3}>
                 <Text style={styles.text4}>
                   Status:{" "}
                   {request.status === "pending"
                     ? "Ausstehend"
-                    : request.status === "approved"
-                    ? "Bestätigt"
                     : request.status === "completed"
                     ? "Fertig"
                     : "Abgeschlossen"}
@@ -296,6 +340,13 @@ export default function AccountScreen() {
                 </View>
                 <Text style={styles.text5}>
                   Fortschritt: {(progress * 100).toFixed(0)}%
+                </Text>
+                <Text
+                  style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}
+                >
+                  {daysLeft !== null
+                    ? `Dein Account wird in ${daysLeft} Tagen gelöscht`
+                    : "Löschdatum wird geladen..."}
                 </Text>
               </View>
             </>
@@ -344,7 +395,7 @@ export default function AccountScreen() {
                       <Text style={styles.text7}>
                         Sie haben nicht die berechtigung das Konto zu löschen
                         oder Ihnen gehört das Konto nicht. Falls Ihnen das Konto
-                        doch gehört, bitte schreiben Sie eine E-mail an
+                        doch gehört, bitte schreiben Sie eine E-Mail an
                         cactus_apps@proton.me.
                       </Text>
                       <View>
@@ -583,6 +634,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontSize: 18,
       fontWeight: "600",
       marginBottom: 8,
+      color: "#fff",
     },
     progressBar: {
       width: "91.67%",
@@ -592,7 +644,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       overflow: "hidden",
     },
     text5: {
-      color: "#4b5563",
+      color: "#6a7079ff",
       marginTop: 8,
     },
   });

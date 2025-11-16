@@ -47,8 +47,8 @@ export default function RootLayout() {
           <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen name="licenses" options={{ headerShown: false }} />
           <Stack.Screen name="test" options={{ headerShown: false }} />
-          <Stack.Screen name="test2" options={{ headerShown: false }} />
           <Stack.Screen name="AdminPanel" options={{ headerShown: false }} />
+          <Stack.Screen name="thanks" options={{ headerShown: false }} />
         </Stack>
       </RouteGuard>
     </AuthProvider>
