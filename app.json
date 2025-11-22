@@ -3,7 +3,7 @@
     "name": "GPS",
     "slug": "Explore_the_world",
     "jsEngine": "hermes",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",

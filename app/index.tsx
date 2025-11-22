@@ -1,14 +1,28 @@
 import Weather from "@/components/weather";
-import { MaterialIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as Device from "expo-device";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import { t } from "i18next";
-import { Clock4, MapPin } from "lucide-react-native";
+import {
+  Clock4,
+  HelpCircle,
+  Home,
+  Map,
+  MapPin,
+  Timer,
+  User,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, StyleSheet, Text, View, useColorScheme } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from "react-native";
 import {
   GestureHandlerRootView,
   ScrollView,
@@ -67,7 +81,6 @@ function HomeScreen() {
     return () => clearInterval(timerId);
   }, []);
 
-
   const stopWatching = () => {
     subscription?.remove();
     setSubscription(null);
@@ -79,7 +92,6 @@ function HomeScreen() {
   }, []);
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
 
   if (Admin) {
     return (
@@ -93,14 +105,14 @@ function HomeScreen() {
   } else {
     return (
       <GestureHandlerRootView>
-        <ScrollView >
-          <View style={styles.screen} >
+        <ScrollView>
+          <View style={styles.screen}>
             <View style={styles.header}>
               <Image
                 source={require("../assets/images/logo.png")}
                 style={styles.image}
               />
-              </View>
+            </View>
             <View style={styles.card}>
               <View>
                 <Text style={styles.gps}> GPS Koordinaten</Text>
@@ -138,15 +150,45 @@ function HomeScreen() {
               <View>
                 <Text style={styles.time}> Aktuelle Zeit</Text>
                 <Text style={styles.timetime}>
-                  {" "}
+                  {""}
                   {time.toLocaleTimeString()}
                 </Text>
                 <Text style={styles.timezone}> {timezone}</Text>
               </View>
               <View>
                 <Clock4
-                  style={{ marginLeft: 157, marginTop: 22 }}
+                  style={{ marginLeft: 158, marginTop: 22 }}
                   color="#3B82F6"
+                  strokeWidth={3}
+                  size={36}
+                />
+              </View>
+            </View>
+            <View style={styles.card}>
+              <View>
+                <Text style={styles.time}> Timer </Text>
+                <Text style={styles.timetime}> 00:00:00</Text>
+                <View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      marginTop: 10,
+                    }}
+                  >
+                    <TouchableOpacity style={styles.buttonStart}>
+                      <Text style={styles.buttonText}> Start</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.buttonStop}>
+                      <Text style={styles.buttonText}> Stop</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              <View>
+                <Timer
+                  style={{ left: 158, top: 22, position: "absolute"}}
+                  color="#22C55E"
                   strokeWidth={3}
                   size={36}
                 />
@@ -244,22 +286,24 @@ function App() {
         },
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: React.ComponentProps<typeof MaterialIcons>["name"];
+          let IconComponent;
+
           switch (route.name) {
             case "Home":
-              iconName = "home";
+              IconComponent = Home;
               break;
             case "Map":
-              iconName = "map";
+              IconComponent = Map;
               break;
             case "Profile":
-              iconName = "person";
+              IconComponent = User;
               break;
             default:
-              iconName = "help";
+              IconComponent = HelpCircle;
               break;
           }
-          return <MaterialIcons name={iconName} size={size} color={color} />;
+
+          return <IconComponent size={size} color={color} />;
         },
         tabBarActiveTintColor: "#466483ff",
       })}
@@ -307,7 +351,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       height: 120,
       elevation: 1,
       marginVertical: 12,
-      paddingVertical: 16,
+      paddingVertical: 13,
       paddingHorizontal: 13,
       flexDirection: "row",
     },
@@ -319,7 +363,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     gpskoords: {
       marginBottom: 2,
       marginTop: 6,
-      color: '#252E3C',
+      color: "#252E3C",
       fontSize: 15,
       fontWeight: "500",
     },
@@ -327,26 +371,44 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontSize: 15,
       fontWeight: "500",
     },
+    buttonStart: {
+      backgroundColor: "#22C55E",
+      borderRadius: 7,
+      width: 200,
+      flex: 1,
+      marginHorizontal: 5,
+      padding: 15,
+      alignItems: "center",
+      height: 30,
+    },
+    buttonStop: {
+      backgroundColor: "#EF4444",
+      borderRadius: 7,
+      width: 100,
+      flex: 1,
+      marginHorizontal: 5,
+      padding: 15,
+      alignItems: "center",
+      height: 30,
+    },
     time: {
       color: "#4B5563",
       fontSize: 18,
       fontWeight: "500",
     },
     timetime: {
-      color: '#1F2937',
+      color: "#1F2937",
       fontSize: 26,
       fontWeight: "700",
     },
     timezone: {
-      color: '#6B7280',
+      color: "#6B7280",
       fontSize: 17,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     buttonText: {
-      color: "#d49a6a",
-      fontSize: 16,
-      fontWeight: "bold",
-      marginHorizontal: "auto",
+      color: "#fff",
+      fontSize: 14,
     },
     containerl: {
       paddingVertical: 12,
@@ -366,7 +428,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       paddingHorizontal: 70,
     },
     screen: {
-      backgroundColor: scheme === "dark" ? "#F7F9FA" : "#ffffffff",
       alignItems: "center",
       flex: 1,
     },

@@ -1,11 +1,14 @@
+import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
+import LottieView from "lottie-react-native";
+import { RefreshCcw } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 export default function Weather() {
@@ -63,6 +66,106 @@ export default function Weather() {
     }
   };
 
+  const getAnimation = (
+    animations: string | { uri: string }
+  ): string | { uri: string } => {
+    switch (animations) {
+      case "Klarer Himmel":
+        return require("../assets/animations/sunny.json");
+      case "Überwiegend klar":
+        return require("../assets/animations/partly-cloudy.json");
+      case "Teilweise bewölkt":
+        return require("../assets/animations/partly-cloudy.json");
+      case "Bedeckt":
+        return require("../assets/animations/windy.json");
+      case "Nebel":
+        return require("../assets/animations/mist.json");
+      case "Reifnebel":
+        return require("../assets/animations/Foggy.json");
+      case "leichter Nieselregen":
+        return require("../assets/animations/partly-cloudy.json");
+      case "mäßiger Nieselregen":
+        return require("../assets/animations/partly-cloudy.json");
+      case "starker Nieselregen":
+        return require("../assets/animations/partly-cloudy.json");
+      case "leichter Regen":
+        return require("../assets/animations/rain.json");
+      case "mäßiger Regen":
+        return require("../assets/animations/rain.json");
+      case "starker Regen":
+        return require("../assets/animations/rain.json");
+      case "leichter Schnee":
+        return require("../assets/animations/snow.json");
+      case "mäßiger Schnee":
+        return require("../assets/animations/snow.json");
+      case "starker Schnee":
+        return require("../assets/animations/snow.json");
+      case "Schneegriesel":
+        return require("../assets/animations/snow.json");
+      case "leichte Schauer":
+        return require("../assets/animations/rain.json");
+      case "mäßige Schauer":
+        return require("../assets/animations/rain.json");
+      case "starke Schauer":
+        return require("../assets/animations/rain.json");
+      case "⚠️ Gewitter":
+        return require("../assets/animations/storm-rain-thunder.json");
+      case "⚠️ Gewitter und starker Hagel":
+        return require("../assets/animations/storm-rain-thunder.json");
+      default:
+        return require("../assets/animations/storm-rain-thunder.json");
+    }
+  };
+
+  const getGradientColors = (status: string): readonly [string, string] => {
+    switch (status) {
+      case "Klarer Himmel":
+        return ["#87CEEB", "#00BFFF"] as const;
+      case "Überwiegend klar":
+        return ["#ADD8E6", "#87CEFA"] as const;
+      case "Teilweise bewölkt":
+        return ["#B0C4DE", "#4682B4"] as const;
+      case "Bedeckt":
+        return ["#A9A9A9", "#696969"] as const;
+      case "Nebel":
+        return ["#D3D3D3", "#A9A9A9"] as const;
+      case "Reifnebel":
+        return ["#B0C4DE", "#FFFFFF"] as const;
+      case "leichter Nieselregen":
+        return ["#A9A9A9", "#B0E0E6"] as const;
+      case "mäßiger Nieselregen":
+        return ["#696969", "#87CEFA"] as const;
+      case "starker Nieselregen":
+        return ["#4B0082", "#00BFFF"] as const;
+      case "leichter Regen":
+        return ["#4682B4", "#ADD8E6"] as const;
+      case "mäßiger Regen":
+        return ["#4169E1", "#1E90FF"] as const;
+      case "starker Regen":
+        return ["#00008B", "#00CED1"] as const;
+      case "leichter Schnee":
+        return ["#F0F8FF", "#FFFFFF"] as const;
+      case "mäßiger Schnee":
+        return ["#E6E6FA", "#F5FFFA"] as const;
+      case "starker Schnee":
+        return ["#DCDCDC", "#F8F8FF"] as const;
+      case "Schneegriesel":
+        return ["#F5F5F5", "#FFFFFF"] as const;
+      case "leichte Schauer":
+        return ["#87CEEB", "#B0E0E6"] as const;
+      case "mäßige Schauer":
+        return ["#00BFFF", "#1E90FF"] as const;
+      case "starke Schauer":
+        return ["#4682B4", "#5F9EA0"] as const;
+      case "⚠️ Gewitter":
+        return ["#4B0082", "#808080"] as const;
+      case "⚠️ Gewitter und starker Hagel":
+        return ["#2F4F4F", "#A9A9A9"] as const;
+      default:
+        return ["#ffffff", "#ffffff"] as const;
+    }
+  };
+
   const weatherCodeToText = (code: number) => {
     const map: { [key: number]: string } = {
       0: "Klarer Himmel",
@@ -95,39 +198,68 @@ export default function Weather() {
     getLocationAsync();
   }, []);
 
+  if (loading) {
+    return (
+      <View style={styles.card2}>
+        <ActivityIndicator size="large" color={"#466483ff"} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" color={'#466483ff'}/>}
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {weather ? (
-        <View style={styles.card}>
-          <Text style={styles.temp}>{weather.temperature}°C</Text>
-          <Text>{weatherCodeToText(weather.weathercode)}</Text>
-          <Text>Wind: {weather.windspeed} km/h</Text>
-          <Text>Wind Richtung: {Math.round(weather.winddirection)}°</Text>
+      {error && (
+        <View>
+          <LinearGradient colors={["#fff", "#fff"]} style={styles.card}>
+            <View>
+              <Text style={styles.error}>{error}</Text>
+            </View>
+            <View style={{ right: 130, bottom: 120, position: "absolute" }}>
+              <LottieView
+                source={require("../assets/animations/error.json")}
+                style={{ width: 80, height: 80 }}
+                autoPlay
+                loop
+              />
+            </View>
+          </LinearGradient>
         </View>
+      )}
+      {weather ? (
+        <LinearGradient
+          colors={getGradientColors(weatherCodeToText(weather.weathercode))}
+          style={styles.card}
+        >
+          <View>
+            <Text style={{ fontSize: 17, fontWeight: "600" }}> Wetter</Text>
+            <Text style={styles.temp}>{weather.temperature}°C</Text>
+            <Text style={{ fontSize: 16 }}>
+              {weatherCodeToText(weather.weathercode)}
+            </Text>
+          </View>
+          <View style={{ right: 10, top: 20, position: "absolute" }}>
+            <LottieView
+              source={getAnimation(weatherCodeToText(weather.weathercode))}
+              style={{ width: 80, height: 80 }}
+              autoPlay
+              loop
+            />
+          </View>
+          <TouchableOpacity onPress={getLocationAsync} style={styles.button}>
+            <RefreshCcw strokeWidth={3} size={20} color={"#2e2c2cff"} />
+          </TouchableOpacity>
+        </LinearGradient>
       ) : (
         <Text>Kein Wetter geladen</Text>
       )}
-      {location ? <></> : <Text>Standort nicht verfügbar</Text>}
-
-      <View style={{ height: 16 }} />
-
-      <TouchableOpacity
-        onPress={getLocationAsync}
-        style={styles.button}
-      ><Text style={{color: "#d8d8d8ff",}}>Standort & Wetter aktualisieren</Text></TouchableOpacity>
-      <View style={{ marginVertical: 200 }} />
+      {location ? null : <Text>Standort nicht verfügbar</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
     justifyContent: "center",
   },
   title: {
@@ -142,11 +274,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   card: {
-    backgroundColor: "#d8d8d8ff",
-    padding: 16,
-    borderRadius: 10,
-    elevation: 2,
-    marginBottom: 12,
+    borderRadius: 16,
+    borderColor: "transparent",
+    borderWidth: 1,
+    width: 340,
+    height: 120,
+    elevation: 1,
+    marginVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 13,
+    flexDirection: "row",
+  },
+  card2: {
+    borderRadius: 16,
+    borderColor: "transparent",
+    borderWidth: 0,
+    width: 340,
+    height: 120,
+    marginVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 13,
+    flexDirection: "row",
+    justifyContent: "center",
   },
   temp: {
     fontSize: 36,
@@ -155,15 +304,17 @@ const styles = StyleSheet.create({
   error: {
     color: "red",
     marginVertical: 8,
+    fontSize: 18,
+    fontWeight: "600",
   },
   button: {
     fontSize: 21,
     fontWeight: "600",
     borderRadius: 8,
-    backgroundColor: "#466483ff",
-    color: "#d8d8d8ff",
-    paddingHorizontal: 35,
-    paddingVertical: 12,
+    left: 308,
+    bottom: 10,
+
+    position: "absolute",
     alignSelf: "center",
   },
 });

@@ -1,200 +1,113 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import DraggableFlatList, {
-  ScaleDecorator,
-} from "react-native-draggable-flatlist";
+import { Clock4 } from "lucide-react-native";
+import React, { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-const STORAGE_KEY = "@cards_order_v1";
+const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const initialCards = [
-  { id: "1", title: "Karte A", description: "Beschreibung A" },
-  { id: "2", title: "Karte B", description: "Beschreibung B" },
-  { id: "3", title: "Karte C", description: "Beschreibung C" },
-  { id: "4", title: "Karte D", description: "Beschreibung D" },
+function InitialComponent ()  {
+  const [time, setTime] = useState(new Date());
+  return (
+  <View style={styles.card}>
+    <View>
+      <Text style={styles.time}> Aktuelle Zeit</Text>
+      <Text style={styles.timetime}>
+        {""}
+        {time.toLocaleTimeString()}
+      </Text>
+      <Text style={styles.timezone}> {timezone}</Text>
+    </View>
+    <View>
+      <Clock4
+        style={{ marginLeft: 158, marginTop: 22 }}
+        color="#3B82F6"
+        strokeWidth={3}
+        size={36}
+      />
+    </View>
+  </View>
+  );
+}
+
+const initialData = [
+  { key: "1", component: <InitialComponent /> },
+  { key: "2", label: "View 2" },
+  { key: "3", label: "View 3" },
 ];
 
-export default function ReorderableCardsScreen() {
-  const [data, setData] = useState(initialCards);
-  const [loading, setLoading] = useState(true);
+interface Item {
+  id: number;
+  label: string;
+}
 
-  // Lade gespeicherte Reihenfolge aus AsyncStorage
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          // Validierung: ids matchen initialCards (optional)
-          setData(parsed);
-        }
-      } catch (e) {
-        console.warn("Fehler beim Laden der gespeicherten Reihenfolge", e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+interface RenderItemProps {
+  item: any;
+  drag: () => void;
+  isActive: boolean;
+}
 
-  // Speichere Reihenfolge
-  const persistOrder = useCallback(async (newOrder: typeof initialCards) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newOrder));
-    } catch (e) {
-      console.warn("Fehler beim Speichern der Reihenfolge", e);
-    }
-  }, []);
+export default function App(props: { items: Item[] }) {
+  const [data, setData] = useState(initialData);
+  const [DragOn, setDragOn] = useState(true);
 
-  // Wird aufgerufen, wenn Drag beendet ist
-  const handleDragEnd = useCallback(
-    ({ data: newData }: { data: typeof initialCards }) => {
-      setData(newData);
-      persistOrder(newData);
-    },
-    [persistOrder]
+  const renderItem = ({ item, drag, isActive }: RenderItemProps) => (
+    <View
+      style={{
+        backgroundColor: isActive ? "#fff" : "transparent",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        margin: 4,
+      }}
+    >
+        {DragOn === true ? 
+      <TouchableOpacity onLongPress={drag}>
+      <Text> {item.component}</Text>
+      </TouchableOpacity>
+        : <Text> {item.component}</Text>}
+    </View>
   );
-
-  type Card = { id: string; title: string; description: string };
-
-  const renderItem = useCallback(
-    ({
-      item,
-      index,
-      drag,
-      isActive,
-    }: {
-      item: Card;
-      index?: number;
-      drag: () => void;
-      isActive: boolean;
-    }) => {
-      return (
-        <GestureHandlerRootView>
-          <ScaleDecorator>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onLongPress={drag}
-              disabled={isActive}
-              style={[
-                styles.card,
-                {
-                  transform: [{ scale: isActive ? 1.02 : 1 }],
-                  elevation: isActive ? 6 : 2,
-                },
-              ]}
-            >
-              <View style={styles.cardLeft}>
-                <View style={styles.handle}>
-                  <Text style={styles.handleText}>☰</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardBody}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.desc}>{item.description}</Text>
-              </View>
-            </TouchableOpacity>
-          </ScaleDecorator>
-        </GestureHandlerRootView>
-      );
-    },
-    []
-  );
-
-  const resetOrder = useCallback(async () => {
-    Alert.alert(
-      "Zurücksetzen",
-      "Willst du die Original-Reihenfolge wiederherstellen?",
-      [
-        { text: "Abbrechen", style: "cancel" },
-        {
-          text: "Ja",
-          onPress: async () => {
-            setData(initialCards);
-            try {
-              await AsyncStorage.removeItem(STORAGE_KEY);
-            } catch (e) {
-              console.warn("Fehler beim Entfernen", e);
-            }
-          },
-        },
-      ]
-    );
-  }, []);
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <Text>Lädt…</Text>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <GestureHandlerRootView>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Meine Karten</Text>
-          <TouchableOpacity onPress={resetOrder} style={styles.resetBtn}>
-            <Text style={styles.resetText}>Reset</Text>
-          </TouchableOpacity>
-        </View>
-
-        <DraggableFlatList
-          data={data}
-          onDragEnd={handleDragEnd}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          activationDistance={20} // kurze Verzögerung bis drag startet (optional)
-          containerStyle={{ paddingHorizontal: 16 }}
-        />
-      </SafeAreaView>
+      <DraggableFlatList
+        data={data}
+        onDragEnd={({ data }) => setData(data)}
+        keyExtractor={(item) => item.key}
+        renderItem={renderItem}
+      />
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f6f7fb" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerTitle: { fontSize: 20, fontWeight: "600" },
-  resetBtn: { padding: 8 },
-  resetText: { color: "#007aff" },
-
   card: {
-    flexDirection: "row",
-    alignItems: "center",
+    borderColor: "#E5E7EB",
     backgroundColor: "#fff",
-    marginBottom: 12,
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    width: 340,
+    height: 120,
+    elevation: 1,
+    marginVertical: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 13,
+    flexDirection: "row",
   },
-  cardLeft: { marginRight: 10 },
-  handle: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: "#f1f3f8",
-    justifyContent: "center",
-    alignItems: "center",
+  time: {
+    color: "#4B5563",
+    fontSize: 18,
+    fontWeight: "500",
   },
-  handleText: { fontSize: 18, color: "#666" },
-
-  cardBody: { flex: 1 },
-  title: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
-  desc: { fontSize: 13, color: "#666" },
+  timetime: {
+    color: "#1F2937",
+    fontSize: 26,
+    fontWeight: "700",
+  },
+  timezone: {
+    color: "#6B7280",
+    fontSize: 17,
+    fontWeight: "500",
+  },
 });

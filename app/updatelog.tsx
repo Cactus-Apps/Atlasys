@@ -21,6 +21,16 @@ const updatelog = () => {
         <Text style={styles.titlet}>{t("update_log")}</Text>
       </View>
       <View style={styles.container}>
+        <Text style={styles.title}>v1.3.1</Text>
+        <Text style={styles.text}>Neuer Home Screen und </Text>
+        <Text style={styles.text}>neue animation und wetter anzeige</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.3.0</Text>
+        <Text style={styles.text}>Neuer Update log und </Text>
+        <Text style={styles.text}>Neuer Account Screen</Text>
+      </View>
+      <View style={styles.container}>
         <Text style={styles.title}>v1.2.8</Text>
         <Text style={styles.text}>Besseres Design und </Text>
         <Text style={styles.text}>Neuer Anmelde Screen</Text>
@@ -38,7 +48,9 @@ const updatelog = () => {
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.4</Text>
         <Text style={styles.text}>Account per E-Mail löschen </Text>
-        <Text style={styles.text}>eingestellt, neues Account löschen system und kleinere Verbesserung</Text>
+        <Text style={styles.text}>
+          eingestellt, neues Account löschen system und kleinere Verbesserung
+        </Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.3</Text>
@@ -89,8 +101,8 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       alignSelf: "center",
       width: 350,
       height: 130,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       borderWidth: 2,
       marginBottom: 12,
       marginHorizontal: 15,
