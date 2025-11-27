@@ -8,9 +8,7 @@
 GPS is a smart navigation app that can be used for hiking or other activities.
 
 > [!IMPORTANT]
-> The Apk is comming on the 28.9
-
-![⚠️ Important](https://img.shields.io/badge/Warning-yellow?style=flat-square) The Apk is comming on the 28.9
+> The Apk is comming on the 10.12
 
 ## Installation
 
