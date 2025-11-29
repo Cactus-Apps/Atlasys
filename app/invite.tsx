@@ -12,10 +12,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { enableTracking } from "vexo-analytics";
 
 const invite = () => {
   const router = useRouter();
   const scheme = useColorScheme();
+
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
@@ -28,6 +30,10 @@ const invite = () => {
     } catch (error: any) {
       Alert.alert(error.message);
     }
+  };
+
+  const onAskedNotToTrack = async () => {
+    await enableTracking();
   };
 
   return (
@@ -52,6 +58,9 @@ const invite = () => {
       </View>
       <TouchableOpacity style={styles.button} onPress={shareLink}>
         <Text style={styles.share}> {t("share")}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onAskedNotToTrack}>
+        <Text style={{ color: "#fff" }}> Do not track</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

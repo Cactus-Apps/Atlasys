@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "GPS",
-    "slug": "Explore_the_world",
+    "slug": "GPS",
     "jsEngine": "hermes",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",

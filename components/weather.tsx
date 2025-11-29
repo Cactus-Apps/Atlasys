@@ -214,7 +214,7 @@ export default function Weather() {
             <View>
               <Text style={styles.error}>{error}</Text>
             </View>
-            <View style={{ right: 130, bottom: 120, position: "absolute" }}>
+            <View style={{ right: 130, bottom: 2, position: "absolute" }}>
               <LottieView
                 source={require("../assets/animations/error.json")}
                 style={{ width: 80, height: 80 }}
@@ -250,16 +250,14 @@ export default function Weather() {
           </TouchableOpacity>
         </LinearGradient>
       ) : (
-        <Text>Kein Wetter geladen</Text>
+        <></>
       )}
-      {location ? null : <Text>Standort nicht verfügbar</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
     justifyContent: "center",
   },
   title: {
@@ -281,7 +279,7 @@ const styles = StyleSheet.create({
     height: 120,
     elevation: 1,
     marginVertical: 12,
-    paddingVertical: 16,
+    paddingVertical: 13,
     paddingHorizontal: 13,
     flexDirection: "row",
   },
@@ -313,7 +311,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     left: 308,
     bottom: 10,
-
     position: "absolute",
     alignSelf: "center",
   },

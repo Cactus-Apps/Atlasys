@@ -21,6 +21,11 @@ const updatelog = () => {
         <Text style={styles.titlet}>{t("update_log")}</Text>
       </View>
       <View style={styles.container}>
+        <Text style={styles.title}>v1.3.2</Text>
+        <Text style={styles.text}>Verbserter Home Screen und </Text>
+        <Text style={styles.text}>und kleinere Verbesserung</Text>
+      </View>
+      <View style={styles.container}>
         <Text style={styles.title}>v1.3.1</Text>
         <Text style={styles.text}>Neuer Home Screen und </Text>
         <Text style={styles.text}>neue animation und wetter anzeige</Text>

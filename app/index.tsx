@@ -1,19 +1,16 @@
+import Timer from "@/components/Timer";
 import Weather from "@/components/weather";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as Device from "expo-device";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
-import { t } from "i18next";
 import {
-  Clock4,
   HelpCircle,
   Home,
   Map,
-  MapPin,
-  Timer,
-  User,
+  User
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
@@ -23,22 +20,47 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import {
-  GestureHandlerRootView,
-  ScrollView,
-} from "react-native-gesture-handler";
+import DraggableFlatList from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { vexo } from "vexo-analytics";
+import Clock from "../components/Clock";
+import Gpskoords from "../components/Gpskoords";
+import { useAuth } from "../lib/auth-context";
 import { supabase } from "../lib/supabase";
 import { loadLanguage } from "./i18n";
 import "./i18n.js";
 import MapScreen from "./mapscreen";
 import Profilescreen from "./profilescreen";
 
+const vexoCode = process.env.EXPO_PUBLIC_VEXO_KEY!;
+
+vexo(vexoCode);
+
+const componentMap: Record<string, JSX.Element> = {
+  "1": <Clock />,
+  "2": <Weather />,
+  "3": <Gpskoords />,
+  "4": <Timer />,
+};
+
+const initialOrder = ["1", "2", "3", "4"];
+
+interface RenderItemProps {
+  item: any;
+  drag: () => void;
+  isActive: boolean;
+}
+
 function HomeScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
+  const [dragEnabled, setDragEnabled] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [Admin, setAdmin] = useState(false);
+  const [order, setOrder] = useState<string[]>(initialOrder);
+  const [loadingOrder, setLoadingOrder] = useState(true);
+  const { user } = useAuth();
   const [time, setTime] = useState(new Date());
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
@@ -46,6 +68,38 @@ function HomeScreen() {
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
+
+  const toggleDrag = () => setDragEnabled((prev) => !prev);
+
+  useEffect(() => {
+    async function loadOrder() {
+      if (!user) return;
+      const { data: orderData } = await supabase
+        .from("component_orders")
+        .select("component_order")
+        .eq("user_id", user.id)
+        .single();
+      if (orderData && orderData.component_order) {
+        setOrder(orderData.component_order);
+      }
+      setLoadingOrder(false);
+    }
+    loadOrder();
+  }, [user]);
+
+  const saveOrder = async (newOrder: string[]) => {
+    if (!user) return;
+    await supabase.from("component_orders").upsert(
+      [
+        {
+          user_id: user.id,
+          component_order: newOrder,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      { onConflict: "user_id" }
+    );
+  };
 
   const startWatching = async () => {
     try {
@@ -91,8 +145,6 @@ function HomeScreen() {
     return () => stopWatching();
   }, []);
 
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
   if (Admin) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -105,103 +157,84 @@ function HomeScreen() {
   } else {
     return (
       <GestureHandlerRootView>
-        <ScrollView>
-          <View style={styles.screen}>
-            <View style={styles.header}>
-              <Image
-                source={require("../assets/images/logo.png")}
-                style={styles.image}
-              />
-            </View>
-            <View style={styles.card}>
-              <View>
-                <Text style={styles.gps}> GPS Koordinaten</Text>
-                {location ? (
-                  <View>
-                    <Text style={styles.gpskoords}>
-                      {" "}
-                      {location.coords.latitude}° N{" "}
-                    </Text>
-                    <Text style={styles.gpskoords2}>
-                      {" "}
-                      {location.coords.longitude}° E
-                    </Text>
-                  </View>
-                ) : errorMsg ? (
-                  <Text style={{ color: "red" }}>{errorMsg}</Text>
-                ) : (
-                  <Text
-                    style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}
-                  >
-                    {t("waiting")}
-                  </Text>
-                )}
-              </View>
-              <View>
-                <MapPin
-                  style={{ marginLeft: 120, marginTop: 22 }}
-                  color="#EF4444"
-                  strokeWidth={3}
-                  size={36}
-                />
-              </View>
-            </View>
-            <View style={styles.card}>
-              <View>
-                <Text style={styles.time}> Aktuelle Zeit</Text>
-                <Text style={styles.timetime}>
-                  {""}
-                  {time.toLocaleTimeString()}
-                </Text>
-                <Text style={styles.timezone}> {timezone}</Text>
-              </View>
-              <View>
-                <Clock4
-                  style={{ marginLeft: 158, marginTop: 22 }}
-                  color="#3B82F6"
-                  strokeWidth={3}
-                  size={36}
-                />
-              </View>
-            </View>
-            <View style={styles.card}>
-              <View>
-                <Text style={styles.time}> Timer </Text>
-                <Text style={styles.timetime}> 00:00:00</Text>
-                <View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      marginTop: 10,
-                    }}
-                  >
-                    <TouchableOpacity style={styles.buttonStart}>
-                      <Text style={styles.buttonText}> Start</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.buttonStop}>
-                      <Text style={styles.buttonText}> Stop</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-              <View>
-                <Timer
-                  style={{ left: 158, top: 22, position: "absolute"}}
-                  color="#22C55E"
-                  strokeWidth={3}
-                  size={36}
-                />
-              </View>
-            </View>
-            <View>
-              <Weather />
-            </View>
-          </View>
-        </ScrollView>
+        <View style={styles.header}>
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.image}
+          />
+          <TouchableOpacity onPress={toggleDrag}>
+            <Text>{dragEnabled ? "Drag aus" : "Drag an"}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ paddingVertical: 12 }} />
+        <View>
+          {loadingOrder ? (
+            <Text>Lade Reihenfolge...</Text>
+          ) : (
+            <Render
+              order={order}
+              setOrder={setOrder}
+              dragEnabled={dragEnabled}
+              onOrderChange={saveOrder}
+            />
+          )}
+        </View>
       </GestureHandlerRootView>
     );
   }
+}
+
+export function Render({
+  order,
+  setOrder,
+  dragEnabled,
+  onOrderChange,
+}: {
+  order: string[];
+  setOrder: (o: string[]) => void;
+  dragEnabled?: boolean;
+  onOrderChange: (o: string[]) => void;
+}) {
+  const data = order.map((key) => ({
+    key,
+    component: componentMap[key],
+  }));
+
+  const renderItem = ({ item, drag, isActive }: RenderItemProps) => (
+    <View
+      style={{
+        backgroundColor: isActive ? "transparent" : "transparent",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "transparent",
+        margin: 4,
+      }}
+    >
+      {dragEnabled ? (
+        <TouchableOpacity onLongPress={drag}>
+          <Text>{item.component}</Text>
+        </TouchableOpacity>
+      ) : (
+        <Text>{item.component}</Text>
+      )}
+    </View>
+  );
+
+  return (
+    <DraggableFlatList
+      data={data}
+      onDragEnd={({ data }) => {
+        const newOrder = data.map((item) => item.key);
+        setOrder(newOrder);
+        onOrderChange(newOrder);
+      }}
+      keyExtractor={(item) => item.key}
+      renderItem={renderItem}
+      activationDistance={dragEnabled ? 1 : 9999}
+      scrollEnabled={dragEnabled}
+    />
+  );
 }
 
 const Tab = createBottomTabNavigator();
@@ -329,140 +362,12 @@ function App() {
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
-    title: {
-      fontSize: 24,
-      fontWeight: "500",
-      paddingRight: 150,
-      color: scheme === "dark" ? "#FFE8D1" : "#24262E",
-    },
-    error: {
-      color: "red",
-      marginTop: 10,
-    },
-    icon: {
-      marginLeft: 13,
-    },
-    card: {
-      borderColor: "#E5E7EB",
-      backgroundColor: "#fff",
-      borderRadius: 16,
-      borderWidth: 1,
-      width: 340,
-      height: 120,
-      elevation: 1,
-      marginVertical: 12,
-      paddingVertical: 13,
-      paddingHorizontal: 13,
-      flexDirection: "row",
-    },
-    gps: {
-      color: "#4B5563",
-      fontSize: 19,
-      fontWeight: "500",
-    },
-    gpskoords: {
-      marginBottom: 2,
-      marginTop: 6,
-      color: "#252E3C",
-      fontSize: 15,
-      fontWeight: "500",
-    },
-    gpskoords2: {
-      fontSize: 15,
-      fontWeight: "500",
-    },
-    buttonStart: {
-      backgroundColor: "#22C55E",
-      borderRadius: 7,
-      width: 200,
-      flex: 1,
-      marginHorizontal: 5,
-      padding: 15,
-      alignItems: "center",
-      height: 30,
-    },
-    buttonStop: {
-      backgroundColor: "#EF4444",
-      borderRadius: 7,
-      width: 100,
-      flex: 1,
-      marginHorizontal: 5,
-      padding: 15,
-      alignItems: "center",
-      height: 30,
-    },
-    time: {
-      color: "#4B5563",
-      fontSize: 18,
-      fontWeight: "500",
-    },
-    timetime: {
-      color: "#1F2937",
-      fontSize: 26,
-      fontWeight: "700",
-    },
-    timezone: {
-      color: "#6B7280",
-      fontSize: 17,
-      fontWeight: "500",
-    },
-    buttonText: {
-      color: "#fff",
-      fontSize: 14,
-    },
-    containerl: {
-      paddingVertical: 12,
-      borderColor: scheme === "dark" ? "#d8d8d8ff" : "#24262E",
-      borderWidth: 2,
-      borderRadius: 8,
-      marginTop: 30,
-      padding: 16,
-    },
-    containerlr: {
-      paddingVertical: 12,
-      borderColor: scheme === "dark" ? "#d8d8d8ff" : "#24262E",
-      borderWidth: 2,
-      borderRadius: 8,
-      marginTop: 30,
-      padding: 16,
-      paddingHorizontal: 70,
-    },
-    screen: {
-      alignItems: "center",
-      flex: 1,
-    },
-    line: {
-      height: 1,
-      backgroundColor: "#ccc",
-      alignSelf: "stretch",
-      marginVertical: 12,
-      marginHorizontal: 17,
-    },
-    settings: {
-      borderColor: "#24262E",
-      borderWidth: 2,
-      paddingVertical: 12,
-      borderRadius: 8,
-      top: 55,
-      marginLeft: 23,
-      marginRight: 23,
-    },
-    container: {
-      flex: 1,
-      backgroundColor: "#fff",
-    },
     header: {
       backgroundColor: "#fff",
       width: "100%",
       borderBottomColor: "#fff",
       borderWidth: 1,
-      flex: 1,
       elevation: 2,
-    },
-    title2: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#24262E",
     },
     image: {
       width: 170,
