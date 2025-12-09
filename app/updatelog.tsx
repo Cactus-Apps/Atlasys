@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Rocket } from "lucide-react-native";
 import * as React from "react";
 import {
   ScrollView,
@@ -21,6 +22,10 @@ const updatelog = () => {
         <Text style={styles.titlet}>{t("update_log")}</Text>
       </View>
       <View style={styles.container}>
+        <View style={[styles.banner, { backgroundColor: "#212434" }]}>
+          <Rocket color={"#5164C8"} size={25} strokeWidth={2} />
+          <Text style={[styles.bannertext, { color: "#5164C8" }]}>Feature</Text>
+        </View>
         <Text style={styles.title}>v1.3.2</Text>
         <Text style={styles.text}>Verbserter Home Screen und </Text>
         <Text style={styles.text}>und kleinere Verbesserung</Text>
@@ -124,5 +129,20 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontSize: 15,
       fontWeight: "500",
       color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    banner: {
+      alignItems: "center",
+      flexDirection: "row",
+      position: 'absolute',
+      left: -14,
+      top: -16,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 10,
+    },
+    bannertext: {
+      fontWeight: "700",
+      fontSize: 20,
+      paddingLeft: 8,
     },
   });

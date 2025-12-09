@@ -1,15 +1,12 @@
-import {
-  TimerIcon
-} from "lucide-react-native";
-import React from "react";
+import { Pause, Play, TimerIcon } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
-
 
 function Timer() {
   const scheme = useColorScheme();
@@ -17,24 +14,70 @@ function Timer() {
     scheme === "light" || scheme === "dark" ? scheme : null
   );
 
+  const intervalRef = useRef<number | null>(null);
+  const [time, setTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    if (isRunning) {
+      const interval = 10;
+      intervalRef.current = setInterval(() => {
+        setTime((prevTime) => prevTime + interval);
+      }, interval);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isRunning]);
+
+  const startTimer = () => setIsRunning(true);
+  const stopTimer = () => setIsRunning(false);
+  const resetTimer = () => {
+    setIsRunning(false);
+    setTime(0);
+  };
+
+  const formatTime = (ms: any) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const milliseconds = Math.floor((ms % 1000) / 10);
+
+    return (
+      `${minutes.toString().padStart(2, "0")}:` +
+      `${seconds.toString().padStart(2, "0")}:` +
+      `${milliseconds.toString().padStart(2, "0")}`
+    );
+  };
+
   return (
     <View style={styles.card}>
       <View>
         <Text style={styles.time}> Timer </Text>
-        <Text style={styles.timetime}> 00:00:00</Text>
+        <Text style={styles.timetime}>{formatTime(time)}</Text>
         <View>
           <View
             style={{
               flexDirection: "row",
-              justifyContent: "space-between",
               marginTop: 10,
             }}
           >
-            <TouchableOpacity style={styles.buttonStart}>
-              <Text style={styles.buttonText}> Start</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonStop}>
-              <Text style={styles.buttonText}> Stop</Text>
+            {!isRunning && (
+              <TouchableOpacity style={styles.button} onPress={startTimer}>
+                <Play strokeWidth={3} color={'#000'}/>
+              </TouchableOpacity>
+            )}
+            {isRunning && (
+              <TouchableOpacity style={styles.button} onPress={stopTimer}>
+                <Pause strokeWidth={3} color={'#000'}/>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.buttonReset} onPress={resetTimer}>
+              <Text style={styles.buttonText}>Reset</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -48,9 +91,9 @@ function Timer() {
         />
       </View>
     </View>
+    
   );
 }
-
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
@@ -67,29 +110,19 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       paddingHorizontal: 13,
       flexDirection: "row",
     },
-    buttonStart: {
-      backgroundColor: "#22C55E",
-      borderRadius: 7,
-      width: 200,
-      flex: 1,
+    button: {
       marginHorizontal: 5,
-      padding: 15,
       alignItems: "center",
-      height: 30,
     },
-    buttonStop: {
-      backgroundColor: "#EF4444",
-      borderRadius: 7,
-      width: 100,
-      flex: 1,
+    buttonReset: {
       marginHorizontal: 5,
-      padding: 15,
       alignItems: "center",
-      height: 30,
+      marginLeft: 20,
     },
     buttonText: {
-      color: "#fff",
-      fontSize: 14,
+      color: "#000",
+      fontSize: 16,
+      fontWeight: '500',
     },
     time: {
       color: "#4B5563",

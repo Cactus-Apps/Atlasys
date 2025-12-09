@@ -1,17 +1,18 @@
 import { useRouter } from "expo-router";
 import { t } from "i18next";
 import {
+  Bug,
   ChevronLeft,
   ChevronRight,
   Copyright,
   Heart,
   List,
+  Rocket,
 } from "lucide-react-native";
 import * as React from "react";
 import {
   Image,
   Linking,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -30,94 +31,112 @@ const about = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <View style={styles.back}>
-            <TouchableOpacity style={styles.backbutton} onPress={router.back}>
-              <ChevronLeft
-                size={30}
-                strokeWidth={2}
-                color={scheme === "dark" ? "#d8d8d8ff" : "#000"}
-              />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.title}>{t("about_gps")}</Text>
+      <View style={styles.header}>
+        <View style={styles.back}>
+          <TouchableOpacity style={styles.backbutton} onPress={router.back}>
+            <ChevronLeft
+              size={30}
+              strokeWidth={2}
+              color={scheme === "dark" ? "#d8d8d8ff" : "#000"}
+            />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.development}>Development</Text>
-        <View
-          style={{
-            height: 1,
-            backgroundColor: "#ccc",
-            alignSelf: "stretch",
-            marginVertical: 16,
-          }}
+        <Text style={styles.title}>{t("about_gps")}</Text>
+      </View>
+      <Text style={styles.development}>Development</Text>
+      <View
+        style={{
+          height: 1,
+          backgroundColor: "#ccc",
+          alignSelf: "stretch",
+          marginVertical: 16,
+        }}
+      />
+      <View style={styles.all1}>
+        <Image
+          source={require("../assets/images/cactus_apps-logo.png")}
+          style={styles.image}
         />
-        <View style={styles.all1}>
-          <Image
-            source={require("../assets/images/cactus_apps-logo.png")}
-            style={styles.image}
-          />
-          <View>
-            <Text
-              style={styles.link}
-              onPress={() =>
-                Linking.openURL("https://github.com/Cactus-Apps/GPS")
-              }
-            >
-              &copy; Cactus Apps
-            </Text>
-            <Text style={styles.text}>
-              We are Cactus Apps, a company {"\n"}
-              that develops apps with a focus {"\n"}
-              on customer satisfaction.
-            </Text>
-          </View>
+        <View>
+          <Text
+            style={styles.link}
+            onPress={() =>
+              Linking.openURL("https://github.com/Cactus-Apps/GPS")
+            }
+          >
+            &copy; Cactus Apps
+          </Text>
+          <Text style={styles.text}>
+            We are Cactus Apps, a company {"\n"}
+            that develops apps with a focus {"\n"}
+            on customer satisfaction.
+          </Text>
         </View>
-        <View
-          style={{
-            height: 1,
-            backgroundColor: "#ccc",
-            alignSelf: "stretch",
-            marginVertical: 16,
-          }}
-        />
-        <View style={styles.all}>
-          <View>
-            <TouchableOpacity
-              style={styles.page}
-              onPress={() => router.navigate("/licenses")}
-            >
-              <Copyright strokeWidth={3} style={styles.icon} />
-              <Text style={styles.link2}>{t("licenses")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.page}
-              onPress={() => router.navigate("/updatelog")}
-            >
-              <List strokeWidth={3} style={styles.icon} />
-              <Text style={styles.link2}>{t("update_log")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.page}
-              onPress={() => router.navigate("/thanks")}
-            >
-              <Heart strokeWidth={3} style={styles.icon} />
-              <Text style={styles.link2}>Thanks</Text>
-            </TouchableOpacity>
-          </View>
-          <View>
-            <TouchableOpacity onPress={() => router.navigate("/licenses")}>
-              <ChevronRight style={styles.arrow} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
-              <ChevronRight style={styles.arrow} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.navigate("/thanks")}>
-              <ChevronRight style={styles.arrow} />
-            </TouchableOpacity>
-          </View>
+      </View>
+      <View
+        style={{
+          height: 1,
+          backgroundColor: "#ccc",
+          alignSelf: "stretch",
+          marginVertical: 16,
+        }}
+      />
+      <View style={styles.all}>
+        <View>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/licenses")}
+          >
+            <Copyright strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link2}>{t("licenses")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/updatelog")}
+          >
+            <List strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link2}>{t("update_log")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/thanks")}
+          >
+            <Heart strokeWidth={3} style={styles.icon} />
+            <Text style={styles.link2}>Thanks</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+        <View>
+          <TouchableOpacity onPress={() => router.navigate("/licenses")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.navigate("/thanks")}>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View
+        style={{
+          position: "absolute",
+          bottom: 25,
+          left: 0,
+          right: 0,
+          alignItems: "center",
+        }}
+      >
+        <View style={[styles.banner, { backgroundColor: "#312226" }]}>
+          <Bug color={"#F26363"} size={25} strokeWidth={2} />
+          <Text style={[styles.bannertext, {color: "#F26363"}]}>Bug</Text>
+        </View>
+
+        <View style={[styles.banner, { backgroundColor: "#212434" }]}>
+          <Rocket color={"#5164C8"} size={25} strokeWidth={2} />
+          <Text style={[styles.bannertext, {color: "#5164C8"}]}>Feature</Text>
+        </View>
+        <Text style={styles.text}>Version 1.3.3 - © Cactus Apps 2025</Text>
+      </View>
     </SafeAreaView>
   );
 };
@@ -128,6 +147,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: '#1B1B1F'
     },
     all: {
       flexDirection: "row",
@@ -146,6 +166,18 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       paddingHorizontal: 180,
       marginVertical: 23,
       color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    },
+    banner: {
+      alignItems: "center",
+      flexDirection: "row",
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 10,
+    },
+    bannertext: {
+      fontWeight: "700",
+      fontSize: 20,
+      paddingLeft: 8,
     },
     button: {
       fontSize: 21,

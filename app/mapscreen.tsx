@@ -6,7 +6,6 @@ import {
   Dimensions,
   FlatList,
   Keyboard,
-  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -16,7 +15,6 @@ import {
   useColorScheme,
 } from "react-native";
 import { Button } from "react-native-paper";
-import Toast from "react-native-toast-message";
 import { WebView } from "react-native-webview";
 import "./i18n.js";
 
@@ -277,7 +275,7 @@ export default function MapScreen() {
 
   const clearInput = () => {
     setQuery("");
-    !modalVisible;
+    setModalVisible(false);
   };
 
   return (
@@ -347,39 +345,37 @@ export default function MapScreen() {
         onMessage={onWebMessage}
         mixedContentMode="compatibility"
       />
-      <Modal
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-        style={styles.modal}
-        transparent
-      >
-        <View style={styles.modalContent}>
+      {modalVisible && (
+        <View style={styles.customModal}>
           {selected ? (
             <>
-              <Text style={styles.cityTitle}>
-                {selected.name ?? selected.city}
-              </Text>
-              <Text style={styles.citySub}>
-                {selected.region ? selected.region + ", " : ""}
-                {selected.country}
-              </Text>
-              <Text style={styles.cityCoords}>
-                {selected.latitude.toFixed(5)}, {selected.longitude.toFixed(5)}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={{ color: "#fff" }}>Schließen</Text>
-              </TouchableOpacity>
+              <View style={styles.modalContent}>
+                <View style={styles.close}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <X strokeWidth={3} />
+                </TouchableOpacity>
+                </View>
+                <Text style={styles.cityTitle}>
+                  {selected.name ?? selected.city}
+                </Text>
+                <Text style={styles.citySub}>
+                  {selected.region ? selected.region + ", " : ""}
+                  {selected.country}
+                </Text>
+                <Text style={styles.cityCoords}>
+                  {selected.latitude.toFixed(5)},{" "}
+                  {selected.longitude.toFixed(5)}
+                </Text>
+              </View>
             </>
           ) : (
             <Text>Kein Ort ausgewählt</Text>
           )}
         </View>
-      </Modal>
-      <Toast />
+      )}
     </View>
   );
 }
@@ -450,25 +446,35 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       width,
       height,
     },
-    modal: {
-      justifyContent: "flex-end",
-      margin: 0,
-    },
     modalContent: {
-      backgroundColor: "#fff",
       padding: 20,
       borderTopLeftRadius: 12,
       borderTopRightRadius: 12,
       alignItems: "center",
+      minHeight: 200,
+    },
+    customModal: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
     },
     cityTitle: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
     citySub: { fontSize: 14, color: "#555" },
     cityCoords: { marginTop: 8, color: "#667" },
     closeButton: {
-      marginTop: 14,
-      backgroundColor: "#e53935",
-      paddingHorizontal: 18,
-      paddingVertical: 10,
-      borderRadius: 8,
+      padding: 7,
+      width: 25,
+      height: 25,
+      borderRadius: 35,
+      backgroundColor: "rgba(91, 92, 92, 0.4)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    close: {
+      alignSelf: 'flex-end',
     },
   });

@@ -1,15 +1,16 @@
+import * as Clipboard from "expo-clipboard";
 import * as Location from "expo-location";
-import {
-  MapPin
-} from "lucide-react-native";
+import { Copy, MapPin } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   useColorScheme
 } from "react-native";
 import "../app/i18n";
+
 
 function Gpskoords() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -48,6 +49,22 @@ function Gpskoords() {
       setSubscription(sub);
     } catch (err: any) {
       setErrorMsg(err.message);
+    }
+  };
+
+  const copy = async (text: string) => {
+      await Clipboard.setStringAsync(text);
+    };
+
+  const copyCoords = async () => {
+    try {
+      const message = location
+        ? `Latitude: ${location.coords.latitude}, Longitude: ${location.coords.longitude}`
+        : "No location available";
+      
+        copy(message)
+    } catch (error: any) {
+      console.log(error.message);
     }
   };
 
@@ -100,10 +117,12 @@ function Gpskoords() {
           size={36}
         />
       </View>
+      <TouchableOpacity onPress={copyCoords} style={styles.button}>
+        <Copy strokeWidth={3} size={20} color={"#2e2c2cff"} />
+      </TouchableOpacity>
     </View>
   );
 }
-
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
@@ -135,6 +154,15 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     gpskoords2: {
       fontSize: 15,
       fontWeight: "500",
+    },
+    button: {
+      fontSize: 21,
+      fontWeight: "600",
+      borderRadius: 8,
+      left: 308,
+      bottom: 10,
+      position: "absolute",
+      alignSelf: "center",
     },
   });
 

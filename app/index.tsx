@@ -5,20 +5,26 @@ import * as Device from "expo-device";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import {
+  ArrowDownUp,
+  Check,
+  EllipsisVertical,
   HelpCircle,
   Home,
   Map,
-  User
+  RefreshCw,
+  User,
+  X,
 } from "lucide-react-native";
 import React, { JSX, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ActivityIndicator,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
   useColorScheme,
+  View,
 } from "react-native";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -56,7 +62,9 @@ function HomeScreen() {
     null
   );
   const [dragEnabled, setDragEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const [Admin, setAdmin] = useState(false);
   const [order, setOrder] = useState<string[]>(initialOrder);
   const [loadingOrder, setLoadingOrder] = useState(true);
@@ -71,20 +79,22 @@ function HomeScreen() {
 
   const toggleDrag = () => setDragEnabled((prev) => !prev);
 
-  useEffect(() => {
-    async function loadOrder() {
-      if (!user) return;
-      const { data: orderData } = await supabase
-        .from("component_orders")
-        .select("component_order")
-        .eq("user_id", user.id)
-        .single();
-      if (orderData && orderData.component_order) {
-        setOrder(orderData.component_order);
-      }
-      setLoadingOrder(false);
+  async function loadOrder() {
+    if (!user) return;
+    const { data: orderData } = await supabase
+      .from("component_orders")
+      .select("component_order")
+      .eq("user_id", user.id)
+      .single();
+    if (orderData && orderData.component_order) {
+      setOrder(orderData.component_order);
     }
+    setLoadingOrder(false);
+  }
+
+  useEffect(() => {
     loadOrder();
+    setLoading(false);
   }, [user]);
 
   const saveOrder = async (newOrder: string[]) => {
@@ -127,6 +137,11 @@ function HomeScreen() {
     }
   };
 
+  const Startdragging = () => {
+    setModalVisible(false);
+    toggleDrag();
+  };
+
   useEffect(() => {
     const timerId = setInterval(() => {
       setTime(new Date());
@@ -144,6 +159,14 @@ function HomeScreen() {
     startWatching();
     return () => stopWatching();
   }, []);
+  // Splash screen adden
+  if (loading || loadingOrder) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#466483ff" />
+      </View>
+    );
+  }
 
   if (Admin) {
     return (
@@ -162,23 +185,60 @@ function HomeScreen() {
             source={require("../assets/images/logo.png")}
             style={styles.image}
           />
-          <TouchableOpacity onPress={toggleDrag}>
-            <Text>{dragEnabled ? "Drag aus" : "Drag an"}</Text>
-          </TouchableOpacity>
+          {dragEnabled ? (
+            <TouchableOpacity
+              style={styles.more}
+              onPress={() => setDragEnabled(false)}
+            >
+              <Check strokeWidth={3} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.more}
+              onPress={() => setModalVisible(true)}
+            >
+              <EllipsisVertical strokeWidth={2} size={30} />
+            </TouchableOpacity>
+          )}
         </View>
         <View style={{ paddingVertical: 12 }} />
         <View>
-          {loadingOrder ? (
-            <Text>Lade Reihenfolge...</Text>
-          ) : (
-            <Render
-              order={order}
-              setOrder={setOrder}
-              dragEnabled={dragEnabled}
-              onOrderChange={saveOrder}
-            />
-          )}
+          <Render
+            order={order}
+            setOrder={setOrder}
+            dragEnabled={dragEnabled}
+            onOrderChange={saveOrder}
+          />
         </View>
+        {modalVisible && (
+          <View style={styles.customModal}>
+            <>
+              <View style={styles.modalContent}>
+                <View style={styles.close}>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <X strokeWidth={3} />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ paddingTop: 20 }}>
+                  <TouchableOpacity
+                    onPress={Startdragging}
+                    style={styles.button}
+                  >
+                    <ArrowDownUp />
+                    <Text style={styles.text}> Drag Elements</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={loadOrder} style={styles.button}>
+                    <RefreshCw />
+                    <Text style={styles.text}> Reload </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          </View>
+        )}
       </GestureHandlerRootView>
     );
   }
@@ -199,7 +259,6 @@ export function Render({
     key,
     component: componentMap[key],
   }));
-
   const renderItem = ({ item, drag, isActive }: RenderItemProps) => (
     <View
       style={{
@@ -364,9 +423,10 @@ const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     header: {
       backgroundColor: "#fff",
-      width: "100%",
       borderBottomColor: "#fff",
       borderWidth: 1,
+      flexDirection: "row",
+      alignItems: "center",
       elevation: 2,
     },
     image: {
@@ -374,7 +434,48 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       height: 60,
       marginTop: 40,
       marginBottom: 15,
-      marginRight: 190,
+    },
+    more: {
+      marginLeft: 160,
+      marginTop: 20,
+    },
+    modalContent: {
+      padding: 20,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      alignItems: "center",
+      minHeight: 200,
+    },
+    customModal: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: "#fff",
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+    },
+    closeButton: {
+      padding: 7,
+      width: 25,
+      height: 25,
+      borderRadius: 35,
+      backgroundColor: "rgba(91, 92, 92, 0.4)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    close: {
+      alignSelf: "flex-end",
+    },
+    button: {
+      flexDirection: "row",
+      paddingVertical: 12,
+      alignSelf: "flex-start",
+    },
+    text: {
+      fontSize: 18,
+      fontWeight: "500",
+      paddingLeft: 20,
     },
   });
 
