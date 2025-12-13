@@ -22,7 +22,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import "./i18n";
 
-const about = () => {
+const info = () => {
   const scheme = useColorScheme();
   const router = useRouter();
   const styles = getStyles(
@@ -141,7 +141,7 @@ const about = () => {
   );
 };
 
-export default about;
+export default info;
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({

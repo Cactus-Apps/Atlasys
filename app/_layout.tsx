@@ -37,12 +37,12 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="about" options={{ headerShown: false }} />
+          <Stack.Screen name="info" options={{ headerShown: false }} />
           <Stack.Screen name="account" options={{ headerShown: false }} />
-          <Stack.Screen name="bugreport" options={{ headerShown: false }} />
+          <Stack.Screen name="help_feedback" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="updatelog" options={{ headerShown: false }} />
-          <Stack.Screen name="invite" options={{ headerShown: false }} />
+          <Stack.Screen name="support" options={{ headerShown: false }} />
           <Stack.Screen name="profilescreen" options={{ headerShown: false }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen name="licenses" options={{ headerShown: false }} />
