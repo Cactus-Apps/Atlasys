@@ -27,62 +27,62 @@ const updatelog = () => {
           <Text style={[styles.bannertext, { color: "#5164C8" }]}>Feature</Text>
         </View>
         <Text style={styles.title}>v1.3.2</Text>
-        <Text style={styles.text}>Verbserter Home Screen und </Text>
-        <Text style={styles.text}>und kleinere Verbesserung</Text>
+        <Text style={styles.text}>Improved home screen and </Text>
+        <Text style={styles.text}>minor improvements</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.3.1</Text>
-        <Text style={styles.text}>Neuer Home Screen und </Text>
-        <Text style={styles.text}>neue animation und wetter anzeige</Text>
+        <Text style={styles.text}>New home screen and </Text>
+        <Text style={styles.text}>new animation and weather display</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.3.0</Text>
-        <Text style={styles.text}>Neuer Update log und </Text>
-        <Text style={styles.text}>Neuer Account Screen</Text>
+        <Text style={styles.text}>New update log and </Text>
+        <Text style={styles.text}>new account screen</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.8</Text>
-        <Text style={styles.text}>Besseres Design und </Text>
-        <Text style={styles.text}>Neuer Anmelde Screen</Text>
+        <Text style={styles.text}>Better design and </Text>
+        <Text style={styles.text}>new login screen</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.7</Text>
-        <Text style={styles.text}>Sicherheits Verbesserung und </Text>
+        <Text style={styles.text}>Security improvement and </Text>
         <Text style={styles.text}>und kleinere Verbesserung</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.6</Text>
         <Text style={styles.text}>Account löschen verbessert </Text>
-        <Text style={styles.text}>und kleinere Verbesserung</Text>
+        <Text style={styles.text}>and minor improvements</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.4</Text>
-        <Text style={styles.text}>Account per E-Mail löschen </Text>
+        <Text style={styles.text}>Delete account via email </Text>
         <Text style={styles.text}>
-          eingestellt, neues Account löschen system und kleinere Verbesserung
+          disabled, new account deletion system, and minor improvements
         </Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.3</Text>
-        <Text style={styles.text}>Neues Backend, kleine Verbesserung</Text>
-        <Text style={styles.text}>und neuer Home screen und</Text>
-        <Text style={styles.text}>account löschen per E-Mail</Text>
+        <Text style={styles.text}>New backend, minor improvements</Text>
+        <Text style={styles.text}>,new home screen and</Text>
+        <Text style={styles.text}>delete account via email</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.2</Text>
-        <Text style={styles.text}>Karten such funktion</Text>
-        <Text style={styles.text}>und kleinere Verbesserung</Text>
+        <Text style={styles.text}>Map search function</Text>
+        <Text style={styles.text}>and minor improvements</Text>
         <Text style={styles.text}></Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.1</Text>
-        <Text style={styles.text}>Acount, Auth und</Text>
-        <Text style={styles.text}>anmelde möglichkeit</Text>
+        <Text style={styles.text}>Account, authentication</Text>
+        <Text style={styles.text}>and login options</Text>
       </View>
       <View style={styles.container}>
         <Text style={styles.title}>v1.2.0</Text>
-        <Text style={styles.text}>{t("v1.2.0")}</Text>
-        <Text style={styles.text}>Beta realease der App</Text>
+        <Text style={styles.text}>The card has been added and</Text>
+        <Text style={styles.text}>beta release of the app</Text>
       </View>
     </ScrollView>
   );

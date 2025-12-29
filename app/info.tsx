@@ -5,9 +5,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Copyright,
-  Heart,
   List,
-  Rocket,
+  Rocket
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -19,7 +18,6 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import "./i18n";
 
 const info = () => {
@@ -30,10 +28,10 @@ const info = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.back}>
-          <TouchableOpacity style={styles.backbutton} onPress={router.back}>
+          <TouchableOpacity style={styles.backbutton} onPress={() => router.navigate('/(tabs)/profilescreen')}>
             <ChevronLeft
               size={30}
               strokeWidth={2}
@@ -97,22 +95,12 @@ const info = () => {
             <List strokeWidth={3} style={styles.icon} />
             <Text style={styles.link2}>{t("update_log")}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/thanks")}
-          >
-            <Heart strokeWidth={3} style={styles.icon} />
-            <Text style={styles.link2}>Thanks</Text>
-          </TouchableOpacity>
         </View>
         <View>
           <TouchableOpacity onPress={() => router.navigate("/licenses")}>
             <ChevronRight style={styles.arrow} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.navigate("/thanks")}>
             <ChevronRight style={styles.arrow} />
           </TouchableOpacity>
         </View>
@@ -137,7 +125,7 @@ const info = () => {
         </View>
         <Text style={styles.text}>Version 1.3.3 - © Cactus Apps 2025</Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

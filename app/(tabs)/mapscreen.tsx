@@ -3,9 +3,11 @@ import { Search, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Keyboard,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -16,7 +18,7 @@ import {
 } from "react-native";
 import { Button } from "react-native-paper";
 import { WebView } from "react-native-webview";
-import "./i18n.js";
+import { useTranslation } from "react-i18next";
 
 const { width, height } = Dimensions.get("window");
 
@@ -46,6 +48,7 @@ export default function MapScreen() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [results, setResults] = useState<CityResult[]>([]);
   const [selected, setSelected] = useState<CityResult | null>(null);
+  const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
@@ -73,7 +76,7 @@ export default function MapScreen() {
         },
       });
       if (!resp.ok) {
-        console.warn("GeoDB error", resp.status);
+	    Alert.alert(t("GeoDB_error"), `${resp.status}`);
         setResults([]);
         setLoadingSearch(false);
         return;
@@ -91,7 +94,7 @@ export default function MapScreen() {
       }));
       setResults(arr);
     } catch (err) {
-      console.error("Search error", err);
+	  Alert.alert(t("Search_error"), `${err}`);
       setResults([]);
     } finally {
       setLoadingSearch(false);
@@ -178,14 +181,14 @@ export default function MapScreen() {
       let data = null;
       try { data = JSON.parse(raw); } catch(_) { return; }
 
-      const c = data.coords || data; // toleranter Parser
+      const c = data.coords || data;
       if (!c || typeof c.latitude !== 'number' || typeof c.longitude !== 'number') return;
 
       const lat = c.latitude, lng = c.longitude, acc = c.accuracy;
 
       if (!marker) {
         marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
-        marker.bindTooltip('<div class="marker-accuracy">Your location</div>');
+        marker.bindTooltip('<div class="marker-accuracy">{t("Your_current_location")}</div>');
         map.setView([lat, lng], 16, { animate: true });
       } else {
         marker.setLatLng([lat, lng]);
@@ -288,7 +291,7 @@ export default function MapScreen() {
           style={styles.icon}
         />
         <TextInput
-          placeholder="Search"
+          placeholder={t("Search")}
           placeholderTextColor={scheme === "dark" ? "#d8d8d8ff" : "#666"}
           style={styles.input}
           value={query}
@@ -351,12 +354,12 @@ export default function MapScreen() {
             <>
               <View style={styles.modalContent}>
                 <View style={styles.close}>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <X strokeWidth={3} />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <X strokeWidth={3} />
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.cityTitle}>
                   {selected.name ?? selected.city}
@@ -372,7 +375,7 @@ export default function MapScreen() {
               </View>
             </>
           ) : (
-            <Text>No location selected</Text>
+            <Text>{t('No_location_selected')}</Text>
           )}
         </View>
       )}
@@ -475,6 +478,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       alignItems: "center",
     },
     close: {
-      alignSelf: 'flex-end',
+      alignSelf: "flex-end",
     },
   });

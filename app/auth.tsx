@@ -30,11 +30,11 @@ export default function AuthScreen() {
 
   const handleAuth = async () => {
     if (!email || !password) {
-      setError("Bitte fülle alle Felder aus.");
+      setError("Please fill in all fields.");
       return;
     }
     if (password.length < 6) {
-      setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+      setError("The password must be at least 6 characters long.");
       return;
     }
 
@@ -117,7 +117,7 @@ export default function AuthScreen() {
         ) : null}
 
         <Button mode="contained" style={styles.button} onPress={handleAuth}>
-          {isSignUp ? "Registrieren" : "Einloggen"}
+          {isSignUp ? "Sign up" : "Login"}
         </Button>
 
         <Button
@@ -127,8 +127,8 @@ export default function AuthScreen() {
           textColor="#466483ff"
         >
           {isSignUp
-            ? "Schon ein Konto? Jetzt einloggen"
-            : "Noch kein Konto? Jetzt registrieren"}
+            ? "Already have an account? Log in now"
+            : "Don't have an account yet? Register now"}
         </Button>
       </View>
     </KeyboardAvoidingView>

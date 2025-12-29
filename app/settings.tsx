@@ -30,7 +30,7 @@ const settings = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.back}>
-          <TouchableOpacity style={styles.backbutton} onPress={router.back}>
+          <TouchableOpacity style={styles.backbutton} onPress={() => router.navigate('/(tabs)/profilescreen')}>
             <ChevronLeft
               size={30}
               strokeWidth={2}
@@ -38,16 +38,19 @@ const settings = () => {
             />
           </TouchableOpacity>
         </View>
-        <View style={{alignSelf: 'center', flexDirection: 'row'}}>
-        <Bolt size={40} strokeWidth={2} style={styles.icon} />
-        <Text style={styles.title}>{t("settings")}</Text>
+        <View style={{ alignSelf: "center", flexDirection: "row" }}>
+          <Bolt size={40} strokeWidth={2} style={styles.icon} />
+          <Text style={styles.title}>{t("settings")}</Text>
         </View>
       </View>
-        <View>
-        <TouchableOpacity style={styles.button3} onPress={() => setModalVisible(true)}>
-          <Text style={styles.text2}> Laguage</Text>
+      <View>
+        <TouchableOpacity
+          style={styles.button3}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.text2}>Laguage</Text>
         </TouchableOpacity>
-        </View>
+      </View>
 
       <Modal
         visible={ModalVisible}
@@ -57,12 +60,18 @@ const settings = () => {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalBox}>
-            <Text style={styles.text9}> Sprache </Text>
+            <Text style={styles.text9}> language </Text>
             <View>
-              <TouchableOpacity style={styles.button3} onPress={() => changeLanguage("de")}>
+              <TouchableOpacity
+                style={styles.button3}
+                onPress={() => changeLanguage("de")}
+              >
                 <Text style={styles.text2}> German </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.button3} onPress={() => changeLanguage("en")}>
+              <TouchableOpacity
+                style={styles.button3}
+                onPress={() => changeLanguage("en")}
+              >
                 <Text style={styles.text2}> English </Text>
               </TouchableOpacity>
               <TouchableOpacity

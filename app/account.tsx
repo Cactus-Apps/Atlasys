@@ -50,6 +50,7 @@ export default function AccountScreen() {
     scheme === "light" || scheme === "dark" ? scheme : null
   );
 
+
   const copy = async (text: string) => {
     await Clipboard.setStringAsync(text);
     Alert.alert(t("Copied"), t("Error_message_copied_to_clipboard"));
