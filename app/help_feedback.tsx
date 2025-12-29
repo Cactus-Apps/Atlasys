@@ -1,5 +1,4 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { t } from "i18next";
 import * as React from "react";
 import {
   Linking,
@@ -25,9 +24,9 @@ const bugreport = () => {
 
   return (
     <SafeAreaView style={styles.all}>
-      <Text style={styles.title}>{t("bug_report")}</Text>
+      <Text style={styles.title}>Bug Report</Text>
       <View style={styles.container}>
-        <Text style={styles.text}>{t("please_report_on")}</Text>
+        <Text style={styles.text}>please report on</Text>
         <AntDesign style={styles.icon} name="github" size={24} color="black" />
         <TouchableOpacity onPress={openLink}>
           <Text style={styles.link}>GitHub</Text>

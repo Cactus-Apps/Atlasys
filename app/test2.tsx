@@ -1,62 +1,40 @@
-import React from "react";
-import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 
-const HelpFeedbackScreen = () => {
-  // Beispiel-URLs oder Funktionen für Aktionen
-  const feedbackUrl = "mailto:feedback@deineapp.de?subject=Feedback%20zur%20App";
-  const faqUrl = "https://deineapp.de/faq";
-  const supportEmail = "support@deineapp.de";
-
-  const openUrl = async (url: string) => {
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Fehler", "Link kann nicht geöffnet werden.");
-      }
-    } catch (error) {
-      Alert.alert("Fehler", "Beim Öffnen des Links ist ein Fehler aufgetreten.");
-    }
-  };
+export default function FeedbackScreen() {
+  const [height, setHeight] = useState(40);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Help & Feedback</Text>
-
-      <TouchableOpacity style={styles.card} onPress={() => openUrl(feedbackUrl)} activeOpacity={0.8}>
-        <Text style={styles.cardTitle}>Feedback geben</Text>
-        <Text style={styles.cardDescription}>
-          Teile uns deine Ideen, Wünsche oder allgemeines Feedback mit, damit wir die App verbessern können.
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.card} onPress={() => openUrl(faqUrl)} activeOpacity={0.8}>
-        <Text style={styles.cardTitle}>Hilfe & FAQ</Text>
-        <Text style={styles.cardDescription}>
-          Häufig gestellte Fragen und Antworten, um dir schnell weiterzuhelfen.
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => openUrl(`mailto:${supportEmail}?subject=Supportanfrage`)}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.cardTitle}>Kontakt zum Support</Text>
-        <Text style={styles.cardDescription}>
-          Schreibe uns direkt eine E-Mail, wenn du Hilfe benötigst oder Fragen hast.
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Help & Feedback</Text>
+          <View style={styles.card2}>
+            <Text style={{color: '#FAFAFA',fontWeight: 'bold', fontSize: 23}}>Subscribe to our newsletter</Text>
+            <Text style={{color: '#969696', fontSize: 16}}>Enter your details to receive updates and tips</Text>
+            <TextInput
+              multiline
+              placeholderTextColor="#A2A2A2"
+              placeholder="Write here..."
+              style={[styles.textInput, { height: Math.max(40, height) }]}
+              onContentSizeChange={(event) => {
+                setHeight(event.nativeEvent.contentSize.height);
+              }}
+            />
+          </View>
+        </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: 20,
     backgroundColor: "#fff",
-    flexGrow: 1,
   },
   title: {
     fontSize: 28,
@@ -87,6 +65,21 @@ const styles = StyleSheet.create({
     color: "#555",
     lineHeight: 22,
   },
+  card2: {
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#262626',
+    backgroundColor: '#0A0A0A',
+  },
+  textInput: {
+    borderColor: "#ccc",
+    borderWidth: 1,
+    backgroundColor: '#111111',
+    color: "#000",
+    padding: 10,
+    fontSize: 16,
+    borderRadius: 5,
+    textAlignVertical: "top",
+  },
 });
-
-export default HelpFeedbackScreen;

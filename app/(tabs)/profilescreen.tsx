@@ -9,7 +9,7 @@ import {
   ShieldUser,
   TestTube,
   TestTube2,
-  User
+  User,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,8 +21,7 @@ import {
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
-import "./i18n.js";
+import { supabase } from "@/lib/supabase";
 
 function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -60,7 +59,7 @@ function ProfileScreen() {
           colorize={true}
           radius={100}
           badgeColor="#146275ff"
-          defaultSource={require("../assets/images/icon.png")}
+          defaultSource={require("@/assets/images/icon.png")}
         />
         <Text style={styles.profileName}>{name}</Text>
         <Text style={styles.profileEmail}>{email}</Text>
@@ -73,7 +72,7 @@ function ProfileScreen() {
           onPress={() => router.navigate("/account")}
         >
           <User strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("profile")}</Text>
+          <Text style={styles.link}>{t("Profile")}</Text>
           <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -81,7 +80,7 @@ function ProfileScreen() {
           onPress={() => router.navigate("/settings")}
         >
           <Bolt strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("settings")}</Text>
+          <Text style={styles.link}>{t("Settings")}</Text>
           <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
         <View style={styles.line} />
@@ -90,7 +89,7 @@ function ProfileScreen() {
           onPress={() => router.navigate("/help_feedback")}
         >
           <MessageCircleQuestionMark strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>Help & Feedback</Text>
+          <Text style={styles.link}>{t("Help_&_Feedback")}</Text>
           <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -98,15 +97,7 @@ function ProfileScreen() {
           onPress={() => router.navigate("/info")}
         >
           <Info strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>Info</Text>
-          <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/support")}
-        >
-          <HeartHandshake strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>Support</Text>
+          <Text style={styles.link}>{t("Info")}</Text>
           <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -114,17 +105,21 @@ function ProfileScreen() {
           onPress={() => router.navigate("/AdminPanel")}
         >
           <ShieldUser strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("Admin Panel")}</Text>
+          <Text style={styles.link}>{t("Admin_Panel")}</Text>
           <ChevronRight style={styles.arrow} />
         </TouchableOpacity>
         <View>
-          <TouchableOpacity style={styles.page}
-          onPress={() => router.navigate("/test")}>
-            <TestTube strokeWidth={2.5} style={styles.icon}/>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/test")}
+          >
+            <TestTube strokeWidth={2.5} style={styles.icon} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.page}
-          onPress={() => router.navigate("/test2")}>
-            <TestTube2 strokeWidth={2.5} style={styles.icon}/>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/test2")}
+          >
+            <TestTube2 strokeWidth={2.5} style={styles.icon} />
           </TouchableOpacity>
         </View>
       </View>

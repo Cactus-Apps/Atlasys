@@ -89,7 +89,7 @@ function Gpskoords() {
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.gps}> GPS Koordinaten</Text>
+        <Text style={styles.gps}> GPS coordinates</Text>
         {location ? (
           <View>
             <Text style={styles.gpskoords}>

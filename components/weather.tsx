@@ -60,8 +60,8 @@ export default function Weather() {
       const json = await res.json();
       setWeather(json.current_weather || null);
     } catch (e) {
-      console.warn("Fehler beim Laden des Wetters", e);
-      setError("Fehler beim Laden des Wetters");
+      console.warn("Error loading weather", e);
+      setError("Error loading weather");
       setWeather(null);
     }
   };
@@ -113,7 +113,7 @@ export default function Weather() {
       case "⚠️ Gewitter und starker Hagel":
         return require("../assets/animations/storm-rain-thunder.json");
       default:
-        return require("../assets/animations/storm-rain-thunder.json");
+        return require("../assets/animations/error.json");
     }
   };
 
@@ -231,7 +231,7 @@ export default function Weather() {
           style={styles.card}
         >
           <View>
-            <Text style={{ fontSize: 17, fontWeight: "600" }}> Wetter</Text>
+            <Text style={{ fontSize: 17, fontWeight: "600" }}> Weather</Text>
             <Text style={styles.temp}>{weather.temperature}°C</Text>
             <Text style={{ fontSize: 16 }}>
               {weatherCodeToText(weather.weathercode)}

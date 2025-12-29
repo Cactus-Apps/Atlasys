@@ -1,7 +1,7 @@
 import {
   Clock4
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -22,7 +22,7 @@ function Clock() {
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.time}> Aktuelle Zeit</Text>
+        <Text style={styles.time}> Time</Text>
         <Text style={styles.timetime}>
           {""}
           {time.toLocaleTimeString()}

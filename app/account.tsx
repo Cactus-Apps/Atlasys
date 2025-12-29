@@ -8,11 +8,11 @@ import { t } from "i18next";
 import { Frown, Info, LogOut } from "lucide-react-native";
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
   ImageBackground,
-  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -25,7 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 interface DeleteRequest {
   id: string;
   email: string;
-  status: "pending" | "completed" | "rejected" | 'deleted';
+  status: "pending" | "completed" | "rejected" | "deleted";
   requested_at: string;
   updated_at: string;
   expires_at?: string;
@@ -40,7 +40,7 @@ export default function AccountScreen() {
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [loading2, setLoading2] = useState(false);
-  const [loading3, setLoading3] = useState(false);
+  const { t } = useTranslation();
   const [WantToDelete, setWantToDelete] = useState(false);
   const [progress, setProgress] = useState(0);
   const [ModalVisible, setModalVisible] = useState(false);
@@ -136,11 +136,11 @@ export default function AccountScreen() {
   }, [userId, email]);
 
   useEffect(() => {
-  if (daysLeft !== null) {
-    const prog = Math.max(0, Math.min(1, (10 - daysLeft) / 10));
-    setProgress(prog);
-  }
-}, [daysLeft]);
+    if (daysLeft !== null) {
+      const prog = Math.max(0, Math.min(1, (10 - daysLeft) / 10));
+      setProgress(prog);
+    }
+  }, [daysLeft]);
 
   useEffect(() => {
     const fetchUserIdAndEmail = async () => {
@@ -162,10 +162,7 @@ export default function AccountScreen() {
     if (WantToDelete) {
       () => setModalVisible2(false);
       if (!userId || !email) {
-        Alert.alert(
-          "Fehler",
-          "Benutzer-ID oder E-Mail konnte nicht abgerufen werden."
-        );
+        Alert.alert("Error", "User ID or email could not be fetched.");
         return;
       }
 
@@ -183,8 +180,8 @@ export default function AccountScreen() {
 
       if (existing && existing.length > 0) {
         Alert.alert(
-          "Limit erreicht",
-          "Du kannst nur einen Löschantrag pro Tag stellen."
+          "Limit reached",
+          "You can only submit one deletion request per day."
         );
         return;
       }
@@ -206,9 +203,9 @@ export default function AccountScreen() {
 
       if (error) {
         console.error(error);
-        Alert.alert("Fehler", "Anfrage konnte nicht gesendet werden.");
+        Alert.alert("Error", "Request could not be sent.");
       } else {
-        Alert.alert("Anfrage gesendet", "Dein Löschantrag wurde erstellt.");
+        Alert.alert("Request sent", "Your deletion request has been created.");
         setRequest(data);
         updateProgress("pending");
       }
@@ -290,7 +287,7 @@ export default function AccountScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.text2}>Account Löschen</Text>
+              <Text style={styles.text2}>Delete account</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -300,12 +297,12 @@ export default function AccountScreen() {
             <>
               <View style={styles.container3}>
                 <Text style={styles.text4}>
-                  Status:{" "}
+                  status:{" "}
                   {request.status === "pending"
-                    ? "Ausstehend"
+                    ? "Pending"
                     : request.status === "completed"
-                    ? "Fertig"
-                    : "Abgeschlossen"}
+                    ? "Finished"
+                    : "Completed"}
                 </Text>
                 <View style={styles.progressBar}>
                   <LinearGradient
@@ -320,14 +317,14 @@ export default function AccountScreen() {
                   />
                 </View>
                 <Text style={styles.text5}>
-                  Fortschritt: {(progress * 100).toFixed(0)}%
+                  progress: {(progress * 100).toFixed(0)}%
                 </Text>
                 <Text
                   style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}
                 >
                   {daysLeft !== null
-                    ? `Dein Account wird in ${daysLeft} Tagen gelöscht`
-                    : "Löschdatum wird geladen..."}
+                    ? `Your account will be deleted in ${daysLeft} days`
+                    : "Deletion date is loading..."}
                 </Text>
               </View>
             </>
@@ -355,13 +352,10 @@ export default function AccountScreen() {
                       />
                       <Text style={{ fontSize: 26, fontWeight: "700" }}>
                         {" "}
-                        Ups !
+                        Oops !
                       </Text>
                     </View>
-                    <Text style={styles.text8}>
-                      {" "}
-                      Das ist etwas schief gelaufen{" "}
-                    </Text>
+                    <Text style={styles.text8}> Something went wrong </Text>
                   </View>
                 </View>
                 <Modal
@@ -372,19 +366,18 @@ export default function AccountScreen() {
                 >
                   <View style={styles.modalBackground}>
                     <View style={styles.modalBox}>
-                      <Text style={styles.text9}> Keine Berechtigung</Text>
+                      <Text style={styles.text9}> No permission</Text>
                       <Text style={styles.text7}>
-                        Sie haben nicht die berechtigung das Konto zu löschen
-                        oder Ihnen gehört das Konto nicht. Falls Ihnen das Konto
-                        doch gehört, bitte schreiben Sie eine E-Mail an
-                        cactus_apps@proton.me.
+                        You do not have permission to delete the account, or you
+                        do not own the account. If you do own the account,
+                        please send an email to cactus_apps@proton.me.
                       </Text>
                       <View>
                         <TouchableOpacity
                           onPress={() => setModalVisible(false)}
                           style={styles.button3}
                         >
-                          <Text style={styles.text2}> OK </Text>
+                          <Text style={styles.text2}> okay </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -401,24 +394,24 @@ export default function AccountScreen() {
         >
           <View style={styles.modalBackground}>
             <View style={styles.modalBox}>
-              <Text style={styles.text9}>Account Löschen</Text>
+              <Text style={styles.text9}>Delete account</Text>
               <Text style={styles.text7}>
-                Wollen Sie Ihren Account wirklich löschen. Dadurch werder all
-                ihre Daten nach 10 Tagen gelöscht und sie danach nicht mehr
-                wiederhetstellbar.
+                Are you sure you want to delete your account? This will delete
+                all your data after 10 days and it will not be possible to
+                recover it.
               </Text>
               <View style={styles.buttons2}>
                 <TouchableOpacity
                   onPress={deleteAccuntAction}
                   style={styles.buttonDelete}
                 >
-                  <Text style={styles.text2}> Löschen </Text>
+                  <Text style={styles.text2}> Delete </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setModalVisible2(false)}
                   style={styles.button5}
                 >
-                  <Text style={styles.text2}> Abbrechen </Text>
+                  <Text style={styles.text2}> Cancel </Text>
                 </TouchableOpacity>
               </View>
             </View>

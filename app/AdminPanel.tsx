@@ -37,7 +37,7 @@ export default function AdminPanel() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) console.error("❌ Fehler beim Laden:", error);
+    if (error) console.error("❌ Error loading:", error);
     else setRequests(data || []);
   }
 
@@ -53,7 +53,7 @@ export default function AdminPanel() {
       .eq("id", id);
 
     if (error) {
-      console.error("❌ Fehler beim Status-Update:", error);
+      console.error("❌ Error during status update:", error);
     } else {
       setStatusModalVisible(false);
       setDetailsModalVisible(false);
@@ -63,7 +63,7 @@ export default function AdminPanel() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🛠️ Admin Panel</Text>
+      <Text style={styles.title}>Admin Panel</Text>
 
       <FlatList
         data={requests}
@@ -79,7 +79,7 @@ export default function AdminPanel() {
             style={styles.card}
           >
             <Text style={styles.email}>{item.email}</Text>
-            <Text>Status: {item.status}</Text>
+            <Text>status: {item.status}</Text>
           </TouchableOpacity>
         )}
       />
@@ -94,19 +94,19 @@ export default function AdminPanel() {
           <View style={styles.modalBox}>
             {selectedRequest && (
               <>
-                <Text style={styles.modalTitle}>Antragsdetails</Text>
+                <Text style={styles.modalTitle}>Application details</Text>
                 <Text>Email: {selectedRequest.email}</Text>
                 <Text>Status: {selectedRequest.status}</Text>
                 <Text>Code: {selectedRequest.verification_code}</Text>
-                <Text>{getDaysLeft(selectedRequest.expires_at)} Tage</Text>
+                <Text>{getDaysLeft(selectedRequest.expires_at)} days left</Text>
 
                 <View style={styles.modalButtonRow}>
                   <Button
-                    title="Abbrechen"
+                    title="Cancel"
                     onPress={() => setDetailsModalVisible(false)}
                   />
                   <Button
-                    title="Status ändern"
+                    title="Change status"
                     onPress={() => setStatusModalVisible(true)}
                   />
                 </View>
@@ -136,15 +136,15 @@ export default function AdminPanel() {
             />
 
             <Button
-              title="Abgeschlossen"
+              title="Completed"
               onPress={() => updateStatus(selectedRequest!.id, "completed")}
             />
             <Button
-              title="Abgelehnt"
+              title="Rejected"
               onPress={() => updateStatus(selectedRequest!.id, "rejected")}
             />
             <Button
-              title="Zurück"
+              title="Back"
               color="gray"
               onPress={() => setStatusModalVisible(false)}
             />

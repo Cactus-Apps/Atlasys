@@ -1,6 +1,5 @@
 import { AuthProvider, useAuth } from "@/lib/auth-context";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { Slot, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
 import { useColorScheme } from "react-native";
 
@@ -27,29 +26,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <RouteGuard>
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-        <Stack
-          screenOptions={{
-            animation: "fade",
-            contentStyle: {
-              backgroundColor: scheme === "dark" ? "#0D1117" : "#e2d7d7ff",
-            },
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="info" options={{ headerShown: false }} />
-          <Stack.Screen name="account" options={{ headerShown: false }} />
-          <Stack.Screen name="help_feedback" options={{ headerShown: false }} />
-          <Stack.Screen name="settings" options={{ headerShown: false }} />
-          <Stack.Screen name="updatelog" options={{ headerShown: false }} />
-          <Stack.Screen name="support" options={{ headerShown: false }} />
-          <Stack.Screen name="profilescreen" options={{ headerShown: false }} />
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-          <Stack.Screen name="licenses" options={{ headerShown: false }} />
-          <Stack.Screen name="test" options={{ headerShown: false }} />
-          <Stack.Screen name="AdminPanel" options={{ headerShown: false }} />
-          <Stack.Screen name="thanks" options={{ headerShown: false }} />
-        </Stack>
+        <Slot />
       </RouteGuard>
     </AuthProvider>
   );
