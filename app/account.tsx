@@ -34,9 +34,12 @@ export default function AccountScreen() {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const [email, setEmail] = useState<string | null>(null);
+<<<<<<< Updated upstream
   const scheme = useColorScheme();
   const [userId, setUserId] = useState<string | null>(null);
   const [request, setRequest] = useState<DeleteRequest | null>(null);
+=======
+>>>>>>> Stashed changes
   const [loading, setLoading] = useState(true);
   const [loading2, setLoading2] = useState(false);
   const [loading3, setLoading3] = useState(false);
@@ -49,6 +52,7 @@ export default function AccountScreen() {
     scheme === "light" || scheme === "dark" ? scheme : null
   );
 
+<<<<<<< Updated upstream
   const report = () => {
     Linking.openURL("https://github.com/Cactus-Apps/GPS/issues/new").catch(
       (err) => console.error("An error occurred", err)
@@ -61,6 +65,11 @@ export default function AccountScreen() {
       "Kopiert",
       "Fehlermeldung wurde in die Zwischenablage kopiert."
     );
+=======
+  const copy = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    Alert.alert(t("Copied"), t("Error_message_copied_to_clipboard"));
+>>>>>>> Stashed changes
   };
 
   useEffect(() => {
@@ -74,6 +83,7 @@ export default function AccountScreen() {
           setEmail(data.user?.email ?? null);
         }
       } catch (err: any) {
+<<<<<<< Updated upstream
         console.warn(
           "Fehler beim Laden des Kontos",
           `Bitte melde dich neu an.\n\n${err.message || err}`,
@@ -86,6 +96,9 @@ export default function AccountScreen() {
             { text: "Abbrechen", style: "cancel" },
           ]
         );
+=======
+        console.warn("Error loading account");
+>>>>>>> Stashed changes
       } finally {
         setLoading(false);
       }
@@ -450,7 +463,11 @@ export default function AccountScreen() {
       </TouchableOpacity>
     </SafeAreaView>
   );
+<<<<<<< Updated upstream
 }
+=======
+};
+>>>>>>> Stashed changes
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
