@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
 import React from "react";

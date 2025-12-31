@@ -1,3 +1,5 @@
+// Version 1.3.6 - © Cactus Apps 2025
+import { t } from "i18next";
 import { Pause, Play, TimerIcon } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -57,7 +59,7 @@ function Timer() {
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.time}> Timer </Text>
+        <Text style={styles.time}> {t('Timer')} </Text>
         <Text style={styles.timetime}>{formatTime(time)}</Text>
         <View>
           <View
@@ -77,7 +79,7 @@ function Timer() {
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.buttonReset} onPress={resetTimer}>
-              <Text style={styles.buttonText}>Reset</Text>
+              <Text style={styles.buttonText}>{t('Reset')}</Text>
             </TouchableOpacity>
           </View>
         </View>

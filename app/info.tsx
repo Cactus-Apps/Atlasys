@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { useRouter } from "expo-router";
 import { t } from "i18next";
 import {
@@ -6,7 +7,7 @@ import {
   ChevronRight,
   Copyright,
   List,
-  Rocket
+  Rocket,
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -20,7 +21,7 @@ import {
 } from "react-native";
 import "./i18n";
 
-const info = () => {
+export default function Info() {
   const scheme = useColorScheme();
   const router = useRouter();
   const styles = getStyles(
@@ -31,7 +32,10 @@ const info = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.back}>
-          <TouchableOpacity style={styles.backbutton} onPress={() => router.navigate('/(tabs)/profilescreen')}>
+          <TouchableOpacity
+            style={styles.backbutton}
+            onPress={() => router.navigate("/(tabs)/profilescreen")}
+          >
             <ChevronLeft
               size={30}
               strokeWidth={2}
@@ -39,9 +43,9 @@ const info = () => {
             />
           </TouchableOpacity>
         </View>
-        <Text style={styles.title}>{t("about_gps")}</Text>
+        <Text style={styles.title}>{t("About GPS")}</Text>
       </View>
-      <Text style={styles.development}>Development</Text>
+      <Text style={styles.development}>{t('Development')}</Text>
       <View
         style={{
           height: 1,
@@ -62,12 +66,9 @@ const info = () => {
               Linking.openURL("https://github.com/Cactus-Apps/GPS")
             }
           >
-            &copy; Cactus Apps
+            &copy; {t('Cactus_Apps')}
           </Text>
-          <Text style={styles.text}>
-            We are Cactus Apps, a company {"\n"}
-            that develops apps with a focus {"\n"}
-            on customer satisfaction.
+          <Text style={styles.text}>{t('We_are_Cactus_Apps')}{"\n"} {t('develops_apps')} {"\n"} {t('customer_satisfaction')}
           </Text>
         </View>
       </View>
@@ -116,26 +117,24 @@ const info = () => {
       >
         <View style={[styles.banner, { backgroundColor: "#312226" }]}>
           <Bug color={"#F26363"} size={25} strokeWidth={2} />
-          <Text style={[styles.bannertext, {color: "#F26363"}]}>Bug</Text>
+          <Text style={[styles.bannertext, { color: "#F26363" }]}>{t('Bug')}</Text>
         </View>
 
         <View style={[styles.banner, { backgroundColor: "#212434" }]}>
           <Rocket color={"#5164C8"} size={25} strokeWidth={2} />
-          <Text style={[styles.bannertext, {color: "#5164C8"}]}>Feature</Text>
+          <Text style={[styles.bannertext, { color: "#5164C8" }]}>{t('Feature')}</Text>
         </View>
-        <Text style={styles.text}>Version 1.3.3 - © Cactus Apps 2025</Text>
+        <Text style={styles.text}>Version 1.3.6 - © Cactus Apps 2025</Text>
       </View>
     </View>
   );
-};
-
-export default info;
+}
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#1B1B1F'
+      backgroundColor: "#1B1B1F",
     },
     all: {
       flexDirection: "row",

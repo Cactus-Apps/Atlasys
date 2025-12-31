@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import AntDesign from "@expo/vector-icons/AntDesign";
 import * as React from "react";
 import {

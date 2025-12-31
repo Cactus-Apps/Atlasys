@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import * as Location from "expo-location";
 import { Search, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -76,7 +77,7 @@ export default function MapScreen() {
         },
       });
       if (!resp.ok) {
-	    Alert.alert(t("GeoDB_error"), `${resp.status}`);
+	    console.log(t("GeoDB_error"), `${resp.status}`);
         setResults([]);
         setLoadingSearch(false);
         return;
@@ -188,7 +189,7 @@ export default function MapScreen() {
 
       if (!marker) {
         marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
-        marker.bindTooltip('<div class="marker-accuracy">{t("Your_current_location")}</div>');
+        marker.bindTooltip('<div class="marker-accuracy">Your_current_location</div>');
         map.setView([lat, lng], 16, { animate: true });
       } else {
         marker.setLatLng([lat, lng]);

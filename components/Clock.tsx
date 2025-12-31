@@ -1,3 +1,5 @@
+// Version 1.3.6 - © Cactus Apps 2025
+import { t } from "i18next";
 import {
   Clock4
 } from "lucide-react-native";
@@ -22,7 +24,7 @@ function Clock() {
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.time}> Time</Text>
+        <Text style={styles.time}> {t('Time')}</Text>
         <Text style={styles.timetime}>
           {""}
           {time.toLocaleTimeString()}

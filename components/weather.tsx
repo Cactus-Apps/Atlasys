@@ -1,5 +1,7 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
+import { t } from "i18next";
 import LottieView from "lottie-react-native";
 import { RefreshCcw } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -70,47 +72,47 @@ export default function Weather() {
     animations: string | { uri: string }
   ): string | { uri: string } => {
     switch (animations) {
-      case "Klarer Himmel":
+      case t("Clear_sky"):
         return require("../assets/animations/sunny.json");
-      case "Überwiegend klar":
+      case t("Mostly_clear"):
         return require("../assets/animations/partly-cloudy.json");
-      case "Teilweise bewölkt":
+      case t("Partly_cloudy"):
         return require("../assets/animations/partly-cloudy.json");
-      case "Bedeckt":
+      case t("Overcast"):
         return require("../assets/animations/windy.json");
-      case "Nebel":
+      case t("Fog"):
         return require("../assets/animations/mist.json");
-      case "Reifnebel":
+      case t("Depositing_rime_fog"):
         return require("../assets/animations/Foggy.json");
-      case "leichter Nieselregen":
+      case t("Light_drizzle"):
         return require("../assets/animations/partly-cloudy.json");
-      case "mäßiger Nieselregen":
+      case t("Moderate_drizzle"):
         return require("../assets/animations/partly-cloudy.json");
-      case "starker Nieselregen":
+      case t("Heavy_drizzle"):
         return require("../assets/animations/partly-cloudy.json");
-      case "leichter Regen":
+      case t("Light_rain"):
         return require("../assets/animations/rain.json");
-      case "mäßiger Regen":
+      case t("Moderate_rain"):
         return require("../assets/animations/rain.json");
-      case "starker Regen":
+      case t("Heavy_rain"):
         return require("../assets/animations/rain.json");
-      case "leichter Schnee":
+      case t("Light_snow"):
         return require("../assets/animations/snow.json");
-      case "mäßiger Schnee":
+      case t("Moderate_snow"):
         return require("../assets/animations/snow.json");
-      case "starker Schnee":
+      case t("Heavy_snow"):
         return require("../assets/animations/snow.json");
-      case "Schneegriesel":
+      case t("Snow_grains"):
         return require("../assets/animations/snow.json");
-      case "leichte Schauer":
+      case t("Light_showers"):
         return require("../assets/animations/rain.json");
-      case "mäßige Schauer":
+      case t("Moderate_showers"):
         return require("../assets/animations/rain.json");
-      case "starke Schauer":
+      case t("Heavy_showers"):
         return require("../assets/animations/rain.json");
-      case "⚠️ Gewitter":
+      case t("⚠️ Thunderstorm"):
         return require("../assets/animations/storm-rain-thunder.json");
-      case "⚠️ Gewitter und starker Hagel":
+      case t("⚠️ Thunderstorm_with_heavy_hail"):
         return require("../assets/animations/storm-rain-thunder.json");
       default:
         return require("../assets/animations/error.json");
@@ -119,47 +121,47 @@ export default function Weather() {
 
   const getGradientColors = (status: string): readonly [string, string] => {
     switch (status) {
-      case "Klarer Himmel":
+      case t("Clear_sky"):
         return ["#87CEEB", "#00BFFF"] as const;
-      case "Überwiegend klar":
+      case t("Mostly_clear"):
         return ["#ADD8E6", "#87CEFA"] as const;
-      case "Teilweise bewölkt":
+      case t("Partly_cloudy"):
         return ["#B0C4DE", "#4682B4"] as const;
-      case "Bedeckt":
+      case t("Overcast"):
         return ["#A9A9A9", "#696969"] as const;
-      case "Nebel":
+      case t("Fog"):
         return ["#D3D3D3", "#A9A9A9"] as const;
-      case "Reifnebel":
+      case t("Depositing_rime_fog"):
         return ["#B0C4DE", "#FFFFFF"] as const;
-      case "leichter Nieselregen":
+      case t("Light_drizzle"):
         return ["#A9A9A9", "#B0E0E6"] as const;
-      case "mäßiger Nieselregen":
+      case t("Moderate_drizzle"):
         return ["#696969", "#87CEFA"] as const;
-      case "starker Nieselregen":
+      case t("Heavy_drizzle"):
         return ["#4B0082", "#00BFFF"] as const;
-      case "leichter Regen":
+      case t("Light_rain"):
         return ["#4682B4", "#ADD8E6"] as const;
-      case "mäßiger Regen":
+      case t("Moderate_rain"):
         return ["#4169E1", "#1E90FF"] as const;
-      case "starker Regen":
+      case t("Heavy_rain"):
         return ["#00008B", "#00CED1"] as const;
-      case "leichter Schnee":
+      case t("Light_snow"):
         return ["#F0F8FF", "#FFFFFF"] as const;
-      case "mäßiger Schnee":
+      case t("Moderate_snow"):
         return ["#E6E6FA", "#F5FFFA"] as const;
-      case "starker Schnee":
+      case t("Heavy_snow"):
         return ["#DCDCDC", "#F8F8FF"] as const;
-      case "Schneegriesel":
+      case t("Snow_grains"):
         return ["#F5F5F5", "#FFFFFF"] as const;
-      case "leichte Schauer":
+      case t("Light_showers"):
         return ["#87CEEB", "#B0E0E6"] as const;
-      case "mäßige Schauer":
+      case t("Moderate_showers"):
         return ["#00BFFF", "#1E90FF"] as const;
-      case "starke Schauer":
+      case t("Heavy_showers"):
         return ["#4682B4", "#5F9EA0"] as const;
-      case "⚠️ Gewitter":
+      case t("⚠️ Thunderstorm"):
         return ["#4B0082", "#808080"] as const;
-      case "⚠️ Gewitter und starker Hagel":
+      case t("⚠️ Thunderstorm_with_heavy_hail"):
         return ["#2F4F4F", "#A9A9A9"] as const;
       default:
         return ["#ffffff", "#ffffff"] as const;
@@ -168,28 +170,28 @@ export default function Weather() {
 
   const weatherCodeToText = (code: number) => {
     const map: { [key: number]: string } = {
-      0: "Klarer Himmel",
-      1: "Überwiegend klar",
-      2: "Teilweise bewölkt",
-      3: "Bedeckt",
-      45: "Nebel",
-      48: "Reifnebel",
-      51: "leichter Nieselregen",
-      53: "mäßiger Nieselregen",
-      55: "starker Nieselregen",
-      61: "leichter Regen",
-      63: "mäßiger Regen",
-      65: "starker Regen",
-      71: "leichter Schnee",
-      73: "mäßiger Schnee",
-      75: "starker Schnee",
-      77: "Schneegriesel",
-      80: "leichte Schauer",
-      81: "mäßige Schauer",
-      82: "starke Schauer",
-      95: "⚠️ Gewitter",
-      96: "⚠️ Gewitter und starker Hagel",
-      99: "⚠️ Gewitter und leichter Hagel",
+      0: t("Clear_sky"),
+      1: t("Mostly_clear"),
+      2: t("Partly_cloudy"),
+      3: t("Overcast"),
+      45: t("Fog"),
+      48: t("Depositing_rime_fog"),
+      51: t("Light_drizzle"),
+      53: t("Moderate_drizzle"),
+      55: t("Heavy_drizzle"),
+      61: t("Light_rain"),
+      63: t("Moderate_rain"),
+      65: t("Heavy_rain"),
+      71: t("Light_snow"),
+      73: t("Moderate_snow"),
+      75: t("Heavy_snow"),
+      77: t("Snow_grains"),
+      80: t("Light_showers"),
+      81: t("Moderate_showers"),
+      82: t("Heavy_showers"),
+      95: t("⚠️ Thunderstorm"),
+      96: t("⚠️ Thunderstorm_with_heavy_hail"),
+      99: t("⚠️ Thunderstorm_with_light_hail"),
     };
     return map[code] || `Code ${code}`;
   };

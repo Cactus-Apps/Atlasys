@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { t } from "i18next";
 import { Rocket } from "lucide-react-native";
 import * as React from "react";
@@ -19,7 +20,22 @@ const updatelog = () => {
   return (
     <ScrollView style={styles.view}>
       <View style={styles.placeholder}>
-        <Text style={styles.titlet}>{t("update_log")}</Text>
+        <Text style={styles.titlet}>update_log</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.3.6</Text>
+        <Text style={styles.text}>Everything is now translated</Text>
+        <Text style={styles.text}>into German, English and French.</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.3.5</Text>
+        <Text style={styles.text}>New navigation system and </Text>
+        <Text style={styles.text}>and much has now been translated</Text>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.title}>v1.3.4</Text>
+        <Text style={styles.text}>New Profile screen and </Text>
+        <Text style={styles.text}>minor improvements</Text>
       </View>
       <View style={styles.container}>
         <View style={[styles.banner, { backgroundColor: "#212434" }]}>
@@ -27,7 +43,7 @@ const updatelog = () => {
           <Text style={[styles.bannertext, { color: "#5164C8" }]}>Feature</Text>
         </View>
         <Text style={styles.title}>v1.3.2</Text>
-        <Text style={styles.text}>Improved home screen and </Text>
+        <Text style={styles.text}>Improved home screen and</Text>
         <Text style={styles.text}>minor improvements</Text>
       </View>
       <View style={styles.container}>
@@ -133,7 +149,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     banner: {
       alignItems: "center",
       flexDirection: "row",
-      position: 'absolute',
+      position: "absolute",
       left: -14,
       top: -16,
       paddingVertical: 4,

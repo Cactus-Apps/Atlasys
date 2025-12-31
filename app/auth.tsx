@@ -1,5 +1,7 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "expo-router";
+import { t } from "i18next";
 import { useState } from "react";
 import {
   Image,
@@ -30,11 +32,11 @@ export default function AuthScreen() {
 
   const handleAuth = async () => {
     if (!email || !password) {
-      setError("Please fill in all fields.");
+      setError(t("Please_fill_in_all_fields"));
       return;
     }
     if (password.length < 6) {
-      setError("The password must be at least 6 characters long.");
+      setError(t("at_least"));
       return;
     }
 
@@ -75,9 +77,12 @@ export default function AuthScreen() {
             resizeMode="contain"
           />
 
-          <Text style={styles.text}> {isSignUp ? "Sign up to GPS" : "Sign in to GPS"}</Text>
+          <Text style={styles.text}>
+            {" "}
+            {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
+          </Text>
         </View>
-        <Text style={styles.info}>E-Mail</Text>
+        <Text style={styles.info}>{t('E-Mail')}</Text>
         <TextInput
           autoCapitalize="none"
           keyboardType="email-address"
@@ -94,7 +99,7 @@ export default function AuthScreen() {
           onFocus={() => setisFocused(true)}
           onBlur={() => setisFocused(false)}
         />
-        <Text style={styles.info}>Password</Text>
+        <Text style={styles.info}>{t('Password')}</Text>
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
@@ -117,7 +122,7 @@ export default function AuthScreen() {
         ) : null}
 
         <Button mode="contained" style={styles.button} onPress={handleAuth}>
-          {isSignUp ? "Sign up" : "Login"}
+          {isSignUp ? t("Sign_up") : t("Login")}
         </Button>
 
         <Button
@@ -127,8 +132,8 @@ export default function AuthScreen() {
           textColor="#466483ff"
         >
           {isSignUp
-            ? "Already have an account? Log in now"
-            : "Don't have an account yet? Register now"}
+            ? t("Already_account")
+            : t("no_account")}
         </Button>
       </View>
     </KeyboardAvoidingView>

@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Avatar } from "@kolking/react-native-avatar";
@@ -67,7 +68,7 @@ export default function AccountScreen() {
           setEmail(data.user?.email ?? null);
         }
       } catch (err: any) {
-        console.warn("Error loading account");
+        Alert.alert(t("Error_loading_account"));
       } finally {
         setLoading(false);
       }
@@ -163,7 +164,7 @@ export default function AccountScreen() {
     if (WantToDelete) {
       () => setModalVisible2(false);
       if (!userId || !email) {
-        Alert.alert("Error", "User ID or email could not be fetched.");
+        Alert.alert(t("Error"), t('User_ID_or_email_could_not_be_fetched'));
         return;
       }
 
@@ -180,10 +181,7 @@ export default function AccountScreen() {
         .lt("requested_at", tomorrow.toISOString());
 
       if (existing && existing.length > 0) {
-        Alert.alert(
-          "Limit reached",
-          "You can only submit one deletion request per day."
-        );
+        Alert.alert(t("Limit_reached"), t('only_one_deletion'));
         return;
       }
       const verification_code = Math.random()
@@ -204,9 +202,9 @@ export default function AccountScreen() {
 
       if (error) {
         console.error(error);
-        Alert.alert("Error", "Request could not be sent.");
+        Alert.alert(t("Error"), t('Request_could_not_be_sent'));
       } else {
-        Alert.alert("Request sent", "Your deletion request has been created.");
+        Alert.alert("Request_sent", "deletion_request_created");
         setRequest(data);
         updateProgress("pending");
       }
@@ -272,9 +270,9 @@ export default function AccountScreen() {
 
       <View style={styles.container}>
         {email ? (
-          <Text style={styles.email}>Hello {email}</Text>
+          <Text style={styles.email}>{t('Hello')} {email}</Text>
         ) : (
-          <Text style={{ color: "red" }}>An error has occurred</Text>
+          <Text style={{ color: "red" }}>{t('An_error_has_occurred')}</Text>
         )}
       </View>
 
@@ -288,7 +286,7 @@ export default function AccountScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.text2}>Delete account</Text>
+              <Text style={styles.text2}>{t('Delete_account')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -298,11 +296,11 @@ export default function AccountScreen() {
             <>
               <View style={styles.container3}>
                 <Text style={styles.text4}>
-                  status:{" "}
+                  {t('status:')}{" "}
                   {request.status === "pending"
-                    ? "Pending"
+                    ? t("Pending")
                     : request.status === "completed"
-                    ? "Finished"
+                    ? t("Finished")
                     : "Completed"}
                 </Text>
                 <View style={styles.progressBar}>
@@ -318,14 +316,14 @@ export default function AccountScreen() {
                   />
                 </View>
                 <Text style={styles.text5}>
-                  progress: {(progress * 100).toFixed(0)}%
+                  {t('progress')}: {(progress * 100).toFixed(0)}%
                 </Text>
                 <Text
                   style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}
                 >
                   {daysLeft !== null
-                    ? `Your account will be deleted in ${daysLeft} days`
-                    : "Deletion date is loading..."}
+                    ? [t(`Your_account_will_be_deleted_in`), `${daysLeft}`, t('days')]
+                    : t("Deletion_date_is_loading...")}
                 </Text>
               </View>
             </>
@@ -356,7 +354,7 @@ export default function AccountScreen() {
                         Oops !
                       </Text>
                     </View>
-                    <Text style={styles.text8}> Something went wrong </Text>
+                    <Text style={styles.text8}>{t('Something_went_wrong')}</Text>
                   </View>
                 </View>
                 <Modal
@@ -367,18 +365,16 @@ export default function AccountScreen() {
                 >
                   <View style={styles.modalBackground}>
                     <View style={styles.modalBox}>
-                      <Text style={styles.text9}> No permission</Text>
+                      <Text style={styles.text9}>{t('No_permission')}</Text>
                       <Text style={styles.text7}>
-                        You do not have permission to delete the account, or you
-                        do not own the account. If you do own the account,
-                        please send an email to cactus_apps@proton.me.
+                        {t('no_permission_to_delete')}
                       </Text>
                       <View>
                         <TouchableOpacity
                           onPress={() => setModalVisible(false)}
                           style={styles.button3}
                         >
-                          <Text style={styles.text2}> okay </Text>
+                          <Text style={styles.text2}>{t('okay')} </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -395,24 +391,21 @@ export default function AccountScreen() {
         >
           <View style={styles.modalBackground}>
             <View style={styles.modalBox}>
-              <Text style={styles.text9}>Delete account</Text>
-              <Text style={styles.text7}>
-                Are you sure you want to delete your account? This will delete
-                all your data after 10 days and it will not be possible to
-                recover it.
+              <Text style={styles.text9}>{t('Delete_account')}</Text>
+              <Text style={styles.text7}>{t('sure_to_delete')}
               </Text>
               <View style={styles.buttons2}>
                 <TouchableOpacity
                   onPress={deleteAccuntAction}
                   style={styles.buttonDelete}
                 >
-                  <Text style={styles.text2}> Delete </Text>
+                  <Text style={styles.text2}>{t('Delete')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setModalVisible2(false)}
                   style={styles.button5}
                 >
-                  <Text style={styles.text2}> Cancel </Text>
+                  <Text style={styles.text2}>{t('Cancel')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -421,7 +414,7 @@ export default function AccountScreen() {
       </View>
       <TouchableOpacity onPress={signOut} style={styles.signoutbutton}>
         <LogOut strokeWidth={3} color={"#d84646ff"} style={styles.icon} />
-        <Text style={styles.text}>Sign Out</Text>
+        <Text style={styles.text}>{t('Sign_Out')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

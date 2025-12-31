@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { AuthProvider } from "@/lib/auth-context";
 import { Tabs } from "expo-router";
 import { HelpCircle, Home, MapIcon, User } from "lucide-react-native";

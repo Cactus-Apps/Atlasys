@@ -1,5 +1,7 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Button,
   FlatList,
   Modal,
@@ -9,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { useTranslation } from "react-i18next";
 
 interface DeleteRequest {
   id: string;
@@ -21,6 +24,7 @@ interface DeleteRequest {
 
 export default function AdminPanel() {
   const [requests, setRequests] = useState<DeleteRequest[]>([]);
+  const { t } = useTranslation();
   const [selectedRequest, setSelectedRequest] = useState<DeleteRequest | null>(
     null
   );
@@ -37,7 +41,7 @@ export default function AdminPanel() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) console.error("❌ Error loading:", error);
+    if (error) Alert.alert(t('Error_loading'), `${error}`);
     else setRequests(data || []);
   }
 
@@ -53,7 +57,7 @@ export default function AdminPanel() {
       .eq("id", id);
 
     if (error) {
-      console.error("❌ Error during status update:", error);
+      Alert.alert(t('Error_during_status_update'), `${error}`);
     } else {
       setStatusModalVisible(false);
       setDetailsModalVisible(false);
@@ -63,7 +67,7 @@ export default function AdminPanel() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Admin Panel</Text>
+      <Text style={styles.title}>{t('Admin_Panel')}</Text>
 
       <FlatList
         data={requests}
@@ -79,7 +83,7 @@ export default function AdminPanel() {
             style={styles.card}
           >
             <Text style={styles.email}>{item.email}</Text>
-            <Text>status: {item.status}</Text>
+            <Text>{t('status:')} {item.status}</Text>
           </TouchableOpacity>
         )}
       />
@@ -94,19 +98,19 @@ export default function AdminPanel() {
           <View style={styles.modalBox}>
             {selectedRequest && (
               <>
-                <Text style={styles.modalTitle}>Application details</Text>
-                <Text>Email: {selectedRequest.email}</Text>
-                <Text>Status: {selectedRequest.status}</Text>
-                <Text>Code: {selectedRequest.verification_code}</Text>
-                <Text>{getDaysLeft(selectedRequest.expires_at)} days left</Text>
+                <Text style={styles.modalTitle}>{t('Application_details')}</Text>
+                <Text>{t('Email:')} {selectedRequest.email}</Text>
+                <Text>{t('Status:')} {selectedRequest.status}</Text>
+                <Text>{t('Code:')} {selectedRequest.verification_code}</Text>
+                <Text>{getDaysLeft(selectedRequest.expires_at)} {t('days_left')}</Text>
 
                 <View style={styles.modalButtonRow}>
                   <Button
-                    title="Cancel"
+                    title={t("Cancel")}
                     onPress={() => setDetailsModalVisible(false)}
                   />
                   <Button
-                    title="Change status"
+                    title={t("Change_status")}
                     onPress={() => setStatusModalVisible(true)}
                   />
                 </View>
@@ -124,7 +128,7 @@ export default function AdminPanel() {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Neuen Status auswählen</Text>
+            <Text style={styles.modalTitle}>{t('Select_new_status')}</Text>
 
             <Button
               title="Deleted"

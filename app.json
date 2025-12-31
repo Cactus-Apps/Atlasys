@@ -3,7 +3,7 @@
     "name": "GPS",
     "slug": "GPS",
     "jsEngine": "hermes",
-    "version": "1.3.5",
+    "version": "1.3.6",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",
@@ -43,7 +43,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-maps",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+        }
+      ],
       [
         "expo-font",
         {

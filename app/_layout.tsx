@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Slot, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";

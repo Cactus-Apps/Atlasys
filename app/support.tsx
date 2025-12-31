@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { useRouter } from "expo-router";
 import { t } from "i18next";
 import { ChevronLeft, Users } from "lucide-react-native";
@@ -16,7 +17,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const invite = () => {
   const router = useRouter();
   const scheme = useColorScheme();
-
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
@@ -49,10 +49,10 @@ const invite = () => {
           color={scheme === "dark" ? "#d8d8d8ff" : "#000000ff"}
           style={styles.icon}
         />
-        <Text style={styles.title}>{t("invite")}</Text>
+        <Text style={styles.title}>{t("Invite")}</Text>
       </View>
       <TouchableOpacity style={styles.button} onPress={shareLink}>
-        <Text style={styles.share}> {t("share")}</Text>
+        <Text style={styles.share}> {t("Share")}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

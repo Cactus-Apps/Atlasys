@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import * as Clipboard from "expo-clipboard";
 import * as Location from "expo-location";
 import { Copy, MapPin } from "lucide-react-native";
@@ -10,6 +11,7 @@ import {
   useColorScheme
 } from "react-native";
 import "../app/i18n";
+import { t } from "i18next";
 
 
 function Gpskoords() {
@@ -30,7 +32,7 @@ function Gpskoords() {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setErrorMsg("Location authorization denied");
+        setErrorMsg(t("Location_authorization_denied"));
         return;
       }
 
@@ -52,15 +54,15 @@ function Gpskoords() {
     }
   };
 
-  const copy = async (text: string) => {
-      await Clipboard.setStringAsync(text);
+  const copy = async (text: string[]) => {
+      await Clipboard.setStringAsync(text.join(" "));
     };
 
   const copyCoords = async () => {
     try {
       const message = location
-        ? `Latitude: ${location.coords.latitude}, Longitude: ${location.coords.longitude}`
-        : "No location available";
+        ? [t('Latitude:'), `${location.coords.latitude}` ,t('Longitude:'),`${location.coords.longitude}`]
+        : [t("No_location_available")];
       
         copy(message)
     } catch (error: any) {
@@ -89,7 +91,7 @@ function Gpskoords() {
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.gps}> GPS coordinates</Text>
+        <Text style={styles.gps}>{t('GPS_coordinates')}</Text>
         {location ? (
           <View>
             <Text style={styles.gpskoords}>
@@ -105,7 +107,7 @@ function Gpskoords() {
           <Text style={{ color: "red" }}>{errorMsg}</Text>
         ) : (
           <Text style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}>
-            waiting
+            {t('waiting')}
           </Text>
         )}
       </View>

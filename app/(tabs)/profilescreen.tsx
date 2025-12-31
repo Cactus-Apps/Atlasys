@@ -1,3 +1,4 @@
+// Version 1.3.6 - © Cactus Apps 2025
 import { Avatar } from "@kolking/react-native-avatar";
 import { useRouter } from "expo-router";
 import {
