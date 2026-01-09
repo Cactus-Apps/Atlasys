@@ -2,15 +2,20 @@
 import { Avatar } from "@kolking/react-native-avatar";
 import { useRouter } from "expo-router";
 import {
+  Bell,
   Bolt,
   ChevronRight,
+  CreditCard,
   HeartHandshake,
   Info,
   MessageCircleQuestionMark,
+  Rocket,
+  ShieldCheck,
   ShieldUser,
   TestTube,
   TestTube2,
   User,
+  UserRound,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,8 +26,11 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
+import {
+  GestureHandlerRootView,
+  ScrollView,
+} from "react-native-gesture-handler";
 
 function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -51,80 +59,222 @@ function ProfileScreen() {
     .join(" ");
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.profileHeader}>
-        <Avatar
-          size={80}
-          name={email ?? undefined}
-          email={email ?? undefined}
-          colorize={true}
-          radius={100}
-          badgeColor="#146275ff"
-          defaultSource={require("@/assets/images/icon.png")}
-        />
-        <Text style={styles.profileName}>{name}</Text>
-        <Text style={styles.profileEmail}>{email}</Text>
-      </View>
-
-      <View style={styles.menuContainer}>
-        <View style={styles.placeholder} />
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/account")}
-        >
-          <User strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("Profile")}</Text>
-          <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/settings")}
-        >
-          <Bolt strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("Settings")}</Text>
-          <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <View style={styles.line} />
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/help_feedback")}
-        >
-          <MessageCircleQuestionMark strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("Help_&_Feedback")}</Text>
-          <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/info")}
-        >
-          <Info strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("Info")}</Text>
-          <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.page}
-          onPress={() => router.navigate("/AdminPanel")}
-        >
-          <ShieldUser strokeWidth={2.5} style={styles.icon} />
-          <Text style={styles.link}>{t("Admin_Panel")}</Text>
-          <ChevronRight style={styles.arrow} />
-        </TouchableOpacity>
-        <View>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/test")}
-          >
-            <TestTube strokeWidth={2.5} style={styles.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/test2")}
-          >
-            <TestTube2 strokeWidth={2.5} style={styles.icon} />
-          </TouchableOpacity>
+    <GestureHandlerRootView>
+      <ScrollView style={styles.container}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarView}>
+            <Avatar
+              size={85}
+              name={email ?? undefined}
+              email={email ?? undefined}
+              colorize={true}
+              radius={100}
+              badgeColor="#146275ff"
+              defaultSource={require("@/assets/images/icon.png")}
+            />
+          </View>
+          <View style={styles.emailName}>
+            <Text style={styles.profileName}>{name}</Text>
+            <Text style={styles.profileEmail}>{email}</Text>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+
+        <View style={styles.menuContainer}>
+          <View style={{paddingHorizontal: 10,paddingVertical: 10}}>
+            <Text style={{ color: "#737B87", fontSize: 13, fontWeight: "500" }}>
+              ACCOUNT SETTINGS
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 15,
+              paddingVertical: 5,
+            }}
+          >
+            <View
+              style={{
+                alignItems: "center",
+                flexDirection: "row",
+                paddingVertical: 8,
+                paddingHorizontal: 8,
+                borderRadius: 50,
+                backgroundColor: "#E0E7FF",
+              }}
+            >
+              <UserRound color={"#4F46E5"} size={26} strokeWidth={3} />
+            </View>
+            <View style={{ paddingHorizontal: 18 }}>
+              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+                Edit Profile
+              </Text>
+              <Text
+                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
+              >
+                Update your photo and details
+              </Text>
+            </View>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <View style={styles.line} />
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 15,
+              paddingVertical: 5,
+            }}
+          >
+            <View
+              style={{
+                alignItems: "center",
+                flexDirection: "row",
+                paddingVertical: 8,
+                paddingHorizontal: 8,
+                borderRadius: 50,
+                backgroundColor: "#F3E8FF",
+              }}
+            >
+              <ShieldCheck color={"#9333EA"} size={26} strokeWidth={3} />
+            </View>
+            <View style={{ paddingHorizontal: 18 }}>
+              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+                Privacy & Security
+              </Text>
+              <Text
+                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
+              >
+                Manage your privacy settings
+              </Text>
+            </View>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <View style={styles.line} />
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 15,
+              paddingVertical: 5,
+            }}
+          >
+            <View
+              style={{
+                alignItems: "center",
+                flexDirection: "row",
+                paddingVertical: 8,
+                paddingHorizontal: 8,
+                borderRadius: 50,
+                backgroundColor: "#DBEAFE",
+              }}
+            >
+              <Bell color={"#2563EB"} size={26} strokeWidth={3} />
+            </View>
+            <View style={{ paddingHorizontal: 18 }}>
+              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+                Notification
+              </Text>
+              <Text
+                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
+              >
+                Customize notification preferences
+              </Text>
+            </View>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <View style={styles.line} />
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 15,
+              paddingVertical: 5,
+            }}
+          >
+            <View
+              style={{
+                alignItems: "center",
+                flexDirection: "row",
+                paddingVertical: 8,
+                paddingHorizontal: 8,
+                borderRadius: 50,
+                backgroundColor: "#DCFCE7",
+              }}
+            >
+              <CreditCard color={"#16A34A"} size={26} strokeWidth={3} />
+            </View>
+            <View style={{ paddingHorizontal: 18 }}>
+              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+                Billing & Plans
+              </Text>
+              <Text
+                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
+              >
+                Manage subscription and payment
+              </Text>
+            </View>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/account")}
+          >
+            <User strokeWidth={2.5} style={styles.icon} />
+            <Text style={styles.link}>{t("Profile")}</Text>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/settings")}
+          >
+            <Bolt strokeWidth={2.5} style={styles.icon} />
+            <Text style={styles.link}>{t("Settings")}</Text>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <View style={styles.line} />
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/help_feedback")}
+          >
+            <MessageCircleQuestionMark strokeWidth={2.5} style={styles.icon} />
+            <Text style={styles.link}>{t("Help_&_Feedback")}</Text>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/info")}
+          >
+            <Info strokeWidth={2.5} style={styles.icon} />
+            <Text style={styles.link}>{t("Info")}</Text>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.page}
+            onPress={() => router.navigate("/AdminPanel")}
+          >
+            <ShieldUser strokeWidth={2.5} style={styles.icon} />
+            <Text style={styles.link}>{t("Admin_Panel")}</Text>
+            <ChevronRight style={styles.arrow} />
+          </TouchableOpacity>
+          <View>
+            <TouchableOpacity
+              style={styles.page}
+              onPress={() => router.navigate("/test")}
+            >
+              <TestTube strokeWidth={2.5} style={styles.icon} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.page}
+              onPress={() => router.navigate("/(tabss)")}
+            >
+              <TestTube2 strokeWidth={2.5} style={styles.icon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -175,11 +325,11 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       backgroundColor: "#000",
     },
     line: {
-      height: 1,
+      height: 0.7,
       backgroundColor: "#ccc",
       alignSelf: "stretch",
       marginVertical: 12,
-      marginHorizontal: 0,
+      marginHorizontal: 16,
     },
     image: {
       width: 200,
@@ -192,18 +342,10 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       backgroundColor: "#222222",
       padding: 30,
       paddingTop: 40,
-      alignItems: "center",
-      borderBottomLeftRadius: 30,
-      borderBottomRightRadius: 30,
+      flexDirection: "row",
     },
-    avatarPlaceholder: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: "#4285F4",
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 15,
+    avatarView: {
+      alignSelf: "flex-start",
     },
     profileName: {
       fontSize: 22,
@@ -213,6 +355,10 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     profileEmail: {
       fontSize: 14,
       color: "gray",
+    },
+    emailName: {
+      paddingHorizontal: 15,
+      paddingVertical: 3,
     },
   });
 

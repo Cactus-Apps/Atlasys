@@ -1,6 +1,12 @@
-// Version 1.3.6 - © Cactus Apps 2025
+import {
+  MapProvider,
+  Map,
+  Marker,
+  MapRef,
+  MarkerRef,
+} from "react-native-maplibre-gl-js";
 import * as Location from "expo-location";
-import { Search, X } from "lucide-react-native";
+import { Box, Compass, MapIcon, Search, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,7 +14,6 @@ import {
   Dimensions,
   FlatList,
   Keyboard,
-  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -18,7 +23,6 @@ import {
   useColorScheme,
 } from "react-native";
 import { Button } from "react-native-paper";
-import { WebView } from "react-native-webview";
 import { useTranslation } from "react-i18next";
 
 const { width, height } = Dimensions.get("window");
@@ -39,10 +43,24 @@ type CityResult = {
 };
 
 export default function MapScreen() {
-  const webRef = useRef<WebView | null>(null);
   const [query, setQuery] = useState("");
+  const mapRef = useRef<MapRef | null>(null);
+  const markerRef = useRef<MarkerRef | null>(null);
+  const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
-  const [ready, setReady] = useState(false);
+  const [zoom, setZoom] = useState(12);
+  const hasCenteredOnce = useRef(false);
+  const hasCenteredTwich = useRef(false);
+  const [markerPos, setMarkerPos] = useState<[number, number]>();
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
+  const [subscription, setSubscription] =
+    useState<Location.LocationSubscription | null>(null);
+  const [MapStyle, setMapStyle] = useState(
+    "https://tiles.openfreemap.org/styles/bright"
+  );
+  const [ready, setReady] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
   const scheme = useColorScheme();
@@ -54,6 +72,28 @@ export default function MapScreen() {
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
+
+  const startWatching = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+
+      const sub = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 2000,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          setLocation(loc);
+        }
+      );
+
+      setSubscription(sub);
+    } catch (err: any) {}
+  };
 
   useEffect(() => {
     if (!query || query.length < 2) {
@@ -77,7 +117,7 @@ export default function MapScreen() {
         },
       });
       if (!resp.ok) {
-	    console.log(t("GeoDB_error"), `${resp.status}`);
+        console.log(t("GeoDB_error"), `${resp.status}`);
         setResults([]);
         setLoadingSearch(false);
         return;
@@ -95,7 +135,7 @@ export default function MapScreen() {
       }));
       setResults(arr);
     } catch (err) {
-	  Alert.alert(t("Search_error"), `${err}`);
+      Alert.alert(t("Search_error"), `${err}`);
       setResults([]);
     } finally {
       setLoadingSearch(false);
@@ -106,126 +146,20 @@ export default function MapScreen() {
     setSelected(city);
     setModalVisible(true);
     Keyboard.dismiss();
+    setZoom(9);
 
-    const payload = {
-      type: "goto",
-      lat: city.latitude,
-      lng: city.longitude,
-      zoom: 12,
-      title: city.name ?? city.city,
-      subtitle: `${city.region ? city.region + ", " : ""}${city.country}`,
-    };
-    webRef.current?.postMessage(JSON.stringify(payload));
+    mapRef.current?.flyTo({
+      center: [city.longitude, city.latitude],
+      zoom: 9,
+      speed: 0.2,
+      curve: 1,
+      duration: 5000,
+      pitch: 0,
+    });
+
     setResults([]);
     setQuery(city.name ?? city.city);
   }
-
-  const leafletHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <style>
-    html,body,#map { height:100%; margin:0; }
-    .marker-accuracy { color:#555; background:rgba(255, 255, 255, 0.85); padding:2px 6px; border-radius:4px; font:12px/1.2 system-ui,sans-serif; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map', { zoomControl: true }).setView([0,0], 2);
-
-    let tilelayer =
-    L.tileLayer("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${API_KEY}", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://www.maptiler.com/">MapTiler</a>',
-      maxZoom: 20
-    }).addTo(map);
-
-    const pinSvg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#2b6cb0" d="M12 2c-3.866 0-7 3.134-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>');
-    const pinIcon = L.icon({
-      iconUrl: 'data:image/svg+xml;utf8,' + pinSvg,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],   
-      popupAnchor: [0, -28]
-    });
-
-    let marker = null, accuracyCircle = null;
-
-    function goto(lat, lng, zoom, title, subtitle) {
-        map.setView([lat, lng], zoom || 12);
-        if (!tempMarker) {
-          tempMarker = L.marker([lat, lng]).addTo(map);
-        } else {
-          tempMarker.setLatLng([lat, lng]);
-        }
-        const popupHtml = '<b>' + (title||'Ort') + '</b><br/>' + (subtitle||'');
-        if (tempMarker.getPopup()) tempMarker.setPopupContent(popupHtml);
-        else tempMarker.bindPopup(popupHtml);
-        tempMarker.openPopup();
-      }
-
-      document.addEventListener('message', function(e) {
-        try {
-          const d = JSON.parse(e.data);
-          if (d && d.type === 'goto') {
-            goto(d.lat, d.lng, d.zoom, d.title, d.subtitle);
-          }
-        } catch (err) {}
-      });
-
-    function handleIncoming(evt){
-      const raw = evt && (evt.data || (evt.originalEvent && evt.originalEvent.data));
-      if (!raw) return;
-      let data = null;
-      try { data = JSON.parse(raw); } catch(_) { return; }
-
-      const c = data.coords || data;
-      if (!c || typeof c.latitude !== 'number' || typeof c.longitude !== 'number') return;
-
-      const lat = c.latitude, lng = c.longitude, acc = c.accuracy;
-
-      if (!marker) {
-        marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
-        marker.bindTooltip('<div class="marker-accuracy">Your_current_location</div>');
-        map.setView([lat, lng], 16, { animate: true });
-      } else {
-        marker.setLatLng([lat, lng]);
-      }
-
-      if (acc) {
-        if (!accuracyCircle) {
-          accuracyCircle = L.circle([lat, lng], { radius: acc, weight: 1, fillOpacity: 0.1 });
-          accuracyCircle.addTo(map);
-        } else {
-          accuracyCircle.setLatLng([lat, lng]);
-          accuracyCircle.setRadius(acc);
-        }
-      }
-    }
-
-    window.addEventListener('message', handleIncoming);
-    document.addEventListener('message', handleIncoming);
-    window.addEventListener('message', function(e) {
-        try {
-          const d = JSON.parse(e.data);
-          if (d && d.type === 'goto') {
-            goto(d.lat, d.lng, d.zoom, d.title, d.subtitle);
-          }
-        } catch (err) {}
-      });
-
-    window.onload = () => {
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ ready: true }));
-      }
-    };
-  </script>
-</body>
-</html>
-  `;
 
   useEffect(() => {
     let cancelled = false;
@@ -249,11 +183,24 @@ export default function MapScreen() {
         (loc) => {
           if (cancelled) return;
           lastLocRef.current = loc;
-          if (ready && webRef.current) {
-            webRef.current.postMessage(JSON.stringify(loc));
+          const { latitude, longitude } = loc.coords;
+          setMarkerPos([longitude, latitude]);
+          if (!hasCenteredOnce.current && mapRef.current) {
+            hasCenteredOnce.current = true;
+
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              speed: 0.3,
+              curve: 1,
+              duration: 100,
+              pitch: 0,
+            });
+            ensureGlobe();
           }
         }
       );
+
       if (!cancelled) setSub(s);
     })().catch((e: any) => setError(e?.message ?? "Unknown error"));
 
@@ -264,17 +211,54 @@ export default function MapScreen() {
     };
   }, [ready]);
 
-  const onWebMessage = (e: any) => {
-    let msg: any = null;
-    try {
-      msg = JSON.parse(e.nativeEvent.data);
-    } catch {}
-    if (msg?.ready) {
-      setReady(true);
-      if (lastLocRef.current && webRef.current) {
-        webRef.current.postMessage(JSON.stringify(lastLocRef.current));
+  const getPos = () => {
+    let cancelled = true;
+
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setError("Location authorization denied");
+        return;
       }
-    }
+
+      const s = await Location.watchPositionAsync(
+        {
+          accuracy:
+            Platform.OS === "android"
+              ? Location.Accuracy.Balanced
+              : Location.Accuracy.High,
+          timeInterval: 2000,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          if (cancelled) return;
+          lastLocRef.current = loc;
+          const { latitude, longitude } = loc.coords;
+          setMarkerPos([longitude, latitude]);
+          if (!hasCenteredTwich.current && mapRef.current) {
+            hasCenteredTwich.current = true;
+
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              speed: 0.3,
+              curve: 1,
+              duration: 100,
+              pitch: 0,
+            });
+            ensureGlobe();
+          }
+        }
+      );
+
+      if (!cancelled) setSub(s);
+    })().catch((e: any) => setError(e?.message ?? "Unknown error"));
+
+    return () => {
+      cancelled = true;
+      sub?.remove();
+      setSub(null);
+    };
   };
 
   const clearInput = () => {
@@ -282,8 +266,120 @@ export default function MapScreen() {
     setModalVisible(false);
   };
 
+  const resetToNorth = () => {
+    if (!mapRef.current) return;
+
+    mapRef.current.easeTo({
+      bearing: 0,
+      pitch: 0,
+      duration: 500,
+    });
+  };
+
+  const resetPitch = () => {
+    if (!mapRef.current) return;
+
+    if (pitch) {
+      mapRef.current.easeTo({
+        pitch: 0,
+        duration: 500,
+      });
+    } else {
+      mapRef.current.easeTo({
+        pitch: 60,
+        duration: 500,
+      });
+    }
+
+    setPitch(!pitch);
+  };
+
+  const ensureGlobe = () => {
+    mapRef.current?.setProjection({ type: "globe" });
+  };
+
+  const setMapStyleButton = () => {
+    setMapStyle("https://tiles.openfreemap.org/styles/liberty");
+    //    setMapStyle("https://tiles.openfreemap.org/styles/positron");
+    //    setMapStyle("https://tiles.openfreemap.org/styles/bright");
+    //    setMapStyle("");
+    hasCenteredTwich.current = false;
+    () => getPos();
+  };
+
   return (
-    <View style={styles.container2}>
+    <MapProvider>
+      <Map
+        ref={mapRef}
+        options={{
+          style: MapStyle,
+          center: [
+            location?.coords.longitude ?? 0,
+            location?.coords.latitude ?? 0,
+          ],
+          zoom: 12,
+        }}
+        listeners={{
+          mount: {
+            rnListener: ensureGlobe,
+          },
+        }}
+      />
+      <Marker
+        ref={markerRef}
+        options={{
+          coordinate: markerPos,
+          draggable: false,
+          element: {
+            innerHTML: `
+              <style>
+                .pin {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 40px;
+                  height: 40px;
+                  background: radial-gradient(circle at 50% 50%, #007AFF, #004A99);
+                  border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+                  box-shadow:
+                    0 4px 8px rgba(0, 0, 0, 0.3),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.6);
+                  position: relative;
+                  cursor: pointer;
+                  transition: transform 0.2s ease;
+                }
+                .pin:hover {
+                  transform: scale(1.1);
+                }
+                .pin-icon {
+                  font-size: 20px;
+                  color: white;
+                  text-shadow: 0 0 3px rgba(0,0,0,0.3);
+                  user-select: none;
+                  pointer-events: none;
+                  line-height: 1;
+                }
+              </style>
+              <div class="pin" title="Standort">
+              </div>
+            `,
+          },
+        }}
+        listeners={{
+          click: {
+            elementListener: async (_: MouseEvent) => {
+              mapRef.current?.flyTo({
+                center: markerPos,
+                zoom: 14,
+                speed: 0.3,
+                curve: 1,
+                duration: 1000,
+                pitch: 0,
+              });
+            },
+          },
+        }}
+      />
       <View style={styles.searchContainer}>
         <Search
           size={25}
@@ -293,7 +389,7 @@ export default function MapScreen() {
         />
         <TextInput
           placeholder={t("Search")}
-          placeholderTextColor={scheme === "dark" ? "#d8d8d8ff" : "#666"}
+          placeholderTextColor={scheme === "dark" ? "#d8d8d8ff" : "#667"}
           style={styles.input}
           value={query}
           onChangeText={(value) => setQuery(value)}
@@ -316,6 +412,21 @@ export default function MapScreen() {
           </View>
         )}
       </View>
+      <TouchableOpacity
+        onPress={setMapStyleButton}
+        style={{
+          position: "absolute",
+          top: 40,
+          right: 12,
+          backgroundColor: "#24262E",
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 10,
+          zIndex: 20,
+        }}
+      >
+        <MapIcon color={"#fff"} size={30} />
+      </TouchableOpacity>
 
       {results.length > 0 && !modalVisible && (
         <View style={styles.suggestionBox}>
@@ -339,16 +450,35 @@ export default function MapScreen() {
         </View>
       )}
 
-      <WebView
-        ref={webRef}
-        originWhitelist={["*"]}
-        source={{ html: leafletHTML }}
-        style={styles.webview}
-        javaScriptEnabled
-        domStorageEnabled
-        onMessage={onWebMessage}
-        mixedContentMode="compatibility"
-      />
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          bottom: 105,
+          right: 8,
+          backgroundColor: "#24262E",
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 10,
+        }}
+        onPress={resetPitch}
+      >
+        <Box color={"#fff"} size={30} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          bottom: 45,
+          right: 8,
+          backgroundColor: "#24262E",
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          borderRadius: 10,
+        }}
+        onPress={resetToNorth}
+      >
+        <Compass color={"#fff"} size={30} />
+      </TouchableOpacity>
+
       {modalVisible && (
         <View style={styles.customModal}>
           {selected ? (
@@ -376,20 +506,22 @@ export default function MapScreen() {
               </View>
             </>
           ) : (
-            <Text>{t('No_location_selected')}</Text>
+            <Text>{t("No_location_selected")}</Text>
           )}
         </View>
       )}
-    </View>
+    </MapProvider>
   );
 }
-
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
+    container: {
+      padding: 20,
+      alignItems: "center",
+    },
     icon: {
       marginLeft: 13,
     },
-    container2: { flex: 1 },
     searchContainer: {
       position: "absolute",
       top: Platform.OS === "ios" ? 50 : 40,
@@ -404,6 +536,8 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       shadowColor: "#000",
       shadowOpacity: 0.1,
       shadowRadius: 4,
+      maxWidth: 300,
+      flex: 1,
     },
     input: {
       flex: 1,
@@ -417,12 +551,13 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     },
     suggestionBox: {
       position: "absolute",
-      top: Platform.OS === "ios" ? 100 : 83,
+      top: Platform.OS === "ios" ? 100 : 75,
       left: 12,
-      right: 12,
+      right: 72,
       maxHeight: 220,
       backgroundColor: scheme === "dark" ? "#24262E" : "#d8d8d8ff",
-      borderRadius: 8,
+      borderBottomLeftRadius: 8,
+      borderBottomRightRadius: 8,
       zIndex: 25,
       elevation: 6,
       shadowColor: "#000",

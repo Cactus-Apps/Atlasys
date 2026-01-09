@@ -185,7 +185,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginVertical: 23,
       color: scheme === "dark" ? "#d8d8d8ff" : "#000",
     },
-
     credits: {
       fontSize: 26,
       alignSelf: "center",
