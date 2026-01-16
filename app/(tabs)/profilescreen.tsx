@@ -26,7 +26,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/auth/supabase";
 import {
   GestureHandlerRootView,
   ScrollView,
@@ -267,7 +267,7 @@ function ProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.page}
-              onPress={() => router.navigate("/(tabss)")}
+              onPress={() => router.navigate("/test2")}
             >
               <TestTube2 strokeWidth={2.5} style={styles.icon} />
             </TouchableOpacity>

@@ -1,4 +1,4 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import { t } from "i18next";
 import { Pause, Play, TimerIcon } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";

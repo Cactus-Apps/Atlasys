@@ -1,6 +1,6 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/auth/supabase";
 
 export const subscribeToNewRequests = () => {
   const channel = supabase

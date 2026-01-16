@@ -1,4 +1,4 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import * as Clipboard from "expo-clipboard";
 import * as Location from "expo-location";
 import { Copy, MapPin } from "lucide-react-native";
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import "../app/i18n";
 import { t } from "i18next";
+import { useloadingStore } from "@/lib/storage/zustand";
 
 
 function Gpskoords() {
@@ -21,15 +22,25 @@ function Gpskoords() {
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
   const [time, setTime] = useState(new Date());
-
+  const loadingGpsCoords = useloadingStore((s) => s.loadingGpsCoords);
+  const setloadingGpsCoords = useloadingStore((s) => s.setloadingGpsCoords)
+  const [loadingGpsCoords2, setloadingGpsCoords2] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const scheme = useColorScheme();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
 
+    useEffect(() => {
+      if(!loadingGpsCoords2) {
+        setloadingGpsCoords(false);
+      }
+    }, [])
+  
+
   const startWatching = async () => {
     try {
+      setloadingGpsCoords2(true);
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg(t("Location_authorization_denied"));
@@ -51,7 +62,7 @@ function Gpskoords() {
       setSubscription(sub);
     } catch (err: any) {
       setErrorMsg(err.message);
-    }
+    } finally {setloadingGpsCoords2(false)}
   };
 
   const copy = async (text: string[]) => {

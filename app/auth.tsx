@@ -1,5 +1,5 @@
 // Version 1.3.6 - © Cactus Apps 2025
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth/auth-context";
 import { useRouter } from "expo-router";
 import { t } from "i18next";
 import { useState } from "react";

@@ -1,9 +1,9 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import { t } from "i18next";
 import {
   Clock4
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,

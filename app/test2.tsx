@@ -8,9 +8,24 @@ import {
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
 import React, { useEffect, useRef, useState } from "react";
-import { TouchableOpacity, View, Text, Modal } from "react-native";
+import { TouchableOpacity, View, Text, Modal, Alert } from "react-native";
+
+const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY;
+const RAPIDAPI_HOST = process.env.EXPO_PUBLIC_RAPIDAPI_HOST;
+
+type CityResult = {
+  id: number | string;
+  city: string;
+  name?: string;
+  country: string;
+  region?: string;
+  latitude: number;
+  longitude: number;
+  population?: number;
+};
 
 export default function App() {
+  const [query, setQuery] = useState("");
   const [start, setStart] = useState<[number, number] | null>([9, 53]);
   const [end, setEnd] = useState<[number, number] | null>([10, 50]);
   const [city, setCity] = useState<any | null>(null);
@@ -22,13 +37,59 @@ export default function App() {
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
     "driving"
   );
-  const [markerPos, setmarkerPos] = useState<[number, number] | undefined>(
-    undefined
-  );
   const [route, setRoute] = useState<any>(null);
   const mapRef = useRef<MapRef | null>(null);
   const markerRef = useRef<MarkerRef | null>(null);
   const markerRef2 = useRef<MarkerRef | null>(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [results, setResults] = useState<CityResult[]>([]);
+
+  useEffect(() => {
+    if (!query || query.length < 2) {
+      setResults([]);
+      return;
+    }
+    const t = setTimeout(() => searchCities(query), 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  async function searchCities(q: string) {
+    setLoadingSearch(true);
+    try {
+      const url = `https://${RAPIDAPI_HOST}/v1/geo/cities?namePrefix=${encodeURIComponent(
+        q
+      )}&limit=8&sort=-population`;
+      const resp = await fetch(url, {
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY ?? "",
+          "X-RapidAPI-Host": RAPIDAPI_HOST ?? "",
+        },
+      });
+      if (!resp.ok) {
+        console.log("GeoDB_error", `${resp.status}`);
+        setResults([]);
+        setLoadingSearch(false);
+        return;
+      }
+      const json = await resp.json();
+      const arr = (json.data || []).map((it: any) => ({
+        id: it.id ?? `${it.latitude}-${it.longitude}`,
+        city: it.city || it.name || `${it.city}, ${it.country}`,
+        name: it.name ?? it.city,
+        country: it.country,
+        region: it.region,
+        latitude: it.latitude,
+        longitude: it.longitude,
+        population: it.population,
+      }));
+      setResults(arr);
+    } catch (err) {
+      Alert.alert("Search_error", `${err}`);
+      setResults([]);
+    } finally {
+      setLoadingSearch(false);
+    }
+  }
 
   const fitRouteBounds = () => {
     if (!mapRef.current || !start || !end) return;
@@ -161,6 +222,20 @@ export default function App() {
                   return d < best.d ? { f: curr, d } : best;
                 }, null).f;
 
+                const props = closest.properties || {};
+
+                setCity({
+                  name:
+                    props.name ||
+                    props.name_en ||
+                    props.name_de ||
+                    props.place_name ||
+                    "Unbekannte Stadt",
+                  country:
+                    props.iso_a2 || props.country || props.country_code || null,
+                  population: props.population || null,
+                });
+
                 setCity({
                   name: closest.properties?.name,
                   country: closest.properties?.iso_a2,
@@ -193,6 +268,9 @@ export default function App() {
         >
           <Text>{(Info.distance / 1000).toFixed(1)} km</Text>
           <Text>{(Info.duration / 60).toFixed(0)} min</Text>
+          <TouchableOpacity>
+            <Text> {city?.country}</Text>
+          </TouchableOpacity>
         </View>
       )}
       <Modal visible={modalVisible} transparent animationType="slide">

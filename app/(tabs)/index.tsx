@@ -1,4 +1,4 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import {
@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { loadLanguage } from "../i18n";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
@@ -26,13 +26,15 @@ import {
   registerForPushNotificationsAsync,
   subscribeToNewRequests,
 } from "@/utils/notificationConfig";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/auth/supabase";
 import Clock from "@/components/Clock";
 import Gpskoords from "@/components/Gpskoords";
 import Timer from "@/components/Timer";
 import Weather from "@/components/weather";
 import { JSX } from "react";
 import DraggableFlatList from "react-native-draggable-flatlist";
+import { useloadingStore } from "@/lib/storage/zustand";
+import { CardSkeletonView, CardSkeletonViewText } from "@/components/SkeletonView";
 
 const componentMap: Record<string, JSX.Element> = {
   "1": <Clock />,
@@ -53,13 +55,17 @@ export default function HomeScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
+  const loadingAll = useloadingStore((s) => s.loadingAll);
+  const setloadingAll = useloadingStore((s) => s.setloadingAll);
+  const loadingGpsCoords = useloadingStore((s) => s.loadingGpsCoords);
+  const loadingWeather = useloadingStore((s) => s.loadingWeather);
   const [dragEnabled, setDragEnabled] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [Admin, setAdmin] = useState(false);
   const [order, setOrder] = useState<string[]>(initialOrder);
-  const [loadingOrder, setLoadingOrder] = useState(false);
+  const [loadingOrder, setLoadingOrder] = useState(true);
   const { user } = useAuth();
   const { t } = useTranslation();
   const [time, setTime] = useState(new Date());
@@ -71,6 +77,12 @@ export default function HomeScreen() {
   );
 
   const toggleDrag = () => setDragEnabled((prev) => !prev);
+
+  useEffect(() => {
+    if (!loadingGpsCoords && !loadingWeather && !loadingOrder && !loading) {
+      setloadingAll(false);
+    }
+  });
 
   const Startdragging = () => {
     setModalVisible(false);
@@ -108,7 +120,7 @@ export default function HomeScreen() {
     if (orderData && orderData.component_order) {
       setOrder(orderData.component_order);
     }
-    setLoadingOrder(true);
+    setLoadingOrder(false);
   }
 
   const saveOrder = async (newOrder: string[]) => {
@@ -123,6 +135,7 @@ export default function HomeScreen() {
       ],
       { onConflict: "user_id" }
     );
+    setLoading(false);
   };
 
   const startWatching = async () => {
@@ -158,7 +171,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadOrder();
-    setLoading(true);
+    setLoading(false);
   }, [user]);
 
   useEffect(() => {
@@ -176,6 +189,41 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={() => router.navigate("/_sitemap")}>
           <Text style={{ color: "#000" }}> navigate </Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+  if (!loadingAll) {
+    return (
+      <View>
+        <View style={styles.header}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.image}
+          />
+          {dragEnabled ? (
+            <TouchableOpacity
+              style={styles.more}
+              onPress={() => setDragEnabled(false)}
+            >
+              <Check strokeWidth={3} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.more}
+              onPress={() => setModalVisible(true)}
+            >
+              <EllipsisVertical strokeWidth={2} size={30} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={{ paddingVertical: 12 }}>
+          <View style={styles.cardSkeletonView}>
+            <CardSkeletonViewText />
+            <CardSkeletonViewText />
+            <CardSkeletonViewText />
+            <CardSkeletonViewText />
+          </View>
+        </View>
       </View>
     );
   } else {
@@ -230,11 +278,11 @@ export default function HomeScreen() {
                       style={styles.button}
                     >
                       <ArrowDownUp />
-                      <Text style={styles.text}>{t('Drag_Elements')}</Text>
+                      <Text style={styles.text}>{t("Drag_Elements")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={loadOrder} style={styles.button}>
                       <RefreshCw />
-                      <Text style={styles.text}>{t('Reload')}</Text>
+                      <Text style={styles.text}>{t("Reload")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -317,6 +365,16 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       flexDirection: "row",
       alignItems: "center",
       elevation: 2,
+    },
+    card: {
+      marginVertical: 2,
+      paddingVertical: 13,
+      paddingHorizontal: 13,
+    },
+    cardSkeletonView: {
+      alignItems: "center",
+      justifyContent: "center",
+      margin: 4,
     },
     image: {
       width: 170,

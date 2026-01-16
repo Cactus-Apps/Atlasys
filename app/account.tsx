@@ -1,6 +1,6 @@
 // Version 1.3.6 - © Cactus Apps 2025
-import { useAuth } from "@/lib/auth-context";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth/auth-context";
+import { supabase } from "@/lib/auth/supabase";
 import { Avatar } from "@kolking/react-native-avatar";
 import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/auth/supabase";
 import { useTranslation } from "react-i18next";
 
 interface DeleteRequest {

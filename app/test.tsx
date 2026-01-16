@@ -1,9 +1,11 @@
+import { View } from "react-native";
+import { MotiView } from "moti";
+import { Skeleton } from "moti/skeleton";
 // Version 1.3.6 - © Cactus Apps 2025
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
+import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
 import { Linking } from "react-native";
 
@@ -35,10 +37,7 @@ const DonateButton = () => {
   );
 };
 
-
 export default function App() {
-  
-  
   return (
     <View style={{ padding: 20 }}>
       <View style={styles.view}>
@@ -52,14 +51,12 @@ export default function App() {
           loop
         />
         <View style={{ paddingVertical: 80 }} />
-        <Text style={styles.textklein}>
-          We respect your privacy
-        </Text>
+        <Text style={styles.textklein}>We respect your privacy</Text>
         <View style={{ paddingVertical: 50 }} />
         <TouchableOpacity style={styles.button}>
           <Text style={styles.text}> Next </Text>
         </TouchableOpacity>
-        <DonateButton /> 
+        <DonateButton />
       </View>
     </View>
   );
@@ -93,7 +90,7 @@ const styles = StyleSheet.create({
     color: "#949393ff",
   },
   buttonSkip: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     paddingRight: 20,
   },
   container: {
