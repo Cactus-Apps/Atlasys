@@ -3,16 +3,16 @@ import { CustomTabBar1 } from "@/components/TabBarStyle";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { Tabs } from "expo-router";
 import React, { useState } from "react";
-import { useColorScheme } from "react-native";
+import { useColorScheme, View } from "react-native";
 import { useTabStore } from "@/lib/storage/zustand";
-import { HelpCircle, Home, MapIcon, User} from "lucide-react-native"
+import { Bookmark, HelpCircle, Home, MapIcon, User} from "lucide-react-native"
 
 export default function TabsLayout() {
   const scheme = useColorScheme();
   const TabBar = useTabStore((s) => s.TabBar);
 
   return (
-    <AuthProvider>
+    <>
       {TabBar === "CustomTabBar1" ? (
         <Tabs
           screenOptions={{ headerShown: false }}
@@ -20,6 +20,7 @@ export default function TabsLayout() {
         >
           <Tabs.Screen name="index" options={{ title: "Home" }} />
           <Tabs.Screen name="mapscreen" options={{ title: "map" }} />
+          <Tabs.Screen name="saved" options={{ title: "Saved" }}/>
           <Tabs.Screen name="profilescreen" options={{ title: "profile" }} />
         </Tabs>
       ) : (
@@ -43,6 +44,9 @@ export default function TabsLayout() {
                 case "mapscreen":
                   IconComponent = MapIcon;
                   break;
+                case "saved":
+                  IconComponent = Bookmark;
+                  break;
                 case "profilescreen":
                   IconComponent = User;
                   break;
@@ -57,10 +61,11 @@ export default function TabsLayout() {
           })}
         >
           <Tabs.Screen name="index" options={{ title: "Home" }} />
-          <Tabs.Screen name="mapscreen" options={{ title: "map" }} />
-          <Tabs.Screen name="profilescreen" options={{ title: "profile" }} />
+          <Tabs.Screen name="mapscreen" options={{ title: "Map" }} />
+          <Tabs.Screen name="saved" options={{ title: "Saved" }} />
+          <Tabs.Screen name="profilescreen" options={{ title: "Profile" }} />
         </Tabs>
       )}
-    </AuthProvider>
+      </>
   );
 }

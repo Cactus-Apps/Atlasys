@@ -17,6 +17,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import AuthPaywallGate from "@/components/AuthPaywallGate";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { loadLanguage } from "../i18n";
@@ -34,7 +35,10 @@ import Weather from "@/components/weather";
 import { JSX } from "react";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { useloadingStore } from "@/lib/storage/zustand";
-import { CardSkeletonView, CardSkeletonViewText } from "@/components/SkeletonView";
+import {
+  CardSkeletonView,
+  CardSkeletonViewText,
+} from "@/components/SkeletonView";
 
 const componentMap: Record<string, JSX.Element> = {
   "1": <Clock />,
@@ -53,16 +57,16 @@ interface RenderItemProps {
 
 export default function HomeScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
+    null,
   );
   const loadingAll = useloadingStore((s) => s.loadingAll);
-  const setloadingAll = useloadingStore((s) => s.setloadingAll);
-  const loadingGpsCoords = useloadingStore((s) => s.loadingGpsCoords);
-  const loadingWeather = useloadingStore((s) => s.loadingWeather);
+  const setloadingGpsCoords = useloadingStore((s) => s.setloadingGpsCoords);
   const [dragEnabled, setDragEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const loadingGpsCoords = useloadingStore((s) => s.loadingGpsCoords);
+  const loadingWeather = useloadingStore((s) => s.loadingWeather);
   const [Admin, setAdmin] = useState(false);
   const [order, setOrder] = useState<string[]>(initialOrder);
   const [loadingOrder, setLoadingOrder] = useState(true);
@@ -73,16 +77,10 @@ export default function HomeScreen() {
     useState<Location.LocationSubscription | null>(null);
   const scheme = useColorScheme();
   const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
+    scheme === "light" || scheme === "dark" ? scheme : null,
   );
 
   const toggleDrag = () => setDragEnabled((prev) => !prev);
-
-  useEffect(() => {
-    if (!loadingGpsCoords && !loadingWeather && !loadingOrder && !loading) {
-      setloadingAll(false);
-    }
-  });
 
   const Startdragging = () => {
     setModalVisible(false);
@@ -133,7 +131,7 @@ export default function HomeScreen() {
           updated_at: new Date().toISOString(),
         },
       ],
-      { onConflict: "user_id" }
+      { onConflict: "user_id" },
     );
     setLoading(false);
   };
@@ -155,12 +153,14 @@ export default function HomeScreen() {
         (loc) => {
           setLocation(loc);
           setErrorMsg(null);
-        }
+        },
       );
 
       setSubscription(sub);
     } catch (err: any) {
       setErrorMsg(err.message);
+    } finally {
+      setloadingGpsCoords(false);
     }
   };
 
@@ -191,106 +191,74 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
     );
-  }
-  if (!loadingAll) {
-    return (
-      <View>
-        <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={styles.image}
-          />
-          {dragEnabled ? (
-            <TouchableOpacity
-              style={styles.more}
-              onPress={() => setDragEnabled(false)}
-            >
-              <Check strokeWidth={3} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.more}
-              onPress={() => setModalVisible(true)}
-            >
-              <EllipsisVertical strokeWidth={2} size={30} />
-            </TouchableOpacity>
-          )}
-        </View>
-        <View style={{ paddingVertical: 12 }}>
-          <View style={styles.cardSkeletonView}>
-            <CardSkeletonViewText />
-            <CardSkeletonViewText />
-            <CardSkeletonViewText />
-            <CardSkeletonViewText />
-          </View>
-        </View>
-      </View>
-    );
   } else {
     return (
-      <AuthProvider>
-        <GestureHandlerRootView>
-          <View style={styles.header}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.image}
-            />
-            {dragEnabled ? (
-              <TouchableOpacity
-                style={styles.more}
-                onPress={() => setDragEnabled(false)}
-              >
-                <Check strokeWidth={3} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.more}
-                onPress={() => setModalVisible(true)}
-              >
-                <EllipsisVertical strokeWidth={2} size={30} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={{ paddingVertical: 12 }} />
-          <View>
-            <Render
-              order={order}
-              setOrder={setOrder}
-              dragEnabled={dragEnabled}
-              onOrderChange={saveOrder}
-            />
-          </View>
-          {modalVisible && (
-            <View style={styles.customModal}>
-              <>
-                <View style={styles.modalContent}>
-                  <View style={styles.close}>
-                    <TouchableOpacity
-                      style={styles.closeButton}
-                      onPress={() => setModalVisible(false)}
-                    >
-                      <X strokeWidth={3} />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{ paddingTop: 20 }}>
-                    <TouchableOpacity
-                      onPress={Startdragging}
-                      style={styles.button}
-                    >
-                      <ArrowDownUp />
-                      <Text style={styles.text}>{t("Drag_Elements")}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={loadOrder} style={styles.button}>
-                      <RefreshCw />
-                      <Text style={styles.text}>{t("Reload")}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
+        <AuthProvider>
+          <GestureHandlerRootView style={{flex: 1}}>
+            <View style={styles.header}>
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={styles.image}
+              />
+              {dragEnabled ? (
+                <TouchableOpacity
+                  style={styles.more}
+                  onPress={() => setDragEnabled(false)}
+                >
+                  <Check strokeWidth={3} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.more}
+                  onPress={() => setModalVisible(true)}
+                >
+                  <EllipsisVertical strokeWidth={2} size={30} />
+                </TouchableOpacity>
+              )}
             </View>
-          )}
-        </GestureHandlerRootView>
-      </AuthProvider>
+            <View style={{ paddingVertical: 12 }} />
+            <View>
+              <Render
+                order={order}
+                setOrder={setOrder}
+                dragEnabled={dragEnabled}
+                onOrderChange={saveOrder}
+              />
+            </View>
+            {modalVisible && (
+              <View style={styles.customModal}>
+                <>
+                  <View style={styles.modalContent}>
+                    <View style={styles.close}>
+                      <TouchableOpacity
+                        style={styles.closeButton}
+                        onPress={() => setModalVisible(false)}
+                      >
+                        <X strokeWidth={3} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ paddingTop: 20 }}>
+                      <TouchableOpacity
+                        onPress={Startdragging}
+                        style={styles.button}
+                      >
+                        <ArrowDownUp />
+                        <Text style={styles.text}>{t("Drag_Elements")}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={loadOrder}
+                        style={styles.button}
+                      >
+                        <RefreshCw />
+                        <Text style={styles.text}>{t("Reload")}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </>
+              </View>
+            )}
+          </GestureHandlerRootView>
+        </AuthProvider>
     );
   }
 }

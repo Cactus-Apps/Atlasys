@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
-      }
+      },
     );
 
     loadUser();
@@ -47,8 +47,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
+
       if (error) throw error;
+
+      if (data.session) {
+        setUser(data.session.user);
+        return null;
+      }
+
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (loginError) throw loginError;
+
+      await getUser();
+
       return null;
     } catch (error: any) {
       return error.message || "Fehler bei der Registrierung";
@@ -91,9 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error(
-      "useAuth muss innerhalb von <AuthProvider> verwendet werden."
-    );
+    throw new Error("useAuth must be inside off <AuthProvider> ");
   }
   return context;
 }

@@ -8,12 +8,11 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 import "../app/i18n";
 import { t } from "i18next";
 import { useloadingStore } from "@/lib/storage/zustand";
-
 
 function Gpskoords() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -22,28 +21,22 @@ function Gpskoords() {
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
   const [time, setTime] = useState(new Date());
-  const loadingGpsCoords = useloadingStore((s) => s.loadingGpsCoords);
-  const setloadingGpsCoords = useloadingStore((s) => s.setloadingGpsCoords)
-  const [loadingGpsCoords2, setloadingGpsCoords2] = useState(true)
+
+  const setLoadingGpsCoords = useloadingStore((s) => s.setloadingGpsCoords);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const scheme = useColorScheme();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
 
-    useEffect(() => {
-      if(!loadingGpsCoords2) {
-        setloadingGpsCoords(false);
-      }
-    }, [])
-  
-
   const startWatching = async () => {
     try {
-      setloadingGpsCoords2(true);
+      setLoadingGpsCoords(true);
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg(t("Location_authorization_denied"));
+        setLoadingGpsCoords(false);
         return;
       }
 
@@ -62,20 +55,27 @@ function Gpskoords() {
       setSubscription(sub);
     } catch (err: any) {
       setErrorMsg(err.message);
-    } finally {setloadingGpsCoords2(false)}
+    } finally {
+      setLoadingGpsCoords(false);
+    }
   };
 
   const copy = async (text: string[]) => {
-      await Clipboard.setStringAsync(text.join(" "));
-    };
+    await Clipboard.setStringAsync(text.join(" "));
+  };
 
   const copyCoords = async () => {
     try {
       const message = location
-        ? [t('Latitude:'), `${location.coords.latitude}` ,t('Longitude:'),`${location.coords.longitude}`]
+        ? [
+            t("Latitude:"),
+            `${location.coords.latitude}`,
+            t("Longitude:"),
+            `${location.coords.longitude}`,
+          ]
         : [t("No_location_available")];
-      
-        copy(message)
+
+      copy(message);
     } catch (error: any) {
       console.log(error.message);
     }
@@ -102,7 +102,7 @@ function Gpskoords() {
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.gps}>{t('GPS_coordinates')}</Text>
+        <Text style={styles.gps}>{t("GPS_coordinates")}</Text>
         {location ? (
           <View>
             <Text style={styles.gpskoords}>
@@ -118,7 +118,7 @@ function Gpskoords() {
           <Text style={{ color: "red" }}>{errorMsg}</Text>
         ) : (
           <Text style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}>
-            {t('waiting')}
+            {t("waiting")}
           </Text>
         )}
       </View>

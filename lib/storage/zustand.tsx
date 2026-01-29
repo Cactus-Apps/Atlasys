@@ -16,14 +16,29 @@ type Storeloading = {
   loadingAll: boolean;
   setloadingGpsCoords: (val: boolean) => void;
   setloadingWeather: (val: boolean) => void;
-  setloadingAll: (val: boolean) => void;
 };
 
 export const useloadingStore = create<Storeloading>((set) => ({
   loadingGpsCoords: true,
   loadingWeather: true,
   loadingAll: true,
-  setloadingGpsCoords: () => set({ loadingGpsCoords: false }),
-  setloadingWeather: () => set({ loadingWeather: false }),
-  setloadingAll: () => set({ loadingAll: false }),
+  setloadingGpsCoords: (val) =>
+    set(() => ({
+      loadingGpsCoords: val,
+    })),
+  setloadingWeather: (val) =>
+    set(() => ({
+      loadingWeather: val,
+    })),
 }));
+
+type StoreAuth = {
+  isSubscribed: boolean;
+  setSubscribed: (val: boolean) => void;
+};
+
+export const useAuthStore = create<StoreAuth>((set) => ({
+  isSubscribed: false,
+  setSubscribed: (val) => set({ isSubscribed: val }),
+}));
+

@@ -48,8 +48,6 @@
     "lucide-react-native": "^0.546.0",
     "moti": "^0.30.0",
     "node-fetch": "^3.3.2",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
     "react-i18next": "^16.1.5",
     "react-native": "0.81.5",
     "react-native-appwrite": "^0.17.1",

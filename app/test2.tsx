@@ -8,7 +8,22 @@ import {
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
 import React, { useEffect, useRef, useState } from "react";
-import { TouchableOpacity, View, Text, Modal, Alert } from "react-native";
+import {
+  TouchableOpacity,
+  View,
+  Text,
+  Modal,
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+} from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useMemo } from "react";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { X } from "lucide-react-native";
+import { Linking } from "react-native";
+import { WebView } from "react-native-webview";
 
 const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY;
 const RAPIDAPI_HOST = process.env.EXPO_PUBLIC_RAPIDAPI_HOST;
@@ -24,10 +39,16 @@ type CityResult = {
   population?: number;
 };
 
+const windowWidth = Dimensions.get("window").width;
+
 export default function App() {
   const [query, setQuery] = useState("");
+  const sheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ["15%", "25%", "50%", "80%"], []);
+
   const [start, setStart] = useState<[number, number] | null>([9, 53]);
   const [end, setEnd] = useState<[number, number] | null>([10, 50]);
+  const [BottomSheetIndex, setBottomSheetIndex] = useState<number>(-1);
   const [city, setCity] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [Info, setInfo] = useState<{
@@ -35,59 +56,167 @@ export default function App() {
     duration: number;
   } | null>();
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
-    "driving"
+    "driving",
   );
   const [route, setRoute] = useState<any>(null);
   const mapRef = useRef<MapRef | null>(null);
   const markerRef = useRef<MarkerRef | null>(null);
   const markerRef2 = useRef<MarkerRef | null>(null);
-  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [hasfetchtOnce, sethasfetchtOnce] = useState(false);
   const [results, setResults] = useState<CityResult[]>([]);
+  const [info, setinfo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [images, setImages] = useState<string[]>([]);
+
+  const toWikiImage = (fileTitle: string) => {
+    const file = fileTitle
+      .replace(/^Datei:/, "")
+      .replace(/^File:/, "")
+      .trim();
+
+    return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(
+      file,
+    )}?width=1200`;
+  };
+
+  const res = `https://wikipedia.org/wiki/${encodeURIComponent(city?.name)}`;
 
   useEffect(() => {
-    if (!query || query.length < 2) {
-      setResults([]);
-      return;
-    }
-    const t = setTimeout(() => searchCities(query), 350);
-    return () => clearTimeout(t);
-  }, [query]);
+    if (!city?.name) return;
 
-  async function searchCities(q: string) {
-    setLoadingSearch(true);
+    const now = Date.now();
+    if (now - lastFetchTime < 3000) return;
+    setLastFetchTime(now);
+
+    const fetchText = async () => {
+      try {
+        const res = await fetch(
+          `https://de.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(
+            city.name,
+          )}&format=json&origin=*`,
+          {
+            headers: {
+              "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
+              Accept: "application/json",
+            },
+          },
+        );
+
+        const data = await res.json();
+        const pageId = Object.keys(data.query.pages)[0];
+        setinfo(
+          data.query.pages[pageId].extract ?? "Keine Informationen gefunden.",
+        );
+      } catch {
+        setinfo("Fehler beim Laden der Daten");
+      }
+    };
+
+    const fetchImages = async () => {
+      try {
+        const headers = {
+          "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
+          Accept: "application/json",
+        };
+
+        // 1. Bilder-Titel vom Artikel holen
+        const res = await fetch(
+          `https://de.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
+            city.name,
+          )}&prop=images&format=json&origin=*`,
+          { headers },
+        );
+
+        const data = await res.json();
+        const pageId = Object.keys(data.query.pages)[0];
+
+        const fileTitles = (data.query.pages[pageId]?.images || [])
+          .map((img: any) => img.title)
+          .filter((t: string) => /\.(jpg|jpeg|png)$/i.test(t))
+          .slice(0, 10);
+
+        if (fileTitles.length === 0) {
+          setImages([]);
+          return;
+        }
+
+        // 2. Echte Bild-URLs holen
+        const res2 = await fetch(
+          `https://commons.wikimedia.org/w/api.php?action=query&titles=${fileTitles
+            .map(encodeURIComponent)
+            .join("|")}&prop=imageinfo&iiprop=url&format=json&origin=*`,
+          { headers },
+        );
+
+        const data2 = await res2.json();
+
+        const urls = Object.values(data2.query.pages)
+          .map((p: any) => p.imageinfo?.[0]?.url)
+          .filter(Boolean);
+
+        setImages(urls);
+      } catch (e) {
+        console.log("Image fetch failed", e);
+        setImages([]);
+      }
+    };
+
+    fetchText();
+    fetchImages();
+  }, [city?.name]);
+
+  async function fetchCityByCoords(lat: number, lon: number) {
     try {
-      const url = `https://${RAPIDAPI_HOST}/v1/geo/cities?namePrefix=${encodeURIComponent(
-        q
-      )}&limit=8&sort=-population`;
-      const resp = await fetch(url, {
+      const url =
+        `https://nominatim.openstreetmap.org/reverse` +
+        `?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`;
+
+      const res = await fetch(url, {
         headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY ?? "",
-          "X-RapidAPI-Host": RAPIDAPI_HOST ?? "",
+          "User-Agent": "CactusApps/1.0 (cactus_apps@proton.me)",
+          Accept: "application/json",
         },
       });
-      if (!resp.ok) {
-        console.log("GeoDB_error", `${resp.status}`);
-        setResults([]);
-        setLoadingSearch(false);
+
+      if (!res.ok) {
+        console.log("Nominatim HTTP error", res.status);
         return;
       }
-      const json = await resp.json();
-      const arr = (json.data || []).map((it: any) => ({
-        id: it.id ?? `${it.latitude}-${it.longitude}`,
-        city: it.city || it.name || `${it.city}, ${it.country}`,
-        name: it.name ?? it.city,
-        country: it.country,
-        region: it.region,
-        latitude: it.latitude,
-        longitude: it.longitude,
-        population: it.population,
-      }));
-      setResults(arr);
+
+      const data = await res.json();
+
+      if (!data?.address) {
+        console.log("Nominatim empty address");
+        return;
+      }
+
+      const address = data.address;
+
+      const city =
+        address.city ??
+        address.town ??
+        address.village ??
+        address.hamlet ??
+        address.municipality ??
+        address.county ??
+        "Unbekannter Ort";
+
+      const result: CityResult = {
+        id: data.place_id,
+        city,
+        name: data.name ?? city,
+        country: address.country ?? "",
+        region: address.state ?? address.region,
+        latitude: lat,
+        longitude: lon,
+        population: undefined,
+      };
+
+      setResults([result]);
+      setCity(result);
     } catch (err) {
-      Alert.alert("Search_error", `${err}`);
-      setResults([]);
-    } finally {
-      setLoadingSearch(false);
+      console.log("Nominatim_reverse_error", err);
     }
   }
 
@@ -131,178 +260,147 @@ export default function App() {
     fetchRoute().catch(console.error);
   }, [start, end, profile]);
 
+  const imagesHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 🔥 DAS IST DER FIX 🔥 -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src * data: blob: https:;"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: auto;
+      background: transparent;
+    }
+    .row {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      padding: 10px;
+    }
+    img {
+      height: 200px;
+      border-radius: 14px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    ${images.map((url) => `<img src="${url}" />`).join("")}
+  </div>
+</body>
+</html>
+`;
+
+  const openURL = async () => {
+    const supported = await Linking.canOpenURL(res);
+
+    if (supported) {
+      await Linking.openURL(res);
+    } else {
+      Alert.alert(`Die URL kann nicht geöffnet werden: ${res}`);
+    }
+  };
+
   return (
-    <MapProvider>
-      <Map
-        ref={mapRef}
-        options={{ style: "https://tiles.openfreemap.org/styles/bright" }}
-      />
-      {start && (
-        <Marker
-          ref={markerRef}
-          options={{
-            coordinate: start,
-            element: {
-              innerHTML: `<h1>Start</h1>`,
-            },
-          }}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <MapProvider>
+        <Map
+//          ref={mapRef}
+//          options={{ style: "https://tiles.openfreemap.org/styles/bright" }}
         />
-      )}
-      {end && (
-        <Marker
-          ref={markerRef2}
-          options={{
-            coordinate: end,
-            element: {
-              innerHTML: `<h1>End</h1>`,
-            },
-          }}
-        />
-      )}
-      {route &&
-        route.map((r: any, i: number) => (
-          <GeoJSONSource
-            key={`r${i}`}
-            id={`route-${i}`}
-            source={{ type: "geojson", data: r.geometry }}
-            layers={[
-              {
-                layer: {
-                  id: `route-line-${i}`,
-                  type: "line",
-                  paint: {
-                    "line-width": i === 0 ? 6 : 3,
-                    "line-color": i === 0 ? "#1d4ed8" : "#94a3b8",
-                  },
-                },
-              },
-            ]}
-          />
-        ))}
-      <VectorTileSource
-        id="cities-source"
-        source={{
-          type: "vector",
-          tiles: ["https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf"],
-        }}
-        layers={[
-          {
-            layer: {
-              id: "cities-layer",
-              type: "symbol",
-              "source-layer": "place",
-              minzoom: 5,
-              filter: ["in", ["get", "class"], ["literal", ["city", "town"]]],
-              layout: {
-                "text-field": ["get", "name"],
-                "text-size": 12,
-              },
-            },
-            listeners: {
-              click: async (e: any) => {
-                if (!mapRef.current) return;
+{/*Start and end Marker*/}        
+        {/*Route*/}        
+                {/*Vector Titel Soucre*/}        
 
-                const features = await mapRef.current.queryRenderedFeatures(
-                  e.point,
-                  { layers: ["cities-layer"] }
-                );
 
-                if (!features.length) return;
+        
 
-                const clickLngLat = e.lngLat;
-
-                const closest = features.reduce((best: any, curr: any) => {
-                  const [lon, lat] = curr.geometry.coordinates;
-
-                  const d =
-                    Math.abs(lon - clickLngLat.lng) +
-                    Math.abs(lat - clickLngLat.lat);
-
-                  if (!best) return { f: curr, d };
-                  return d < best.d ? { f: curr, d } : best;
-                }, null).f;
-
-                const props = closest.properties || {};
-
-                setCity({
-                  name:
-                    props.name ||
-                    props.name_en ||
-                    props.name_de ||
-                    props.place_name ||
-                    "Unbekannte Stadt",
-                  country:
-                    props.iso_a2 || props.country || props.country_code || null,
-                  population: props.population || null,
-                });
-
-                setCity({
-                  name: closest.properties?.name,
-                  country: closest.properties?.iso_a2,
-                  population: closest.properties?.population,
-                });
-
-                mapRef.current.flyTo({
-                  center: closest.geometry.coordinates,
-                  zoom: 9,
-                  duration: 800,
-                });
-
-                setModalVisible(true);
-              },
-            },
-          },
-        ]}
-      />
-
-      {Info && (
-        <View
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 20,
-            backgroundColor: "#fff",
-            padding: 10,
-            borderRadius: 8,
-          }}
-        >
-          <Text>{(Info.distance / 1000).toFixed(1)} km</Text>
-          <Text>{(Info.duration / 60).toFixed(0)} min</Text>
-          <TouchableOpacity>
-            <Text> {city?.country}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(0,0,0,0.3)",
-          }}
-        >
+        {Info && (
           <View
             style={{
-              backgroundColor: "white",
-              padding: 20,
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
+              position: "absolute",
+              top: 20,
+              left: 20,
+              backgroundColor: "#fff",
+              padding: 10,
+              borderRadius: 8,
             }}
           >
-            <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-              {city?.name}
-            </Text>
-            {city?.country && <Text>Land: {city.country}</Text>}
-            {city?.population && (
-              <Text>Einwohner: {city.population.toLocaleString()}</Text>
-            )}
-
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={{ color: "blue", marginTop: 10 }}>Schließen</Text>
+            <Text>{(Info.distance / 1000).toFixed(1)} km</Text>
+            <Text>{(Info.duration / 60).toFixed(0)} min</Text>
+          </View>
+        )}
+        <BottomSheet
+          ref={sheetRef}
+          index={BottomSheetIndex}
+          snapPoints={snapPoints}
+          enablePanDownToClose={true}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View>
+              {!city ? (
+                <Text>Loading</Text>
+              ) : (
+                <View>
+                  <Text
+                    style={{ fontSize: 20, fontWeight: "600", marginLeft: 20 }}
+                  >
+                    {city.name}
+                  </Text>
+                  <Text style={{ color: "#667", marginLeft: 20 }}>
+                    {city.region}, {city.country}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() => sheetRef.current?.close()}
+              style={{ position: "absolute", right: 20 }}
+            >
+              <X strokeWidth={3} />
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </MapProvider>
+          <BottomSheetScrollView contentContainerStyle={{ padding: 20 }}>
+            {images.length > 0 && (
+              <View
+                style={{
+                  height: 220,
+                  marginBottom: 16,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  backgroundColor: "#eee",
+                }}
+              >
+                <WebView
+                  originWhitelist={["*"]}
+                  source={{
+                    html: imagesHtml,
+                    baseUrl: "https://commons.wikimedia.org/",
+                  }}
+                  mixedContentMode="always"
+                  allowFileAccess
+                  allowUniversalAccessFromFileURLs
+                  style={{ backgroundColor: "transparent" }}
+                />
+              </View>
+            )}
+            {city && <View style={{ paddingBottom: 16 }}></View>}
+            <Text>{info}</Text>
+            <TouchableOpacity onPress={openURL}>
+              <Text style={{ color: "blue" }}> Mehr Lesen</Text>
+            </TouchableOpacity>
+          </BottomSheetScrollView>
+        </BottomSheet>
+      </MapProvider>
+    </GestureHandlerRootView>
   );
 }

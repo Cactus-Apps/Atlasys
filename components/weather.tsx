@@ -1,5 +1,4 @@
-// Version 1.3.6 - © Cactus Apps 2026
-import { useloadingStore } from "@/lib/storage/zustand";
+// Version 1.3.6 - © Cactus Apps 2025
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { t } from "i18next";
@@ -13,30 +12,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { CardSkeletonViewText } from "./SkeletonView";
 
 export default function Weather() {
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [loadingWeatherFetch, setLoadingWeatherFetch] = useState(true);
-  const [loadingWeatherUi1, setloadingWeatherUi1] = useState(true);
-  const [loadingWeatherUi2, setloadingWeatherUi2] = useState(true);
-  const [loadingWeatherUi3, setloadingWeatherUi3] = useState(true);
-  const [loadingWeatherLoc, setLoadingWeatherLoc] = useState(true);
-  const loadingWeather = useloadingStore((s) => s.loadingWeather);
-  const setloadingWeather = useloadingStore((s) => s.setloadingWeather);
+  const [loading, setLoading] = useState(false);
   const [weather, setWeather] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   const getLocationAsync = async () => {
     setError(null);
     try {
-      setLoadingWeatherLoc(true);
+      setLoading(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setError("Standortberechtigung verweigert");
-        setLoadingWeatherLoc(false);
+        setLoading(false);
         setLocation(null);
         setWeather(null);
         return;
@@ -56,7 +50,7 @@ export default function Weather() {
       setLocation(null);
       setWeather(null);
     } finally {
-      setLoadingWeatherLoc(false);
+      setLoading(false);
     }
   };
 
@@ -72,8 +66,6 @@ export default function Weather() {
       console.warn("Error loading weather", e);
       setError("Error loading weather");
       setWeather(null);
-    } finally {
-      setLoadingWeatherFetch(false);
     }
   };
 
@@ -206,27 +198,16 @@ export default function Weather() {
   };
 
   useEffect(() => {
-    if (
-      !loadingWeatherFetch &&
-      !loadingWeatherLoc &&
-      !loadingWeatherUi1 &&
-      !loadingWeatherUi2 &&
-      !loadingWeatherUi3
-    ) {
-      setloadingWeather(false);
-    }
-  }, [
-    loadingWeather,
-    loadingWeatherFetch,
-    loadingWeatherLoc,
-    loadingWeatherUi1,
-    loadingWeatherUi2,
-    loadingWeatherUi3,
-  ]);
-
-  useEffect(() => {
     getLocationAsync();
   }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.card2}>
+        <CardSkeletonViewText/>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -242,7 +223,6 @@ export default function Weather() {
                 style={{ width: 80, height: 80 }}
                 autoPlay
                 loop
-                onAnimationFinish={() => setloadingWeatherUi1(false)}
               />
             </View>
           </LinearGradient>
@@ -252,7 +232,6 @@ export default function Weather() {
         <LinearGradient
           colors={getGradientColors(weatherCodeToText(weather.weathercode))}
           style={styles.card}
-          onLayout={() => setloadingWeatherUi2(false)}
         >
           <View>
             <Text style={{ fontSize: 17, fontWeight: "600" }}> Weather</Text>
@@ -267,7 +246,6 @@ export default function Weather() {
               style={{ width: 80, height: 80 }}
               autoPlay
               loop
-              onAnimationFinish={() => setloadingWeatherUi3(false)}
             />
           </View>
           <TouchableOpacity onPress={getLocationAsync} style={styles.button}>

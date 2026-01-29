@@ -1,6 +1,3 @@
-import { AuthProvider } from "@/lib/auth/auth-context";
-import { Tabs } from "expo-router";
-import { useColorScheme } from "react-native";
 import React, { useEffect } from "react";
 import {
   View,
@@ -16,7 +13,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { Home, User, Settings, HelpCircle, MapIcon } from "lucide-react-native";
+import { Home, User, HelpCircle, MapIcon, Bookmark } from "lucide-react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -62,6 +59,8 @@ export function CustomTabBar1({
         return <Home color={color} size={size} />;
       case "mapscreen":
         return <MapIcon color={color} size={size} />;
+      case "saved":
+        return <Bookmark color={color} size={size} />;
       case "profilescreen":
         return <User color={color} size={size} />;
       default:
