@@ -32,7 +32,7 @@ import {
   ScrollView,
 } from "react-native-gesture-handler";
 
-function ProfileScreen() {
+export function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState<string | undefined>("");
@@ -51,7 +51,7 @@ function ProfileScreen() {
     fetchUserEmail();
   }, []);
 
-  let username = email!.split("@")[0];
+  let username = email ? email.split("@")[0] : "";
 
   let name = username
     .split(/[_-]/)

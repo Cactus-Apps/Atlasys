@@ -8,7 +8,26 @@ import {
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
 import * as Location from "expo-location";
-import { Box, Compass, Search, X } from "lucide-react-native";
+import {
+  BookOpen,
+  Box,
+  Cloud,
+  CloudRain,
+  Compass,
+  ImageIcon,
+  Search,
+  Sun,
+  History,
+  X,
+  Layers,
+  LocateFixed,
+  Shuffle,
+  Heart,
+  Share2,
+  Navigation,
+  MapPin,
+  Route,
+} from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,8 +36,11 @@ import {
   FlatList,
   Keyboard,
   Linking,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -27,10 +49,34 @@ import {
   useColorScheme,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Image } from "expo-image";
+
 import { Avatar } from "@kolking/react-native-avatar";
 import { supabase } from "@/lib/auth/supabase";
-import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import BottomSheet, {
+  BottomSheetScrollView,
+  BottomSheetFlatList,
+} from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+import ProfileScreen from "./profilescreen";
+import * as Haptics from "expo-haptics";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  Layout,
+  SlideInRight,
+} from "react-native-reanimated";
+import { FlatList as GHFlatList } from "react-native-gesture-handler";
+import {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { runOnJS } from "react-native-reanimated";
+import { TouchableWithoutFeedback } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -48,55 +94,89 @@ type CityResult = {
   population?: number;
 };
 
+type SelectedCity = {
+  name: string;
+  latitude: number;
+  longitude: number;
+  region?: string;
+  country?: string;
+};
+
+interface ArticleData {
+  title: string;
+  thumbnail: string | null;
+  extract: string;
+  images: string[];
+}
+
 export default function MapScreen() {
-  const [query, setQuery] = useState("");
-  const [email, setEmail] = useState<string | undefined>("");
-  const mapRef = useRef<MapRef | null>(null);
   const markerRef = useRef<MarkerRef | null>(null);
   const markerRef2 = useRef<MarkerRef | null>(null);
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
   const [zoom, setZoom] = useState(12);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
   const hasCenteredTwich = useRef(false);
-  const [markerPos, setMarkerPos] = useState<[number, number]>();
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null,
-  );
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
     "driving",
   );
-  const [city, setCity] = useState<any | null>(null);
-  const sheetRef = useRef<BottomSheet>(null);
   const [images, setImages] = useState<string[]>([]);
   const [DistanceInfo, setDistanceInfo] = useState<{
     distance: number;
     duration: number;
   } | null>();
-  const [BottomSheetIndex, setBottomSheetIndex] = useState<number>(-1);
-  const snapPoints = useMemo(() => ["15%", "25%", "50%", "80%"], []);
   const [CityInfo, setCityInfo] = useState("");
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
   const [MapStyle, setMapStyle] = useState(
     "https://tiles.openfreemap.org/styles/bright",
   );
+  const [avatarview, setavatarview] = useState(false);
   const [ready, setReady] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
-  const scheme = useColorScheme();
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [results, setResults] = useState<CityResult[]>([]);
   const [selected, setSelected] = useState<CityResult | null>(null);
-  const { t } = useTranslation();
   const [start, setStart] = useState<[number, number] | null>([9, 53]);
   const [end, setEnd] = useState<[number, number] | null>([10, 50]);
   const [lastFetchTime, setLastFetchTime] = useState(0);
+  const [savedLocations, setSavedLocations] = useState<SelectedCity[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [query, setQuery] = useState("");
+  const [email, setEmail] = useState<string | null>();
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null,
+  );
+  const [mapThemeIndex, setMapThemeIndex] = useState(0);
+  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(
+    null,
+  );
+  const [liked, setLiked] = useState(false);
+  const heartScale = useSharedValue(0);
+  const heartOpacity = useSharedValue(0);
+  const heartRotate = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const rotation = useSharedValue(0);
+  const [markerPos, setMarkerPos] = useState<[number, number]>();
+  const [city, setCity] = useState<SelectedCity | null>(null);
+  const [article, setArticle] = useState<ArticleData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [BottomSheetIndex, setBottomSheetIndex] = useState<number>(-1);
+  const [results, setResults] = useState<CityResult[]>([]);
+  const mapRef = useRef<MapRef | null>(null);
+  const sheetRef = useRef<BottomSheet>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null,
+  );
+  const snapPoints = useMemo(() => ["15%", "25%", "50%", "80%"], []);
+  const scheme = useColorScheme();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null,
   );
+
+  const { t } = useTranslation();
 
   const filters = [
     "Restaurants",
@@ -105,6 +185,12 @@ export default function MapScreen() {
     "Sehenswürdigkeiten",
     "Bars",
     "Shopping",
+  ];
+
+  const mapThemes = [
+    "https://tiles.openfreemap.org/styles/bright",
+    "https://tiles.openfreemap.org/styles/dark",
+    "https://tiles.openfreemap.org/styles/liberty",
   ];
 
   // Location/GPS Stuff
@@ -218,56 +304,48 @@ export default function MapScreen() {
     fetchUserEmail();
   }, []);
 
-  let username = email!.split("@")[0];
-
-  let name = username
-    .split(/[_-]/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
   // Idk
   const clearInput = () => {
     setQuery("");
+    setResults([]);
     sheetRef.current?.close();
   };
 
   const openURL = async () => {
-    const supported = await Linking.canOpenURL(res);
-
+    if (!city?.name) return;
+    const title = city.name.replace(/ /g, "_");
+    const url = `https://de.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+    const supported = await Linking.canOpenURL(url);
     if (supported) {
-      await Linking.openURL(res);
+      await Linking.openURL(url);
     } else {
-      Alert.alert(`Die URL kann nicht geöffnet werden: ${res}`);
+      Alert.alert("Kann Wikipedia nicht öffnen");
     }
+  };
+
+  const closeModal = () => {
+    setCity(null);
+    setQuery("");
+    setResults([]);
+    setArticle(null);
+    sheetRef.current?.close();
+    setBottomSheetIndex(-1);
   };
 
   // Map Stuff
   const resetToNorth = () => {
-    if (!mapRef.current) return;
-
-    mapRef.current.easeTo({
-      bearing: 0,
-      pitch: 0,
-      duration: 500,
-    });
+    mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 500 });
+    setPitch(false);
   };
 
   const resetPitch = () => {
-    if (!mapRef.current) return;
+    const nextPitch = !pitch;
+    mapRef.current?.easeTo({ pitch: nextPitch ? 60 : 0, duration: 500 });
+    setPitch(nextPitch);
+  };
 
-    if (pitch) {
-      mapRef.current.easeTo({
-        pitch: 0,
-        duration: 500,
-      });
-    } else {
-      mapRef.current.easeTo({
-        pitch: 60,
-        duration: 500,
-      });
-    }
-
-    setPitch(!pitch);
+  const openProfileScreen = () => {
+    setavatarview((prev) => !prev);
   };
 
   const ensureGlobe = () => {
@@ -283,207 +361,220 @@ export default function MapScreen() {
     () => getPos();
   };
 
-  // Wikipedia fetch
-  const res = `https://wikipedia.org/wiki/${encodeURIComponent(city?.name)}`;
+  const toggleFavorite = () => {
+    if (!city) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const exists = savedLocations.find((l) => l.name === city.name);
+    if (exists) {
+      setSavedLocations((prev) => prev.filter((l) => l.name !== city.name));
+    } else {
+      setSavedLocations((prev) => [...prev, city]);
+    }
+  };
+
+  const shareCity = async () => {
+    if (!city) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const url = `https://de.wikipedia.org/wiki/${encodeURIComponent(city.name.replace(/ /g, "_"))}`;
+      await Share.share({
+        message: `Schau dir diesen Ort an: ${city.name}\n${url}`,
+        url: url,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openDirections = () => {
+    if (!city) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const url = Platform.select({
+      ios: `maps://0,0?q=${city.latitude},${city.longitude}(${city.name})`,
+      android: `geo:0,0?q=${city.latitude},${city.longitude}(${city.name})`,
+    });
+    if (url) Linking.openURL(url);
+  };
+
+  const nextTheme = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const next = (mapThemeIndex + 1) % mapThemes.length;
+    setMapThemeIndex(next);
+    setMapStyle(mapThemes[next]);
+  };
+
+  const headers = {
+    "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
+    Accept: "application/json",
+  };
+
+  // Wikipedia logic
   useEffect(() => {
     if (!city?.name) return;
+
+    const fetchWikipediaData = async () => {
+      setLoading(true);
+      setError(null);
+      setArticle(null);
+
+      try {
+        const searchRes = await fetch(
+          `https://de.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
+            city?.name,
+          )}&limit=1&format=json&origin=*`,
+          { headers },
+        );
+        const searchData = await searchRes.json();
+
+        if (!searchData[1] || searchData[1].length === 0) {
+          setError("Kein Artikel gefunden.");
+          setLoading(false);
+          return;
+        }
+
+        const pageTitle = searchData[1][0];
+
+        // 2. Fetch extract
+        const extractRes = await fetch(
+          `https://de.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro&explaintext&piprop=thumbnail&pithumbsize=1000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
+          { headers },
+        );
+        const extractData = await extractRes.json();
+        const pages = extractData.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const extract = pages[pageId].extract;
+        const thumbnail = pages[pageId].thumbnail?.source || null;
+
+        // 3. Fetch images with deduplication
+        const imagesPropRes = await fetch(
+          `https://de.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`,
+          { headers },
+        );
+        const imagesPropData = await imagesPropRes.json();
+        const imageTitles =
+          imagesPropData.query?.pages[pageId]?.images?.map(
+            (img: any) => img.title,
+          ) || [];
+
+        let imageUrls: string[] = [];
+        const isJunk = (url: string) => {
+          const lower = url.toLowerCase();
+          return (
+            lower.includes("flag") ||
+            lower.includes("wappen") ||
+            lower.includes("kupferstich") ||
+            lower.includes("buergermeister") ||
+            lower.includes("arena") ||
+            lower.includes("kulturzentrum") ||
+            lower.includes("coats") ||
+            lower.includes("spd") ||
+            lower.includes("stadium") ||
+            lower.includes("coat_of_arms") ||
+            lower.includes("climate") ||
+            lower.includes("klimadiagramm") ||
+            lower.includes("temperature") ||
+            lower.includes("map") ||
+            lower.includes("karte") ||
+            lower.includes("icon") ||
+            lower.includes("logo") ||
+            lower.includes(".svg")
+          );
+        };
+        if (imageTitles.length > 0) {
+          // Fetch URLs for the ordered titles (up to 50)
+          const titlesQuery = imageTitles
+            .map((t: string) => encodeURIComponent(t))
+            .join("|");
+          const imagesInfoRes = await fetch(
+            `https://de.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url&format=json&origin=*`,
+            { headers },
+          );
+          const imagesInfoData = await imagesInfoRes.json();
+
+          if (imagesInfoData.query?.pages) {
+            const urlMap: Record<string, string> = {};
+            Object.values(imagesInfoData.query.pages).forEach((p: any) => {
+              if (p.imageinfo?.[0]?.url) {
+                urlMap[p.title] = p.imageinfo[0].url;
+              }
+            });
+
+            // Filter und maintain order
+            const filteredUrls: string[] = [];
+            imageTitles.forEach((title: string) => {
+              const url = urlMap[title];
+              if (
+                url &&
+                !isJunk(url) &&
+                (url.endsWith(".jpg") ||
+                  url.endsWith(".png") ||
+                  url.endsWith(".jpeg"))
+              ) {
+                filteredUrls.push(url);
+              }
+            });
+            imageUrls = filteredUrls;
+          }
+        }
+        let finalThumbnail = thumbnail;
+        if (finalThumbnail && isJunk(finalThumbnail)) {
+          finalThumbnail = imageUrls[0] || null;
+        } else if (!finalThumbnail && imageUrls.length > 0) {
+          finalThumbnail = imageUrls[0];
+        }
+
+        setArticle({
+          title: pageTitle,
+          extract: extract || "Keine Zusammenfassung verfügbar.",
+          thumbnail: finalThumbnail,
+          images: imageUrls,
+        });
+      } catch (err) {
+        console.error(err);
+        setError("Fehler beim Laden der Wikipedia-Daten");
+      } finally {
+        setLoading(false);
+      }
+    };
 
     const now = Date.now();
     if (now - lastFetchTime < 3000) return;
     setLastFetchTime(now);
-
-    const tryTitle = async () => {
-      const res = await fetch(
-        `https://de.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
-          city.name,
-        )}&prop=extracts&exintro&explaintext&format=json&origin=*`,
-        {
-          headers: {
-            "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
-            Accept: "application/json",
-          },
-        },
-      );
-
-      const data = await res.json();
-      const page = Object.values(data.query.pages)[0] as any;
-
-      // Wikipedia nutzt -1 für "nicht gefunden"
-      if (page?.pageid && page.pageid !== -1 && page.extract) {
-        return page.extract;
-      }
-
-      return null;
-    };
-
-    const geoFallback = async () => {
-      const res = await fetch(
-        `https://de.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${city.latitude}|${city.longitude}&gsradius=30000&gslimit=20&format=json&origin=*`,
-        {
-          headers: {
-            "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
-            Accept: "application/json",
-          },
-        },
-      );
-
-      const data = await res.json();
-
-      // 🔑 HIER IST DER TRICK:
-      const cityPage = data.query.geosearch.find(
-        (p: any) =>
-          p.title === city.name ||
-          p.title.includes("City") ||
-          p.title.includes("(Stadt)") ||
-          p.title.includes("(Bundesstaat)") ||
-          p.title.includes("(Gemeinde)"),
-      );
-
-      const pageId = cityPage?.pageid;
-      if (!pageId) return null;
-
-      const textRes = await fetch(
-        `https://de.wikipedia.org/w/api.php?action=query&pageids=${pageId}&prop=extracts&exintro&explaintext&format=json&origin=*`,
-        {
-          headers: {
-            "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
-            Accept: "application/json",
-          },
-        },
-      );
-
-      const textData = await textRes.json();
-      return textData.query.pages[pageId]?.extract ?? null;
-    };
-
-    const fetchText = async () => {
-      try {
-        const direct = await tryTitle();
-        if (direct) {
-          setCityInfo(direct);
-          return;
-        }
-
-        const fallback = await geoFallback();
-        if (fallback) {
-          setCityInfo(fallback);
-          return;
-        }
-
-        setCityInfo("Keine passende Wikipedia-Seite gefunden.");
-      } catch (e) {
-        console.log("WIKI ERROR", e);
-        setCityInfo("Fehler beim Laden der Wikipedia-Daten");
-      }
-    };
-
-    const fetchImages = async () => {
-      try {
-        const headers = {
-          "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
-          Accept: "application/json",
-        };
-
-        // 1. Bilder-Titel vom Artikel holen
-        const res = await fetch(
-          `https://de.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(
-            city.name,
-          )}&prop=images&format=json&origin=*`,
-          { headers },
-        );
-
-        const data = await res.json();
-        const pageId = Object.keys(data.query.pages)[0];
-
-        const fileTitles = (data.query.pages[pageId]?.images || [])
-          .map((img: any) => img.title)
-          .filter((t: string) => /\.(jpg|jpeg|png)$/i.test(t))
-          .slice(0, 10);
-
-        if (fileTitles.length === 0) {
-          setImages([]);
-          return;
-        }
-
-        // 2. Echte Bild-URLs holen
-        const res2 = await fetch(
-          `https://commons.wikimedia.org/w/api.php?action=query&titles=${fileTitles
-            .map(encodeURIComponent)
-            .join("|")}&prop=imageinfo&iiprop=url&format=json&origin=*`,
-          { headers },
-        );
-
-        const data2 = await res2.json();
-
-        const urls = Object.values(data2.query.pages)
-          .map((p: any) => p.imageinfo?.[0]?.url)
-          .filter(Boolean);
-
-        setImages(urls);
-      } catch (e) {
-        console.log("Image fetch failed", e);
-        setImages([]);
-      }
-    };
-
-    fetchText();
-    fetchImages();
-  }, [city?.name]);
+    fetchWikipediaData();
+  }, [city?.name, city?.latitude, city?.longitude]);
 
   // More fetching
-  async function fetchCityByCoords(lat: number, lon: number) {
-    try {
-      const url =
-        `https://nominatim.openstreetmap.org/reverse` +
-        `?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`;
 
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "CactusApps/1.0 (cactus_apps@proton.me)",
-          Accept: "application/json",
-        },
-      });
+  // Weather logic
+  useEffect(() => {
+    if (!city?.latitude || !city?.longitude) return;
 
-      if (!res.ok) {
-        console.log("Nominatim HTTP error", res.status);
-        return;
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current_weather=true`,
+        );
+        const data = await res.json();
+        if (data.current_weather) {
+          setWeather({
+            temp: Math.round(data.current_weather.temperature),
+            code: data.current_weather.weathercode,
+          });
+        }
+      } catch (err) {
+        console.error("Weather error:", err);
       }
+    };
 
-      const data = await res.json();
+    fetchWeather();
+  }, [city?.latitude, city?.longitude]);
 
-      if (!data?.address) {
-        console.log("Nominatim empty address");
-        return;
-      }
-
-      const address = data.address;
-
-      const city =
-        address.city ??
-        address.town ??
-        address.village ??
-        address.hamlet ??
-        address.municipality ??
-        address.county ??
-        "Unbekannter Ort";
-
-      const result: CityResult = {
-        id: data.place_id,
-        city,
-        name: data.name ?? city,
-        country: address.country ?? "",
-        region: address.state ?? address.region,
-        latitude: lat,
-        longitude: lon,
-        population: undefined,
-      };
-
-      setResults([result]);
-      setCity(result);
-    } catch (err) {
-      console.log("Nominatim_reverse_error", err);
-    }
-  }
+  const getWeatherIcon = (code: number) => {
+    if (code <= 3) return <Sun size={20} color="#FFD700" />;
+    if (code <= 48) return <Cloud size={20} color="#94A3B8" />;
+    if (code <= 99) return <CloudRain size={20} color="#3B82F6" />;
+    return <Cloud size={20} color="#94A3B8" />;
+  };
 
   async function searchCities(q: string) {
     setLoadingSearch(true);
@@ -533,10 +624,28 @@ export default function MapScreen() {
   }, [query]);
 
   function onSelectCity(city: CityResult) {
+    sheetRef.current?.snapToIndex(2);
     setSelected(city);
-    setModalVisible(true);
     Keyboard.dismiss();
     setZoom(9);
+
+    // Add to history
+    setSearchHistory((prev) => {
+      const filtered = prev.filter((q) => q !== (city.name ?? city.city));
+      return [city.name ?? city.city, ...filtered].slice(0, 5);
+    });
+
+    selectCity({
+      name: city.name ?? city.city,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      region: city.region,
+      country: city.country,
+    });
+
+    setResults([]);
+    setQuery(city.name ?? city.city);
+    setQuery("");
 
     mapRef.current?.flyTo({
       center: [city.longitude, city.latitude],
@@ -546,10 +655,20 @@ export default function MapScreen() {
       duration: 5000,
       pitch: 0,
     });
+  }
 
+  function selectCity(city: SelectedCity) {
+    setCity(city);
+    setImages([]);
     setResults([]);
-    setQuery(city.name ?? city.city);
-    sheetRef.current?.snapToIndex(1);
+    setQuery(city.name);
+    mapRef.current?.flyTo({
+      center: [city.longitude, city.latitude],
+      zoom: 9,
+      duration: 1200,
+    });
+
+    sheetRef.current?.snapToIndex(2);
   }
 
   // Routing
@@ -734,7 +853,9 @@ export default function MapScreen() {
 
                   const features = await mapRef.current.queryRenderedFeatures(
                     e.point,
-                    { layers: ["cities-layer"] },
+                    {
+                      layers: ["cities-layer"],
+                    },
                   );
 
                   if (!features.length) return;
@@ -751,22 +872,13 @@ export default function MapScreen() {
 
                   const [lon, lat] = closest.geometry.coordinates;
 
-                  setCity({
-                    name: closest.properties?.name,
+                  setBottomSheetIndex(2);
+                  sheetRef.current?.snapToIndex(2);
+                  selectCity({
+                    name: closest.properties?.name ?? "Unbekannter Ort",
                     latitude: lat,
                     longitude: lon,
                   });
-                  setCityInfo("");
-                  setImages([]);
-
-                  mapRef.current.flyTo({
-                    center: [lon, lat],
-                    zoom: 9,
-                    duration: 800,
-                  });
-
-                  sheetRef.current?.snapToIndex(1);
-                  fetchCityByCoords(lat, lon);
                 },
               },
             },
@@ -791,18 +903,21 @@ export default function MapScreen() {
               )}
               {loadingSearch && <ActivityIndicator size="small" />}
 
-              <View style={styles.avatarView}>
-                <Avatar
-                  size={39}
-                  name={email ?? undefined}
-                  email={email ?? undefined}
-                  colorize={true}
-                  radius={100}
-                  badgeColor="#146275ff"
-                  defaultSource={require("@/assets/images/icon.png")}
-                />
-              </View>
+              <TouchableOpacity onPress={openProfileScreen}>
+                <View style={styles.avatarView}>
+                  <Avatar
+                    size={34}
+                    name={email ?? undefined}
+                    email={email ?? undefined}
+                    colorize={true}
+                    radius={100}
+                    badgeColor="#146275ff"
+                    defaultSource={require("@/assets/images/icon.png")}
+                  />
+                </View>
+              </TouchableOpacity>
             </View>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -816,60 +931,63 @@ export default function MapScreen() {
             </ScrollView>
           </View>
 
-          {results.length > 0 && BottomSheetIndex === -1 && (
-            <View style={styles.suggestionBox}>
-              <FlatList
-                data={results}
-                keyExtractor={(item) => String(item.id)}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.suggestionItem}
-                    onPress={() => onSelectCity(item)}
-                  >
-                    <Text style={styles.suggTitle}>
-                      {item.name ?? item.city}
-                    </Text>
-                    <Text style={styles.suggSub}>
-                      {item.region ? item.region + ", " : ""}
-                      {item.country}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
+          {query.length === 0 && searchHistory.length > 0 && (
+            <Animated.View entering={FadeInDown} style={styles.suggestionBox}>
+              <View style={styles.historyHeader}>
+                <History size={16} color="#888" />
+                <Text style={styles.historyHeaderText}>Zuletzt gesucht</Text>
+              </View>
+              {searchHistory.map((item, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.suggestionItem}
+                  onPress={() => setQuery(item)}
+                >
+                  <Text style={styles.suggTitle}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </Animated.View>
           )}
+
+          {results.length > 0 &&
+            BottomSheetIndex === -1 &&
+            query.length > 0 && (
+              <View style={styles.suggestionBox}>
+                <FlatList
+                  data={results}
+                  keyExtractor={(item) => String(item.id)}
+                  keyboardShouldPersistTaps="handled"
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.suggestionItem}
+                      onPress={() => onSelectCity(item)}
+                    >
+                      <Text style={styles.suggTitle}>
+                        {item.name ?? item.city}
+                      </Text>
+                      <Text style={styles.suggSub}>
+                        {item.region ? item.region + ", " : ""}
+                        {item.country}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
         </View>
 
-        <TouchableOpacity
-          style={{
-            position: "absolute",
-            bottom: 105,
-            right: 8,
-            backgroundColor: "#24262E",
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 10,
-          }}
-          onPress={resetPitch}
-        >
-          <Box color={"#fff"} size={30} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={{
-            position: "absolute",
-            bottom: 45,
-            right: 8,
-            backgroundColor: "#24262E",
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderRadius: 10,
-          }}
-          onPress={resetToNorth}
-        >
-          <Compass color={"#fff"} size={30} />
-        </TouchableOpacity>
+        {/* Controls */}
+        <View style={styles.controlsContainer}>
+          <TouchableOpacity style={styles.controlButton} onPress={nextTheme}>
+            <Layers color="#fff" size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.controlButton} onPress={resetPitch}>
+            <Box color="#fff" size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.controlButton} onPress={resetToNorth}>
+            <Compass color="#fff" size={24} />
+          </TouchableOpacity>
+        </View>
 
         {DistanceInfo && (
           <View
@@ -887,56 +1005,251 @@ export default function MapScreen() {
           </View>
         )}
 
-        <BottomSheet
-          ref={sheetRef}
-          index={BottomSheetIndex}
-          snapPoints={snapPoints}
-          enablePanDownToClose={true}
-          onChange={setBottomSheetIndex}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View>
-              {!city ? (
-                <Text>Loading</Text>
-              ) : (
-                <View>
-                  <Text
-                    style={{ fontSize: 20, fontWeight: "600", marginLeft: 20 }}
-                  >
-                    {city.name}
-                  </Text>
-                  <Text style={{ color: "#667", marginLeft: 20 }}>
-                    {city.region}, {city.country}
-                  </Text>
-                </View>
-              )}
+        {city && (
+          <BottomSheet
+            ref={sheetRef}
+            index={BottomSheetIndex}
+            snapPoints={snapPoints}
+            enablePanDownToClose={true}
+            onChange={setBottomSheetIndex}
+            backgroundStyle={{
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+            }}
+          >
+            {loading && <LoadingOverlay />}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20}}>
+              <View>
+                {!city ? (
+                  <Text>Loading</Text>
+                ) : (
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.articleHeader}>
+                      <Text
+                        style={{
+                          fontSize: 23,
+                          fontWeight: "600",
+                          marginLeft: 20,
+                        }}
+                      >
+                        {city.name}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={closeModal}
+                        style={{
+                          position: "absolute",
+                          right: 10,
+                          alignSelf: "flex-end",
+                        }}
+                      >
+                        <X strokeWidth={3} />
+                      </TouchableOpacity>
+                      {weather && (
+                        <View style={styles.weatherBadge}>
+                          {getWeatherIcon(weather.code)}
+                          <Text style={styles.weatherText}>
+                            {weather.temp}°C
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.headerActions}>
+                      <TouchableOpacity
+                        onPress={openDirections}
+                        style={{
+                          backgroundColor: "#2563EB",
+                          width: 220,
+                          height: 50,
+                          borderRadius: 12,
+                          flexDirection: "row",
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginLeft: 20,
+                        }}
+                      >
+                        <Route color="#fff" size={24} />
+                        <Text
+                          style={{
+                            fontWeight: "500",
+                            fontSize: 18,
+                            color: "#fff",
+                            paddingHorizontal: 10,
+                          }}
+                        >
+                          Route starten
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={toggleFavorite}
+                        style={{
+                          backgroundColor: "#F3F4F6",
+                          width: 50,
+                          height: 50,
+                          borderRadius: 12,
+                          flexDirection: "row",
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Heart
+                          color={
+                            savedLocations.find((l) => l.name === city.name)
+                              ? "#FF3B30"
+                              : "#666"
+                          }
+                          fill={
+                            savedLocations.find((l) => l.name === city.name)
+                              ? "#FF3B30"
+                              : "transparent"
+                          }
+                          size={24}
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={shareCity}
+                        style={{
+                          backgroundColor: "#F3F4F6",
+                          width: 50,
+                          height: 50,
+                          borderRadius: 12,
+                          padding: 10,
+                          alignSelf: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Share2 color="#007AFF" size={24} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
             </View>
-            <TouchableOpacity
-              onPress={() => sheetRef.current?.close()}
-              style={{ position: "absolute", right: 20 }}
-            >
-              <X strokeWidth={3} />
-            </TouchableOpacity>
-          </View>
-          <BottomSheetScrollView contentContainerStyle={{ padding: 20 }}>
-            {images.length > 0 && (
-              <View
-                style={{
-                  height: 220,
-                  marginBottom: 16,
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  backgroundColor: "#eee",
-                }}
-              ></View>
+
+            {!loading && article && (
+              <BottomSheetScrollView contentContainerStyle={{ padding: 0 }}>
+                {article?.thumbnail && (
+                  <View style={styles.heroImageContainer}>
+                    <Image
+                      source={{ uri: article.thumbnail }}
+                      style={styles.heroImage}
+                      contentFit="cover"
+                      transition={500}
+                    />
+                  </View>
+                )}
+
+                <View style={{ padding: 20 }}>
+                  {article.images.length > 0 && (
+                    <View style={styles.imageSection}>
+                      <View style={styles.sectionHeader}>
+                        <ImageIcon color="#007AFF" size={20} />
+                        <Text style={styles.sectionTitle}>
+                          Bilder ({article.images.length})
+                        </Text>
+                      </View>
+                      <GHFlatList
+                        horizontal
+                        data={article.images}
+                        showsHorizontalScrollIndicator={false}
+                        nestedScrollEnabled
+                        keyExtractor={(item: string) => item}
+                        renderItem={({ item, index }: any) => (
+                          <TouchableOpacity
+                            style={styles.imageWrapper}
+                            onPress={() => setSelectedImageIndex(index)}
+                            activeOpacity={0.8}
+                          >
+                            <Image
+                              source={{ uri: item }}
+                              style={styles.image}
+                              contentFit="cover"
+                              transition={300}
+                            />
+                          </TouchableOpacity>
+                        )}
+                        contentContainerStyle={styles.imageList}
+                      />
+                    </View>
+                  )}
+                  {city && <View style={{ paddingBottom: 16 }}></View>}
+                  <Text style={styles.extractText}>
+                    {article?.extract}
+                    {CityInfo}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={openURL}
+                    style={styles.readMoreButton}
+                  >
+                    <Text style={styles.readMoreText}>
+                      Auf Wikipedia weiterlesen
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </BottomSheetScrollView>
             )}
-            {city && <View style={{ paddingBottom: 16 }}></View>}
-            <Text>{CityInfo}</Text>
-            <TouchableOpacity onPress={openURL}>
-              <Text style={{ color: "blue" }}> Mehr Lesen</Text>
-            </TouchableOpacity>
-          </BottomSheetScrollView>
-        </BottomSheet>
+          </BottomSheet>
+        )}
+        <Modal
+          visible={selectedImageIndex !== null}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setSelectedImageIndex(null)}
+        >
+          <View style={styles.modalBackground}>
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setSelectedImageIndex(null)}
+            />
+            <View style={styles.modalContent}>
+              <FlatList
+                horizontal
+                pagingEnabled
+                data={article?.images || []}
+                initialScrollIndex={selectedImageIndex || 0}
+                getItemLayout={(_, index) => ({
+                  length: width,
+                  offset: width * index,
+                  index,
+                })}
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => `full-${item}`}
+                renderItem={({ item }) => (
+                  <View style={styles.fullscreenImageWrapper}>
+                    <Image
+                      source={{ uri: item }}
+                      style={styles.fullscreenImage}
+                      contentFit="contain"
+                      transition={300}
+                    />
+                  </View>
+                )}
+              />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setSelectedImageIndex(null)}
+              >
+                <X color="#fff" size={28} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+        {avatarview && (
+          <View
+            style={{
+              width: "100%",
+              height: "100%",
+              paddingHorizontal: 30,
+              marginTop: 100,
+              paddingBottom: 90,
+              borderRadius: 8,
+            }}
+          >
+            <ProfileScreen />
+          </View>
+        )}
       </MapProvider>
     </GestureHandlerRootView>
   );
@@ -944,9 +1257,129 @@ export default function MapScreen() {
 
 const getStyles = (scheme: "light" | "dark" | null) =>
   StyleSheet.create({
-    container: {
-      padding: 20,
+    weatherBadge: {
+      flexDirection: "row",
       alignItems: "center",
+      gap: 4,
+      backgroundColor: "#F1F5F9",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    weatherText: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: "#475569",
+    },
+    articleHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 15,
+      gap: 10,
+      marginLeft: 10,
+    },
+    readMoreButton: {
+      marginTop: 20,
+      padding: 15,
+      backgroundColor: "#f0f7ff",
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    readMoreText: {
+      color: "#007AFF",
+      fontWeight: "600",
+      fontSize: 16,
+    },
+    fullscreenImageWrapper: {
+      width: width,
+      height: height,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    controlsContainer: {
+      position: "absolute",
+      bottom: 100,
+      right: 16,
+      gap: 12,
+    },
+    actionIconButton: {
+      padding: 5,
+    },
+    headerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 15,
+    },
+    closeIconBtn: {
+      marginLeft: 5,
+      padding: 5,
+    },
+    historyHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 12,
+      gap: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: "#eee",
+    },
+    historyHeaderText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#888",
+      textTransform: "uppercase",
+    },
+    controlButton: {
+      backgroundColor: "#24262E",
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowRadius: 5,
+      elevation: 5,
+    },
+    extractText: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: "#444",
+      textAlign: "justify",
+    },
+    imageSection: {
+      marginTop: 30,
+      marginBottom: 50,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 15,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: "#1a1a1a",
+    },
+    imageList: {
+      paddingRight: 20,
+    },
+    imageWrapper: {
+      width: width * 0.7,
+      height: 200,
+      marginRight: 15,
+      borderRadius: 16,
+      overflow: "hidden",
+      backgroundColor: "#eee",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    image: {
+      width: "100%",
+      height: "100%",
     },
     avatarView: {
       alignSelf: "center",
@@ -1020,10 +1453,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontSize: 14,
       color: "#333",
     },
-    loader: {
-      position: "absolute",
-      backgroundColor: "blue",
-    },
     suggTitle: {
       fontSize: 16,
       fontWeight: "600",
@@ -1034,41 +1463,40 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       color: scheme === "dark" ? "#d8d8d8ff" : "#666",
       marginTop: 2,
     },
-    webview: {
+    modalBackground: {
       flex: 1,
-      marginTop: 0,
-      width,
-      height,
-    },
-    modalContent: {
-      padding: 20,
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-      alignItems: "center",
-      minHeight: 200,
-    },
-    customModal: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: "rgba(255, 255, 255, 0.9)",
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-    },
-    cityTitle: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
-    citySub: { fontSize: 14, color: "#555" },
-    cityCoords: { marginTop: 8, color: "#667" },
-    closeButton: {
-      padding: 7,
-      width: 25,
-      height: 25,
-      borderRadius: 35,
-      backgroundColor: "rgba(91, 92, 92, 0.4)",
+      backgroundColor: "rgba(0,0,0,0.95)",
       justifyContent: "center",
       alignItems: "center",
     },
-    close: {
-      alignSelf: "flex-end",
+    modalOverlay: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    modalContent: {
+      width: "100%",
+      height: "100%",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    fullscreenImage: {
+      width: width,
+      height: width * 1.5,
+    },
+    closeButton: {
+      position: "absolute",
+      top: 50,
+      right: 20,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      padding: 10,
+      borderRadius: 25,
+    },
+    heroImageContainer: {
+      width: "100%",
+      height: 250,
+      backgroundColor: "#f0f0f0",
+    },
+    heroImage: {
+      width: "100%",
+      height: "100%",
     },
   });
