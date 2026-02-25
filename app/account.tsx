@@ -1,25 +1,25 @@
-// Version 1.3.6 - © Cactus Apps 2025
-import { useAuth } from "@/lib/auth/auth-context";
+// Version 1.3.6 - © Cactus Apps 2026
+import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { supabase } from "@/lib/auth/supabase";
 import { Avatar } from "@kolking/react-native-avatar";
 import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { t } from "i18next";
-import { Frown, Info, LogOut } from "lucide-react-native";
+import { Frown, Info, LogOut, ChevronRight } from "lucide-react-native";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
-  ImageBackground,
   Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useColorScheme,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -50,7 +50,6 @@ export default function AccountScreen() {
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
-
 
   const copy = async (text: string) => {
     await Clipboard.setStringAsync(text);
@@ -157,12 +156,12 @@ export default function AccountScreen() {
   const deleteAccuntAction = async () => {
     setModalVisible2(false);
     setWantToDelete(true);
-    await createDeleteRequest;
+    await createDeleteRequest();
   };
 
   const createDeleteRequest = async () => {
     if (WantToDelete) {
-      () => setModalVisible2(false);
+      setModalVisible2(false);
       if (!userId || !email) {
         Alert.alert(t("Error"), t('User_ID_or_email_could_not_be_fetched'));
         return;
@@ -204,14 +203,13 @@ export default function AccountScreen() {
         console.error(error);
         Alert.alert(t("Error"), t('Request_could_not_be_sent'));
       } else {
-        Alert.alert("Request_sent", "deletion_request_created");
-        setRequest(data);
+        Alert.alert(t("Success"), t("deletion_request_created"));
+        setRequest(data as any);
         updateProgress("pending");
       }
       setLoading(false);
     } else {
       setModalVisible2(true);
-      return;
     }
   };
 
@@ -241,378 +239,446 @@ export default function AccountScreen() {
   if (loading) {
     return (
       <View style={styles.all}>
-        <ActivityIndicator size="large" color="#466483ff" />
+        <ActivityIndicator size="large" color="#2563EB" />
       </View>
     );
   }
 
+  const textColor = scheme === "dark" ? "#FFFFFF" : "#1E293B";
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View>
-        <ImageBackground
-          source={require("../assets/images/account.png")}
-          style={styles.image}
-          imageStyle={styles.imageStyle}
-        >
-          <View style={styles.account}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
+          <ChevronRight size={24} color={textColor} style={{ transform: [{ rotate: '180deg' }] }} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('Account')}</Text>
+        <View style={{ width: 44 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatarWrapper}>
             <Avatar
-              size={80}
-              name={email ?? undefined}
+              size={100}
+              name={email ?? "U"}
               email={email ?? undefined}
               colorize={true}
-              radius={100}
-              badgeColor="#146275ff"
-              defaultSource={require("../assets/images/banner.jpeg")}
+              radius={50}
+              badgeColor="#2563EB"
             />
           </View>
-        </ImageBackground>
-      </View>
+          <Text style={styles.emailText}>{email}</Text>
+          <View style={styles.statusBadge}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>Active Account</Text>
+          </View>
+        </View>
 
-      <View style={styles.container}>
-        {email ? (
-          <Text style={styles.email}>{t('Hello')} {email}</Text>
-        ) : (
-          <Text style={{ color: "red" }}>{t('An_error_has_occurred')}</Text>
-        )}
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Account Security</Text>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => copy(userId ?? "")}>
+            <View style={styles.menuIconContainer}>
+              <Info size={20} color="#2563EB" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuLabel}>User ID</Text>
+              <Text style={styles.menuValue} numberOfLines={1}>{userId}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-      <View>
-        <View style={{ padding: 20 }}>
+        <View style={styles.dangerZone}>
+          <Text style={styles.dangerTitle}>Danger Zone</Text>
           <TouchableOpacity
             onPress={createDeleteRequest}
             disabled={loading}
-            style={styles.button}
+            style={styles.deleteButton}
+            activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.text2}>{t('Delete_account')}</Text>
+              <Text style={styles.deleteButtonText}>{t('Delete_account')}</Text>
             )}
           </TouchableOpacity>
+          <Text style={styles.dangerNote}>
+            Deleting your account is permanent and cannot be undone. All your data will be removed.
+          </Text>
         </View>
 
-        {request &&
-          (request.status === "pending" || request.status === "completed" ? (
-            <>
-              <View style={styles.container3}>
-                <Text style={styles.text4}>
-                  {t('status:')}{" "}
-                  {request.status === "pending"
-                    ? t("Pending")
-                    : request.status === "completed"
-                    ? t("Finished")
-                    : "Completed"}
-                </Text>
-                <View style={styles.progressBar}>
-                  <LinearGradient
-                    colors={["#466483ff", "#466483ff"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{
-                      width: `${progress * 100}%`,
-                      height: "100%",
-                      borderRadius: 9999,
-                    }}
-                  />
-                </View>
-                <Text style={styles.text5}>
-                  {t('progress')}: {(progress * 100).toFixed(0)}%
-                </Text>
-                <Text
-                  style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}
-                >
-                  {daysLeft !== null
-                    ? [t(`Your_account_will_be_deleted_in`), `${daysLeft}`, t('days')]
-                    : t("Deletion_date_is_loading...")}
+        {request && (request.status === "pending" || request.status === "completed") && (
+          <View style={styles.requestCard}>
+            <View style={styles.requestHeader}>
+              <Text style={styles.requestTitle}>Deletion Request</Text>
+              <View style={[styles.statusTag, { backgroundColor: request.status === 'pending' ? '#FEF3C7' : '#D1FAE5' }]}>
+                <Text style={[styles.statusTagText, { color: request.status === 'pending' ? '#92400E' : '#065F46' }]}>
+                  {request.status === "pending" ? t("Pending") : t("Completed")}
                 </Text>
               </View>
-            </>
-          ) : (
-            request.status === "rejected" && (
-              <View>
-                <View style={{ alignItems: "center" }}>
-                  <View style={styles.text6}>
-                    <TouchableOpacity
-                      onPress={() => setModalVisible(true)}
-                      style={styles.button4}
-                    >
-                      <Info
-                        size={27}
-                        strokeWidth={2}
-                        color={"#000"}
-                        style={styles.icon2}
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.ups}>
-                      <Frown
-                        size={40}
-                        strokeWidth={2}
-                        color={scheme === "dark" ? "#000" : "#000"}
-                      />
-                      <Text style={{ fontSize: 26, fontWeight: "700" }}>
-                        {" "}
-                        Oops !
-                      </Text>
-                    </View>
-                    <Text style={styles.text8}>{t('Something_went_wrong')}</Text>
-                  </View>
-                </View>
-                <Modal
-                  visible={ModalVisible}
-                  transparent
-                  animationType="fade"
-                  onRequestClose={() => setModalVisible(false)}
-                >
-                  <View style={styles.modalBackground}>
-                    <View style={styles.modalBox}>
-                      <Text style={styles.text9}>{t('No_permission')}</Text>
-                      <Text style={styles.text7}>
-                        {t('no_permission_to_delete')}
-                      </Text>
-                      <View>
-                        <TouchableOpacity
-                          onPress={() => setModalVisible(false)}
-                          style={styles.button3}
-                        >
-                          <Text style={styles.text2}>{t('okay')} </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                </Modal>
+            </View>
+
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarWrapper}>
+                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
               </View>
-            )
-          ))}
+              <Text style={styles.progressText}>{(progress * 100).toFixed(0)}% Progress</Text>
+            </View>
+
+            {daysLeft !== null && (
+              <Text style={styles.daysText}>
+                {t(`Your_account_will_be_deleted_in`)} {daysLeft} {t('days')}
+              </Text>
+            )}
+          </View>
+        )}
+
+        <TouchableOpacity onPress={signOut} style={styles.signOutWrapper} activeOpacity={0.7}>
+          <View style={styles.signOutButton}>
+            <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
+            <Text style={styles.signOutText}>{t('Sign_Out')}</Text>
+          </View>
+        </TouchableOpacity>
+      </ScrollView>
+
+      <Modal
+        visible={ModalVisible2}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible2(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>{t('Delete_account')}</Text>
+            <Text style={styles.modalText}>{t('sure_to_delete')}</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                onPress={deleteAccuntAction}
+                style={styles.modalDeleteButton}
+              >
+                <Text style={styles.modalButtonText}>{t('Delete')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setModalVisible2(false)}
+                style={styles.modalCancelButton}
+              >
+                <Text style={styles.modalButtonText}>{t('Cancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {request?.status === "rejected" && (
         <Modal
-          visible={ModalVisible2}
+          visible={ModalVisible}
           transparent
           animationType="fade"
-          onRequestClose={() => setModalVisible2(false)}
+          onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalBackground}>
             <View style={styles.modalBox}>
-              <Text style={styles.text9}>{t('Delete_account')}</Text>
-              <Text style={styles.text7}>{t('sure_to_delete')}
-              </Text>
-              <View style={styles.buttons2}>
-                <TouchableOpacity
-                  onPress={deleteAccuntAction}
-                  style={styles.buttonDelete}
-                >
-                  <Text style={styles.text2}>{t('Delete')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setModalVisible2(false)}
-                  style={styles.button5}
-                >
-                  <Text style={styles.text2}>{t('Cancel')}</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.modalTitle}>{t('No_permission')}</Text>
+              <Text style={styles.modalText}>{t('no_permission_to_delete')}</Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.modalCancelButton}
+              >
+                <Text style={styles.modalButtonText}>{t('okay')}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
-      </View>
-      <TouchableOpacity onPress={signOut} style={styles.signoutbutton}>
-        <LogOut strokeWidth={3} color={"#d84646ff"} style={styles.icon} />
-        <Text style={styles.text}>{t('Sign_Out')}</Text>
-      </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
-};
+}
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
-    account: {
-      marginTop: 70,
-    },
-    placeholder: {
-      marginVertical: 210,
-    },
-    buttons: {
-      alignItems: "flex-start",
-      flexDirection: "column",
-      marginLeft: 35,
-    },
-    text: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: "#d84646ff",
-    },
-    textMini: {
-      fontSize: 14,
-      fontWeight: "500",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-      alignSelf: "center",
-    },
-    signoutbutton: {
-      flexDirection: "row",
-      padding: 3,
-      alignSelf: "center",
-      bottom: 30,
-      position: "absolute",
-    },
-    deleteAccount: {
-      flexDirection: "row",
-      padding: 3,
-      marginVertical: 20,
-    },
+const getStyles = (scheme: "light" | "dark" | null) => {
+  const isDark = scheme === "dark";
+  const bg = isDark ? "#0D1117" : "#F8FAFC";
+  const cardBg = isDark ? "#161B22" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+  const subTextColor = isDark ? "#94a3b8" : "#64748b";
+  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+
+  return StyleSheet.create({
     container: {
-      marginTop: 50,
-      alignSelf: "center",
-      marginVertical: 20,
+      flex: 1,
+      backgroundColor: bg,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: textColor,
+    },
+    backButton: {
+      padding: 8,
+      borderRadius: 12,
+    },
+    scrollContent: {
+      paddingBottom: 40,
+    },
+    profileSection: {
+      alignItems: "center",
+      paddingVertical: 32,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    avatarWrapper: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 5,
+      marginBottom: 16,
+    },
+    emailText: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: textColor,
+      marginBottom: 8,
+    },
+    statusBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? "rgba(34, 197, 94, 0.1)" : "#DCFCE7",
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 6,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#22C55E",
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: "#16A34A",
+    },
+    card: {
+      margin: 20,
+      backgroundColor: cardBg,
+      borderRadius: 20,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    cardTitle: {
+      fontSize: 14,
+      fontWeight: "800",
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 1,
+      marginBottom: 16,
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    menuIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    menuTextContainer: {
+      marginLeft: 16,
+      flex: 1,
+    },
+    menuLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: subTextColor,
+    },
+    menuValue: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: textColor,
+      marginTop: 2,
+    },
+    dangerZone: {
+      margin: 20,
+      marginTop: 0,
+      backgroundColor: isDark ? "rgba(239, 68, 68, 0.05)" : "#FEF2F2",
+      borderRadius: 20,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.1)",
+    },
+    dangerTitle: {
+      fontSize: 14,
+      fontWeight: "800",
+      color: "#EF4444",
+      textTransform: "uppercase",
+      letterSpacing: 1,
+      marginBottom: 16,
+    },
+    deleteButton: {
+      backgroundColor: "#EF4444",
+      paddingVertical: 14,
+      borderRadius: 14,
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    deleteButtonText: {
+      color: "#fff",
+      fontWeight: "700",
+      fontSize: 16,
+    },
+    dangerNote: {
+      fontSize: 12,
+      color: "#991B1B",
+      textAlign: "center",
+      lineHeight: 18,
+    },
+    signOutWrapper: {
+      marginHorizontal: 20,
+      marginTop: 10,
+    },
+    signOutButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "#161B22" : "#FFFFFF",
+      paddingVertical: 14,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: borderColor,
+      gap: 10,
+    },
+    signOutText: {
+      color: "#EF4444",
+      fontWeight: "700",
+      fontSize: 16,
+    },
+    requestCard: {
+      margin: 20,
+      marginTop: 0,
+      backgroundColor: cardBg,
+      borderRadius: 20,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    requestHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    requestTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: textColor,
+    },
+    statusTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    statusTagText: {
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    progressContainer: {
+      marginBottom: 16,
+    },
+    progressBarWrapper: {
+      height: 8,
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
+      borderRadius: 4,
+      overflow: "hidden",
+      marginBottom: 8,
+    },
+    progressBarFill: {
+      height: "100%",
+      backgroundColor: "#2563EB",
+      borderRadius: 4,
+    },
+    progressText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: subTextColor,
+    },
+    daysText: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: textColor,
+      textAlign: "center",
+    },
+    modalBackground: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalBox: {
+      width: "85%",
+      backgroundColor: isDark ? "#161B22" : "#FFFFFF",
+      borderRadius: 24,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: textColor,
+      textAlign: "center",
+      marginBottom: 12,
+    },
+    modalText: {
+      fontSize: 16,
+      color: subTextColor,
+      textAlign: "center",
+      marginBottom: 24,
+      lineHeight: 22,
+    },
+    modalButtons: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    modalDeleteButton: {
+      flex: 1,
+      backgroundColor: "#EF4444",
+      paddingVertical: 14,
+      borderRadius: 14,
+      alignItems: "center",
+    },
+    modalCancelButton: {
+      flex: 1,
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
+      paddingVertical: 14,
+      borderRadius: 14,
+      alignItems: "center",
+    },
+    modalButtonText: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: textColor,
     },
     all: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-    },
-    icon: {
-      marginRight: 16,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#fff",
-    },
-    email: {
-      fontSize: 25,
-      fontWeight: "bold",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    imageStyle: {
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-    },
-    image: {
-      width: 340,
-      height: 110,
-      alignSelf: "center",
-      marginTop: 20,
-    },
-    buttons2: {
-      flexDirection: "row",
-    },
-    modalBox: {
-      width: "85%",
-      backgroundColor: "#fff",
-      borderRadius: 12,
-      padding: 20,
-    },
-    ups: {
-      flexDirection: "row",
-      alignItems: "center",
-      alignSelf: "center",
-    },
-    modalBackground: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "rgba(0,0,0,0.4)",
-    },
-    icon2: {
-      margin: 5,
-    },
-    text9: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 16,
-      textAlign: "center",
-    },
-    text6: {
-      marginTop: 20,
-      width: "85%",
-      backgroundColor: "#fff",
-      borderRadius: 12,
-      paddingTop: 12,
-      padding: 15,
-      paddingBottom: 20,
-    },
-    text7: {
-      fontSize: 16,
-    },
-    container2: {
-      width: "100%",
-      backgroundColor: "#ffffff",
-      borderRadius: 16,
-      padding: 12,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.5,
-      elevation: 5,
-      marginBottom: 16,
-    },
-    button: {
-      backgroundColor: "#F85149",
-      borderRadius: 6,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      width: "100%",
-    },
-    button3: {
-      borderRadius: 16,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      marginTop: 20,
-      width: "100%",
-      backgroundColor: "#466483ff",
-    },
-    button5: {
-      borderRadius: 16,
-      paddingHorizontal: 10,
-      paddingVertical: 12,
-      marginTop: 20,
-      marginLeft: 37,
-      width: "40%",
-      backgroundColor: "#466483ff",
-    },
-    buttonDelete: {
-      borderRadius: 16,
-      paddingHorizontal: 10,
-      paddingVertical: 12,
-      marginTop: 20,
-      marginRight: 20,
-      width: "40%",
-      backgroundColor: "#F85149",
-    },
-    button4: {
-      alignSelf: "flex-end",
-    },
-    text2: {
-      color: "#ffffff",
-      textAlign: "center",
-      fontWeight: "600",
-    },
-    text8: {
-      fontSize: 15,
-      fontWeight: "600",
-      alignSelf: "center",
-      paddingTop: 8,
-      paddingBottom: 13,
-    },
-    textbig: {
-      color: "#000",
-      textAlign: "center",
-      fontWeight: "700",
-      fontSize: 18,
-      alignSelf: "center",
-    },
-    container3: {
-      marginTop: 24,
-      width: "100%",
-      alignItems: "center",
-    },
-    text4: {
-      fontSize: 18,
-      fontWeight: "600",
-      marginBottom: 8,
-      color: "#fff",
-    },
-    progressBar: {
-      width: "91.67%",
-      height: 16,
-      backgroundColor: "#d1d5db",
-      borderRadius: 999,
-      overflow: "hidden",
-    },
-    text5: {
-      color: "#6a7079ff",
-      marginTop: 8,
+      backgroundColor: bg,
     },
   });
+};

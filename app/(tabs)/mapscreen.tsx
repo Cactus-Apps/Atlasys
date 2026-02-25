@@ -936,6 +936,9 @@ export default function MapScreen() {
               <View style={styles.historyHeader}>
                 <History size={16} color="#888" />
                 <Text style={styles.historyHeaderText}>Zuletzt gesucht</Text>
+                <TouchableOpacity onPress={() => setSearchHistory([])}>
+                <X size={16} color="#888"/>
+                </TouchableOpacity>
               </View>
               {searchHistory.map((item, idx) => (
                 <TouchableOpacity
@@ -1327,6 +1330,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontWeight: "600",
       color: "#888",
       textTransform: "uppercase",
+      paddingRight: 170,
     },
     controlButton: {
       backgroundColor: "#24262E",

@@ -1,13 +1,12 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import { useRouter } from "expo-router";
 import { t } from "i18next";
 import {
-  Bug,
-  ChevronLeft,
   ChevronRight,
   Copyright,
   List,
-  Rocket,
+  Github,
+  Globe,
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -18,244 +17,264 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
+  ScrollView,
 } from "react-native";
 import "./i18n";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Info() {
   const scheme = useColorScheme();
   const router = useRouter();
+  const isDark = scheme === "dark";
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null
   );
 
+  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.back}>
-          <TouchableOpacity
-            style={styles.backbutton}
-            onPress={() => router.navigate("/(tabs)/profilescreen")}
-          >
-            <ChevronLeft
-              size={30}
-              strokeWidth={2}
-              color={scheme === "dark" ? "#d8d8d8ff" : "#000"}
+        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
+          <ChevronRight size={24} color={textColor} style={{ transform: [{ rotate: '180deg' }] }} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t("About GPS")}</Text>
+        <View style={{ width: 44 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.brandingSection}>
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require("../assets/images/cactus_apps-logo.png")}
+              style={styles.logo}
             />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.title}>{t("About GPS")}</Text>
-      </View>
-      <Text style={styles.development}>{t('Development')}</Text>
-      <View
-        style={{
-          height: 1,
-          backgroundColor: "#ccc",
-          alignSelf: "stretch",
-          marginVertical: 16,
-        }}
-      />
-      <View style={styles.all1}>
-        <Image
-          source={require("../assets/images/cactus_apps-logo.png")}
-          style={styles.image}
-        />
-        <View>
-          <Text
-            style={styles.link}
-            onPress={() =>
-              Linking.openURL("https://github.com/Cactus-Apps/GPS")
-            }
-          >
-            &copy; {t('Cactus_Apps')}
-          </Text>
-          <Text style={styles.text}>{t('We_are_Cactus_Apps')}{"\n"} {t('develops_apps')} {"\n"} {t('customer_satisfaction')}
-          </Text>
-        </View>
-      </View>
-      <View
-        style={{
-          height: 1,
-          backgroundColor: "#ccc",
-          alignSelf: "stretch",
-          marginVertical: 16,
-        }}
-      />
-      <View style={styles.all}>
-        <View>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/licenses")}
-          >
-            <Copyright strokeWidth={3} style={styles.icon} />
-            <Text style={styles.link2}>{t("licenses")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/updatelog")}
-          >
-            <List strokeWidth={3} style={styles.icon} />
-            <Text style={styles.link2}>{t("update_log")}</Text>
-          </TouchableOpacity>
-        </View>
-        <View>
-          <TouchableOpacity onPress={() => router.navigate("/licenses")}>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.navigate("/updatelog")}>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-        </View>
-      </View>
-      <View
-        style={{
-          position: "absolute",
-          bottom: 25,
-          left: 0,
-          right: 0,
-          alignItems: "center",
-        }}
-      >
-        <View style={[styles.banner, { backgroundColor: "#312226" }]}>
-          <Bug color={"#F26363"} size={25} strokeWidth={2} />
-          <Text style={[styles.bannertext, { color: "#F26363" }]}>{t('Bug')}</Text>
+          </View>
+          <Text style={styles.appName}>Cactus Apps</Text>
+          <Text style={styles.tagline}>Premium Mobile Experiences</Text>
+
+          <View style={styles.socialLinks}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Linking.openURL("https://github.com/Cactus-Apps/GPS")}
+            >
+              <Github size={20} color={textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Linking.openURL("https://cactus-apps.dev")}
+            >
+              <Globe size={20} color={textColor} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={[styles.banner, { backgroundColor: "#212434" }]}>
-          <Rocket color={"#5164C8"} size={25} strokeWidth={2} />
-          <Text style={[styles.bannertext, { color: "#5164C8" }]}>{t('Feature')}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('Development')}</Text>
+          <View style={styles.card}>
+            <Text style={styles.descriptionText}>
+              {t('We_are_Cactus_Apps')} {t('develops_apps')} {t('customer_satisfaction')}
+            </Text>
+          </View>
         </View>
-        <Text style={styles.text}>Version 1.3.6 - © Cactus Apps 2025</Text>
-      </View>
-    </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Resources</Text>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.navigate("/licenses")}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#EEF2FF' }]}>
+                <Copyright size={20} color="#4F46E5" />
+              </View>
+              <Text style={styles.menuLabel}>{t("licenses")}</Text>
+              <ChevronRight size={18} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.navigate("/updatelog")}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#F0FDF4' }]}>
+                <List size={20} color="#16A34A" />
+              </View>
+              <Text style={styles.menuLabel}>{t("update_log")}</Text>
+              <ChevronRight size={18} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={styles.versionText}>Version 1.3.6 • © 2025 Cactus Apps</Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
+const getStyles = (scheme: "light" | "dark" | null) => {
+  const isDark = scheme === "dark";
+  const bg = isDark ? "#0D1117" : "#F8FAFC";
+  const cardBg = isDark ? "#161B22" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+  const subTextColor = isDark ? "#94a3b8" : "#64748b";
+  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+
+  return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "#1B1B1F",
-    },
-    all: {
-      flexDirection: "row",
-      paddingTop: 20,
-      paddingBottom: 50,
-      marginLeft: 16,
-    },
-    title: {
-      fontSize: 30,
-      fontWeight: "600",
-      alignSelf: "center",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-      marginLeft: 66,
-    },
-    arrow: {
-      paddingHorizontal: 180,
-      marginVertical: 23,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    banner: {
-      alignItems: "center",
-      flexDirection: "row",
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 10,
-    },
-    bannertext: {
-      fontWeight: "700",
-      fontSize: 20,
-      paddingLeft: 8,
-    },
-    button: {
-      fontSize: 21,
-      fontWeight: "600",
-      borderRadius: 8,
-      backgroundColor: "#466483ff",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#fff",
-      paddingHorizontal: 35,
-      paddingVertical: 12,
-      alignSelf: "center",
-    },
-    page: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    icon: {
-      marginHorizontal: 23,
-      marginVertical: 23,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    credits: {
-      fontSize: 26,
-      alignSelf: "center",
-      fontWeight: "600",
-      paddingVertical: 20,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    text: {
-      fontSize: 15,
-      paddingLeft: 18,
-      fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    back: {
-      paddingLeft: 20,
-      alignSelf: "center",
-    },
-    backbutton: {
-      width: 30,
-      height: 30,
-      borderRadius: 35,
-      backgroundColor: "#466583aa",
+      backgroundColor: bg,
     },
     header: {
       flexDirection: "row",
-      paddingTop: 50,
-      paddingBottom: 16,
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
     },
-    development: {
-      fontSize: 26,
-      alignSelf: "center",
-      fontWeight: "600",
-      paddingVertical: 20,
-      paddingTop: 30,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: textColor,
     },
-    imagecontainer: {},
-    image: {
+    backButton: {
+      padding: 8,
+      borderRadius: 12,
+    },
+    scrollContent: {
+      paddingBottom: 40,
+    },
+    brandingSection: {
+      alignItems: "center",
+      paddingVertical: 40,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    logoWrapper: {
       width: 100,
       height: 100,
-      borderRadius: 12,
-      marginLeft: 30,
-      marginTop: 30,
+      borderRadius: 24,
+      backgroundColor: bg,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.1,
+      shadowRadius: 20,
+      elevation: 5,
+      marginBottom: 20,
     },
-    maptiler: {},
-    link: {
+    logo: {
+      width: 80,
+      height: 80,
+      borderRadius: 16,
+    },
+    appName: {
+      fontSize: 28,
+      fontWeight: "900",
+      color: textColor,
+      letterSpacing: -0.5,
+    },
+    tagline: {
+      fontSize: 14,
+      color: subTextColor,
+      fontWeight: "600",
+      marginTop: 4,
+    },
+    socialLinks: {
+      flexDirection: "row",
+      gap: 16,
+      marginTop: 24,
+    },
+    socialButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    section: {
+      padding: 24,
+      paddingBottom: 0,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: "800",
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 1.5,
+      marginBottom: 12,
+      marginLeft: 4,
+    },
+    card: {
+      backgroundColor: cardBg,
+      borderRadius: 24,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    descriptionText: {
       fontSize: 15,
+      lineHeight: 24,
+      color: textColor,
+      fontWeight: "500",
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+    },
+    menuIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    menuLabel: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: "700",
+      color: textColor,
+      marginLeft: 16,
+    },
+    separator: {
+      height: 1,
+      backgroundColor: borderColor,
+      marginVertical: 4,
+    },
+    bannerRow: {
+      flexDirection: "row",
+      padding: 24,
+      gap: 12,
+    },
+    banner: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      borderRadius: 16,
+      gap: 8,
+    },
+    bannerText: {
+      fontWeight: "800",
+      fontSize: 14,
+    },
+    versionText: {
+      textAlign: "center",
+      fontSize: 12,
+      color: subTextColor,
       fontWeight: "600",
-      paddingLeft: 25,
-      textDecorationLine: "underline",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    link2: {
-      fontSize: 21,
-      fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    all1: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    all2: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    all3: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    all4: {
-      flexDirection: "row",
-      alignItems: "center",
+      marginTop: 20,
     },
   });
+};

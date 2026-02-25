@@ -1,18 +1,48 @@
 // Version 1.3.6 - © Cactus Apps 2026
 import { CustomTabBar1 } from "@/components/TabBarStyle";
-import { AuthProvider } from "@/lib/auth/auth-context";
+import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { Tabs } from "expo-router";
-import React, { useState } from "react";
 import { useColorScheme, View } from "react-native";
 import { useTabStore } from "@/lib/storage/zustand";
 import { Bookmark, HelpCircle, Home, MapIcon, User} from "lucide-react-native"
+import { Slot, useRouter, useSegments } from "expo-router";
+import React, { useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { AnimatedSplash } from "@/components/SplashScreen";
+
+function RouteGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { user, isLoadingUser } = useAuth();
+  const segments = useSegments();
+  const redirecting = React.useRef(false);
+
+
+  useEffect(() => {
+    if (isLoadingUser || redirecting.current) return;
+
+    redirecting.current = true;
+    const inAuthGroup = segments[0] === "auth";
+
+    if (!user && !inAuthGroup) {
+      router.replace("/auth");
+    } else if (user && inAuthGroup) {
+      router.replace("/");
+    }
+
+    const t = setTimeout(() => (redirecting.current = false), 100);
+    return () => clearTimeout(t);
+  }, [user, segments, isLoadingUser, router]);
+
+  if (isLoadingUser) return null;
+  return <>{children}</>;
+}
 
 export default function TabsLayout() {
   const scheme = useColorScheme();
   const TabBar = useTabStore((s) => s.TabBar);
 
   return (
-    <>
+    <RouteGuard>
       {TabBar === "CustomTabBar1" ? (
         <Tabs
           screenOptions={{ headerShown: false }}
@@ -66,6 +96,6 @@ export default function TabsLayout() {
           <Tabs.Screen name="profilescreen" options={{ title: "Profile" }} />
         </Tabs>
       )}
-      </>
+      </RouteGuard>
   );
 }

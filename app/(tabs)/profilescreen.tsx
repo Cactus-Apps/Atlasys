@@ -1,4 +1,4 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import { Avatar } from "@kolking/react-native-avatar";
 import { useRouter } from "expo-router";
 import {
@@ -38,7 +38,7 @@ export function ProfileScreen() {
   const [email, setEmail] = useState<string | undefined>("");
   const scheme = useColorScheme();
   const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
+    scheme === "light" || scheme === "dark" ? scheme : null,
   );
 
   useEffect(() => {
@@ -51,315 +51,305 @@ export function ProfileScreen() {
     fetchUserEmail();
   }, []);
 
-  let username = email ? email.split("@")[0] : "";
+  let username = email ? email.split("@")[0] : "User";
 
   let name = username
     .split(/[_-]/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
+  const menuItems: {
+    group: string;
+    items: {
+      label: string;
+      sub?: string;
+      icon: any;
+      color: string;
+      bg: string;
+      route: string;
+    }[];
+  }[] = [
+    {
+      group: "ACCOUNT SETTINGS",
+      items: [
+        {
+          label: "Edit Profile",
+          sub: "Update your photo and details",
+          icon: UserRound,
+          color: "#4F46E5",
+          bg: "#EEF2FF",
+          route: "/account",
+        },
+        {
+          label: "Privacy & Security",
+          sub: "Manage your privacy settings",
+          icon: ShieldCheck,
+          color: "#9333EA",
+          bg: "#F5F3FF",
+          route: "/settings",
+        },
+        {
+          label: "Notifications",
+          sub: "Customize your alerts",
+          icon: Bell,
+          color: "#2563EB",
+          bg: "#EFF6FF",
+          route: "/notifications",
+        },
+        {
+          label: "Billing & Plans",
+          sub: "Manage subscription and payment",
+          icon: CreditCard,
+          color: "#16A34A",
+          bg: "#F0FDF4",
+          route: "/paywall",
+        },
+      ],
+    },
+    {
+      group: "APP INFO",
+      items: [
+        {
+          label: t("Help_&_Feedback"),
+          icon: MessageCircleQuestionMark,
+          color: "#EA580C",
+          bg: "#FFF7ED",
+          route: "/help_feedback",
+        },
+        {
+          label: t("Info"),
+          icon: Info,
+          color: "#0284C7",
+          bg: "#F0F9FF",
+          route: "/info",
+        },
+        {
+          label: t("Admin_Panel"),
+          icon: ShieldUser,
+          color: "#DC2626",
+          bg: "#FEF2F2",
+          route: "/AdminPanel",
+        },
+      ],
+    },
+  ];
+
   return (
     <GestureHandlerRootView>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
+          <TouchableOpacity onPress={() => router.navigate("/account")}>
         <View style={styles.profileHeader}>
-          <View style={styles.avatarView}>
+          <View style={styles.avatarContainer}>
             <Avatar
-              size={85}
-              name={email ?? undefined}
+              size={90}
+              name={email ?? "U"}
               email={email ?? undefined}
               colorize={true}
-              radius={100}
-              badgeColor="#146275ff"
-              defaultSource={require("@/assets/images/icon.png")}
+              radius={45}
+              badgeColor="#2563EB"
             />
           </View>
-          <View style={styles.emailName}>
+          <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{name}</Text>
             <Text style={styles.profileEmail}>{email}</Text>
+            <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
+              <Rocket size={12} color="#fff" fill="#fff" />
+              <Text style={styles.badgeText}>Premium User</Text>
+            </TouchableOpacity>
           </View>
         </View>
+        </TouchableOpacity>
 
-        <View style={styles.menuContainer}>
-          <View style={{paddingHorizontal: 10,paddingVertical: 10}}>
-            <Text style={{ color: "#737B87", fontSize: 13, fontWeight: "500" }}>
-              ACCOUNT SETTINGS
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 15,
-              paddingVertical: 5,
-            }}
-          >
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                paddingVertical: 8,
-                paddingHorizontal: 8,
-                borderRadius: 50,
-                backgroundColor: "#E0E7FF",
-              }}
-            >
-              <UserRound color={"#4F46E5"} size={26} strokeWidth={3} />
+        <View style={styles.listContainer}>
+          {menuItems.map((group, gIdx) => (
+            <View key={gIdx} style={styles.group}>
+              <Text style={styles.groupTitle}>{group.group}</Text>
+              <View style={styles.groupContent}>
+                {group.items.map((item, iIdx) => (
+                  <React.Fragment key={iIdx}>
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      activeOpacity={0.7}
+                      onPress={() => router.navigate(item.route as any)}
+                    >
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          {
+                            backgroundColor:
+                              scheme === "dark"
+                                ? "rgba(255,255,255,0.05)"
+                                : item.bg,
+                          },
+                        ]}
+                      >
+                        <item.icon
+                          color={item.color}
+                          size={22}
+                          strokeWidth={2.5}
+                        />
+                      </View>
+                      <View style={styles.menuTextContainer}>
+                        <Text style={styles.menuLabel}>{item.label}</Text>
+                        {item.sub && (
+                          <Text style={styles.menuSubLabel}>{item.sub}</Text>
+                        )}
+                      </View>
+                      <ChevronRight
+                        size={18}
+                        color={scheme === "dark" ? "#4b5563" : "#94a3b8"}
+                        strokeWidth={3}
+                      />
+                    </TouchableOpacity>
+                    {iIdx < group.items.length - 1 && (
+                      <View style={styles.separator} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
             </View>
-            <View style={{ paddingHorizontal: 18 }}>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
-                Edit Profile
-              </Text>
-              <Text
-                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
-              >
-                Update your photo and details
-              </Text>
-            </View>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <View style={styles.line} />
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 15,
-              paddingVertical: 5,
-            }}
-          >
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                paddingVertical: 8,
-                paddingHorizontal: 8,
-                borderRadius: 50,
-                backgroundColor: "#F3E8FF",
-              }}
-            >
-              <ShieldCheck color={"#9333EA"} size={26} strokeWidth={3} />
-            </View>
-            <View style={{ paddingHorizontal: 18 }}>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
-                Privacy & Security
-              </Text>
-              <Text
-                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
-              >
-                Manage your privacy settings
-              </Text>
-            </View>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <View style={styles.line} />
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 15,
-              paddingVertical: 5,
-            }}
-          >
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                paddingVertical: 8,
-                paddingHorizontal: 8,
-                borderRadius: 50,
-                backgroundColor: "#DBEAFE",
-              }}
-            >
-              <Bell color={"#2563EB"} size={26} strokeWidth={3} />
-            </View>
-            <View style={{ paddingHorizontal: 18 }}>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
-                Notification
-              </Text>
-              <Text
-                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
-              >
-                Customize notification preferences
-              </Text>
-            </View>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <View style={styles.line} />
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 15,
-              paddingVertical: 5,
-            }}
-          >
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                paddingVertical: 8,
-                paddingHorizontal: 8,
-                borderRadius: 50,
-                backgroundColor: "#DCFCE7",
-              }}
-            >
-              <CreditCard color={"#16A34A"} size={26} strokeWidth={3} />
-            </View>
-            <View style={{ paddingHorizontal: 18 }}>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
-                Billing & Plans
-              </Text>
-              <Text
-                style={{ color: "#737B87", fontSize: 16, fontWeight: "500" }}
-              >
-                Manage subscription and payment
-              </Text>
-            </View>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
+          ))}
+        </View>
 
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/account")}
-          >
-            <User strokeWidth={2.5} style={styles.icon} />
-            <Text style={styles.link}>{t("Profile")}</Text>
-            <ChevronRight style={styles.arrow} />
+        <View style={styles.footer}>
+          <TouchableOpacity onPress={() => router.navigate("/test")}>
+            <Text style={styles.footerText}>Version 1.4.1 • GPS </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/settings")}
-          >
-            <Bolt strokeWidth={2.5} style={styles.icon} />
-            <Text style={styles.link}>{t("Settings")}</Text>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <View style={styles.line} />
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/help_feedback")}
-          >
-            <MessageCircleQuestionMark strokeWidth={2.5} style={styles.icon} />
-            <Text style={styles.link}>{t("Help_&_Feedback")}</Text>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/info")}
-          >
-            <Info strokeWidth={2.5} style={styles.icon} />
-            <Text style={styles.link}>{t("Info")}</Text>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.page}
-            onPress={() => router.navigate("/AdminPanel")}
-          >
-            <ShieldUser strokeWidth={2.5} style={styles.icon} />
-            <Text style={styles.link}>{t("Admin_Panel")}</Text>
-            <ChevronRight style={styles.arrow} />
-          </TouchableOpacity>
-          <View>
-            <TouchableOpacity
-              style={styles.page}
-              onPress={() => router.navigate("/test")}
-            >
-              <TestTube strokeWidth={2.5} style={styles.icon} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.page}
-              onPress={() => router.navigate("/test2")}
-            >
-              <TestTube2 strokeWidth={2.5} style={styles.icon} />
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </GestureHandlerRootView>
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
-    page: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 15,
-      paddingHorizontal: 20,
-    },
-    icon: {
-      marginRight: 15,
-      color: scheme === "dark" ? "#d8d8d8" : "#000",
-      width: 24,
-      height: 24,
-    },
-    link: {
-      flex: 1,
-      fontSize: 18,
-      fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8" : "#000",
-      flexShrink: 1,
-      flexWrap: "wrap",
-    },
-    arrow: {
-      width: 20,
-      height: 20,
-      color: scheme === "dark" ? "#d8d8d8" : "#000",
-      marginLeft: 10,
-    },
-    menuContainer: {
-      marginVertical: 10,
-      borderRadius: 10,
-      overflow: "hidden",
-      elevation: 2,
-    },
-    all: {
-      flexDirection: "row",
-      backgroundColor: "#121212",
-      flex: 1,
-    },
-    placeholder: {
-      marginTop: 8,
-    },
+const getStyles = (scheme: "light" | "dark" | null) => {
+  const isDark = scheme === "dark";
+  const bg = isDark ? "#0D1117" : "#F8FAFC";
+  const cardBg = isDark ? "#161B22" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+  const subTextColor = isDark ? "#94a3b8" : "#64748b";
+  const borderColor = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.05)";
+
+  return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "#000",
+      backgroundColor: bg,
     },
-    line: {
-      height: 0.7,
-      backgroundColor: "#ccc",
-      alignSelf: "stretch",
-      marginVertical: 12,
-      marginHorizontal: 16,
-    },
-    image: {
-      width: 200,
-      height: 100,
-      marginTop: 25,
-      justifyContent: "center",
-      alignSelf: "center",
+    content: {
+      paddingBottom: 40,
     },
     profileHeader: {
-      backgroundColor: "#222222",
       padding: 30,
-      paddingTop: 40,
+      paddingTop: 60,
       flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? "#161B22" : "#FFFFFF",
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
     },
-    avatarView: {
-      alignSelf: "flex-start",
+    avatarContainer: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 5,
+    },
+    profileInfo: {
+      marginLeft: 20,
+      flex: 1,
     },
     profileName: {
-      fontSize: 22,
-      fontWeight: "bold",
-      color: "#fff",
+      fontSize: 24,
+      fontWeight: "800",
+      color: textColor,
     },
     profileEmail: {
       fontSize: 14,
-      color: "gray",
+      color: subTextColor,
+      marginTop: 2,
     },
-    emailName: {
-      paddingHorizontal: 15,
-      paddingVertical: 3,
+    badge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#2563EB",
+      alignSelf: "flex-start",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      marginTop: 8,
+      gap: 4,
+    },
+    badgeText: {
+      color: "#fff",
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    listContainer: {
+      padding: 20,
+    },
+    group: {
+      marginBottom: 25,
+    },
+    groupTitle: {
+      fontSize: 12,
+      fontWeight: "800",
+      color: subTextColor,
+      letterSpacing: 1.5,
+      marginBottom: 12,
+      marginLeft: 4,
+    },
+    groupContent: {
+      backgroundColor: cardBg,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: borderColor,
+      overflow: "hidden",
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 16,
+    },
+    iconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    menuTextContainer: {
+      flex: 1,
+      marginLeft: 16,
+    },
+    menuLabel: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: textColor,
+    },
+    menuSubLabel: {
+      fontSize: 13,
+      color: subTextColor,
+      marginTop: 2,
+    },
+    separator: {
+      height: 1,
+      backgroundColor: borderColor,
+      marginLeft: 76,
+    },
+    footer: {
+      alignItems: "center",
+      marginTop: 10,
+    },
+    footerText: {
+      fontSize: 12,
+      color: "#94a3b8",
+      fontWeight: "600",
     },
   });
+};
 
 export default ProfileScreen;

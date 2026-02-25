@@ -1,5 +1,4 @@
 // Version 1.3.6 - © Cactus Apps 2025
-import AntDesign from "@expo/vector-icons/AntDesign";
 import * as React from "react";
 import {
   Linking,
@@ -8,69 +7,213 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ChevronRight, Github, Mail, MessageSquare, LifeBuoy } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 
-const bugreport = () => {
+const HelpFeedback = () => {
   const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const isDark = scheme === "dark";
+  const router = useRouter();
+  const { t } = useTranslation();
+  const styles = getStyles(isDark);
 
-  const openLink = () => {
+  const openGithub = () => {
     Linking.openURL("https://github.com/Cactus-Apps/GPS/issues/new").catch(
       (err) => console.error("An error occurred", err)
     );
   };
 
+  const openEmail = () => {
+    Linking.openURL("mailto:support@cactus-apps.dev").catch(
+      (err) => console.error("An error occurred", err)
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.all}>
-      <Text style={styles.title}>Bug Report</Text>
-      <View style={styles.container}>
-        <Text style={styles.text}>please report on</Text>
-        <AntDesign style={styles.icon} name="github" size={24} color="black" />
-        <TouchableOpacity onPress={openLink}>
-          <Text style={styles.link}>GitHub</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
+          <ChevronRight size={24} color={isDark ? "#fff" : "#000"} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t("Help & Feedback")}</Text>
+        <View style={{ width: 44 }} />
       </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.heroSection}>
+          <View style={styles.iconCircle}>
+            <LifeBuoy size={48} color="#2563EB" strokeWidth={2.5} />
+          </View>
+          <Text style={styles.heroTitle}>How can we help?</Text>
+          <Text style={styles.heroSub}>We're here to assist you with any questions or issues.</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Contact Options</Text>
+          <View style={styles.card}>
+            <TouchableOpacity style={styles.menuItem} onPress={openGithub} activeOpacity={0.7}>
+              <View style={[styles.menuIcon, { backgroundColor: '#F1F5F9' }]}>
+                <Github size={22} color="#000" />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Report Bug on GitHub</Text>
+                <Text style={styles.menuSub}>Create an issue on our repository</Text>
+              </View>
+              <ChevronRight size={18} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
+            <TouchableOpacity style={styles.menuItem} onPress={openEmail} activeOpacity={0.7}>
+              <View style={[styles.menuIcon, { backgroundColor: '#EEF2FF' }]}>
+                <Mail size={22} color="#4F46E5" />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Email Support</Text>
+                <Text style={styles.menuSub}>support@cactus-apps.dev</Text>
+              </View>
+              <ChevronRight size={18} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Community</Text>
+          <View style={styles.card}>
+            <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+              <View style={[styles.menuIcon, { backgroundColor: '#F0FDF4' }]}>
+                <MessageSquare size={22} color="#16A34A" />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Feature Requests</Text>
+                <Text style={styles.menuSub}>Suggest new ideas for GPS Explore</Text>
+              </View>
+              <ChevronRight size={18} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default bugreport;
+const getStyles = (isDark: boolean) => {
+  const bg = isDark ? "#0D1117" : "#F8FAFC";
+  const cardBg = isDark ? "#161B22" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+  const subTextColor = isDark ? "#94a3b8" : "#64748b";
+  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
-    all: {
-      flex: 1,
-    },
+  return StyleSheet.create({
     container: {
+      flex: 1,
+      backgroundColor: bg,
+    },
+    header: {
       flexDirection: "row",
       alignItems: "center",
-      marginVertical: 40,
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
     },
-    link: {
-      fontSize: 17,
-      fontWeight: "600",
-      textDecorationLine: "underline",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: textColor,
     },
-    title: {
-      fontSize: 30,
-      paddingTop: 15,
-      alignSelf: "center",
-      fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    backButton: {
+      padding: 8,
     },
-    text: {
-      marginHorizontal: 12,
-      fontSize: 17,
+    content: {
+      padding: 24,
+      paddingBottom: 40,
+    },
+    heroSection: {
+      alignItems: "center",
+      marginBottom: 32,
+      marginTop: 20,
+    },
+    iconCircle: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 20,
+    },
+    heroTitle: {
+      fontSize: 28,
+      fontWeight: "900",
+      color: textColor,
+      letterSpacing: -0.5,
+    },
+    heroSub: {
+      fontSize: 15,
+      color: subTextColor,
+      textAlign: "center",
+      marginTop: 8,
+      paddingHorizontal: 20,
       fontWeight: "500",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
     },
-    icon: {
-      marginLeft: 10,
-      marginRight: 3,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: "800",
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 1.5,
+      marginBottom: 12,
+      marginLeft: 4,
+    },
+    card: {
+      backgroundColor: cardBg,
+      borderRadius: 24,
+      padding: 8,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 12,
+    },
+    menuIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    menuTextContainer: {
+      flex: 1,
+      marginLeft: 16,
+    },
+    menuLabel: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: textColor,
+    },
+    menuSub: {
+      fontSize: 13,
+      color: subTextColor,
+      marginTop: 2,
+    },
+    separator: {
+      height: 1,
+      backgroundColor: borderColor,
+      marginHorizontal: 12,
     },
   });
+};
+
+export default HelpFeedback;

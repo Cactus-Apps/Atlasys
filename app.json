@@ -3,7 +3,7 @@
     "name": "GPS",
     "slug": "GPS",
     "jsEngine": "hermes",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",
@@ -49,28 +49,6 @@
         {
           "requestLocationPermission": true,
           "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
-        }
-      ],
-      [
-        "expo-font",
-        {
-          "fonts": ["./assets/fonts/Nunito-Regular.ttf"],
-          "android": {
-            "fonts": [
-              {
-                "fontFamily": "Nunito",
-                "fontDefinitions": [
-                  {
-                    "path": "./assets/fonts/Nunito-Regular.ttf",
-                    "weight": 700
-                  }
-                ]
-              }
-            ]
-          },
-          "ios": {
-            "fonts": ["./assets/fonts/Nunito-Regular.ttf"]
-          }
         }
       ],
       "expo-secure-store",

@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CardSkeletonViewText } from "./SkeletonView";
+import { CardSkeletonView, CardSkeletonViewText } from "./SkeletonView";
 
 export default function Weather() {
   const [location, setLocation] = useState<{
@@ -204,7 +204,7 @@ export default function Weather() {
   if (loading) {
     return (
       <View style={styles.card2}>
-        <CardSkeletonViewText/>
+        <CardSkeletonView/>
       </View>
     );
   }

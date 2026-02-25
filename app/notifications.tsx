@@ -1,56 +1,69 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, CheckCircle2, Rocket, Zap, Shield, Crown } from "lucide-react-native";
+import {
+  ChevronRight,
+  CheckCircle2,
+  Rocket,
+  Zap,
+  Shield,
+  Crown,
+} from "lucide-react-native";
 import { purchasePremium } from "@/lib/auth/revenuecat";
 import { useColorScheme } from "react-native";
 import * as Haptics from "expo-haptics";
+import Reactfrom from "react";
+import { Switch } from "react-native";
+import * as Notifications from "expo-notifications";
+
+const enableNotifications = async () => {
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status === "granted") {
+    console.log("Notifications enabled");
+  }
+};
+
+const disableNotifications = async () => {
+  console.log("Notifications disabled");
+};
 
 export default function PaywallScreen() {
-  const { user } = useAuth();
-  const setSubscribed = useAuthStore((s) => s.setSubscribed);
-  const isSubscribed = useAuthStore((s) => s.isSubscribed);
   const scheme = useColorScheme();
+  const [enabled, setEnabled] = useState(false);
   const isDark = scheme === "dark";
   const styles = getStyles(isDark);
-  const [loading, setLoading] = useState(false); // Added loading state
 
-  const handleSubscribe = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setLoading(true);
-    try {
-      const success = await purchasePremium();
-      if (success) {
-        setSubscribed(true);
-        router.navigate("/onboarding");
-      }
-    } catch (e: any) {
-      console.warn("Purchase error:", e.message);
-      // For development/mock purposes:
-      if (e.message?.includes("placeholder") || e.message?.includes("configure")) {
-        setSubscribed(true);
-        router.navigate("/onboarding");
-      }
-    } finally {
-      setLoading(false);
+  const toggleSwitch = async () => {
+    if (!enabled) {
+      await enableNotifications();
+      setEnabled(true);
+    } else {
+      await disableNotifications();
+      setEnabled(false);
     }
   };
-
-  const features = [
-    { icon: Zap, text: "Unlimited City Searches", sub: "Search any location worldwide" },
-    { icon: Shield, text: "Ad-Free Experience", sub: "Zero interruptions while exploring" },
-    { icon: Rocket, text: "Real-time Weather Data", sub: "Precise updates for every city" },
-    { icon: Crown, text: "Priority Support", sub: "24/7 dedicated assistance" },
-  ];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronRight size={24} color={isDark ? "#fff" : "#000"} style={{ transform: [{ rotate: '180deg' }] }} />
+        <TouchableOpacity
+          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          style={styles.backButton}
+        >
+          <ChevronRight
+            size={24}
+            color={isDark ? "#fff" : "#000"}
+            style={{ transform: [{ rotate: "180deg" }] }}
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Premium</Text>
         <View style={{ width: 44 }} />
@@ -58,27 +71,13 @@ export default function PaywallScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroSection}>
-          <View style={styles.iconCircle}>
-            <Crown size={60} color="#2563EB" strokeWidth={2.5} />
+          <View>
+            <Text>Push Notifications</Text>
+            <Switch value={enabled} onValueChange={toggleSwitch} />
           </View>
-          <Text style={styles.heroTitle}>Go Premium</Text>
-          <Text style={styles.heroSub}>Unlock the full potential of GPS Explore</Text>
         </View>
 
-        <View style={styles.featureList}>
-          {features.map((item, index) => (
-            <View key={index} style={styles.featureItem}>
-              <View style={styles.featureIconContainer}>
-                <item.icon size={24} color="#2563EB" strokeWidth={2.5} />
-              </View>
-              <View style={styles.featureTextContainer}>
-                <Text style={styles.featureText}>{item.text}</Text>
-                <Text style={styles.featureSub}>{item.sub}</Text>
-              </View>
-              <CheckCircle2 size={20} color="#22C55E" />
-            </View>
-          ))}
-        </View>
+        <View style={styles.featureList}></View>
 
         <View style={styles.pricingCard}>
           <Text style={styles.pricingTitle}>Monthly Pass</Text>
@@ -87,14 +86,12 @@ export default function PaywallScreen() {
             <Text style={styles.priceValue}>4.99</Text>
             <Text style={styles.pricePeriod}>/month</Text>
           </View>
-          <Text style={styles.priceDetail}>Cancel anytime. Secure checkout.</Text>
+          <Text style={styles.priceDetail}>
+            Cancel anytime. Secure checkout.
+          </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.subscribeButton}
-          onPress={handleSubscribe}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.subscribeButton} activeOpacity={0.8}>
           <Text style={styles.subscribeButtonText}>Start Premium Trial</Text>
         </TouchableOpacity>
 
@@ -111,7 +108,9 @@ const getStyles = (isDark: boolean) => {
   const cardBg = isDark ? "#161B22" : "#FFFFFF";
   const textColor = isDark ? "#FFFFFF" : "#1E293B";
   const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+  const borderColor = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.05)";
 
   return StyleSheet.create({
     container: {

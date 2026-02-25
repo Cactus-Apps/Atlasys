@@ -10,13 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Client, Databases, ID } from 'react-native-appwrite';
 
-const client = new Client()
-  .setEndpoint(process.env.EXPO_PUBLIC_API_ENDPOINT!)
-  .setProject(process.env.EXPO_PUBLIC_API_PROJECT!);
 
-const databases = new Databases(client);
 
 type ConsentModalProps = {
   userId?: string;
@@ -65,29 +60,6 @@ export default function ConsentModal({ userId, onConsentAccepted }: ConsentModal
       version: 'v1.0',
       timestamp: new Date().toISOString(),
     };
-
-    try {
-      await SecureStore.setItemAsync('consent', JSON.stringify(consent));
-      if (userId) {
-        await databases.createDocument({
-          databaseId: 'YOUR_DATABASE_ID',
-          collectionId: 'consents',
-          documentId: ID.unique(),
-          data: {
-            userId,
-            accepted: true,
-            location_city: true,
-            version: 'v1.0',
-            timestamp: new Date().toISOString()
-          }
-        });
-      } else {
-        console.warn('No userId available; saved consent locally only.');
-      }
-    } catch (err) {
-      console.error('Consent save failed:', err);
-      Alert.alert('Warning', 'Could not save consent to server. Saved locally.');
-    }
 
     setVisible(false);
     onConsentAccepted?.();

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/lib/auth/auth-context";
+import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { useAuthStore } from "@/lib/storage/zustand";
 
 export default function AuthPaywallGate({ children }: { children: ReactNode }) {

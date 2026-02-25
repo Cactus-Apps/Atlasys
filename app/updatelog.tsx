@@ -1,6 +1,12 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import { t } from "i18next";
-import { Rocket } from "lucide-react-native";
+import {
+  Rocket,
+  ChevronRight,
+  History,
+  Zap,
+  Sparkles,
+} from "lucide-react-native";
 import * as React from "react";
 import {
   ScrollView,
@@ -8,157 +14,247 @@ import {
   Text,
   View,
   useColorScheme,
+  TouchableOpacity,
 } from "react-native";
 import "./i18n";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
-const updatelog = () => {
+const UpdateLog = () => {
   const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const isDark = scheme === "dark";
+  const router = useRouter();
+  const styles = getStyles(isDark);
+
+  const logs = [
+    {
+      version: "1.3.6",
+      date: "2025-02-09",
+      text: "Full localization in German, English, and French. UI Overhaul with glassmorphic design system.",
+      type: "feature",
+    },
+    {
+      version: "1.3.5",
+      date: "2025-01-20",
+      text: "New navigation system and expanded translations across most screens.",
+      type: "improvement",
+    },
+    {
+      version: "1.3.4",
+      date: "2025-01-10",
+      text: "New Profile screen and minor performance improvements.",
+      type: "improvement",
+    },
+    {
+      version: "1.3.2",
+      date: "2024-12-25",
+      text: "Improved home screen and weather display animations.",
+      type: "feature",
+    },
+    {
+      version: "1.3.1",
+      date: "2024-12-15",
+      text: "New home screen with advanced animation system.",
+      type: "improvement",
+    },
+    {
+      version: "1.3.0",
+      date: "2024-12-01",
+      text: "Redesigned account and update log screens for better readability.",
+      type: "feature",
+    },
+    {
+      version: "1.2.8",
+      date: "2024-11-20",
+      text: "Security improvements and a new, more secure login flow.",
+      type: "improvement",
+    },
+  ];
 
   return (
-    <ScrollView style={styles.view}>
-      <View style={styles.placeholder}>
-        <Text style={styles.titlet}>update_log</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <ChevronRight
+            size={24}
+            color={isDark ? "#fff" : "#000"}
+            style={{ transform: [{ rotate: "180deg" }] }}
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t("update_log")}</Text>
+        <View style={{ width: 44 }} />
       </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.3.6</Text>
-        <Text style={styles.text}>Everything is now translated</Text>
-        <Text style={styles.text}>into German, English and French.</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.3.5</Text>
-        <Text style={styles.text}>New navigation system and </Text>
-        <Text style={styles.text}>and much has now been translated</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.3.4</Text>
-        <Text style={styles.text}>New Profile screen and </Text>
-        <Text style={styles.text}>minor improvements</Text>
-      </View>
-      <View style={styles.container}>
-        <View style={[styles.banner, { backgroundColor: "#212434" }]}>
-          <Rocket color={"#5164C8"} size={25} strokeWidth={2} />
-          <Text style={[styles.bannertext, { color: "#5164C8" }]}>Feature</Text>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.introSection}>
+          <History size={40} color="#2563EB" strokeWidth={2.5} />
+          <Text style={styles.introTitle}>Version History</Text>
+          <Text style={styles.introSub}>See what's new in GPS Explore.</Text>
         </View>
-        <Text style={styles.title}>v1.3.2</Text>
-        <Text style={styles.text}>Improved home screen and</Text>
-        <Text style={styles.text}>minor improvements</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.3.1</Text>
-        <Text style={styles.text}>New home screen and </Text>
-        <Text style={styles.text}>new animation and weather display</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.3.0</Text>
-        <Text style={styles.text}>New update log and </Text>
-        <Text style={styles.text}>new account screen</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.8</Text>
-        <Text style={styles.text}>Better design and </Text>
-        <Text style={styles.text}>new login screen</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.7</Text>
-        <Text style={styles.text}>Security improvement and </Text>
-        <Text style={styles.text}>und kleinere Verbesserung</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.6</Text>
-        <Text style={styles.text}>Account löschen verbessert </Text>
-        <Text style={styles.text}>and minor improvements</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.4</Text>
-        <Text style={styles.text}>Delete account via email </Text>
-        <Text style={styles.text}>
-          disabled, new account deletion system, and minor improvements
-        </Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.3</Text>
-        <Text style={styles.text}>New backend, minor improvements</Text>
-        <Text style={styles.text}>,new home screen and</Text>
-        <Text style={styles.text}>delete account via email</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.2</Text>
-        <Text style={styles.text}>Map search function</Text>
-        <Text style={styles.text}>and minor improvements</Text>
-        <Text style={styles.text}></Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.1</Text>
-        <Text style={styles.text}>Account, authentication</Text>
-        <Text style={styles.text}>and login options</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={styles.title}>v1.2.0</Text>
-        <Text style={styles.text}>The card has been added and</Text>
-        <Text style={styles.text}>beta release of the app</Text>
-      </View>
-    </ScrollView>
+
+        <View style={styles.timeline}>
+          {logs.map((log, index) => (
+            <View key={index} style={styles.logItem}>
+              <View style={styles.timelineLine}>
+                <View
+                  style={[
+                    styles.timelineDot,
+                    {
+                      backgroundColor:
+                        log.type === "feature" ? "#2563EB" : "#94a3b8",
+                    },
+                  ]}
+                />
+                {index !== logs.length - 1 && <View style={styles.line} />}
+              </View>
+
+              <View style={styles.logCard}>
+                <View style={styles.logHeader}>
+                  <Text style={styles.versionTag}>{log.version}</Text>
+                  {log.type === "feature" ? (
+                    <Sparkles size={14} color="#2563EB" strokeWidth={3} />
+                  ) : (
+                    <Zap size={14} color="#94a3b8" />
+                  )}
+                </View>
+                <Text style={styles.logText}>{log.text}</Text>
+                <Text style={styles.logDate}>{log.date}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-export default updatelog;
+const getStyles = (isDark: boolean) => {
+  const bg = isDark ? "#0D1117" : "#F8FAFC";
+  const cardBg = isDark ? "#161B22" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+  const subTextColor = isDark ? "#94a3b8" : "#64748b";
+  const borderColor = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.05)";
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
-    view: {
-      flex: 1,
-    },
-    titlet: {
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-      fontSize: 30,
-      fontWeight: "600",
-    },
-    placeholder: {
-      marginVertical: 30,
-      marginTop: 40,
-      alignSelf: "center",
-    },
+  return StyleSheet.create({
     container: {
-      borderRadius: 8,
-      borderColor: scheme === "dark" ? "#d8d8d8ff" : "#292828ff",
-      alignSelf: "center",
-      width: 350,
-      height: 130,
-      justifyContent: "center",
-      alignItems: "center",
-      borderWidth: 2,
-      marginBottom: 12,
-      marginHorizontal: 15,
-      paddingHorizontal: 45,
-      paddingVertical: 20,
+      flex: 1,
+      backgroundColor: bg,
     },
-    title: {
-      fontSize: 23,
-      alignSelf: "center",
-      fontWeight: "600",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    text: {
-      fontSize: 15,
-      fontWeight: "500",
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    banner: {
-      alignItems: "center",
+    header: {
       flexDirection: "row",
-      position: "absolute",
-      left: -14,
-      top: -16,
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
     },
-    bannertext: {
+    headerTitle: {
+      fontSize: 18,
       fontWeight: "700",
-      fontSize: 20,
+      color: textColor,
+    },
+    backButton: {
+      padding: 8,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    introSection: {
+      alignItems: "center",
+      marginBottom: 32,
+      marginTop: 12,
+    },
+    introTitle: {
+      fontSize: 24,
+      fontWeight: "800",
+      color: textColor,
+      marginTop: 16,
+    },
+    introSub: {
+      fontSize: 15,
+      color: subTextColor,
+      textAlign: "center",
+      marginTop: 8,
+    },
+    timeline: {
       paddingLeft: 8,
     },
+    logItem: {
+      flexDirection: "row",
+      gap: 16,
+      marginBottom: 0,
+    },
+    timelineLine: {
+      alignItems: "center",
+      width: 20,
+    },
+    timelineDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      zIndex: 1,
+      marginTop: 24,
+    },
+    line: {
+      width: 2,
+      flex: 1,
+      backgroundColor: borderColor,
+      marginTop: -4,
+      marginBottom: -24,
+    },
+    logCard: {
+      flex: 1,
+      backgroundColor: cardBg,
+      borderRadius: 20,
+      padding: 16,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: borderColor,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.03,
+      shadowRadius: 10,
+      elevation: 2,
+    },
+    logHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    versionTag: {
+      fontSize: 14,
+      fontWeight: "800",
+      color: "#2563EB",
+      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    logText: {
+      fontSize: 15,
+      color: textColor,
+      lineHeight: 22,
+      fontWeight: "500",
+    },
+    logDate: {
+      fontSize: 12,
+      color: subTextColor,
+      marginTop: 12,
+      fontWeight: "600",
+    },
   });
+};
+
+export default UpdateLog;

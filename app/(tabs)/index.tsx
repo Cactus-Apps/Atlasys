@@ -17,7 +17,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import AuthPaywallGate from "@/components/AuthPaywallGate";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { loadLanguage } from "../i18n";
@@ -35,10 +34,6 @@ import Weather from "@/components/weather";
 import { JSX } from "react";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { useloadingStore } from "@/lib/storage/zustand";
-import {
-  CardSkeletonView,
-  CardSkeletonViewText,
-} from "@/components/SkeletonView";
 
 const componentMap: Record<string, JSX.Element> = {
   "1": <Clock />,
@@ -65,6 +60,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [status, setStatus] = useState<string>("");
   const loadingGpsCoords = useloadingStore((s) => s.loadingGpsCoords);
   const loadingWeather = useloadingStore((s) => s.loadingWeather);
   const [Admin, setAdmin] = useState(false);
@@ -136,9 +132,15 @@ export default function HomeScreen() {
     setLoading(false);
   };
 
+  const askLocationPermission = async () => {
+     const {status} = await Location.requestForegroundPermissionsAsync();
+     setStatus(status);
+     console.error(status)
+  };
+
+
   const startWatching = async () => {
     try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg(t("Location_authorization_denied"));
         return;
@@ -196,10 +198,12 @@ export default function HomeScreen() {
         <AuthProvider>
           <GestureHandlerRootView style={{flex: 1}}>
             <View style={styles.header}>
+              <TouchableOpacity onPress={askLocationPermission}>
               <Image
                 source={require("@/assets/images/logo.png")}
                 style={styles.image}
               />
+              </TouchableOpacity>
               {dragEnabled ? (
                 <TouchableOpacity
                   style={styles.more}

@@ -1,34 +1,48 @@
-// Version 1.3.6 - © Cactus Apps 2025
-import { useAuth } from "@/lib/auth/auth-context";
-import { useRouter } from "expo-router";
-import { t } from "i18next";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  Image,
+  StyleSheet,
+  View,
+  TextInput,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
-  TextInput,
-  View,
+  Dimensions,
+  Image,
   useColorScheme,
 } from "react-native";
-import { Button, Text, useTheme } from "react-native-paper";
+import { Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useTranslation } from "react-i18next";
+import { Mail, Lock, ArrowRight, Github } from "lucide-react-native";
+import { BlurView } from "expo-blur";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Layout,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
+
+const { width } = Dimensions.get("window");
 
 export default function AuthScreen() {
-  const [isSignUp, setIsSignUp] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const theme = useTheme();
-  const [isFocused, setisFocused] = useState(false);
-  const [isFocused2, setisFocused2] = useState(false);
+  const { t } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
-
   const { signIn, signUp } = useAuth();
+  const scheme = useColorScheme();
+  const isDark = scheme === "dark";
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -40,154 +54,294 @@ export default function AuthScreen() {
       return;
     }
 
+    setLoading(true);
     setError(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (isSignUp) {
-      const err = await signUp(email, password);
-      if (err) {
-        setError(err);
-        return;
+    try {
+      if (isSignUp) {
+        const err = await signUp(email, password);
+        if (err) setError(err);
+        else setIsSignUp(false);
+      } else {
+        const err = await signIn(email, password);
+        if (err) setError(err);
+        else router.replace("/");
       }
-      setIsSignUp(false);
-    } else {
-      const err = await signIn(email, password);
-      if (err) {
-        setError(err);
-        return;
-      }
-      router.replace("/");
+    } catch (e) {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSwitchMode = () => {
-    setIsSignUp((prev) => !prev);
+  const toggleMode = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsSignUp(!isSignUp);
     setError(null);
   };
 
+  const getInputBorderColor = (name: string) => {
+    if (focusedInput === name) return "#2563EB";
+    return isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+  };
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#0D1117" : "#F8FAFC" },
+      ]}
     >
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("../assets/images/logo2.png")}
-            style={styles.image}
-            resizeMode="contain"
-          />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.content}>
+          <Animated.View entering={FadeInDown.delay(200)} style={styles.header}>
+            <View style={styles.logoOuter}>
+              <Image
+                source={require("../assets/images/logo2.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text
+              style={[styles.title, { color: isDark ? "#FFFFFF" : "#0F172A" }]}
+            >
+              {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
+            </Text>
+            <Text style={styles.subtitle}>
+              {isSignUp
+                ? "Join our global community today"
+                : "Welcome back, explorer!"}
+            </Text>
+          </Animated.View>
 
-          <Text style={styles.text}>
-            {" "}
-            {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
-          </Text>
+          <Animated.View entering={FadeInUp.delay(400)} style={styles.form}>
+            <View
+              style={[
+                styles.inputWrapper,
+                { borderColor: getInputBorderColor("email") },
+              ]}
+            >
+              <Mail
+                size={20}
+                color={focusedInput === "email" ? "#2563EB" : "#94A3B8"}
+              />
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: isDark ? "#FFFFFF" : "#0F172A" },
+                ]}
+                placeholder={t("E-Mail")}
+                placeholderTextColor="#94A3B8"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setFocusedInput("email")}
+                onBlur={() => setFocusedInput(null)}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View
+              style={[
+                styles.inputWrapper,
+                { borderColor: getInputBorderColor("password") },
+              ]}
+            >
+              <Lock
+                size={20}
+                color={focusedInput === "password" ? "#2563EB" : "#94A3B8"}
+              />
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: isDark ? "#FFFFFF" : "#0F172A" },
+                ]}
+                placeholder={t("Password")}
+                placeholderTextColor="#94A3B8"
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFocusedInput("password")}
+                onBlur={() => setFocusedInput(null)}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
+
+            {error && (
+              <Animated.View entering={FadeInDown} style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </Animated.View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.mainBtn, loading && { opacity: 0.7 }]}
+              onPress={handleAuth}
+              disabled={loading}
+            >
+              <Text style={styles.mainBtnText}>
+                {loading ? "..." : isSignUp ? t("Sign_up") : t("Login")}
+              </Text>
+              {!loading && (
+                <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.switchBtn} onPress={toggleMode}>
+              <Text style={styles.switchBtnText}>
+                {isSignUp ? t("Already_account") : t("no_account")}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(600)} style={styles.footer}>
+            <Text style={styles.footerText}>Or continue with</Text>
+            <View style={styles.socialRow}>
+              <TouchableOpacity
+                style={[
+                  styles.socialBtn,
+                  { backgroundColor: isDark ? "#161B22" : "#FFFFFF" },
+                ]}
+              >
+                <Github size={24} color={isDark ? "#FFFFFF" : "#000000"} />
+              </TouchableOpacity>
+              {/* Add more social providers if needed */}
+            </View>
+          </Animated.View>
         </View>
-        <Text style={styles.info}>{t('E-Mail')}</Text>
-        <TextInput
-          autoCapitalize="none"
-          keyboardType="email-address"
-          inputMode="email"
-          value={email}
-          onChangeText={setEmail}
-          style={[
-            styles.input,
-            { borderColor: isFocused ? "#466583aa" : "#3D444D" },
-            { borderWidth: isFocused ? 2 : 1 },
-          ]}
-          selectionColor="#466483ff"
-          autoComplete="email"
-          onFocus={() => setisFocused(true)}
-          onBlur={() => setisFocused(false)}
-        />
-        <Text style={styles.info}>{t('Password')}</Text>
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          secureTextEntry={true}
-          value={password}
-          onChangeText={setPassword}
-          style={[
-            styles.input,
-            { borderColor: isFocused2 ? "#466583aa" : "#3D444D" },
-            { borderWidth: isFocused2 ? 2 : 1 },
-          ]}
-          selectionColor="#466483ff"
-          onFocus={() => setisFocused2(true)}
-          onBlur={() => setisFocused2(false)}
-        />
-        {error ? (
-          <Text style={{ color: theme.colors.error, textAlign: "center" }}>
-            {error}
-          </Text>
-        ) : null}
-
-        <Button mode="contained" style={styles.button} onPress={handleAuth}>
-          {isSignUp ? t("Sign_up") : t("Login")}
-        </Button>
-
-        <Button
-          mode="text"
-          style={styles.switchModeButton}
-          onPress={handleSwitchMode}
-          textColor="#466483ff"
-        >
-          {isSignUp
-            ? t("Already_account")
-            : t("no_account")}
-        </Button>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: scheme === "dark" ? "#0D1117" : "#fff",
-    },
-    logoContainer: {
-      alignItems: "center",
-      marginTop: 0,
-    },
-    info: {
-      fontSize: 17,
-      fontWeight: "bold",
-      color: "#FEFFFE",
-      paddingVertical: 8,
-    },
-    text: {
-      fontSize: 25,
-      paddingBottom: 40,
-      fontWeight: "bold",
-      color: "#FEFFFE",
-    },
-    image: {
-      width: 100,
-      height: 100,
-    },
-    content: {
-      flex: 1,
-      padding: 22,
-      justifyContent: "center",
-    },
-    title: {
-      textAlign: "center",
-      marginBottom: 24,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#000",
-    },
-    input: {
-      marginBottom: 16,
-      borderRadius: 6,
-      color: "#fff",
-    },
-    button: {
-      marginTop: 8,
-      backgroundColor: "#238636",
-      color: "#FEFFFE",
-      borderRadius: 6,
-    },
-    switchModeButton: {
-      marginTop: 16,
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 32,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 48,
+  },
+  logoOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    shadowColor: "#2563EB",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  logo: {
+    width: 50,
+    height: 50,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "900",
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#64748B",
+  },
+  form: {
+    gap: 16,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    height: 60,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  errorBox: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    padding: 12,
+    borderRadius: 12,
+  },
+  errorText: {
+    color: "#EF4444",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  mainBtn: {
+    backgroundColor: "#2563EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 64,
+    borderRadius: 24,
+    gap: 12,
+    marginTop: 8,
+    shadowColor: "#2563EB",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  mainBtnText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  switchBtn: {
+    alignItems: "center",
+    marginTop: 16,
+  },
+  switchBtnText: {
+    color: "#2563EB",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  footer: {
+    marginTop: 48,
+    alignItems: "center",
+  },
+  footerText: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "600",
+    marginBottom: 24,
+  },
+  socialRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  socialBtn: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+  },
+});
