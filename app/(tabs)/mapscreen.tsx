@@ -545,7 +545,6 @@ export default function MapScreen() {
     Keyboard.dismiss();
     setZoom(9);
 
-    // Add to history
     setSearchHistory((prev) => {
       const filtered = prev.filter((q) => q !== (city.name ?? city.city));
       return [city.name ?? city.city, ...filtered].slice(0, 5);
@@ -869,7 +868,7 @@ export default function MapScreen() {
         />
 
         <VectorTileSource
-          id="pois"
+          id="vector-source"
           source={{
             type: "vector",
             tiles: ["https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf"],
@@ -881,10 +880,17 @@ export default function MapScreen() {
                 type: "symbol",
                 "source-layer": "poi",
                 minzoom: 14,
+                maxzoom: 24,
+
                 layout: {
+                  "icon-image": ["get", "subclass"], // 👈 wichtig
+                  "icon-size": 1,
                   "text-field": ["get", "name"],
                   "text-size": 12,
+                  "text-offset": [0, 1.2],
+                  "text-anchor": "top",
                 },
+
                 paint: {
                   "text-color": "#222",
                   "text-halo-color": "#fff",
