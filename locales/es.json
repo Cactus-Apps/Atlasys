@@ -103,5 +103,15 @@
   "Heavy_showers": "Chubascos fuertes",
   "⚠️ Thunderstorm": "⚠️ Tormenta eléctrica",
   "⚠️ Thunderstorm_with_heavy_hail": "⚠️ Tormenta eléctrica con granizo fuerte",
-  "⚠️ Thunderstorm_with_light_hail": "⚠️ Tormenta eléctrica con granizo ligero"
+  "⚠️ Thunderstorm_with_light_hail": "⚠️ Tormenta eléctrica con granizo ligero",
+  "Saved_Places": "Lugares guardados",
+  "No_saved_places": "Aún no hay lugares guardados",
+  "Go_to_Map": "Ir al mapa",
+  "Unlock_Premium": "Desbloquear Premium",
+  "Premium_Feature": "Función Premium",
+  "Unlock_Now": "Desbloquear ahora",
+  "Welcome_GPS": "Bienvenido a GPS Pro",
+  "Premium": "Premium",
+  "Continue": "Continuar",
+  "Get_Started": "Empezar"
 }

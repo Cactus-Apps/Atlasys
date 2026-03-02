@@ -103,5 +103,15 @@
   "Heavy_showers": "강한 소나기",
   "⚠️ Thunderstorm": "⚠️ 천둥번개",
   "⚠️ Thunderstorm_with_heavy_hail": "⚠️ 천둥번개와 강한 우박",
-  "⚠️ Thunderstorm_with_light_hail": "⚠️ 천둥번개와 약한 우박"
+  "⚠️ Thunderstorm_with_light_hail": "⚠️ 천둥번개와 약한 우박",
+  "Saved_Places": "저장된 장소",
+  "No_saved_places": "아직 저장된 장소가 없습니다",
+  "Go_to_Map": "지도로 이동",
+  "Unlock_Premium": "프리미엄 잠금 해제",
+  "Premium_Feature": "프리미엄 기능",
+  "Unlock_Now": "지금 잠금 해제",
+  "Welcome_GPS": "GPS Pro에 오신 것을 환영합니다",
+  "Premium": "프리미엄",
+  "Continue": "계속",
+  "Get_Started": "시작하기"
 }

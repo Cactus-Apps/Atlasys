@@ -9,7 +9,6 @@ import {
 } from "react-native-maplibre-gl-js";
 import * as Location from "expo-location";
 import {
-  BookOpen,
   Box,
   Cloud,
   CloudRain,
@@ -20,12 +19,8 @@ import {
   History,
   X,
   Layers,
-  LocateFixed,
-  Shuffle,
   Heart,
   Share2,
-  Navigation,
-  MapPin,
   Route,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -53,30 +48,15 @@ import { Image } from "expo-image";
 
 import { Avatar } from "@kolking/react-native-avatar";
 import { supabase } from "@/lib/auth/supabase";
-import BottomSheet, {
-  BottomSheetScrollView,
-  BottomSheetFlatList,
-} from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import ProfileScreen from "./profilescreen";
 import * as Haptics from "expo-haptics";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  Layout,
-  SlideInRight,
-} from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { FlatList as GHFlatList } from "react-native-gesture-handler";
-import {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
-import { runOnJS } from "react-native-reanimated";
-import { TouchableWithoutFeedback } from "react-native";
+import { useSharedValue } from "react-native-reanimated";
+import { MapMouseEvent } from "maplibre-gl";
 
 const { width, height } = Dimensions.get("window");
 
@@ -154,27 +134,34 @@ export default function MapScreen() {
     null,
   );
   const [liked, setLiked] = useState(false);
-  const heartScale = useSharedValue(0);
-  const heartOpacity = useSharedValue(0);
-  const heartRotate = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const rotation = useSharedValue(0);
   const [markerPos, setMarkerPos] = useState<[number, number]>();
+  const [selectedPoi, setSelectedPoi] = useState<{
+    name: string;
+    type: string;
+    subclass: string;
+    osm_id: number;
+    lat: number;
+    lon: number;
+  } | null>(null);
   const [city, setCity] = useState<SelectedCity | null>(null);
   const [article, setArticle] = useState<ArticleData | null>(null);
   const [loading, setLoading] = useState(false);
   const [BottomSheetIndex, setBottomSheetIndex] = useState<number>(-1);
+  const [BottomSheetIndex2, setBottomSheetIndex2] = useState<number>(1);
   const [results, setResults] = useState<CityResult[]>([]);
   const mapRef = useRef<MapRef | null>(null);
   const sheetRef = useRef<BottomSheet>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null,
   );
+  const [poiModalVisible, setPoiModalVisible] = useState(false);
   const snapPoints = useMemo(() => ["15%", "25%", "50%", "80%"], []);
   const scheme = useColorScheme();
   const styles = getStyles(
     scheme === "light" || scheme === "dark" ? scheme : null,
   );
+  const [openRoute, setOpenRoute] = useState(false);
+  const sheetPoiRef = useRef<BottomSheet>(null);
 
   const { t } = useTranslation();
 
@@ -244,56 +231,6 @@ export default function MapScreen() {
     };
   }, [ready]);
 
-  const getPos = () => {
-    let cancelled = true;
-
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setError("Location authorization denied");
-        return;
-      }
-
-      const s = await Location.watchPositionAsync(
-        {
-          accuracy:
-            Platform.OS === "android"
-              ? Location.Accuracy.Balanced
-              : Location.Accuracy.High,
-          timeInterval: 2000,
-          distanceInterval: 1,
-        },
-        (loc) => {
-          if (cancelled) return;
-          lastLocRef.current = loc;
-          const { latitude, longitude } = loc.coords;
-          setMarkerPos([longitude, latitude]);
-          if (!hasCenteredTwich.current && mapRef.current) {
-            hasCenteredTwich.current = true;
-
-            mapRef.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 14,
-              speed: 0.3,
-              curve: 1,
-              duration: 100,
-              pitch: 0,
-            });
-            ensureGlobe();
-          }
-        },
-      );
-
-      if (!cancelled) setSub(s);
-    })().catch((e: any) => setError(e?.message ?? "Unknown error"));
-
-    return () => {
-      cancelled = true;
-      sub?.remove();
-      setSub(null);
-    };
-  };
-
   // User Auth Stuff
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -352,15 +289,6 @@ export default function MapScreen() {
     mapRef.current?.setProjection({ type: "globe" });
   };
 
-  const setMapStyleButton = () => {
-    setMapStyle("https://tiles.openfreemap.org/styles/liberty");
-    //    setMapStyle("https://tiles.openfreemap.org/styles/positron");
-    //    setMapStyle("https://tiles.openfreemap.org/styles/bright");
-    //    setMapStyle("");
-    hasCenteredTwich.current = false;
-    () => getPos();
-  };
-
   const toggleFavorite = () => {
     if (!city) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -384,16 +312,6 @@ export default function MapScreen() {
     } catch (err) {
       console.error(err);
     }
-  };
-
-  const openDirections = () => {
-    if (!city) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const url = Platform.select({
-      ios: `maps://0,0?q=${city.latitude},${city.longitude}(${city.name})`,
-      android: `geo:0,0?q=${city.latitude},${city.longitude}(${city.name})`,
-    });
-    if (url) Linking.openURL(url);
   };
 
   const nextTheme = () => {
@@ -542,8 +460,6 @@ export default function MapScreen() {
     setLastFetchTime(now);
     fetchWikipediaData();
   }, [city?.name, city?.latitude, city?.longitude]);
-
-  // More fetching
 
   // Weather logic
   useEffect(() => {
@@ -698,7 +614,6 @@ export default function MapScreen() {
       const res = await fetch(url);
       const json = await res.json();
 
-      const geometry = json.routes?.[0]?.geometry;
       if (!json.routes?.length) return;
 
       setRoute(json.routes);
@@ -711,6 +626,71 @@ export default function MapScreen() {
 
     fetchRoute().catch(console.error);
   }, [start, end, profile]);
+
+  const buildRouteToPoi = async (poi: any) => {
+    if (!markerPos) return;
+
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${markerPos[0]},${markerPos[1]};${poi.lon},${poi.lat}` +
+      `?overview=full&geometries=geojson`;
+
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (!json.routes?.length) return;
+
+    setRoute(json.routes);
+  };
+
+  const onMapClick = async (event: any) => {
+    if (!mapRef.current) return;
+
+    const features = await mapRef.current.queryRenderedFeatures(event.point, {
+      layers: ["poi-layer"],
+    });
+
+    if (!features?.length) return;
+
+    const clickLng = event.lngLat.lng;
+    const clickLat = event.lngLat.lat;
+
+    // nächstgelegenen POI zum Klick finden
+    let closest = null;
+    let minDistance = Infinity;
+
+    for (const f of features) {
+      if (f.geometry.type !== "Point") continue;
+
+      const [lon, lat] = f.geometry.coordinates;
+
+      const d = Math.abs(lon - clickLng) + Math.abs(lat - clickLat);
+
+      if (d < minDistance) {
+        minDistance = d;
+        closest = f;
+      }
+    }
+
+    if (!closest) return;
+
+    if (closest.geometry.type !== "Point") return;
+
+    const data = {
+      name: closest.properties.name ?? "Unbekannter POI",
+      type: closest.properties.class,
+      subclass: closest.properties.subclass,
+      osm_id: closest.properties.osm_id,
+      lat: closest.geometry.coordinates[1],
+      lon: closest.geometry.coordinates[0],
+    };
+
+    setSelectedPoi(data);
+    setPoiModalVisible(true);
+
+    buildRouteToPoi(data);
+    console.warn("Clicked POI:", data);
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -726,6 +706,9 @@ export default function MapScreen() {
             zoom: 12,
           }}
           listeners={{
+            click: {
+              objectListener: onMapClick,
+            },
             mount: {
               rnListener: ensureGlobe,
             },
@@ -885,6 +868,33 @@ export default function MapScreen() {
           ]}
         />
 
+        <VectorTileSource
+          id="pois"
+          source={{
+            type: "vector",
+            tiles: ["https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf"],
+          }}
+          layers={[
+            {
+              layer: {
+                id: "poi-layer",
+                type: "symbol",
+                "source-layer": "poi",
+                minzoom: 14,
+                layout: {
+                  "text-field": ["get", "name"],
+                  "text-size": 12,
+                },
+                paint: {
+                  "text-color": "#222",
+                  "text-halo-color": "#fff",
+                  "text-halo-width": 1,
+                },
+              },
+            },
+          ]}
+        />
+
         <View style={styles.searchWrapper}>
           <View style={styles.searchContainer}>
             <View style={styles.searchRow}>
@@ -937,7 +947,7 @@ export default function MapScreen() {
                 <History size={16} color="#888" />
                 <Text style={styles.historyHeaderText}>Zuletzt gesucht</Text>
                 <TouchableOpacity onPress={() => setSearchHistory([])}>
-                <X size={16} color="#888"/>
+                  <X size={16} color="#888" />
                 </TouchableOpacity>
               </View>
               {searchHistory.map((item, idx) => (
@@ -1008,6 +1018,55 @@ export default function MapScreen() {
           </View>
         )}
 
+        <Modal visible={poiModalVisible} transparent animationType="slide">
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "flex-end",
+              backgroundColor: "rgba(0,0,0,0.3)",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "white",
+                padding: 20,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                minHeight: 200,
+              }}
+            >
+              {selectedPoi ? (
+                <>
+                  <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                    {selectedPoi.name}
+                  </Text>
+
+                  <Text>Typ: {selectedPoi.type}</Text>
+                  <Text>Untertyp: {selectedPoi.subclass}</Text>
+                  <Text>OSM ID: {selectedPoi.osm_id}</Text>
+
+                  <TouchableOpacity
+                    onPress={() => setPoiModalVisible(false)}
+                    style={{
+                      marginTop: 20,
+                      backgroundColor: "#007AFF",
+                      padding: 12,
+                      borderRadius: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: "white", fontWeight: "600" }}>
+                      Schließen
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text>Kein POI ausgewählt</Text>
+              )}
+            </View>
+          </View>
+        </Modal>
+
         {city && (
           <BottomSheet
             ref={sheetRef}
@@ -1021,7 +1080,13 @@ export default function MapScreen() {
             }}
           >
             {loading && <LoadingOverlay />}
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20}}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
               <View>
                 {!city ? (
                   <Text>Loading</Text>
@@ -1058,7 +1123,7 @@ export default function MapScreen() {
                     </View>
                     <View style={styles.headerActions}>
                       <TouchableOpacity
-                        onPress={openDirections}
+                        onPress={() => setOpenRoute(true)}
                         style={{
                           backgroundColor: "#2563EB",
                           width: 220,
@@ -1239,20 +1304,9 @@ export default function MapScreen() {
             </View>
           </View>
         </Modal>
-        {avatarview && (
-          <View
-            style={{
-              width: "100%",
-              height: "100%",
-              paddingHorizontal: 30,
-              marginTop: 100,
-              paddingBottom: 90,
-              borderRadius: 8,
-            }}
-          >
-            <ProfileScreen />
-          </View>
-        )}
+        <Modal visible={openRoute} style={{ backgroundColor: "#fff" }}>
+          <Text>Hallo Route erstellen</Text>
+        </Modal>
       </MapProvider>
     </GestureHandlerRootView>
   );

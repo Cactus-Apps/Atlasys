@@ -103,5 +103,15 @@
   "Heavy_showers": "大阵雨",
   "⚠️ Thunderstorm": "⚠️ 雷暴",
   "⚠️ Thunderstorm_with_heavy_hail": "⚠️ 雷暴伴有大冰雹",
-  "⚠️ Thunderstorm_with_light_hail": "⚠️ 雷暴伴有小冰雹"
+  "⚠️ Thunderstorm_with_light_hail": "⚠️ 雷暴伴有小冰雹",
+  "Saved_Places": "保存的地方",
+  "No_saved_places": "尚未保存任何地方",
+  "Go_to_Map": "前往地图",
+  "Unlock_Premium": "解锁高级版",
+  "Premium_Feature": "高级功能",
+  "Unlock_Now": "现在解锁",
+  "Welcome_GPS": "欢迎使用 GPS Pro",
+  "Premium": "高级",
+  "Continue": "继续",
+  "Get_Started": "开始"
 }

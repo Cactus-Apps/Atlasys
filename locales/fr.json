@@ -103,5 +103,15 @@
   "Heavy_showers": "Averses fortes",
   "⚠️ Thunderstorm": "⚠️ Orage",
   "⚠️ Thunderstorm_with_heavy_hail": "⚠️ Orage avec grêle forte",
-  "⚠️ Thunderstorm_with_light_hail": "⚠️ Orage avec grêle légère"
+  "⚠️ Thunderstorm_with_light_hail": "⚠️ Orage avec grêle légère",
+  "Saved_Places": "Lieux enregistrés",
+  "No_saved_places": "Aucun lieu enregistré pour le moment",
+  "Go_to_Map": "Aller à la carte",
+  "Unlock_Premium": "Débloquer Premium",
+  "Premium_Feature": "Fonctionnalité Premium",
+  "Unlock_Now": "Débloquer maintenant",
+  "Welcome_GPS": "Bienvenue sur GPS Pro",
+  "Premium": "Premium",
+  "Continue": "Continuer",
+  "Get_Started": "Commencer"
 }

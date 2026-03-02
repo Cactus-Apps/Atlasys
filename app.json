@@ -25,7 +25,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.cactus_apps.GPS"
+      "package": "com.cactus_apps.GPS",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -63,6 +69,12 @@
         "projectId": "1df05076-b7f1-4ef3-8204-b3b14e42fe68"
       }
     },
-    "sdkVersion": "54.0.0"
+    "sdkVersion": "54.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1df05076-b7f1-4ef3-8204-b3b14e42fe68"
+    }
   }
 }

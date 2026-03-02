@@ -103,5 +103,15 @@
   "Heavy_showers": "激しいにわか雨",
   "⚠️ Thunderstorm": "⚠️ 雷雨",
   "⚠️ Thunderstorm_with_heavy_hail": "⚠️ 雷雨と激しい雹",
-  "⚠️ Thunderstorm_with_light_hail": "⚠️ 雷雨と軽い雹"
+  "⚠️ Thunderstorm_with_light_hail": "⚠️ 雷雨と軽い雹",
+  "Saved_Places": "保存済みの場所",
+  "No_saved_places": "まだ保存された場所はありません",
+  "Go_to_Map": "地図へ",
+  "Unlock_Premium": "プレミアムをアンロック",
+  "Premium_Feature": "プレミアム機能",
+  "Unlock_Now": "今すぐアンロック",
+  "Welcome_GPS": "GPS Proへようこそ",
+  "Premium": "プレミアム",
+  "Continue": "次へ",
+  "Get_Started": "始める"
 }

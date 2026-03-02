@@ -103,5 +103,15 @@
   "Heavy_showers": "Сильные ливни",
   "⚠️ Thunderstorm": "⚠️ Гроза",
   "⚠️ Thunderstorm_with_heavy_hail": "⚠️ Гроза с сильным градом",
-  "⚠️ Thunderstorm_with_light_hail": "⚠️ Гроза с легким градом"
+  "⚠️ Thunderstorm_with_light_hail": "⚠️ Гроза с легким градом",
+  "Saved_Places": "Сохраненные места",
+  "No_saved_places": "Сохраненных мест пока нет",
+  "Go_to_Map": "Перейти к карте",
+  "Unlock_Premium": "Разблокировать Премиум",
+  "Premium_Feature": "Премиум-функция",
+  "Unlock_Now": "Разблокировать сейчас",
+  "Welcome_GPS": "Добро пожаловать в GPS Pro",
+  "Premium": "Премиум",
+  "Continue": "Продолжить",
+  "Get_Started": "Начать"
 }
