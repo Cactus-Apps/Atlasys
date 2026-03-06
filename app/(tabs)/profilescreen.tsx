@@ -216,7 +216,7 @@ export function ProfileScreen() {
 
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => router.navigate("/test")}>
-            <Text style={styles.footerText}>Version 1.4.1 • GPS </Text>
+            <Text style={styles.footerText}>Version 1.4.3 • GPS </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

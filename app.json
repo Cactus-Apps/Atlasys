@@ -3,12 +3,11 @@
     "name": "GPS",
     "slug": "GPS",
     "jsEngine": "hermes",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "backgroundColor": "#ffffff",
       "dark": {
@@ -24,7 +23,6 @@
         "foregroundImage": "assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.cactus_apps.GPS",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
