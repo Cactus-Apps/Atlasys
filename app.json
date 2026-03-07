@@ -3,7 +3,7 @@
     "name": "GPS",
     "slug": "GPS",
     "jsEngine": "hermes",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "orientation": "portrait",
     "icon": "assets/images/icon.png",
     "scheme": "gps",
@@ -38,6 +38,14 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
+      [
+        "@maplibre/maplibre-react-native",
+        {
+          "ios": {},
+          "android": {}
+        }
+      ],
       "@maplibre/maplibre-react-native",
       [
         "expo-splash-screen",
@@ -56,7 +64,11 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-asset",
+      "expo-font",
+      "expo-image",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
@@ -67,7 +79,6 @@
         "projectId": "1df05076-b7f1-4ef3-8204-b3b14e42fe68"
       }
     },
-    "sdkVersion": "54.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },

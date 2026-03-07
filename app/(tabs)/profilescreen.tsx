@@ -6,6 +6,7 @@ import {
   Bolt,
   ChevronRight,
   CreditCard,
+  Download,
   HeartHandshake,
   Info,
   MessageCircleQuestionMark,
@@ -107,6 +108,18 @@ export function ProfileScreen() {
       ],
     },
     {
+      group: "OFFLINE MAPS",
+      items: [
+        {
+          label: "Manage Offline Maps",
+          icon: Download,
+          color: "#2563EB",
+          bg: "#EFF6FF",
+          route: "/OfflineMapsTab",
+        },
+      ],
+    },
+    {
       group: "APP INFO",
       items: [
         {
@@ -140,27 +153,27 @@ export function ProfileScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
       >
-          <TouchableOpacity onPress={() => router.navigate("/account")}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <Avatar
-              size={90}
-              name={email ?? "U"}
-              email={email ?? undefined}
-              colorize={true}
-              radius={45}
-              badgeColor="#2563EB"
-            />
+        <TouchableOpacity onPress={() => router.navigate("/account")}>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <Avatar
+                size={90}
+                name={email ?? "U"}
+                email={email ?? undefined}
+                colorize={true}
+                radius={45}
+                badgeColor="#2563EB"
+              />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{name}</Text>
+              <Text style={styles.profileEmail}>{email}</Text>
+              <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
+                <Rocket size={12} color="#fff" fill="#fff" />
+                <Text style={styles.badgeText}>Premium User</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{name}</Text>
-            <Text style={styles.profileEmail}>{email}</Text>
-            <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
-              <Rocket size={12} color="#fff" fill="#fff" />
-              <Text style={styles.badgeText}>Premium User</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
         </TouchableOpacity>
 
         <View style={styles.listContainer}>

@@ -1,6 +1,6 @@
 // Version 1.3.6 - © Cactus Apps 2026
 import { useRouter } from "expo-router";
-import { Bolt, ChevronRight, Check } from "lucide-react-native";
+import { Bolt, ChevronRight, Check, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,7 +27,7 @@ const Settings = () => {
   const scheme = useColorScheme();
   const isSubscribed = useAuthStore((s) => s.isSubscribed);
   const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
+    scheme === "light" || scheme === "dark" ? scheme : null,
   );
 
   const languages = [
@@ -56,13 +56,17 @@ const Settings = () => {
     setModalVisible(false);
   };
 
-  const currentLanguageLabel = languages.find(l => l.code === i18n.language)?.label || "English";
+  const currentLanguageLabel =
+    languages.find((l) => l.code === i18n.language)?.label || "English";
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronRight size={24} color={styles.textColor} style={{ transform: [{ rotate: '180deg' }] }} />
+        <TouchableOpacity
+          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          style={styles.backButton}
+        >
+          <ChevronLeft size={24} color={styles.textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("Settings")}</Text>
         <View style={{ width: 44 }} />
@@ -81,7 +85,9 @@ const Settings = () => {
                 <Text style={{ fontSize: 20 }}>🌐</Text>
               </View>
               <View style={styles.menuTextContainer}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
                   <Text style={styles.menuLabel}>{t("Laguage")}</Text>
                   {!isSubscribed && (
                     <View style={styles.premiumBadge}>
@@ -127,9 +133,15 @@ const Settings = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.languageList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.languageList}
+              showsVerticalScrollIndicator={false}
+            >
               {languages.map((lang) => {
-                const isLocked = !isSubscribed && lang.code !== i18n.language && lang.code !== "en";
+                const isLocked =
+                  !isSubscribed &&
+                  lang.code !== i18n.language &&
+                  lang.code !== "en";
                 return (
                   <TouchableOpacity
                     key={lang.code}
@@ -137,11 +149,14 @@ const Settings = () => {
                     onPress={() => handleLanguagePress(lang.code)}
                   >
                     <Text style={styles.languageFlag}>{lang.flag}</Text>
-                    <Text style={[
-                      styles.languageLabel,
-                      i18n.language === lang.code && styles.selectedLanguageLabel,
-                      isLocked && { color: styles.subTextColor }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.languageLabel,
+                        i18n.language === lang.code &&
+                          styles.selectedLanguageLabel,
+                        isLocked && { color: styles.subTextColor },
+                      ]}
+                    >
                       {lang.label}
                     </Text>
                     {i18n.language === lang.code ? (
@@ -166,7 +181,9 @@ const getStyles = (scheme: "light" | "dark" | null) => {
   const cardBg = isDark ? "#161B22" : "#FFFFFF";
   const textColor = isDark ? "#FFFFFF" : "#1E293B";
   const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+  const borderColor = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.05)";
 
   return StyleSheet.create({
     container: {

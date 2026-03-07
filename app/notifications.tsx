@@ -17,6 +17,7 @@ import {
   Zap,
   Shield,
   Crown,
+  ChevronLeft,
 } from "lucide-react-native";
 import { purchasePremium } from "@/lib/auth/revenuecat";
 import { useColorScheme } from "react-native";
@@ -59,10 +60,9 @@ export default function PaywallScreen() {
           onPress={() => router.navigate("/(tabs)/profilescreen")}
           style={styles.backButton}
         >
-          <ChevronRight
+          <ChevronLeft
             size={24}
             color={isDark ? "#fff" : "#000"}
-            style={{ transform: [{ rotate: "180deg" }] }}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Premium</Text>

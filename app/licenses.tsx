@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, FileText } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, FileText } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -55,10 +55,9 @@ export default function Licenses() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronRight
+          <ChevronLeft
             size={24}
             color={isDark ? "#fff" : "#000"}
-            style={{ transform: [{ rotate: "180deg" }] }}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("licenses")}</Text>

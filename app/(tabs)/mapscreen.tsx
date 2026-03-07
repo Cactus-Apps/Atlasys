@@ -7,6 +7,13 @@ import {
   GeoJSONSource,
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
+import Svg, {
+  Circle,
+  Polygon,
+  G,
+  Line,
+  Text as SvgText,
+} from "react-native-svg";
 import * as Location from "expo-location";
 import {
   Box,
@@ -22,6 +29,9 @@ import {
   Heart,
   Share2,
   Route,
+  Download,
+  Navigation,
+  MapIcon,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -58,6 +68,9 @@ import { FlatList as GHFlatList } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
 import { MapMouseEvent } from "maplibre-gl";
 import RouteSheet from "@/components/RouteSheet";
+import DownloadSheet from "@/components/DownloadSheet";
+import DrawBoundsOverlay from "@/components/DrawBoundsOverlay";
+import DraggableFAB from "@/components/DraggableFAB";
 
 const { width, height } = Dimensions.get("window");
 
@@ -98,6 +111,7 @@ type RoutePoint = {
 export default function MapScreen() {
   const markerRef = useRef<MarkerRef | null>(null);
   const markerRef2 = useRef<MarkerRef | null>(null);
+  const mapCenterRef = useRef<[number, number] | null>(null);
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
   const [zoom, setZoom] = useState(12);
@@ -182,6 +196,28 @@ export default function MapScreen() {
   const [routePickMode, setRoutePickMode] = useState<"start" | "end" | null>(
     null,
   );
+
+  const [drawStart, setDrawStart] = useState<[number, number] | null>(null);
+  const [drawMode, setDrawMode] = useState(false);
+  const setDrawModeWrapped = (val: boolean) => {
+    drawModeRef.current = val;
+    setDrawMode(val);
+  };
+  const [drawBounds, setDrawBounds] = useState<{
+    nw: [number, number];
+    ne: [number, number];
+    se: [number, number];
+    sw: [number, number];
+  } | null>(null);
+  const [downloadSheetOpen, setDownloadSheetOpen] = useState(false);
+  const drawModeRef = useRef(false);
+  const [bearing, setBearing] = useState(0);
+
+  const searchBarVisible =
+    !drawMode &&
+    !routePickMode &&
+    BottomSheetIndex < 3 &&
+    BottomSheetIndex2 < 3;
 
   const handleSetFilter = (label: string | null) => {
     activeFilterRef.current = label;
@@ -672,10 +708,10 @@ export default function MapScreen() {
   };
 
   const onMapClick = async (event: any) => {
+    const { lng, lat } = event.lngLat;
+    if (drawModeRef.current) return;
     if (!mapRef.current) return;
     if (routePickModeRef.current) return;
-
-    const { lng, lat } = event.lngLat;
 
     const allFeatures = await mapRef.current.queryRenderedFeatures(undefined, {
       layers: ["poi_r1", "poi_transit"],
@@ -908,7 +944,36 @@ export default function MapScreen() {
               objectListener: onMapClick,
             },
             mount: {
-              rnListener: ensureGlobe,
+              rnListener: () => {
+                ensureGlobe();
+                setTimeout(async () => {
+                  const b = mapRef.current?.getBearing?.();
+                  if (b != null) setBearing(await b);
+                }, 500);
+              },
+            },
+            rotate: {
+              objectListener: (e: any) => {
+                const b =
+                  e?.target?.getBearing?.() ??
+                  e?.target?.transform?.bearing ??
+                  e?.bearing ??
+                  null;
+                if (b !== null) setBearing(b);
+              },
+            },
+            move: {
+              objectListener: (e: any) => {
+                if (e?.target?.getCenter) {
+                  const c = e.target.getCenter();
+                  mapCenterRef.current = [c.lng, c.lat];
+                }
+                const b =
+                  e?.target?.getBearing?.() ??
+                  e?.target?.transform?.bearing ??
+                  null;
+                if (b !== null) setBearing(b);
+              },
             },
           }}
         />
@@ -1100,166 +1165,280 @@ export default function MapScreen() {
           ]}
         />
 
-        <View style={styles.searchWrapper}>
-          <View style={styles.searchContainer}>
-            <View style={styles.searchRow}>
-              <Search size={25} color="#667" />
-              <TextInput
-                placeholder={t("Search")}
-                placeholderTextColor={scheme === "dark" ? "#d8d8d8ff" : "#667"}
-                style={styles.input}
-                value={query}
-                onChangeText={(value) => setQuery(value)}
-              />
-              {!loadingSearch && query.length > 0 && (
-                <TouchableOpacity onPress={clearInput}>
-                  <X size={18} color="#667" />
-                </TouchableOpacity>
-              )}
-              {loadingSearch && <ActivityIndicator size="small" />}
-
-              <TouchableOpacity onPress={openProfileScreen}>
-                <View style={styles.avatarView}>
-                  <Avatar
-                    size={34}
-                    name={email ?? undefined}
-                    email={email ?? undefined}
-                    colorize={true}
-                    radius={100}
-                    badgeColor="#146275ff"
-                    defaultSource={require("@/assets/images/icon.png")}
-                  />
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRow}
-          >
-            {filters.map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                style={[
-                  styles.filterChip,
-                  activeFilter === item.label && styles.filterChipActive,
-                ]}
-                onPress={() =>
-                  handleSetFilter(
-                    activeFilter === item.label ? null : item.label,
-                  )
-                }
-              >
-                <Text
-                  style={[
-                    styles.filterText,
-                    activeFilter === item.label && styles.filterTextActive,
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {query.length === 0 && searchHistory.length > 0 && (
-            <Animated.View entering={FadeInDown} style={styles.suggestionBox}>
-              <View style={styles.historyHeader}>
-                <History size={16} color="#888" />
-                <Text style={styles.historyHeaderText}>Zuletzt gesucht</Text>
-                <TouchableOpacity onPress={() => setSearchHistory([])}>
-                  <X size={16} color="#888" />
-                </TouchableOpacity>
-              </View>
-              {searchHistory.map((item, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={styles.suggestionItem}
-                  onPress={() => setQuery(item)}
-                >
-                  <Text style={styles.suggTitle}>{item}</Text>
-                </TouchableOpacity>
-              ))}
-            </Animated.View>
-          )}
-
-          {results.length > 0 && query.length > 0 && (
-            <View style={styles.suggestionBox}>
-              <FlatList
-                data={results}
-                keyExtractor={(item) => String(item.id)}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.suggestionItem}
-                    onPress={() => {
-                      setResults([]);
-                      onSelectCity(item);
-                    }}
-                  >
-                    <Text style={styles.suggTitle}>
-                      {item.name ?? item.city}
-                    </Text>
-                    <Text style={styles.suggSub}>
-                      {item.region ? item.region + ", " : ""}
-                      {item.country}
-                    </Text>
+        {searchBarVisible && (
+          <View style={styles.searchWrapper}>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchRow}>
+                <Search size={25} color="#667" />
+                <TextInput
+                  placeholder={t("Search")}
+                  placeholderTextColor={
+                    scheme === "dark" ? "#d8d8d8ff" : "#667"
+                  }
+                  style={styles.input}
+                  value={query}
+                  onChangeText={(value) => setQuery(value)}
+                />
+                {!loadingSearch && query.length > 0 && (
+                  <TouchableOpacity onPress={clearInput}>
+                    <X size={18} color="#667" />
                   </TouchableOpacity>
                 )}
-              />
-            </View>
-          )}
-        </View>
+                {loadingSearch && <ActivityIndicator size="small" />}
 
-        {/* Controls */}
-        <View style={styles.controlsContainer}>
+                <TouchableOpacity onPress={openProfileScreen}>
+                  <View style={styles.avatarView}>
+                    <Avatar
+                      size={34}
+                      name={email ?? undefined}
+                      email={email ?? undefined}
+                      colorize={true}
+                      radius={100}
+                      badgeColor="#146275ff"
+                      defaultSource={require("@/assets/images/icon.png")}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              {filters.map((item) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[
+                    styles.filterChip,
+                    activeFilter === item.label && styles.filterChipActive,
+                  ]}
+                  onPress={() =>
+                    handleSetFilter(
+                      activeFilter === item.label ? null : item.label,
+                    )
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.filterText,
+                      activeFilter === item.label && styles.filterTextActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {query.length === 0 && searchHistory.length > 0 && (
+              <Animated.View entering={FadeInDown} style={styles.suggestionBox}>
+                <View style={styles.historyHeader}>
+                  <History size={16} color="#888" />
+                  <Text style={styles.historyHeaderText}>Zuletzt gesucht</Text>
+                  <TouchableOpacity onPress={() => setSearchHistory([])}>
+                    <X size={16} color="#888" />
+                  </TouchableOpacity>
+                </View>
+                {searchHistory.map((item, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.suggestionItem}
+                    onPress={() => setQuery(item)}
+                  >
+                    <Text style={styles.suggTitle}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </Animated.View>
+            )}
+
+            {results.length > 0 && query.length > 0 && (
+              <View style={styles.suggestionBox}>
+                <FlatList
+                  data={results}
+                  keyExtractor={(item) => String(item.id)}
+                  keyboardShouldPersistTaps="handled"
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.suggestionItem}
+                      onPress={() => {
+                        setResults([]);
+                        onSelectCity(item);
+                      }}
+                    >
+                      <Text style={styles.suggTitle}>
+                        {item.name ?? item.city}
+                      </Text>
+                      <Text style={styles.suggSub}>
+                        {item.region ? item.region + ", " : ""}
+                        {item.country}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
+          </View>
+        )}
+
+        {drawMode && (
+          <DrawBoundsOverlay
+            mapRef={mapRef}
+            onCancel={() => setDrawMode(false)}
+            onConfirm={(bounds) => {
+              setDrawBounds({
+                nw: [bounds[0], bounds[3]],
+                ne: [bounds[2], bounds[3]],
+                se: [bounds[2], bounds[1]],
+                sw: [bounds[0], bounds[1]],
+              });
+              setDrawMode(false);
+              setDownloadSheetOpen(true);
+            }}
+          />
+        )}
+
+        <>
+          {/* Kompass oben rechts – nur sichtbar wenn nicht nach Norden */}
           <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => {
-              setRouteStart(
-                markerPos
-                  ? { label: "Mein Standort", coordinate: markerPos }
-                  : null,
-              );
-              setRouteEnd(null);
-              setRouteSheetOpen(true);
+            onPress={resetToNorth}
+            style={{
+              position: "absolute",
+              top: Platform.OS === "ios" ? 110 : 150,
+              right: 16,
+              width: 48,
+              height: 48,
+              zIndex: 100,
             }}
           >
-            <Route color="#fff" size={24} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton} onPress={nextTheme}>
-            <Layers color="#fff" size={24} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton} onPress={resetPitch}>
-            <Box color="#fff" size={24} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton} onPress={resetToNorth}>
-            <Compass color="#fff" size={24} />
-          </TouchableOpacity>
-        </View>
+            <Svg width={48} height={48} viewBox="0 0 48 48">
+              <Circle cx="24" cy="24" r="23" fill="#1C1C1E" opacity="0.92" />
 
-        {DistanceInfo && (
+              <Circle
+                cx="24"
+                cy="24"
+                r="23"
+                fill="none"
+                stroke="#3A3A3C"
+                strokeWidth="1"
+              />
+              {Array.from({ length: 12 }, (_, i) => {
+                const angle = (i * 30 * Math.PI) / 180;
+                const isMajor = i % 3 === 0;
+                const inner = isMajor ? 16 : 17.5;
+                const outer = 21;
+                const x1 = 24 + inner * Math.sin(angle);
+                const y1 = 24 - inner * Math.cos(angle);
+                const x2 = 24 + outer * Math.sin(angle);
+                const y2 = 24 - outer * Math.cos(angle);
+                return (
+                  <Line
+                    key={i}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke={isMajor ? "#FFFFFF" : "#555"}
+                    strokeWidth={isMajor ? 1.5 : 1}
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+              <G rotation={-bearing} origin="24, 24">
+                <Polygon points="24,8 26.5,22 24,20 21.5,22" fill="#EF4444" />
+                <Polygon points="24,40 26.5,26 24,28 21.5,26" fill="#8E8E93" />
+
+                <G rotation={bearing} origin="24, 24">
+                  <SvgText
+                    x="24"
+                    y="29"
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize="11"
+                    fontWeight="700"
+                  >
+                    N
+                  </SvgText>
+                </G>
+              </G>
+            </Svg>
+          </TouchableOpacity>
+
+          {/* Floating Action Bar unten rechts */}
           <View
             style={{
               position: "absolute",
-              top: 20,
-              left: 20,
+              bottom: 110,
+              right: 16,
               backgroundColor: "#fff",
-              padding: 10,
-              borderRadius: 8,
+              borderRadius: 16,
+              shadowColor: "#000",
+              shadowOpacity: 0.12,
+              shadowRadius: 8,
+              elevation: 6,
+              overflow: "hidden",
             }}
           >
-            <Text>{(DistanceInfo.distance / 1000).toFixed(1)} km</Text>
-            <Text>{(DistanceInfo.duration / 60).toFixed(0)} min</Text>
+            {[
+              {
+                icon: <Navigation color="#1E293B" size={22} />,
+                onPress: () => {
+                  setRouteStart(
+                    markerPos
+                      ? { label: "Mein Standort", coordinate: markerPos }
+                      : null,
+                  );
+                  setRouteEnd(null);
+                  setRouteSheetOpen(true);
+                },
+              },
+              {
+                icon: <MapIcon color="#1E293B" size={22} />,
+                onPress: nextTheme,
+                divider: true,
+              },
+              { icon: <Box color="#1E293B" size={22} />, onPress: resetPitch },
+              {
+                icon: <Download color="#1E293B" size={22} />,
+                onPress: () => setDrawMode(true),
+              },
+            ].map((item, idx) => (
+              <React.Fragment key={idx}>
+                {item.divider && (
+                  <View style={{ height: 1, backgroundColor: "#F1F5F9" }} />
+                )}
+                <TouchableOpacity
+                  onPress={item.onPress}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  {item.icon}
+                </TouchableOpacity>
+                {idx < 3 && !item.divider && (
+                  <View
+                    style={{
+                      height: StyleSheet.hairlineWidth,
+                      backgroundColor: "#F1F5F9",
+                    }}
+                  />
+                )}
+              </React.Fragment>
+            ))}
           </View>
-        )}
+        </>
 
         <BottomSheet
           ref={sheetPoiRef}
           index={BottomSheetIndex2}
           snapPoints={snapPoints}
           onChange={(i) => {
+            setBottomSheetIndex2;
+            setBottomSheetIndex2(i);
             if (i === -1) setSelectedPoi(null);
           }}
           backgroundStyle={{
@@ -1455,10 +1634,14 @@ export default function MapScreen() {
             index={BottomSheetIndex}
             snapPoints={snapPoints}
             enablePanDownToClose={true}
-            onChange={setBottomSheetIndex}
             backgroundStyle={{
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
+            }}
+            onChange={(i) => {
+              setBottomSheetIndex;
+              setBottomSheetIndex(i);
+              if (i === -1) setSelectedPoi(null);
             }}
           >
             {loading && <LoadingOverlay />}
@@ -1744,6 +1927,24 @@ export default function MapScreen() {
               Math.max(...lats),
             ];
             mapRef.current.fitBounds(bounds, { padding: 80, duration: 800 });
+          }}
+        />
+        <DownloadSheet
+          open={downloadSheetOpen}
+          bounds={
+            drawBounds
+              ? [
+                  drawBounds.sw[0],
+                  drawBounds.sw[1],
+                  drawBounds.ne[0],
+                  drawBounds.ne[1],
+                ]
+              : null
+          }
+          onClose={() => setDownloadSheetOpen(false)}
+          onDownloadComplete={() => {
+            setDownloadSheetOpen(false);
+            // Optional: Toast anzeigen
           }}
         />
       </MapProvider>

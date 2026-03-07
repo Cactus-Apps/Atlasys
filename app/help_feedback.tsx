@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, Github, Mail, MessageSquare, LifeBuoy } from "lucide-react-native";
+import { ChevronRight, Github, Mail, MessageSquare, LifeBuoy, ChevronLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -37,7 +37,7 @@ const HelpFeedback = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronRight size={24} color={isDark ? "#fff" : "#000"} style={{ transform: [{ rotate: '180deg' }] }} />
+          <ChevronLeft size={24} color={isDark ? "#fff" : "#000"}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("Help & Feedback")}</Text>
         <View style={{ width: 44 }} />

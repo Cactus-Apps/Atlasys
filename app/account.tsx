@@ -6,7 +6,7 @@ import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { t } from "i18next";
-import { Frown, Info, LogOut, ChevronRight } from "lucide-react-native";
+import { Frown, Info, LogOut, ChevronRight, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -250,7 +250,7 @@ export default function AccountScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronRight size={24} color={textColor} style={{ transform: [{ rotate: '180deg' }] }} />
+          <ChevronLeft size={24} color={textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('Account')}</Text>
         <View style={{ width: 44 }} />

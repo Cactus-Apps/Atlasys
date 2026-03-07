@@ -22,6 +22,7 @@ import {
   Check,
   X,
   Filter,
+  ChevronLeft,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -143,10 +144,9 @@ export default function AdminPanel() {
           onPress={() => router.navigate("/(tabs)/profilescreen")}
           style={styles.backButton}
         >
-          <ChevronRight
+          <ChevronLeft
             size={24}
             color={isDark ? "#fff" : "#000"}
-            style={{ transform: [{ rotate: "180deg" }] }}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("Admin_Panel")}</Text>

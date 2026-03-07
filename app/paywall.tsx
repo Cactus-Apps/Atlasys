@@ -1,10 +1,24 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, CheckCircle2, Rocket, Zap, Shield, Crown } from "lucide-react-native";
+import {
+  ChevronRight,
+  CheckCircle2,
+  Rocket,
+  Zap,
+  Shield,
+  Crown,
+  ChevronLeft,
+} from "lucide-react-native";
 import { purchasePremium } from "@/lib/auth/revenuecat";
 import { useColorScheme } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -30,7 +44,10 @@ export default function PaywallScreen() {
     } catch (e: any) {
       console.warn("Purchase error:", e.message);
       // For development/mock purposes:
-      if (e.message?.includes("placeholder") || e.message?.includes("configure")) {
+      if (
+        e.message?.includes("placeholder") ||
+        e.message?.includes("configure")
+      ) {
         setSubscribed(true);
         router.navigate("/onboarding");
       }
@@ -40,17 +57,32 @@ export default function PaywallScreen() {
   };
 
   const features = [
-    { icon: Zap, text: "Unlimited City Searches", sub: "Search any location worldwide" },
-    { icon: Shield, text: "Ad-Free Experience", sub: "Zero interruptions while exploring" },
-    { icon: Rocket, text: "Real-time Weather Data", sub: "Precise updates for every city" },
+    {
+      icon: Zap,
+      text: "Unlimited City Searches",
+      sub: "Search any location worldwide",
+    },
+    {
+      icon: Shield,
+      text: "Ad-Free Experience",
+      sub: "Zero interruptions while exploring",
+    },
+    {
+      icon: Rocket,
+      text: "Real-time Weather Data",
+      sub: "Precise updates for every city",
+    },
     { icon: Crown, text: "Priority Support", sub: "24/7 dedicated assistance" },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronRight size={24} color={isDark ? "#fff" : "#000"} style={{ transform: [{ rotate: '180deg' }] }} />
+        <TouchableOpacity
+          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          style={styles.backButton}
+        >
+          <ChevronLeft size={24} color={isDark ? "#fff" : "#000"} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Premium</Text>
         <View style={{ width: 44 }} />
@@ -62,7 +94,9 @@ export default function PaywallScreen() {
             <Crown size={60} color="#2563EB" strokeWidth={2.5} />
           </View>
           <Text style={styles.heroTitle}>Go Premium</Text>
-          <Text style={styles.heroSub}>Unlock the full potential of GPS Explore</Text>
+          <Text style={styles.heroSub}>
+            Unlock the full potential of GPS Explore
+          </Text>
         </View>
 
         <View style={styles.featureList}>
@@ -87,7 +121,9 @@ export default function PaywallScreen() {
             <Text style={styles.priceValue}>4.99</Text>
             <Text style={styles.pricePeriod}>/month</Text>
           </View>
-          <Text style={styles.priceDetail}>Cancel anytime. Secure checkout.</Text>
+          <Text style={styles.priceDetail}>
+            Cancel anytime. Secure checkout.
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -111,7 +147,9 @@ const getStyles = (isDark: boolean) => {
   const cardBg = isDark ? "#161B22" : "#FFFFFF";
   const textColor = isDark ? "#FFFFFF" : "#1E293B";
   const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+  const borderColor = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.05)";
 
   return StyleSheet.create({
     container: {

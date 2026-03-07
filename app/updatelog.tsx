@@ -6,6 +6,7 @@ import {
   History,
   Zap,
   Sparkles,
+  ChevronLeft,
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -78,11 +79,7 @@ const UpdateLog = () => {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronRight
-            size={24}
-            color={isDark ? "#fff" : "#000"}
-            style={{ transform: [{ rotate: "180deg" }] }}
-          />
+          <ChevronLeft size={24} color={isDark ? "#fff" : "#000"} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("update_log")}</Text>
         <View style={{ width: 44 }} />
