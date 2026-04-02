@@ -8,18 +8,16 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 
 function Clock() {
   const [time, setTime] = useState(new Date());
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
 
   return (
     <View style={styles.card}>
@@ -43,12 +41,14 @@ function Clock() {
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { cardBg, borderColor, textColor, subTextColor, isModern } = theme;
+
+  return StyleSheet.create({
     card: {
-      borderColor: "#E5E7EB",
-      backgroundColor: "#fff",
-      borderRadius: 16,
+      borderColor: borderColor,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 24 : 16,
       borderWidth: 1,
       width: 340,
       height: 120,
@@ -59,20 +59,21 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       flexDirection: "row",
     },
     time: {
-      color: "#4B5563",
+      color: subTextColor,
       fontSize: 18,
       fontWeight: "500",
     },
     timetime: {
-      color: "#1F2937",
+      color: textColor,
       fontSize: 26,
       fontWeight: "700",
     },
     timezone: {
-      color: "#6B7280",
+      color: subTextColor,
       fontSize: 17,
       fontWeight: "500",
     },
   });
+};
 
 export default Clock;

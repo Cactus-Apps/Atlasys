@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { Check, X } from "lucide-react-native";
+import { useAppTheme } from "@/lib/theme";
 
 const { width, height } = Dimensions.get("window");
 
@@ -23,6 +24,9 @@ export default function DrawBoundsOverlay({
   onCancel,
   mapRef,
 }: Props) {
+  const theme = useAppTheme();
+  const s = getStyles(theme);
+
   // Start mit einem Rechteck in der Bildschirmmitte (als Pixel)
   const [box, setBox] = useState({
     left: width * 0.15,
@@ -167,7 +171,7 @@ export default function DrawBoundsOverlay({
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={onCancel} style={s.cancelBtn}>
-          <X size={20} color="#fff" />
+          <X size={20} color={theme.textColor} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.headerTitle}>Bereich auswählen</Text>
@@ -182,7 +186,7 @@ export default function DrawBoundsOverlay({
   );
 }
 
-const s = StyleSheet.create({
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => StyleSheet.create({
   dimmed: { position: "absolute", backgroundColor: "rgba(0,0,0,0.45)" },
   rect: {
     position: "absolute",
@@ -222,7 +226,7 @@ const s = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: theme.bg,
     paddingTop: 54,
     paddingBottom: 16,
     paddingHorizontal: 16,
@@ -231,7 +235,7 @@ const s = StyleSheet.create({
     gap: 12,
   },
   cancelBtn: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: theme.iconBg,
     borderRadius: 20,
     padding: 8,
   },
@@ -245,6 +249,6 @@ const s = StyleSheet.create({
     gap: 6,
   },
   confirmText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  headerTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  headerSub: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
+  headerTitle: { color: theme.textColor, fontSize: 17, fontWeight: "700" },
+  headerSub: { color: theme.subTextColor, fontSize: 12, marginTop: 2 },
 });

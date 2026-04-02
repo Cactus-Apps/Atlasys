@@ -14,10 +14,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useAppTheme } from "@/lib/theme";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { loadLanguage } from "../i18n";
 import { useTranslation } from "react-i18next";
@@ -71,10 +71,8 @@ export default function HomeScreen() {
   const [time, setTime] = useState(new Date());
   const [subscription, setSubscription] =
     useState<Location.LocationSubscription | null>(null);
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null,
-  );
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
 
   const toggleDrag = () => setDragEnabled((prev) => !prev);
 
@@ -328,11 +326,11 @@ export function Render({
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
+const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
   StyleSheet.create({
     header: {
-      backgroundColor: "#fff",
-      borderBottomColor: "#fff",
+      backgroundColor: theme.bg,
+      borderBottomColor: theme.bg,
       borderWidth: 1,
       flexDirection: "row",
       alignItems: "center",
@@ -370,16 +368,18 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: "#fff",
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
+      backgroundColor: theme.cardBg,
+      borderTopLeftRadius: theme.isModern ? 24 : 12,
+      borderTopRightRadius: theme.isModern ? 24 : 12,
+      borderWidth: 1,
+      borderColor: theme.borderColor,
     },
     closeButton: {
       padding: 7,
-      width: 25,
-      height: 25,
-      borderRadius: 35,
-      backgroundColor: "rgba(91, 92, 92, 0.4)",
+      width: 32,
+      height: 32,
+      borderRadius: theme.isModern ? 16 : 35,
+      backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
       justifyContent: "center",
       alignItems: "center",
     },
@@ -395,5 +395,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       fontSize: 18,
       fontWeight: "500",
       paddingLeft: 20,
+      color: theme.textColor,
     },
   });

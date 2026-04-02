@@ -23,6 +23,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@supabase/supabase-js": "^2.78.0",
     "expo": "^55.0.5",
+    "expo-application": "~55.0.10",
     "expo-asset": "~55.0.8",
     "expo-blur": "~55.0.8",
     "expo-clipboard": "~55.0.8",

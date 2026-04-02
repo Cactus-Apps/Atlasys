@@ -6,29 +6,29 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/lib/theme";
 import { ChevronRight, Github, Mail, MessageSquare, LifeBuoy, ChevronLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 const HelpFeedback = () => {
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
   const router = useRouter();
   const { t } = useTranslation();
-  const styles = getStyles(isDark);
+  const styles = getStyles(theme);
 
   const openGithub = () => {
-    Linking.openURL("https://github.com/Cactus-Apps/GPS/issues/new").catch(
+    Linking.openURL("https://github.com/Cactus-Apps/Atlasys/issues/new").catch(
       (err) => console.error("An error occurred", err)
     );
   };
 
   const openEmail = () => {
-    Linking.openURL("mailto:support@cactus-apps.dev").catch(
+    Linking.openURL("mailto:cactus_apps@proton.me").catch(
       (err) => console.error("An error occurred", err)
     );
   };
@@ -37,7 +37,7 @@ const HelpFeedback = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronLeft size={24} color={isDark ? "#fff" : "#000"}/>
+          <ChevronLeft size={24} color={theme.textColor}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("Help & Feedback")}</Text>
         <View style={{ width: 44 }} />
@@ -74,7 +74,7 @@ const HelpFeedback = () => {
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Email Support</Text>
-                <Text style={styles.menuSub}>support@cactus-apps.dev</Text>
+                <Text style={styles.menuSub}>cactus_apps@proton.me</Text>
               </View>
               <ChevronRight size={18} color="#94a3b8" />
             </TouchableOpacity>
@@ -90,7 +90,7 @@ const HelpFeedback = () => {
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Feature Requests</Text>
-                <Text style={styles.menuSub}>Suggest new ideas for GPS Explore</Text>
+                <Text style={styles.menuSub}>Suggest new ideas for Atlasys</Text>
               </View>
               <ChevronRight size={18} color="#94a3b8" />
             </TouchableOpacity>
@@ -101,12 +101,8 @@ const HelpFeedback = () => {
   );
 };
 
-const getStyles = (isDark: boolean) => {
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     container: {
@@ -143,8 +139,10 @@ const getStyles = (isDark: boolean) => {
     iconCircle: {
       width: 96,
       height: 96,
-      borderRadius: 48,
-      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      borderRadius: isModern ? 32 : 48,
+      backgroundColor: isModern 
+        ? theme.iconBg 
+        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,
@@ -177,7 +175,7 @@ const getStyles = (isDark: boolean) => {
     },
     card: {
       backgroundColor: cardBg,
-      borderRadius: 24,
+      borderRadius: isModern ? 32 : 24,
       padding: 8,
       borderWidth: 1,
       borderColor: borderColor,
@@ -190,7 +188,7 @@ const getStyles = (isDark: boolean) => {
     menuIcon: {
       width: 44,
       height: 44,
-      borderRadius: 12,
+      borderRadius: isModern ? 16 : 12,
       alignItems: "center",
       justifyContent: "center",
     },

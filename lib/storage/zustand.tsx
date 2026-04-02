@@ -72,6 +72,7 @@ type StoreAuth = {
     notifications: boolean;
     locationSharing: boolean;
     analytics: boolean;
+    designStyle?: "modern" | "classic";
   };
   updateSettings: (settings: Partial<StoreAuth["settings"]>) => void;
 
@@ -97,6 +98,7 @@ const initialState = {
     notifications: false,
     locationSharing: false,
     analytics: false,
+    designStyle: "classic" as const,
   },
   currentRoute: null,
   routeHistory: [],
@@ -131,6 +133,7 @@ export const useAuthStore = create<StoreAuth>()(
         notifications: false,
         locationSharing: false,
         analytics: false,
+        designStyle: "classic",
       },
       updateSettings: (newSettings) => set((state) => ({
         settings: { ...state.settings, ...newSettings }

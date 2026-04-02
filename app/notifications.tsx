@@ -20,9 +20,9 @@ import {
   ChevronLeft,
 } from "lucide-react-native";
 import { purchasePremium } from "@/lib/auth/revenuecat";
-import { useColorScheme } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 import * as Haptics from "expo-haptics";
-import Reactfrom from "react";
+import React from "react";
 import { Switch } from "react-native";
 import * as Notifications from "expo-notifications";
 
@@ -38,10 +38,10 @@ const disableNotifications = async () => {
 };
 
 export default function PaywallScreen() {
-  const scheme = useColorScheme();
+  const theme = useAppTheme();
   const [enabled, setEnabled] = useState(false);
-  const isDark = scheme === "dark";
-  const styles = getStyles(isDark);
+  const isDark = theme.isDark;
+  const styles = getStyles(theme);
 
   const toggleSwitch = async () => {
     if (!enabled) {
@@ -62,7 +62,7 @@ export default function PaywallScreen() {
         >
           <ChevronLeft
             size={24}
-            color={isDark ? "#fff" : "#000"}
+            color={theme.textColor}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Premium</Text>
@@ -103,14 +103,8 @@ export default function PaywallScreen() {
   );
 }
 
-const getStyles = (isDark: boolean) => {
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     container: {
@@ -143,8 +137,10 @@ const getStyles = (isDark: boolean) => {
     iconCircle: {
       width: 120,
       height: 120,
-      borderRadius: 60,
-      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      borderRadius: isModern ? 60 : 60,
+      backgroundColor: isModern
+        ? theme.iconBg
+        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,
@@ -171,15 +167,17 @@ const getStyles = (isDark: boolean) => {
       alignItems: "center",
       backgroundColor: cardBg,
       padding: 16,
-      borderRadius: 20,
+      borderRadius: isModern ? 24 : 20,
       borderWidth: 1,
       borderColor: borderColor,
     },
     featureIconContainer: {
       width: 48,
       height: 48,
-      borderRadius: 14,
-      backgroundColor: isDark ? "rgba(255, 255, 255, 0.03)" : "#F1F5F9",
+      borderRadius: isModern ? 16 : 14,
+      backgroundColor: isModern
+        ? theme.iconBg
+        : (theme.isDark ? "rgba(255, 255, 255, 0.03)" : "#F1F5F9"),
       alignItems: "center",
       justifyContent: "center",
     },
@@ -198,13 +196,13 @@ const getStyles = (isDark: boolean) => {
       marginTop: 2,
     },
     pricingCard: {
-      backgroundColor: isDark ? "rgba(37, 99, 235, 0.05)" : "#EEF2FF",
-      borderRadius: 24,
+      backgroundColor: theme.isDark ? "rgba(37, 99, 235, 0.05)" : "#EEF2FF",
+      borderRadius: isModern ? 32 : 24,
       padding: 24,
       alignItems: "center",
       marginBottom: 24,
       borderWidth: 1,
-      borderColor: isDark ? "rgba(37, 99, 235, 0.2)" : "rgba(37, 99, 235, 0.1)",
+      borderColor: theme.isDark ? "rgba(37, 99, 235, 0.2)" : "rgba(37, 99, 235, 0.1)",
     },
     pricingTitle: {
       fontSize: 14,

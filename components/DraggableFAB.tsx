@@ -1,6 +1,6 @@
 // components/DraggableFAB.tsx
 import { Equal } from "lucide-react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   TouchableOpacity,
@@ -98,10 +98,12 @@ export default function DraggableFAB({ children }: Props) {
     }),
   ).current;
 
-  // Aktualisiere currentPos wenn sich pan ändert
-  pan.addListener(({ x, y }) => {
-    currentPos.current = { x, y };
-  });
+  useEffect(() => {
+    const id = pan.addListener(({ x, y }) => {
+      currentPos.current = { x, y };
+    });
+    return () => pan.removeListener(id);
+  }, []);
 
   return (
     <Animated.View

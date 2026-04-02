@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,10 +13,12 @@ import { Download, X, AlertTriangle } from "lucide-react-native";
 import { tilesForBounds, estimateSizeMB } from "@/lib/storage/mbtiles";
 import { downloadRegion } from "@/lib/storage/downloadTiles";
 import { CircularWavyProgress, Host } from "@expo/ui/jetpack-compose";
+import { useAppTheme } from "@/lib/theme";
+import { reverseGeocode } from "@/lib/geocoding";
 
 interface Props {
   open: boolean;
-  bounds: [number, number, number, number] | null; // west,south,east,north
+  bounds: [number, number, number, number] | null;
   onClose: () => void;
   onDownloadComplete: () => void;
 }
@@ -36,14 +38,18 @@ function ZoomStepper({
   onChange: (v: number) => void;
   color: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: "#F8FAFC",
-        borderRadius: 12,
+        backgroundColor: theme.cardBg,
+        borderColor: theme.borderColor,
+        borderWidth: 1,
+        borderRadius: theme.isModern ? 16 : 12,
         padding: 14,
         marginBottom: 10,
       }}
@@ -53,7 +59,7 @@ function ZoomStepper({
           style={{
             fontSize: 11,
             fontWeight: "700",
-            color: "#94A3B8",
+            color: theme.subTextColor,
             letterSpacing: 0.5,
           }}
         >
@@ -63,7 +69,7 @@ function ZoomStepper({
           style={{
             fontSize: 22,
             fontWeight: "800",
-            color: "#1E293B",
+            color: theme.textColor,
             marginTop: 2,
           }}
         >
@@ -78,7 +84,10 @@ function ZoomStepper({
             width: 38,
             height: 38,
             borderRadius: 19,
-            backgroundColor: value <= min ? "#F1F5F9" : color + "20",
+            backgroundColor:
+              value <= min
+                ? theme.iconBg
+                : color + (theme.isDark ? "40" : "20"),
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -87,14 +96,13 @@ function ZoomStepper({
             style={{
               fontSize: 22,
               fontWeight: "300",
-              color: value <= min ? "#CBD5E1" : color,
+              color: value <= min ? theme.subTextColor : color,
             }}
           >
             −
           </Text>
         </TouchableOpacity>
 
-        {/* Visuelle Skala */}
         <View style={{ flexDirection: "row", gap: 3 }}>
           {Array.from({ length: max - min + 1 }, (_, i) => i + min).map((i) => (
             <TouchableOpacity key={i} onPress={() => onChange(i)}>
@@ -104,7 +112,11 @@ function ZoomStepper({
                   height: i === value ? 10 : 6,
                   borderRadius: 5,
                   backgroundColor:
-                    i === value ? color : i < value ? color + "40" : "#E2E8F0",
+                    i === value
+                      ? color
+                      : i < value
+                        ? color + "40"
+                        : theme.borderColor,
                   marginTop: i === value ? 0 : 2,
                 }}
               />
@@ -119,7 +131,10 @@ function ZoomStepper({
             width: 38,
             height: 38,
             borderRadius: 19,
-            backgroundColor: value >= max ? "#F1F5F9" : color + "20",
+            backgroundColor:
+              value >= max
+                ? theme.iconBg
+                : color + (theme.isDark ? "40" : "20"),
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -128,7 +143,7 @@ function ZoomStepper({
             style={{
               fontSize: 22,
               fontWeight: "300",
-              color: value >= max ? "#CBD5E1" : color,
+              color: value >= max ? theme.subTextColor : color,
             }}
           >
             +
@@ -145,6 +160,9 @@ export default function DownloadSheet({
   onClose,
   onDownloadComplete,
 }: Props) {
+  const theme = useAppTheme();
+  const s = getStyles(theme);
+
   const sheetRef = useRef<BottomSheet>(null);
   const [minZoom, setMinZoom] = useState(8);
   const [maxZoom, setMaxZoom] = useState(14);
@@ -156,6 +174,14 @@ export default function DownloadSheet({
   React.useEffect(() => {
     if (open) sheetRef.current?.snapToIndex(1);
     else sheetRef.current?.close();
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      setProgress(0);
+      setStatus("idle");
+      cancelRef.current = { cancelled: false };
+    }
   }, [open]);
 
   const tileCount = bounds
@@ -185,8 +211,17 @@ export default function DownloadSheet({
     cancelRef.current = { cancelled: false };
 
     const id = `region_${Date.now()}`;
-    const regionName =
-      name.trim() || `Region ${new Date().toLocaleDateString("de")}`;
+
+    const centerLat = (bounds[1] + bounds[3]) / 2;
+    const centerLng = (bounds[0] + bounds[2]) / 2;
+
+    let regionName = name.trim();
+    if (!regionName) {
+      const label = await reverseGeocode(centerLat, centerLng);
+      regionName =
+        label.split(",")[0].trim() ||
+        `Region ${new Date().toLocaleDateString("de")}`;
+    }
 
     const result = await downloadRegion(
       id,
@@ -195,6 +230,7 @@ export default function DownloadSheet({
       minZoom,
       maxZoom,
       (p) => {
+        if (cancelRef.current.cancelled) return;
         setProgress(p.percent);
         if (
           p.status === "done" ||
@@ -219,18 +255,21 @@ export default function DownloadSheet({
       index={-1}
       snapPoints={["45%", "70%"]}
       enablePanDownToClose={false}
-      backgroundStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-      handleIndicatorStyle={{ backgroundColor: "#CBD5E1", width: 40 }}
+      backgroundStyle={{
+        borderTopLeftRadius: theme.isModern ? 32 : 24,
+        borderTopRightRadius: theme.isModern ? 32 : 24,
+        backgroundColor: theme.bg,
+      }}
+      handleIndicatorStyle={{ backgroundColor: theme.subTextColor, width: 40 }}
     >
       <BottomSheetScrollView contentContainerStyle={s.container}>
         <View style={s.header}>
           <Text style={s.title}>Karte herunterladen</Text>
           <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-            <X size={20} color="#64748B" />
+            <X size={20} color={theme.subTextColor} />
           </TouchableOpacity>
         </View>
 
-        {/* Zoom Slider */}
         <View style={s.section}>
           <ZoomStepper
             label="MIN ZOOM"
@@ -250,7 +289,6 @@ export default function DownloadSheet({
           />
         </View>
 
-        {/* Schätzung */}
         <View style={s.estimateBox}>
           <Text style={s.estimateText}>
             ~{tileCount.toLocaleString()} Tiles · ca. {estimatedMB} MB
@@ -265,13 +303,18 @@ export default function DownloadSheet({
           )}
         </View>
 
-        {/* Progress */}
         {status === "downloading" && (
           <View style={{ alignItems: "center", paddingVertical: 24, gap: 16 }}>
             <Host matchContents>
               <CircularWavyProgress progress={progress / 100} color="#2563EB" />
             </Host>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "#1E293B" }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: theme.textColor,
+              }}
+            >
               {progress}% heruntergeladen
             </Text>
             <TouchableOpacity
@@ -308,62 +351,75 @@ export default function DownloadSheet({
   );
 }
 
-const s = StyleSheet.create({
-  container: { paddingHorizontal: 20, paddingBottom: 40 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  title: { fontSize: 20, fontWeight: "700", color: "#111" },
-  closeBtn: { backgroundColor: "#F1F5F9", borderRadius: 20, padding: 6 },
-  section: { marginBottom: 20 },
-  label: { fontSize: 14, color: "#64748B", marginBottom: 4 },
-  value: { fontWeight: "700", color: "#1E293B" },
-  estimateBox: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20,
-  },
-  estimateText: { fontSize: 15, fontWeight: "600", color: "#1E293B" },
-  warningRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-  },
-  warningText: { fontSize: 13, color: "#F59E0B" },
-  progressBox: { marginBottom: 20 },
-  progressBar: {
-    height: 8,
-    backgroundColor: "#E2E8F0",
-    borderRadius: 4,
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  progressFill: { height: "100%", backgroundColor: "#2563EB", borderRadius: 4 },
-  progressText: { fontSize: 14, color: "#64748B", textAlign: "center" },
-  cancelBtn: { marginTop: 8, alignItems: "center" },
-  cancelText: { color: "#EF4444", fontWeight: "600" },
-  doneBox: {
-    padding: 16,
-    backgroundColor: "#F0FDF4",
-    borderRadius: 12,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  doneText: { fontSize: 16, fontWeight: "600", color: "#16A34A" },
-  downloadBtn: {
-    backgroundColor: "#2563EB",
-    borderRadius: 14,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  downloadBtnDisabled: { backgroundColor: "#94A3B8" },
-  downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-});
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } =
+    theme;
+
+  return StyleSheet.create({
+    container: { paddingHorizontal: 20, paddingBottom: 40 },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    title: { fontSize: 20, fontWeight: "700", color: textColor },
+    closeBtn: { backgroundColor: iconBg, borderRadius: 20, padding: 6 },
+    section: { marginBottom: 20 },
+    label: { fontSize: 14, color: subTextColor, marginBottom: 4 },
+    value: { fontWeight: "700", color: textColor },
+    estimateBox: {
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 18 : 12,
+      padding: 14,
+      marginBottom: 20,
+      borderColor: borderColor,
+      borderWidth: 1,
+    },
+    estimateText: { fontSize: 15, fontWeight: "600", color: textColor },
+    warningRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: 6,
+    },
+    warningText: { fontSize: 13, color: "#F59E0B" },
+    progressBox: { marginBottom: 20 },
+    progressBar: {
+      height: 8,
+      backgroundColor: theme.isDark ? "rgb(255,255,255,0.1)" : "#E2E8F0",
+      borderRadius: 4,
+      overflow: "hidden",
+      marginBottom: 8,
+    },
+    progressFill: {
+      height: "100%",
+      backgroundColor: "#2563EB",
+      borderRadius: 4,
+    },
+    progressText: { fontSize: 14, color: subTextColor, textAlign: "center" },
+    cancelBtn: { marginTop: 8, alignItems: "center" },
+    cancelText: { color: "#EF4444", fontWeight: "600" },
+    doneBox: {
+      padding: 16,
+      backgroundColor: theme.isDark ? "rgba(22, 163, 74, 0.1)" : "#F0FDF4",
+      borderRadius: isModern ? 16 : 12,
+      marginBottom: 20,
+      alignItems: "center",
+    },
+    doneText: { fontSize: 16, fontWeight: "600", color: "#16A34A" },
+    downloadBtn: {
+      backgroundColor: "#2563EB",
+      borderRadius: 14,
+      paddingVertical: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    downloadBtnDisabled: {
+      backgroundColor: theme.isDark ? "#334155" : "#94A3B8",
+    },
+    downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  });
+};

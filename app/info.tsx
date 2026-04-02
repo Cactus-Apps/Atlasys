@@ -17,27 +17,25 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
   ScrollView,
 } from "react-native";
 import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/lib/theme";
 
 export default function Info() {
-  const scheme = useColorScheme();
   const router = useRouter();
-  const isDark = scheme === "dark";
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
+  const styles = getStyles(theme);
 
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
+  const textColor = theme.textColor;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronLeft size={24} color={textColor}/>
+          <ChevronLeft size={24} color={textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("About GPS")}</Text>
         <View style={{ width: 44 }} />
@@ -108,19 +106,14 @@ export default function Info() {
           </View>
         </View>
 
-        <Text style={styles.versionText}>Version 1.3.6 • © 2025 Cactus Apps</Text>
+        <Text style={styles.versionText}>Version 1.4.5 • © 2026 Cactus Apps</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) => {
-  const isDark = scheme === "dark";
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     container: {
@@ -159,15 +152,15 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     logoWrapper: {
       width: 100,
       height: 100,
-      borderRadius: 24,
+      borderRadius: isModern ? 28 : 24,
       backgroundColor: bg,
       alignItems: "center",
       justifyContent: "center",
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.1,
-      shadowRadius: 20,
-      elevation: 5,
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.1) : 0,
+      shadowRadius: isModern ? 20 : 0,
+      elevation: isModern ? 5 : 0,
       marginBottom: 20,
     },
     logo: {
@@ -195,8 +188,10 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     socialButton: {
       width: 44,
       height: 44,
-      borderRadius: 22,
-      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
+      borderRadius: isModern ? 16 : 22,
+      backgroundColor: isModern
+        ? theme.iconBg
+        : (theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9"),
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
@@ -217,7 +212,7 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     card: {
       backgroundColor: cardBg,
-      borderRadius: 24,
+      borderRadius: isModern ? 32 : 24,
       padding: 20,
       borderWidth: 1,
       borderColor: borderColor,
@@ -236,7 +231,7 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     menuIcon: {
       width: 40,
       height: 40,
-      borderRadius: 12,
+      borderRadius: isModern ? 14 : 12,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -263,7 +258,7 @@ const getStyles = (scheme: "light" | "dark" | null) => {
       alignItems: "center",
       justifyContent: "center",
       paddingVertical: 12,
-      borderRadius: 16,
+      borderRadius: isModern ? 20 : 16,
       gap: 8,
     },
     bannerText: {

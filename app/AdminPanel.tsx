@@ -8,9 +8,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
   ActivityIndicator,
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 import { supabase } from "../lib/auth/supabase";
 import { useTranslation } from "react-i18next";
 import {
@@ -40,9 +40,9 @@ export default function AdminPanel() {
   const [requests, setRequests] = useState<DeleteRequest[]>([]);
   const { t } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
-  const styles = getStyles(isDark);
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
+  const styles = getStyles(theme);
 
   const [selectedRequest, setSelectedRequest] = useState<DeleteRequest | null>(
     null,
@@ -146,12 +146,12 @@ export default function AdminPanel() {
         >
           <ChevronLeft
             size={24}
-            color={isDark ? "#fff" : "#000"}
+            color={theme.textColor}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("Admin_Panel")}</Text>
         <TouchableOpacity onPress={loadRequests} style={styles.filterButton}>
-          <Filter size={20} color={isDark ? "#fff" : "#000"} />
+          <Filter size={20} color={theme.textColor} />
         </TouchableOpacity>
       </View>
 
@@ -187,7 +187,7 @@ export default function AdminPanel() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request Details</Text>
               <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
-                <X size={24} color={isDark ? "#fff" : "#000"} />
+                <X size={24} color={theme.textColor} />
               </TouchableOpacity>
             </View>
 
@@ -291,14 +291,8 @@ export default function AdminPanel() {
   );
 }
 
-const getStyles = (isDark: boolean) => {
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     container: {
@@ -338,15 +332,15 @@ const getStyles = (isDark: boolean) => {
     },
     card: {
       backgroundColor: cardBg,
-      borderRadius: 20,
+      borderRadius: isModern ? 24 : 20,
       padding: 16,
       marginBottom: 12,
       borderWidth: 1,
       borderColor: borderColor,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.05) : 0.05,
+      shadowRadius: isModern ? 12 : 10,
       elevation: 2,
     },
     cardHeader: {
@@ -404,8 +398,8 @@ const getStyles = (isDark: boolean) => {
     },
     modalContent: {
       backgroundColor: bg,
-      borderTopLeftRadius: 32,
-      borderTopRightRadius: 32,
+      borderTopLeftRadius: isModern ? 40 : 32,
+      borderTopRightRadius: isModern ? 40 : 32,
       padding: 24,
       maxHeight: "80%",
     },
@@ -447,7 +441,7 @@ const getStyles = (isDark: boolean) => {
     actionButton: {
       backgroundColor: "#2563EB",
       paddingVertical: 16,
-      borderRadius: 16,
+      borderRadius: isModern ? 20 : 16,
       alignItems: "center",
       marginTop: 12,
     },
@@ -458,8 +452,8 @@ const getStyles = (isDark: boolean) => {
     },
     statusModalBox: {
       backgroundColor: bg,
-      borderTopLeftRadius: 32,
-      borderTopRightRadius: 32,
+      borderTopLeftRadius: isModern ? 40 : 32,
+      borderTopRightRadius: isModern ? 40 : 32,
       padding: 24,
       width: "100%",
     },

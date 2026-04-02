@@ -32,15 +32,16 @@ import {
   GestureHandlerRootView,
   ScrollView,
 } from "react-native-gesture-handler";
+import { useAppTheme } from "@/lib/theme";
+import * as Application from "expo-application";
 
 export function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState<string | undefined>("");
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null,
-  );
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
+  const version = Application.nativeApplicationVersion;
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -192,10 +193,9 @@ export function ProfileScreen() {
                         style={[
                           styles.iconContainer,
                           {
-                            backgroundColor:
-                              scheme === "dark"
-                                ? "rgba(255,255,255,0.05)"
-                                : item.bg,
+                            backgroundColor: theme.isDark
+                              ? "rgba(255,255,255,0.05)"
+                              : item.bg,
                           },
                         ]}
                       >
@@ -213,7 +213,7 @@ export function ProfileScreen() {
                       </View>
                       <ChevronRight
                         size={18}
-                        color={scheme === "dark" ? "#4b5563" : "#94a3b8"}
+                        color={styles.chevronColor}
                         strokeWidth={3}
                       />
                     </TouchableOpacity>
@@ -229,7 +229,7 @@ export function ProfileScreen() {
 
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => router.navigate("/test")}>
-            <Text style={styles.footerText}>Version 1.4.3 • GPS </Text>
+            <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -237,15 +237,11 @@ export function ProfileScreen() {
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) => {
-  const isDark = scheme === "dark";
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+
+  const defaultRadius = isModern ? 24 : 20;
+  const innerRadius = isModern ? 16 : 12;
 
   return StyleSheet.create({
     container: {
@@ -255,12 +251,13 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     content: {
       paddingBottom: 40,
     },
+    chevronColor: theme.isDark ? "#4b5563" : ("#94a3b8" as any),
     profileHeader: {
       padding: 30,
       paddingTop: 60,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: isDark ? "#161B22" : "#FFFFFF",
+      backgroundColor: cardBg,
       borderBottomWidth: 1,
       borderBottomColor: borderColor,
     },
@@ -317,20 +314,25 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     groupContent: {
       backgroundColor: cardBg,
-      borderRadius: 20,
+      borderRadius: defaultRadius,
       borderWidth: 1,
       borderColor: borderColor,
       overflow: "hidden",
+      shadowColor: "#000",
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
+      shadowRadius: isModern ? 12 : 0,
+      elevation: isModern ? 4 : 0,
     },
     menuItem: {
       flexDirection: "row",
       alignItems: "center",
       padding: 16,
+      paddingVertical: isModern ? 20 : 16,
     },
     iconContainer: {
       width: 44,
       height: 44,
-      borderRadius: 12,
+      borderRadius: innerRadius,
       alignItems: "center",
       justifyContent: "center",
     },

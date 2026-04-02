@@ -2,6 +2,7 @@
 import { useRouter } from "expo-router";
 import { Bolt, ChevronRight, Check, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
+import * as Application from "expo-application";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,17 +19,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { useAuthStore } from "@/lib/storage/zustand";
-import { Lock } from "lucide-react-native";
+import { Lock, Palette } from "lucide-react-native";
+import { useAppTheme } from "@/lib/theme";
 
 const Settings = () => {
   const [ModalVisible, setModalVisible] = useState(false);
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme();
   const isSubscribed = useAuthStore((s) => s.isSubscribed);
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null,
-  );
+  const updateSettings = useAuthStore((s) => s.updateSettings);
+  const designStyle = useAuthStore((s) => s.settings.designStyle) || "classic";
+  const [DesignModalVisible, setDesignModalVisible] = useState(false);
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
+  const buildNumber = Application.nativeBuildVersion;
+  const version = Application.nativeApplicationVersion;
 
   const languages = [
     { code: "en", label: "English", flag: "🇺🇸" },
@@ -103,16 +108,40 @@ const Settings = () => {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Appearance</Text>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              activeOpacity={0.7}
+              onPress={() => setDesignModalVisible(true)}
+            >
+              <View style={styles.menuIconContainer}>
+                <Palette size={20} color={theme.isDark ? "#FFFFFF" : "#1E293B"} />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={styles.menuLabel}>Design Theme</Text>
+                </View>
+                <Text style={styles.menuValue}>
+                  {designStyle === "modern" ? "Modern (Offline Maps)" : "Classic (Account)"}
+                </Text>
+              </View>
+              <ChevronRight size={20} color={styles.subTextColor} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>App Info</Text>
           <View style={styles.card}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Version</Text>
-              <Text style={styles.infoValue}>1.3.6</Text>
+              <Text style={styles.infoValue}>{version}</Text>
             </View>
             <View style={styles.separator} />
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Build</Text>
-              <Text style={styles.infoValue}>1092</Text>
+              <Text style={styles.infoValue}>{buildNumber}</Text>
             </View>
           </View>
         </View>
@@ -171,19 +200,58 @@ const Settings = () => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={DesignModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDesignModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Theme</Text>
+              <TouchableOpacity onPress={() => setDesignModalVisible(false)}>
+                <Text style={styles.closeButtonText}>{t("Cancel")}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.languageList} showsVerticalScrollIndicator={false}>
+              {[
+                { label: "Classic (Account Style)", value: "classic" },
+                { label: "Modern (Offline Maps Style)", value: "modern" },
+              ].map((styleOption) => (
+                <TouchableOpacity
+                  key={styleOption.value}
+                  style={styles.languageItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    updateSettings({ designStyle: styleOption.value as "modern" | "classic" });
+                    setDesignModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.languageLabel, designStyle === styleOption.value && styles.selectedLanguageLabel]}>
+                    {styleOption.label}
+                  </Text>
+                  {designStyle === styleOption.value && (
+                    <Check size={20} color="#2563EB" strokeWidth={3} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-const getStyles = (scheme: "light" | "dark" | null) => {
-  const isDark = scheme === "dark";
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+
+  // Adapt border radii for classic vs modern
+  const defaultRadius = isModern ? 24 : 20;
+  const innerRadius = isModern ? 16 : 10;
 
   return StyleSheet.create({
     container: {
@@ -228,21 +296,26 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     card: {
       backgroundColor: cardBg,
-      borderRadius: 20,
+      borderRadius: defaultRadius,
       padding: 16,
       borderWidth: 1,
       borderColor: borderColor,
       overflow: "hidden",
+      shadowColor: "#000",
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
+      shadowRadius: isModern ? 12 : 0,
+      elevation: isModern ? 4 : 0,
     },
     menuItem: {
       flexDirection: "row",
       alignItems: "center",
+      paddingVertical: isModern ? 4 : 0,
     },
     menuIconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 10,
-      backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "#F1F5F9",
+      width: 44,
+      height: 44,
+      borderRadius: innerRadius,
+      backgroundColor: isModern ? theme.iconBg : (theme.isDark ? "rgba(255, 255, 255, 0.05)" : "#F1F5F9"),
       alignItems: "center",
       justifyContent: "center",
     },

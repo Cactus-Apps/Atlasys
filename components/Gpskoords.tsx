@@ -8,8 +8,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 import "../app/i18n";
 import { t } from "i18next";
 import { useloadingStore } from "@/lib/storage/zustand";
@@ -25,10 +25,8 @@ function Gpskoords() {
   const setLoadingGpsCoords = useloadingStore((s) => s.setloadingGpsCoords);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
 
   const startWatching = async () => {
     try {
@@ -68,11 +66,11 @@ function Gpskoords() {
     try {
       const message = location
         ? [
-            t("Latitude:"),
-            `${location.coords.latitude}`,
-            t("Longitude:"),
-            `${location.coords.longitude}`,
-          ]
+          t("Latitude:"),
+          `${location.coords.latitude}`,
+          t("Longitude:"),
+          `${location.coords.longitude}`,
+        ]
         : [t("No_location_available")];
 
       copy(message);
@@ -117,7 +115,7 @@ function Gpskoords() {
         ) : errorMsg ? (
           <Text style={{ color: "red" }}>{errorMsg}</Text>
         ) : (
-          <Text style={{ color: scheme === "dark" ? "#d8d8d8ff" : "#000" }}>
+          <Text style={{ color: theme.textColor }}>
             {t("waiting")}
           </Text>
         )}
@@ -131,18 +129,20 @@ function Gpskoords() {
         />
       </View>
       <TouchableOpacity onPress={copyCoords} style={styles.button}>
-        <Copy strokeWidth={3} size={20} color={"#2e2c2cff"} />
+        <Copy strokeWidth={3} size={20} color={theme.isDark ? "#d8d8d8ff" : "#2e2c2cff"} />
       </TouchableOpacity>
     </View>
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { cardBg, borderColor, textColor, subTextColor, isModern } = theme;
+
+  return StyleSheet.create({
     card: {
-      borderColor: "#E5E7EB",
-      backgroundColor: "#fff",
-      borderRadius: 16,
+      borderColor: borderColor,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 24 : 16,
       borderWidth: 1,
       width: 340,
       height: 120,
@@ -153,18 +153,19 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       flexDirection: "row",
     },
     gps: {
-      color: "#4B5563",
+      color: subTextColor,
       fontSize: 19,
       fontWeight: "500",
     },
     gpskoords: {
       marginBottom: 2,
       marginTop: 6,
-      color: "#252E3C",
+      color: textColor,
       fontSize: 15,
       fontWeight: "500",
     },
     gpskoords2: {
+      color: textColor,
       fontSize: 15,
       fontWeight: "500",
     },
@@ -178,5 +179,6 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       alignSelf: "center",
     },
   });
+};
 
 export default Gpskoords;

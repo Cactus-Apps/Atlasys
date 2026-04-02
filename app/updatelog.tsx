@@ -14,18 +14,18 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
   TouchableOpacity,
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 const UpdateLog = () => {
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
   const router = useRouter();
-  const styles = getStyles(isDark);
+  const styles = getStyles(theme);
 
   const logs = [
     {
@@ -79,7 +79,7 @@ const UpdateLog = () => {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronLeft size={24} color={isDark ? "#fff" : "#000"} />
+          <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("update_log")}</Text>
         <View style={{ width: 44 }} />
@@ -131,14 +131,8 @@ const UpdateLog = () => {
   );
 };
 
-const getStyles = (isDark: boolean) => {
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     container: {
@@ -213,15 +207,15 @@ const getStyles = (isDark: boolean) => {
     logCard: {
       flex: 1,
       backgroundColor: cardBg,
-      borderRadius: 20,
+      borderRadius: isModern ? 24 : 20,
       padding: 16,
       marginBottom: 24,
       borderWidth: 1,
       borderColor: borderColor,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.03,
-      shadowRadius: 10,
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.05) : 0.03,
+      shadowRadius: isModern ? 16 : 10,
       elevation: 2,
     },
     logHeader: {
@@ -234,10 +228,12 @@ const getStyles = (isDark: boolean) => {
       fontSize: 14,
       fontWeight: "800",
       color: "#2563EB",
-      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      backgroundColor: theme.isModern
+        ? theme.iconBg
+        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 6,
+      borderRadius: isModern ? 8 : 6,
     },
     logText: {
       fontSize: 15,

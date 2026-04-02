@@ -4,21 +4,21 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/lib/theme";
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 export default function Licenses() {
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
   const router = useRouter();
   const { t } = useTranslation();
-  const styles = getStyles(isDark);
+  const styles = getStyles(theme);
 
   const licenseData = [
     {
@@ -57,7 +57,7 @@ export default function Licenses() {
         >
           <ChevronLeft
             size={24}
-            color={isDark ? "#fff" : "#000"}
+            color={theme.textColor}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("licenses")}</Text>
@@ -89,14 +89,8 @@ export default function Licenses() {
   );
 }
 
-const getStyles = (isDark: boolean) => {
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     container: {
@@ -145,7 +139,7 @@ const getStyles = (isDark: boolean) => {
     },
     licenseCard: {
       backgroundColor: cardBg,
-      borderRadius: 24,
+      borderRadius: isModern ? 32 : 24,
       padding: 20,
       marginBottom: 16,
       borderWidth: 1,
@@ -158,16 +152,16 @@ const getStyles = (isDark: boolean) => {
       marginBottom: 12,
     },
     licenseContentWrapper: {
-      backgroundColor: isDark ? "rgba(255, 255, 255, 0.03)" : "#F8FAFC",
+      backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.03)" : "#F8FAFC",
       padding: 16,
-      borderRadius: 16,
+      borderRadius: isModern ? 24 : 16,
       borderWidth: 1,
       borderColor: borderColor,
     },
     licenseText: {
       fontSize: 13,
       lineHeight: 20,
-      color: isDark ? "#A1A1AA" : "#4B5563",
+      color: theme.isDark ? "#A1A1AA" : "#4B5563",
       fontFamily: "monospace",
     },
   });

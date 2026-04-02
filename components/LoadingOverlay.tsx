@@ -8,9 +8,12 @@ import Animated, {
   withTiming,
   withSequence,
 } from "react-native-reanimated";
+import { useAppTheme } from "@/lib/theme";
 
 export function LoadingOverlay() {
+  const theme = useAppTheme();
   const scale = useSharedValue(1);
+  const styles = getStyles(theme);
 
   useEffect(() => {
     scale.value = withRepeat(
@@ -36,27 +39,29 @@ export function LoadingOverlay() {
     </View>
   );
 }
-const styles = StyleSheet.create({
-  statusText: {
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#666",
-  },
-  loadingOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
-  },
-  loadingLogo: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 30,
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 10,
-  },
-});
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  return StyleSheet.create({
+    statusText: {
+      marginTop: 20,
+      fontSize: 18,
+      fontWeight: "600",
+      color: theme.textColor,
+    },
+    loadingOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.bg,
+    },
+    loadingLogo: {
+      backgroundColor: theme.cardBg,
+      padding: 20,
+      borderRadius: theme.isModern ? 40 : 30,
+      shadowColor: "#007AFF",
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.2,
+      shadowRadius: 15,
+      elevation: 10,
+    },
+  });
+};

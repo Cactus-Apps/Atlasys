@@ -26,6 +26,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { useAppTheme } from "@/lib/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -33,8 +34,8 @@ export default function AuthScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { signIn, signUp } = useAuth();
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -83,14 +84,14 @@ export default function AuthScreen() {
 
   const getInputBorderColor = (name: string) => {
     if (focusedInput === name) return "#2563EB";
-    return isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+    return theme.borderColor;
   };
 
   return (
     <SafeAreaView
       style={[
         styles.container,
-        { backgroundColor: isDark ? "#0D1117" : "#F8FAFC" },
+        { backgroundColor: theme.bg },
       ]}
     >
       <KeyboardAvoidingView
@@ -107,7 +108,7 @@ export default function AuthScreen() {
               />
             </View>
             <Text
-              style={[styles.title, { color: isDark ? "#FFFFFF" : "#0F172A" }]}
+              style={[styles.title, { color: theme.textColor }]}
             >
               {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
             </Text>
@@ -132,10 +133,10 @@ export default function AuthScreen() {
               <TextInput
                 style={[
                   styles.input,
-                  { color: isDark ? "#FFFFFF" : "#0F172A" },
+                  { color: theme.textColor },
                 ]}
                 placeholder={t("E-Mail")}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subTextColor}
                 value={email}
                 onChangeText={setEmail}
                 onFocus={() => setFocusedInput("email")}
@@ -158,10 +159,10 @@ export default function AuthScreen() {
               <TextInput
                 style={[
                   styles.input,
-                  { color: isDark ? "#FFFFFF" : "#0F172A" },
+                  { color: theme.textColor },
                 ]}
                 placeholder={t("Password")}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subTextColor}
                 value={password}
                 onChangeText={setPassword}
                 onFocus={() => setFocusedInput("password")}
@@ -203,10 +204,14 @@ export default function AuthScreen() {
               <TouchableOpacity
                 style={[
                   styles.socialBtn,
-                  { backgroundColor: isDark ? "#161B22" : "#FFFFFF" },
+                  { 
+                    backgroundColor: theme.cardBg,
+                    borderColor: theme.borderColor,
+                    borderRadius: theme.isModern ? 24 : 20,
+                  },
                 ]}
               >
-                <Github size={24} color={isDark ? "#FFFFFF" : "#000000"} />
+                <Github size={24} color={theme.textColor} />
               </TouchableOpacity>
               {/* Add more social providers if needed */}
             </View>

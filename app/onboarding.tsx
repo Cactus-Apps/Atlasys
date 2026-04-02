@@ -29,6 +29,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import { useAppTheme } from "@/lib/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -37,6 +38,10 @@ export default function OnboardingScreen() {
   const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const settings = useAuthStore((s) => s.settings);
+
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
+  const styles = getStyles(theme);
 
   const [step, setStep] = useState(0);
   const [localSettings, setLocalSettings] = useState({
@@ -285,155 +290,161 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  progressContainer: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 32,
-    marginTop: 20,
-  },
-  progressBar: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E2E8F0",
-  },
-  progressBarActive: {
-    backgroundColor: "#2563EB",
-  },
-  main: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  content: {
-    paddingHorizontal: 32,
-    alignItems: "center",
-  },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#DBEAFE",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#0F172A",
-    textAlign: "center",
-    marginBottom: 16,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#64748b",
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  optionsContainer: {
-    width: "100%",
-    gap: 12,
-  },
-  optionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  optionCardActive: {
-    borderColor: "#BFDBFE",
-    backgroundColor: "#EFF6FF",
-  },
-  optionText: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  optionTitleActive: {
-    color: "#2563EB",
-  },
-  optionSub: {
-    fontSize: 13,
-    color: "#64748b",
-    marginTop: 2,
-  },
-  premiumList: {
-    width: "100%",
-    gap: 16,
-    marginBottom: 40,
-  },
-  premiumItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  premiumText: {
-    fontSize: 16,
-    color: "#1E293B",
-    fontWeight: "500",
-  },
-  premiumBtn: {
-    width: "100%",
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "#F59E0B",
-    alignItems: "center",
-  },
-  premiumBtnText: {
-    color: "#D97706",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  footer: {
-    padding: 32,
-    paddingBottom: Platform.OS === "ios" ? 0 : 32,
-  },
-  nextBtn: {
-    backgroundColor: "#2563EB",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    borderRadius: 24,
-    gap: 8,
-    shadowColor: "#2563EB",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  nextBtnDisabled: {
-    backgroundColor: "#94A3B8",
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  nextBtnText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  loginBtn: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  loginBtnText: {
-    color: "#64748b",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: bg,
+    },
+    progressContainer: {
+      flexDirection: "row",
+      gap: 8,
+      paddingHorizontal: 32,
+      marginTop: 20,
+    },
+    progressBar: {
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0",
+    },
+    progressBarActive: {
+      backgroundColor: "#2563EB",
+    },
+    main: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    content: {
+      paddingHorizontal: 32,
+      alignItems: "center",
+    },
+    iconCircle: {
+      width: 100,
+      height: 100,
+      borderRadius: isModern ? 32 : 50,
+      backgroundColor: isModern 
+        ? theme.iconBg 
+        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#DBEAFE"),
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "900",
+      color: textColor,
+      textAlign: "center",
+      marginBottom: 16,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: subTextColor,
+      textAlign: "center",
+      lineHeight: 24,
+      marginBottom: 32,
+    },
+    optionsContainer: {
+      width: "100%",
+      gap: 12,
+    },
+    optionCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 16,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 24 : 20,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    optionCardActive: {
+      borderColor: isModern ? "#3B82F6" : "#BFDBFE",
+      backgroundColor: theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+    },
+    optionText: {
+      flex: 1,
+      marginLeft: 16,
+    },
+    optionTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: textColor,
+    },
+    optionTitleActive: {
+      color: "#2563EB",
+    },
+    optionSub: {
+      fontSize: 13,
+      color: subTextColor,
+      marginTop: 2,
+    },
+    premiumList: {
+      width: "100%",
+      gap: 16,
+      marginBottom: 40,
+    },
+    premiumItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    premiumText: {
+      fontSize: 16,
+      color: textColor,
+      fontWeight: "500",
+    },
+    premiumBtn: {
+      width: "100%",
+      padding: 16,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 24 : 20,
+      borderWidth: 2,
+      borderColor: "#F59E0B",
+      alignItems: "center",
+    },
+    premiumBtnText: {
+      color: "#D97706",
+      fontSize: 16,
+      fontWeight: "800",
+    },
+    footer: {
+      padding: 32,
+      paddingBottom: Platform.OS === "ios" ? 0 : 32,
+    },
+    nextBtn: {
+      backgroundColor: "#2563EB",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+      borderRadius: isModern ? 24 : 24,
+      gap: 8,
+      shadowColor: "#2563EB",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    nextBtnDisabled: {
+      backgroundColor: theme.isDark ? "#334155" : "#94A3B8",
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    nextBtnText: {
+      color: "#FFFFFF",
+      fontSize: 18,
+      fontWeight: "800",
+    },
+    loginBtn: {
+      marginTop: 24,
+      alignItems: "center",
+    },
+    loginBtnText: {
+      color: subTextColor,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  });
+};

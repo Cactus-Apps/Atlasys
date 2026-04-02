@@ -4,26 +4,22 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   Dimensions,
-  useColorScheme,
-  Alert,
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 import {
   Trash2,
   Map,
   HardDrive,
-  Download,
   WifiOff,
   ChevronLeft,
 } from "lucide-react-native";
-import Svg, { Circle, G, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Circle, G } from "react-native-svg";
 import {
-  getFreeDiskStorageAsync,
   getTotalDiskCapacityAsync,
 } from "expo-file-system/legacy";
 import { listMBTiles, deleteMBTiles, MBTilesInfo } from "@/lib/storage/mbtiles";
-import { AlertDialog, Button, Host } from "@expo/ui/jetpack-compose";
+import { AlertDialog, Host } from "@expo/ui/jetpack-compose";
 import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
@@ -35,16 +31,14 @@ function StorageRing({
   usedBytes: number;
   totalBytes: number;
 }) {
-  const scheme = useColorScheme();
-  const dark = scheme === "dark";
+  const theme = useAppTheme();
+  const dark = theme.isDark;
 
   const size = 180;
   const strokeWidth = 16;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Zeige Anteil der offline Karten am tatsächlich genutzten App-Speicher
-  // Maximal 10GB als Referenzpunkt damit der Ring visuell sinnvoll ist
   const referenceBytes = Math.min(totalBytes * 0.1, 10 * 1024 * 1024 * 1024);
   const percent = Math.min(usedBytes / referenceBytes, 1);
   const usedDash = Math.max(percent * circumference, percent > 0 ? 8 : 0);
@@ -61,7 +55,7 @@ function StorageRing({
       : `${(usedMB / 1024).toFixed(2)} GB`;
 
   return (
-    <View style={{ alignItems: "center", paddingVertical: 8 }}>
+    <View style={{ alignItems: "center", paddingVertical: 8}}>
       <View
         style={{
           width: size,
@@ -188,8 +182,8 @@ function EmptyState({ dark }: { dark: boolean }) {
 }
 
 export default function OfflineMapsTab() {
-  const scheme = useColorScheme();
-  const dark = scheme === "dark";
+  const theme = useAppTheme();
+  const dark = theme.isDark;
   const [maps, setMaps] = useState<MBTilesInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalBytes, setTotalBytes] = useState(64 * 1024 * 1024 * 1024);
@@ -243,12 +237,15 @@ export default function OfflineMapsTab() {
       year: "numeric",
     });
 
-  const bg = dark ? "#0F172A" : "#F8FAFC";
-  const cardBg = dark ? "#1E293B" : "#FFFFFF";
-  const border = dark ? "#334155" : "#F1F5F9";
-  const textPrimary = dark ? "#F8FAFC" : "#0F172A";
-  const textSecondary = dark ? "#64748B" : "#94A3B8";
-  const iconBg = dark ? "#1E3A5F" : "#EFF6FF";
+  const bg = theme.bg;
+  const cardBg = theme.cardBg;
+  const border = theme.borderColor;
+  const textPrimary = theme.textColor;
+  const textSecondary = theme.subTextColor;
+  const iconBg = theme.iconBg;
+  const defaultRadius = theme.isModern ? 24 : 20;
+  const innerRadius = theme.isModern ? 18 : 16;
+  const itemRadius = theme.isModern ? 14 : 12;
 
   const AlertDialogOverlay = (
     <>
@@ -275,7 +272,7 @@ export default function OfflineMapsTab() {
 
   if (!loading && maps.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: bg }}>
+      <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30}}>
         {AlertDialogOverlay}
         <View
           style={{
@@ -303,7 +300,7 @@ export default function OfflineMapsTab() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: bg }}>
+    <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30}}>
       {AlertDialogOverlay}
       <View
         style={{
@@ -335,15 +332,15 @@ export default function OfflineMapsTab() {
             <View
               style={{
                 backgroundColor: cardBg,
-                borderRadius: 24,
+                borderRadius: defaultRadius,
                 padding: 20,
                 marginBottom: 20,
                 borderWidth: 1,
                 borderColor: border,
                 shadowColor: "#000",
-                shadowOpacity: dark ? 0 : 0.06,
-                shadowRadius: 12,
-                elevation: 4,
+                shadowOpacity: theme.isModern ? (dark ? 0 : 0.06) : 0,
+                shadowRadius: theme.isModern ? 12 : 0,
+                elevation: theme.isModern ? 4 : 0,
               }}
             >
               <Text
@@ -422,7 +419,7 @@ export default function OfflineMapsTab() {
           <View
             style={{
               backgroundColor: cardBg,
-              borderRadius: 18,
+              borderRadius: innerRadius,
               padding: 14,
               flexDirection: "row",
               alignItems: "center",
@@ -430,16 +427,16 @@ export default function OfflineMapsTab() {
               borderWidth: 1,
               borderColor: border,
               shadowColor: "#000",
-              shadowOpacity: dark ? 0 : 0.04,
-              shadowRadius: 8,
-              elevation: 2,
+              shadowOpacity: theme.isModern ? (dark ? 0 : 0.04) : 0,
+              shadowRadius: theme.isModern ? 8 : 0,
+              elevation: theme.isModern ? 2 : 0,
             }}
           >
             <View
               style={{
                 width: 46,
                 height: 46,
-                borderRadius: 14,
+                borderRadius: itemRadius,
                 backgroundColor: iconBg,
                 justifyContent: "center",
                 alignItems: "center",
@@ -511,8 +508,8 @@ export default function OfflineMapsTab() {
               style={{
                 width: 38,
                 height: 38,
-                borderRadius: 12,
-                backgroundColor: dark ? "#2D1515" : "#FEF2F2",
+                borderRadius: itemRadius,
+                backgroundColor: dark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2",
                 justifyContent: "center",
                 alignItems: "center",
               }}

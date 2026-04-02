@@ -12,6 +12,7 @@ import BottomSheet, {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from "@gorhom/bottom-sheet";
+import { useAppTheme } from "@/lib/theme";
 import {
   Car,
   Bike,
@@ -69,6 +70,9 @@ export default function RouteSheet({
     duration: number;
   } | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+
+  const theme = useAppTheme();
+  const s = getStyles(theme);
 
   // Suchfelder
   const [startQuery, setStartQuery] = useState("");
@@ -222,8 +226,12 @@ export default function RouteSheet({
       index={-1}
       snapPoints={["25%", "40%", "55%", "80%"]}
       onClose={onClose}
-      backgroundStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-      handleIndicatorStyle={{ backgroundColor: "#CBD5E1", width: 40 }}
+      backgroundStyle={{ 
+        borderTopLeftRadius: theme.isModern ? 32 : 24, 
+        borderTopRightRadius: theme.isModern ? 32 : 24,
+        backgroundColor: theme.bg
+      }}
+      handleIndicatorStyle={{ backgroundColor: theme.subTextColor, width: 40 }}
       keyboardBehavior="extend"
     >
       <BottomSheetScrollView
@@ -346,7 +354,7 @@ export default function RouteSheet({
               <TouchableOpacity
                 onPress={() => {
                   sheetRef.current?.snapToIndex(0);
-                  onPickStart();
+                  onPickEnd();
                 }}
               >
                 <MapPin
@@ -458,112 +466,118 @@ export default function RouteSheet({
   );
 }
 
-const s = StyleSheet.create({
-  container: { paddingHorizontal: 20, paddingBottom: 40 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  title: { fontSize: 20, fontWeight: "700", color: "#111" },
-  closeBtn: { backgroundColor: "#F1F5F9", borderRadius: 20, padding: 6 },
-  modeRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
-  modeBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "#F1F5F9",
-  },
-  modeBtnActive: { backgroundColor: "#2563EB" },
-  modeLabel: { fontSize: 13, fontWeight: "600", color: "#64748B" },
-  modeLabelActive: { color: "#fff" },
-  fields: { marginBottom: 16 },
-  fieldWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-  },
-  fieldWrapperActive: { borderColor: "#2563EB", backgroundColor: "#EFF6FF" },
-  dot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
-  fieldInput: { flex: 1, fontSize: 15, color: "#1E293B", paddingVertical: 2 },
-  connectorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 19,
-    gap: 8,
-    marginVertical: 4,
-  },
-  connectorLine: { width: 2, height: 20, backgroundColor: "#CBD5E1" },
-  swapBtn: {
-    marginLeft: "auto",
-    backgroundColor: "#F1F5F9",
-    borderRadius: 20,
-    padding: 6,
-  },
-  suggestBox: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    marginTop: 4,
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  suggestItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F1F5F9",
-  },
-  suggestMain: { fontSize: 14, fontWeight: "600", color: "#1E293B" },
-  suggestSub: { fontSize: 12, color: "#94A3B8", marginTop: 1 },
-  pickHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 12,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  pickHintText: { color: "#2563EB", fontSize: 13, fontWeight: "500", flex: 1 },
-  infoBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 14,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-  },
-  infoText: { color: "#64748B", fontSize: 14 },
-  resultBox: {
-    flexDirection: "row",
-    backgroundColor: "#EFF6FF",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-  },
-  resultItem: { flex: 1, alignItems: "center" },
-  resultValue: { fontSize: 22, fontWeight: "700", color: "#1E40AF" },
-  resultLabel: { fontSize: 12, color: "#64748B", marginTop: 2 },
-  resultDivider: { width: 1, height: 40, backgroundColor: "#BFDBFE" },
-  errorBox: { padding: 14, backgroundColor: "#FEF2F2", borderRadius: 12 },
-  errorText: { color: "#EF4444", fontSize: 14 },
-});
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } = theme;
+
+  return StyleSheet.create({
+    container: { paddingHorizontal: 20, paddingBottom: 40 },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    title: { fontSize: 20, fontWeight: "700", color: textColor },
+    closeBtn: { backgroundColor: iconBg, borderRadius: 20, padding: 6 },
+    modeRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+    modeBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: isModern ? 16 : 12,
+      backgroundColor: theme.isDark ? (isModern ? "#1E293B" : "#24262E") : "#F1F5F9",
+    },
+    modeBtnActive: { backgroundColor: "#007AFF" },
+    modeLabel: { fontSize: 13, fontWeight: "600", color: subTextColor },
+    modeLabelActive: { color: "#fff" },
+    fields: { marginBottom: 16 },
+    fieldWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 18 : 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderWidth: 1.5,
+      borderColor: borderColor,
+    },
+    fieldWrapperActive: { borderColor: "#007AFF", backgroundColor: theme.isDark ? (isModern ? "#0F172A" : "#1e1e1e") : "#EFF6FF" },
+    dot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
+    fieldInput: { flex: 1, fontSize: 15, color: textColor, paddingVertical: 2 },
+    connectorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingLeft: 19,
+      gap: 8,
+      marginVertical: 4,
+    },
+    connectorLine: { width: 2, height: 20, backgroundColor: borderColor },
+    swapBtn: {
+      marginLeft: "auto",
+      backgroundColor: iconBg,
+      borderRadius: 20,
+      padding: 6,
+    },
+    suggestBox: {
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 18 : 12,
+      marginTop: 4,
+      marginBottom: 4,
+      borderWidth: 1,
+      borderColor: borderColor,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    suggestItem: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      padding: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: borderColor,
+    },
+    suggestMain: { fontSize: 14, fontWeight: "600", color: textColor },
+    suggestSub: { fontSize: 12, color: subTextColor, marginTop: 1 },
+    pickHint: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      padding: 12,
+      backgroundColor: theme.isDark ? "rgba(37,99,235,0.1)" : "#EFF6FF",
+      borderRadius: isModern ? 16 : 12,
+      marginBottom: 12,
+    },
+    pickHintText: { color: "#007AFF", fontSize: 13, fontWeight: "500", flex: 1 },
+    infoBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 14,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 16 : 12,
+      borderColor: borderColor,
+      borderWidth: 1,
+    },
+    infoText: { color: subTextColor, fontSize: 14 },
+    resultBox: {
+      flexDirection: "row",
+      backgroundColor: theme.isDark ? "rgba(37,99,235,0.1)" : "#EFF6FF",
+      borderRadius: isModern ? 24 : 16,
+      padding: 20,
+      alignItems: "center",
+    },
+    resultItem: { flex: 1, alignItems: "center" },
+    resultValue: { fontSize: 22, fontWeight: "700", color: theme.isDark ? "#BFDBFE" : "#1E40AF" },
+    resultLabel: { fontSize: 12, color: subTextColor, marginTop: 2 },
+    resultDivider: { width: 1, height: 40, backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#BFDBFE" },
+    errorBox: { padding: 14, backgroundColor: theme.isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2", borderRadius: isModern ? 16 : 12 },
+    errorText: { color: "#EF4444", fontSize: 14 },
+  });
+};

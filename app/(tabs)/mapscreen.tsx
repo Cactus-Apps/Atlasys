@@ -13,6 +13,9 @@ import Svg, {
   G,
   Line,
   Text as SvgText,
+  Defs,
+  RadialGradient,
+  Stop,
 } from "react-native-svg";
 import * as Location from "expo-location";
 import {
@@ -51,8 +54,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 
@@ -108,6 +111,20 @@ type RoutePoint = {
   coordinate: [number, number];
 };
 
+const SNAP_POINTS = ["15%", "25%", "50%", "80%", "100%"];
+
+const FILTERS = [
+  { label: "Restaurants", subclass: ["restaurant"] },
+  { label: "Cafés", subclass: ["cafe"] },
+  { label: "Hotels", subclass: ["hotel", "hostel"] },
+  {
+    label: "Sehenswürdigkeiten",
+    subclass: ["attraction", "museum", "monument", "artwork"],
+  },
+  { label: "Bars", subclass: ["bar", "pub"] },
+  { label: "Shopping", subclass: ["mall", "supermarket", "shop"] },
+];
+
 export default function MapScreen() {
   const markerRef = useRef<MarkerRef | null>(null);
   const markerRef2 = useRef<MarkerRef | null>(null);
@@ -133,7 +150,6 @@ export default function MapScreen() {
   const [MapStyle, setMapStyle] = useState(
     "https://tiles.openfreemap.org/styles/bright",
   );
-  const [avatarview, setavatarview] = useState(false);
   const [ready, setReady] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
@@ -175,10 +191,12 @@ export default function MapScreen() {
     null,
   );
   const [poiModalVisible, setPoiModalVisible] = useState(false);
-  const snapPoints = useMemo(() => ["15%", "25%", "50%", "80%", "100%"], []);
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null,
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
+  const scheme = isDark ? "dark" : "light";
+  const styles = useMemo(
+    () => getStyles(theme),
+    [theme.isDark, theme.isModern],
   );
   const [openRoute, setOpenRoute] = useState(false);
   const sheetPoiRef = useRef<BottomSheet>(null);
@@ -196,9 +214,16 @@ export default function MapScreen() {
   const [routePickMode, setRoutePickMode] = useState<"start" | "end" | null>(
     null,
   );
-
+  const bearingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [drawStart, setDrawStart] = useState<[number, number] | null>(null);
   const [drawMode, setDrawMode] = useState(false);
+  const lastBearingUpdate = useRef(0);
+  const lastBearingRef = useRef(0);
+  const isSaved = useMemo(
+    () => savedLocations.some((l) => l.name === city?.name),
+    [savedLocations, city?.name],
+  );
+
   const setDrawModeWrapped = (val: boolean) => {
     drawModeRef.current = val;
     setDrawMode(val);
@@ -223,18 +248,6 @@ export default function MapScreen() {
     activeFilterRef.current = label;
     setActiveFilter(label);
   };
-
-  const filters = [
-    { label: "Restaurants", subclass: ["restaurant"] },
-    { label: "Cafés", subclass: ["cafe"] },
-    { label: "Hotels", subclass: ["hotel", "hostel"] },
-    {
-      label: "Sehenswürdigkeiten",
-      subclass: ["attraction", "museum", "monument", "artwork"],
-    },
-    { label: "Bars", subclass: ["bar", "pub"] },
-    { label: "Shopping", subclass: ["mall", "supermarket", "shop"] },
-  ];
 
   const { t } = useTranslation();
 
@@ -346,10 +359,6 @@ export default function MapScreen() {
     setPitch(nextPitch);
   };
 
-  const openProfileScreen = () => {
-    setavatarview((prev) => !prev);
-  };
-
   const ensureGlobe = () => {
     mapRef.current?.setProjection({ type: "globe" });
   };
@@ -387,7 +396,7 @@ export default function MapScreen() {
   };
 
   const headers = {
-    "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
+    "User-Agent": "Atlasys/1.0 (cactus_apps@proton.me)",
     Accept: "application/json",
   };
 
@@ -395,32 +404,31 @@ export default function MapScreen() {
   useEffect(() => {
     if (!city?.name) return;
 
+    const controller = new AbortController();
+
     const fetchWikipediaData = async () => {
       setLoading(true);
       setError(null);
       setArticle(null);
 
       try {
+        // 1. Suche
         const searchRes = await fetch(
-          `https://de.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
-            city?.name,
-          )}&limit=1&format=json&origin=*`,
-          { headers },
+          `https://de.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(city.name)}&limit=1&format=json&origin=*`,
+          { headers, signal: controller.signal },
         );
         const searchData = await searchRes.json();
-
-        if (!searchData[1] || searchData[1].length === 0) {
+        if (!searchData[1]?.length) {
           setError("Kein Artikel gefunden.");
           setLoading(false);
           return;
         }
-
         const pageTitle = searchData[1][0];
 
-        // 2. Fetch extract
+        // 2. Extract + Thumbnail
         const extractRes = await fetch(
           `https://de.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro&explaintext&piprop=thumbnail&pithumbsize=1000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
-          { headers },
+          { headers, signal: controller.signal },
         );
         const extractData = await extractRes.json();
         const pages = extractData.query.pages;
@@ -428,10 +436,10 @@ export default function MapScreen() {
         const extract = pages[pageId].extract;
         const thumbnail = pages[pageId].thumbnail?.source || null;
 
-        // 3. Fetch images with deduplication
+        // 3. Bilder
         const imagesPropRes = await fetch(
           `https://de.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`,
-          { headers },
+          { headers, signal: controller.signal },
         );
         const imagesPropData = await imagesPropRes.json();
         const imageTitles =
@@ -439,7 +447,6 @@ export default function MapScreen() {
             (img: any) => img.title,
           ) || [];
 
-        let imageUrls: string[] = [];
         const isJunk = (url: string) => {
           const lower = url.toLowerCase();
           return (
@@ -463,27 +470,23 @@ export default function MapScreen() {
             lower.includes(".svg")
           );
         };
+
+        let imageUrls: string[] = [];
         if (imageTitles.length > 0) {
-          // Fetch URLs for the ordered titles (up to 50)
           const titlesQuery = imageTitles
             .map((t: string) => encodeURIComponent(t))
             .join("|");
           const imagesInfoRes = await fetch(
             `https://de.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url&format=json&origin=*`,
-            { headers },
+            { headers, signal: controller.signal },
           );
           const imagesInfoData = await imagesInfoRes.json();
 
           if (imagesInfoData.query?.pages) {
             const urlMap: Record<string, string> = {};
             Object.values(imagesInfoData.query.pages).forEach((p: any) => {
-              if (p.imageinfo?.[0]?.url) {
-                urlMap[p.title] = p.imageinfo[0].url;
-              }
+              if (p.imageinfo?.[0]?.url) urlMap[p.title] = p.imageinfo[0].url;
             });
-
-            // Filter und maintain order
-            const filteredUrls: string[] = [];
             imageTitles.forEach((title: string) => {
               const url = urlMap[title];
               if (
@@ -493,18 +496,19 @@ export default function MapScreen() {
                   url.endsWith(".png") ||
                   url.endsWith(".jpeg"))
               ) {
-                filteredUrls.push(url);
+                imageUrls.push(url);
               }
             });
-            imageUrls = filteredUrls;
           }
         }
+
         let finalThumbnail = thumbnail;
-        if (finalThumbnail && isJunk(finalThumbnail)) {
+        if (finalThumbnail && isJunk(finalThumbnail))
           finalThumbnail = imageUrls[0] || null;
-        } else if (!finalThumbnail && imageUrls.length > 0) {
+        else if (!finalThumbnail && imageUrls.length > 0)
           finalThumbnail = imageUrls[0];
-        }
+
+        if (controller.signal.aborted) return;
 
         setArticle({
           title: pageTitle,
@@ -512,11 +516,12 @@ export default function MapScreen() {
           thumbnail: finalThumbnail,
           images: imageUrls,
         });
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
         console.error(err);
         setError("Fehler beim Laden der Wikipedia-Daten");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
@@ -524,6 +529,8 @@ export default function MapScreen() {
     if (now - lastFetchTime < 3000) return;
     setLastFetchTime(now);
     fetchWikipediaData();
+
+    return () => controller.abort();
   }, [city?.name, city?.latitude, city?.longitude]);
 
   // Weather logic
@@ -713,15 +720,16 @@ export default function MapScreen() {
     if (!mapRef.current) return;
     if (routePickModeRef.current) return;
 
-    const allFeatures = await mapRef.current.queryRenderedFeatures(undefined, {
-      layers: ["poi_r1", "poi_transit"],
-    });
+    const allFeatures = await mapRef.current.queryRenderedFeatures(
+      event.point,
+      { layers: ["poi_r1", "poi_transit"] },
+    );
 
     if (!allFeatures?.length) return;
 
     // Aktiven Filter anwenden
     const activeSubclasses = activeFilterRef.current
-      ? (filters.find((f) => f.label === activeFilterRef.current)?.subclass ??
+      ? (FILTERS.find((f) => f.label === activeFilterRef.current)?.subclass ??
         [])
       : null;
 
@@ -763,6 +771,16 @@ export default function MapScreen() {
     sheetPoiRef.current?.snapToIndex(0);
   };
 
+  const updateBearing = async () => {
+    try {
+      const b = await mapRef.current?.getBearing?.();
+      if (b == null || typeof b !== "number") return;
+      if (Math.abs(b - lastBearingRef.current) < 0.5) return;
+      lastBearingRef.current = b;
+      setBearing(b);
+    } catch {}
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       {!locationReady && (
@@ -794,7 +812,6 @@ export default function MapScreen() {
       <MapProvider>
         {routePickMode && (
           <>
-            {/* Dunkles Header-Banner wie Google Maps */}
             <View
               style={{
                 position: "absolute",
@@ -828,12 +845,10 @@ export default function MapScreen() {
               </View>
               <TouchableOpacity
                 onPress={async () => {
-                  // Aktuelle Kartenmitte holen
                   const center = await mapRef.current?.getCenter();
                   if (!center) return;
                   const [lng, lat] = [center.lng, center.lat];
 
-                  // Reverse Geocode
                   let label = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                   try {
                     const res = await fetch(
@@ -841,7 +856,7 @@ export default function MapScreen() {
                       {
                         headers: {
                           "Accept-Language": "de",
-                          "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
+                          "User-Agent": "Atlasys/1.0 (cactus_apps@proton.me)",
                         },
                       },
                     );
@@ -872,60 +887,84 @@ export default function MapScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Fixer Marker in der Bildschirmmitte */}
             <View
               pointerEvents="none"
               style={{
                 position: "absolute",
                 top: "50%",
                 left: "50%",
-                marginLeft: -18,
-                marginTop: -44, // Spitze des Markers zeigt auf Mittelpunkt
+                marginLeft: -20,
+                marginTop: -56,
                 zIndex: 199,
+                alignItems: "center",
               }}
             >
-              {/* Marker-Pin SVG-Style in HTML – aber hier als RN View: */}
-              <View style={{ alignItems: "center" }}>
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    backgroundColor:
-                      routePickMode === "start" ? "#22C55E" : "#EF4444",
-                    borderRadius: 18,
-                    borderWidth: 3,
-                    borderColor: "#fff",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    shadowColor: "#000",
-                    shadowOpacity: 0.3,
-                    shadowRadius: 6,
-                    elevation: 8,
-                  }}
-                >
-                  <Text style={{ fontSize: 16 }}>
-                    {routePickMode === "start" ? "🚀" : "🏁"}
-                  </Text>
-                </View>
-                {/* Spitze des Pins */}
-                <View
-                  style={{
-                    width: 3,
-                    height: 12,
-                    backgroundColor:
-                      routePickMode === "start" ? "#22C55E" : "#EF4444",
-                  }}
-                />
-                {/* Schatten-Punkt unter dem Pin */}
-                <View
-                  style={{
-                    width: 8,
-                    height: 4,
-                    backgroundColor: "rgba(0,0,0,0.2)",
-                    borderRadius: 4,
-                  }}
-                />
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 8,
+                  elevation: 10,
+                }}
+              >
+                <Svg width={40} height={40} viewBox="0 0 40 40">
+                  <Defs>
+                    <RadialGradient
+                      id={
+                        routePickMode === "start"
+                          ? "pickGradStart"
+                          : "pickGradEnd"
+                      }
+                      cx="50%"
+                      cy="35%"
+                      r="60%"
+                    >
+                      <Stop
+                        offset="0%"
+                        stopColor={
+                          routePickMode === "start" ? "#4ADE80" : "#F87171"
+                        }
+                      />
+                      <Stop
+                        offset="100%"
+                        stopColor={
+                          routePickMode === "start" ? "#15803D" : "#B91C1C"
+                        }
+                      />
+                    </RadialGradient>
+                  </Defs>
+                  <Circle
+                    cx="20"
+                    cy="20"
+                    r="20"
+                    fill={`url(#${routePickMode === "start" ? "pickGradStart" : "pickGradEnd"})`}
+                  />
+                  <Circle cx="20" cy="20" r="5" fill="white" opacity="0.9" />
+                </Svg>
               </View>
+              <View
+                style={{
+                  width: 3,
+                  height: 14,
+                  backgroundColor:
+                    routePickMode === "start" ? "#15803D" : "#B91C1C",
+                  borderBottomLeftRadius: 2,
+                  borderBottomRightRadius: 2,
+                }}
+              />
+              <View
+                style={{
+                  width: 12,
+                  height: 5,
+                  backgroundColor: "rgba(0,0,0,0.25)",
+                  borderRadius: 6,
+                  marginTop: 1,
+                }}
+              />
             </View>
           </>
         )}
@@ -946,33 +985,16 @@ export default function MapScreen() {
             mount: {
               rnListener: () => {
                 ensureGlobe();
-                setTimeout(async () => {
-                  const b = mapRef.current?.getBearing?.();
-                  if (b != null) setBearing(await b);
-                }, 500);
               },
             },
-            rotate: {
-              objectListener: (e: any) => {
-                const b =
-                  e?.target?.getBearing?.() ??
-                  e?.target?.transform?.bearing ??
-                  e?.bearing ??
-                  null;
-                if (b !== null) setBearing(b);
-              },
-            },
+            rotate: { objectListener: updateBearing },
+            rotateend: { objectListener: updateBearing },
             move: {
               objectListener: (e: any) => {
                 if (e?.target?.getCenter) {
                   const c = e.target.getCenter();
                   mapCenterRef.current = [c.lng, c.lat];
                 }
-                const b =
-                  e?.target?.getBearing?.() ??
-                  e?.target?.transform?.bearing ??
-                  null;
-                if (b !== null) setBearing(b);
               },
             },
           }}
@@ -1040,20 +1062,22 @@ export default function MapScreen() {
               coordinate: routeStart.coordinate,
               element: {
                 innerHTML: `
-          <div style="
-            width:36px; height:36px;
-            background:#22C55E;
-            border-radius:50% 50% 50% 0;
-            transform:rotate(-45deg);
-            box-shadow:0 2px 8px rgba(0,0,0,0.3);
-            border:3px solid white;
-          ">
+          <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="
-              transform:rotate(45deg);
-              width:100%; height:100%;
-              display:flex; align-items:center; justify-content:center;
-              font-size:16px;
-            ">🚀</div>
+              width:40px; height:40px;
+              border-radius:50%;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            ">
+              <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="startGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#4ADE80"/>
+                    <stop offset="100%" stop-color="#16A34A"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r="20" fill="url(#startGrad)"/>
+              </svg>
+            </div>
           </div>
         `,
               },
@@ -1067,20 +1091,22 @@ export default function MapScreen() {
               coordinate: routeEnd.coordinate,
               element: {
                 innerHTML: `
-          <div style="
-            width:36px; height:36px;
-            background:#EF4444;
-            border-radius:50% 50% 50% 0;
-            transform:rotate(-45deg);
-            box-shadow:0 2px 8px rgba(0,0,0,0.3);
-            border:3px solid white;
-          ">
+          <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="
-              transform:rotate(45deg);
-              width:100%; height:100%;
-              display:flex; align-items:center; justify-content:center;
-              font-size:16px;
-            ">🏁</div>
+              width:40px; height:40px;
+              border-radius:50%;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            ">
+              <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="endGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#F87171"/>
+                    <stop offset="100%" stop-color="#B91C1C"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r="20" fill="url(#endGrad)"/>
+              </svg>
+            </div>
           </div>
         `,
               },
@@ -1186,19 +1212,17 @@ export default function MapScreen() {
                 )}
                 {loadingSearch && <ActivityIndicator size="small" />}
 
-                <TouchableOpacity onPress={openProfileScreen}>
-                  <View style={styles.avatarView}>
-                    <Avatar
-                      size={34}
-                      name={email ?? undefined}
-                      email={email ?? undefined}
-                      colorize={true}
-                      radius={100}
-                      badgeColor="#146275ff"
-                      defaultSource={require("@/assets/images/icon.png")}
-                    />
-                  </View>
-                </TouchableOpacity>
+                <View style={styles.avatarView}>
+                  <Avatar
+                    size={34}
+                    name={email ?? undefined}
+                    email={email ?? undefined}
+                    colorize={true}
+                    radius={100}
+                    badgeColor="#146275ff"
+                    defaultSource={require("@/assets/images/icon.png")}
+                  />
+                </View>
               </View>
             </View>
             <ScrollView
@@ -1206,7 +1230,7 @@ export default function MapScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterRow}
             >
-              {filters.map((item) => (
+              {FILTERS.map((item) => (
                 <TouchableOpacity
                   key={item.label}
                   style={[
@@ -1299,7 +1323,6 @@ export default function MapScreen() {
         )}
 
         <>
-          {/* Kompass oben rechts – nur sichtbar wenn nicht nach Norden */}
           <TouchableOpacity
             onPress={resetToNorth}
             style={{
@@ -1365,7 +1388,6 @@ export default function MapScreen() {
             </Svg>
           </TouchableOpacity>
 
-          {/* Floating Action Bar unten rechts */}
           <View
             style={{
               position: "absolute",
@@ -1384,6 +1406,10 @@ export default function MapScreen() {
               {
                 icon: <Navigation color="#1E293B" size={22} />,
                 onPress: () => {
+                  setRoute(null);
+                  setDistanceInfo(null);
+                  setRouteEnd(null);
+
                   setRouteStart(
                     markerPos
                       ? { label: "Mein Standort", coordinate: markerPos }
@@ -1398,7 +1424,10 @@ export default function MapScreen() {
                 onPress: nextTheme,
                 divider: true,
               },
-              { icon: <Box color="#1E293B" size={22} />, onPress: resetPitch },
+              {
+                icon: <Box color="#1E293B" size={22} />,
+                onPress: resetPitch,
+              },
               {
                 icon: <Download color="#1E293B" size={22} />,
                 onPress: () => setDrawMode(true),
@@ -1435,7 +1464,7 @@ export default function MapScreen() {
         <BottomSheet
           ref={sheetPoiRef}
           index={BottomSheetIndex2}
-          snapPoints={snapPoints}
+          snapPoints={SNAP_POINTS}
           onChange={(i) => {
             setBottomSheetIndex2;
             setBottomSheetIndex2(i);
@@ -1632,7 +1661,7 @@ export default function MapScreen() {
           <BottomSheet
             ref={sheetRef}
             index={BottomSheetIndex}
-            snapPoints={snapPoints}
+            snapPoints={SNAP_POINTS}
             enablePanDownToClose={true}
             backgroundStyle={{
               borderTopLeftRadius: 24,
@@ -1743,16 +1772,8 @@ export default function MapScreen() {
                         }}
                       >
                         <Heart
-                          color={
-                            savedLocations.find((l) => l.name === city.name)
-                              ? "#FF3B30"
-                              : "#666"
-                          }
-                          fill={
-                            savedLocations.find((l) => l.name === city.name)
-                              ? "#FF3B30"
-                              : "transparent"
-                          }
+                          color={isSaved ? "#FF3B30" : "#666"}
+                          fill={isSaved ? "#FF3B30" : "transparent"}
                           size={24}
                         />
                       </TouchableOpacity>
@@ -1952,8 +1973,11 @@ export default function MapScreen() {
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const isDark = theme.isDark;
+
+  return StyleSheet.create({
     weatherBadge: {
       flexDirection: "row",
       alignItems: "center",
@@ -1976,7 +2000,7 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginLeft: 10,
     },
     searchContainer: {
-      backgroundColor: scheme === "dark" ? "#24262E" : "#d8d8d8ff",
+      backgroundColor: cardBg,
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingBottom: 8,
@@ -2125,8 +2149,8 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     suggestionBox: {
       marginTop: 0,
       maxHeight: 220,
-      backgroundColor: scheme === "dark" ? "#24262E" : "#d8d8d8ff",
-      borderRadius: 8,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 16 : 8,
       zIndex: 50,
       elevation: 8,
       shadowColor: "#000",
@@ -2136,14 +2160,14 @@ const getStyles = (scheme: "light" | "dark" | null) =>
     suggestionItem: {
       padding: 12,
       borderBottomWidth: 1,
-      borderBottomColor: "#eee",
+      borderBottomColor: borderColor,
     },
     searchRow: {
       paddingHorizontal: 12,
       flexDirection: "row",
       alignItems: "center",
-      borderRadius: 14,
-      backgroundColor: "#24252a",
+      borderRadius: isModern ? 18 : 14,
+      backgroundColor: isDark ? "#24252a" : isModern ? "#F4F4F5" : "#FFFFFF",
       elevation: 3,
       shadowColor: "#000",
       shadowOpacity: 0.1,
@@ -2156,16 +2180,16 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginRight: 13,
       marginHorizontal: 10,
       fontSize: 16,
-      color: "#d8d8d8ff",
+      color: textColor,
     },
     suggTitle: {
       fontSize: 16,
       fontWeight: "600",
-      color: scheme === "dark" ? "#ffffffff" : "#4d4b4bff",
+      color: textColor,
     },
     suggSub: {
       fontSize: 12,
-      color: scheme === "dark" ? "#d8d8d8ff" : "#666",
+      color: subTextColor,
       marginTop: 2,
     },
     modalBackground: {
@@ -2205,3 +2229,4 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       height: "100%",
     },
   });
+};

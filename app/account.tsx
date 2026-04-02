@@ -22,6 +22,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/lib/theme";
 
 interface DeleteRequest {
   id: string;
@@ -36,7 +37,7 @@ export default function AccountScreen() {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const [email, setEmail] = useState<string | null>(null);
-  const scheme = useColorScheme();
+  const theme = useAppTheme();
   const [userId, setUserId] = useState<string | null>(null);
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,9 +48,7 @@ export default function AccountScreen() {
   const [ModalVisible, setModalVisible] = useState(false);
   const [ModalVisible2, setModalVisible2] = useState(false);
   const [daysLeft, setdaysLeft] = useState<number | null>(null);
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const styles = getStyles(theme);
 
   const copy = async (text: string) => {
     await Clipboard.setStringAsync(text);
@@ -244,7 +243,7 @@ export default function AccountScreen() {
     );
   }
 
-  const textColor = scheme === "dark" ? "#FFFFFF" : "#1E293B";
+  const textColor = theme.textColor;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -394,13 +393,11 @@ export default function AccountScreen() {
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) => {
-  const isDark = scheme === "dark";
-  const bg = isDark ? "#0D1117" : "#F8FAFC";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1E293B";
-  const subTextColor = isDark ? "#94a3b8" : "#64748b";
-  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+
+  const defaultRadius = isModern ? 24 : 20;
+  const innerRadius = isModern ? 16 : 10;
 
   return StyleSheet.create({
     container: {
@@ -424,7 +421,7 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     backButton: {
       padding: 8,
-      borderRadius: 12,
+      borderRadius: innerRadius,
     },
     scrollContent: {
       paddingBottom: 40,
@@ -453,10 +450,10 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     statusBadge: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: isDark ? "rgba(34, 197, 94, 0.1)" : "#DCFCE7",
+      backgroundColor: theme.isDark ? "rgba(34, 197, 94, 0.1)" : "#DCFCE7",
       paddingHorizontal: 10,
       paddingVertical: 4,
-      borderRadius: 12,
+      borderRadius: innerRadius,
       gap: 6,
     },
     statusDot: {
@@ -473,10 +470,14 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     card: {
       margin: 20,
       backgroundColor: cardBg,
-      borderRadius: 20,
+      borderRadius: defaultRadius,
       padding: 16,
       borderWidth: 1,
       borderColor: borderColor,
+      shadowColor: "#000",
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
+      shadowRadius: isModern ? 12 : 0,
+      elevation: isModern ? 4 : 0,
     },
     cardTitle: {
       fontSize: 14,
@@ -491,10 +492,12 @@ const getStyles = (scheme: "light" | "dark" | null) => {
       alignItems: "center",
     },
     menuIconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 10,
-      backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      width: 44,
+      height: 44,
+      borderRadius: innerRadius,
+      backgroundColor: isModern 
+        ? theme.iconBg 
+        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
       alignItems: "center",
       justifyContent: "center",
     },
@@ -516,11 +519,15 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     dangerZone: {
       margin: 20,
       marginTop: 0,
-      backgroundColor: isDark ? "rgba(239, 68, 68, 0.05)" : "#FEF2F2",
-      borderRadius: 20,
+      backgroundColor: theme.isDark ? "rgba(239, 68, 68, 0.05)" : "#FEF2F2",
+      borderRadius: defaultRadius,
       padding: 20,
       borderWidth: 1,
-      borderColor: isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.1)",
+      borderColor: theme.isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.1)",
+      shadowColor: "#000",
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
+      shadowRadius: isModern ? 12 : 0,
+      elevation: isModern ? 4 : 0,
     },
     dangerTitle: {
       fontSize: 14,
@@ -556,9 +563,9 @@ const getStyles = (scheme: "light" | "dark" | null) => {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: isDark ? "#161B22" : "#FFFFFF",
+      backgroundColor: cardBg,
       paddingVertical: 14,
-      borderRadius: 14,
+      borderRadius: innerRadius,
       borderWidth: 1,
       borderColor: borderColor,
       gap: 10,
@@ -572,10 +579,14 @@ const getStyles = (scheme: "light" | "dark" | null) => {
       margin: 20,
       marginTop: 0,
       backgroundColor: cardBg,
-      borderRadius: 20,
+      borderRadius: defaultRadius,
       padding: 20,
       borderWidth: 1,
       borderColor: borderColor,
+      shadowColor: "#000",
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
+      shadowRadius: isModern ? 12 : 0,
+      elevation: isModern ? 4 : 0,
     },
     requestHeader: {
       flexDirection: "row",
@@ -602,7 +613,7 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     progressBarWrapper: {
       height: 8,
-      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
+      backgroundColor: theme.isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
       borderRadius: 4,
       overflow: "hidden",
       marginBottom: 8,
@@ -631,8 +642,8 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     modalBox: {
       width: "85%",
-      backgroundColor: isDark ? "#161B22" : "#FFFFFF",
-      borderRadius: 24,
+      backgroundColor: cardBg,
+      borderRadius: defaultRadius,
       padding: 24,
       borderWidth: 1,
       borderColor: borderColor,
@@ -664,7 +675,7 @@ const getStyles = (scheme: "light" | "dark" | null) => {
     },
     modalCancelButton: {
       flex: 1,
-      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
+      backgroundColor: theme.isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
       paddingVertical: 14,
       borderRadius: 14,
       alignItems: "center",

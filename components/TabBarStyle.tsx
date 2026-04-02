@@ -14,6 +14,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Home, User, HelpCircle, MapIcon, Bookmark } from "lucide-react-native";
+import { useAppTheme } from "@/lib/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -32,8 +33,10 @@ export function CustomTabBar1({
 }: Props) {
   const TAB_COUNT = state.routes.length;
   const TAB_WIDTH = width / TAB_COUNT;
-
   const INDICATOR_WIDTH = 46;
+
+  const theme = useAppTheme();
+  const tint = theme.isDark ? "dark" : "light";
 
   const translateX = useSharedValue(
     state.index * TAB_WIDTH + (TAB_WIDTH - INDICATOR_WIDTH) / 2
@@ -71,8 +74,8 @@ export function CustomTabBar1({
   return (
     <BlurView
       intensity={80}
-      tint={colorScheme === "dark" ? "dark" : "light"}
-      style={styles.tabBarContainer}
+      tint={tint}
+      style={[styles.tabBarContainer, { borderTopColor: theme.borderColor }]}
     >
         <View style={styles.indicatorMask}>
           <Animated.View
@@ -90,10 +93,8 @@ export function CustomTabBar1({
           const label = options.title ?? route.name;
 
           const color = isFocused
-            ? "#466483ff"
-            : colorScheme === "dark"
-            ? "#8e8e93"
-            : "#6e6e73";
+            ? "#007AFF"
+            : theme.subTextColor;
 
           return (
             <TouchableOpacity
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   },
   indicator: {
     height: 4,
-    backgroundColor: "#466483ff",
+    backgroundColor: "#007AFF",
     borderRadius: 2,
   },
 });

@@ -13,8 +13,11 @@ import {
   View,
 } from "react-native";
 import { CardSkeletonView, CardSkeletonViewText } from "./SkeletonView";
+import { useAppTheme } from "@/lib/theme";
 
 export default function Weather() {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -213,7 +216,7 @@ export default function Weather() {
     <View style={styles.container}>
       {error && (
         <View>
-          <LinearGradient colors={["#fff", "#fff"]} style={styles.card}>
+          <LinearGradient colors={[theme.cardBg, theme.cardBg]} style={styles.card}>
             <View>
               <Text style={styles.error}>{error}</Text>
             </View>
@@ -259,7 +262,7 @@ export default function Weather() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => StyleSheet.create({
   container: {
     justifyContent: "center",
   },
@@ -275,7 +278,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: theme.isModern ? 24 : 16,
     borderColor: "transparent",
     borderWidth: 1,
     width: 340,
@@ -287,7 +290,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   card2: {
-    borderRadius: 16,
+    borderRadius: theme.isModern ? 24 : 16,
     borderColor: "transparent",
     borderWidth: 0,
     width: 340,

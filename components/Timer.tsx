@@ -7,16 +7,14 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from "react-native";
+import { useAppTheme } from "@/lib/theme";
 
 function Timer() {
-  const scheme = useColorScheme();
-  const styles = getStyles(
-    scheme === "light" || scheme === "dark" ? scheme : null
-  );
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
 
-  const intervalRef = useRef<number | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -70,12 +68,12 @@ function Timer() {
           >
             {!isRunning && (
               <TouchableOpacity style={styles.button} onPress={startTimer}>
-                <Play strokeWidth={3} color={'#000'}/>
+                <Play strokeWidth={3} color={theme.textColor} />
               </TouchableOpacity>
             )}
             {isRunning && (
               <TouchableOpacity style={styles.button} onPress={stopTimer}>
-                <Pause strokeWidth={3} color={'#000'}/>
+                <Pause strokeWidth={3} color={theme.textColor} />
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.buttonReset} onPress={resetTimer}>
@@ -93,16 +91,18 @@ function Timer() {
         />
       </View>
     </View>
-    
+
   );
 }
 
-const getStyles = (scheme: "light" | "dark" | null) =>
-  StyleSheet.create({
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { cardBg, borderColor, textColor, subTextColor, isModern } = theme;
+
+  return StyleSheet.create({
     card: {
-      borderColor: "#E5E7EB",
-      backgroundColor: "#fff",
-      borderRadius: 16,
+      borderColor: borderColor,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 24 : 16,
       borderWidth: 1,
       width: 340,
       height: 120,
@@ -122,20 +122,21 @@ const getStyles = (scheme: "light" | "dark" | null) =>
       marginLeft: 20,
     },
     buttonText: {
-      color: "#000",
+      color: textColor,
       fontSize: 16,
       fontWeight: '500',
     },
     time: {
-      color: "#4B5563",
+      color: subTextColor,
       fontSize: 18,
       fontWeight: "500",
     },
     timetime: {
-      color: "#1F2937",
+      color: textColor,
       fontSize: 26,
       fontWeight: "700",
     },
   });
+};
 
 export default Timer;

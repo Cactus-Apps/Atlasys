@@ -6,12 +6,14 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
+import { useAppTheme } from "@/lib/theme";
 
 type Props = {
   onFinish: () => void;
 };
 
 export function AnimatedSplash({ onFinish }: Props) {
+  const theme = useAppTheme();
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
 
@@ -34,7 +36,7 @@ export function AnimatedSplash({ onFinish }: Props) {
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <Animated.Image
         source={require('../assets/images/icon.png')}
         style={[styles.logo, style]}
@@ -46,7 +48,6 @@ export function AnimatedSplash({ onFinish }: Props) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
