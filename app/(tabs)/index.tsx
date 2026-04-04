@@ -27,9 +27,9 @@ import {
   subscribeToNewRequests,
 } from "@/utils/notificationConfig";
 import { supabase } from "@/lib/auth/supabase";
-import Clock from "@/components/Clock";
-import Gpskoords from "@/components/Gpskoords";
-import Timer from "@/components/Timer";
+import Clock from "@/components/HomeScreenComponents/Clock";
+import Gpskoords from "@/components/HomeScreenComponents/Gpskoords";
+import Timer from "@/components/HomeScreenComponents/Timer";
 import Weather from "@/components/weather";
 import { JSX } from "react";
 import DraggableFlatList from "react-native-draggable-flatlist";

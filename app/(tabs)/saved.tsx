@@ -2,6 +2,7 @@
 import React from "react";
 import {
   FlatList,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,7 +11,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
 import { Image } from "expo-image";
-import { Heart, MapPin, Navigation, Share2, Trash2, ChevronRight, Bookmark, Lock } from "lucide-react-native";
+import {
+  Heart,
+  MapPin,
+  Navigation,
+  Share2,
+  Trash2,
+  ChevronRight,
+  Bookmark,
+  Lock,
+} from "lucide-react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -38,10 +48,10 @@ export default function SavedScreen() {
     router.push({
       pathname: "/(tabs)/mapscreen",
       params: {
-        destLat: place.latitude,
-        destLon: place.longitude,
+        destLat: String(place.latitude),
+        destLon: String(place.longitude),
         destName: place.name,
-      }
+      },
     });
   };
 
@@ -53,12 +63,27 @@ export default function SavedScreen() {
         destLat: place.latitude,
         destLon: place.longitude,
         destName: place.name,
-        autoRoute: "true"
-      }
+        autoRoute: "true",
+      },
     });
   };
 
-  const renderItem = ({ item, index }: { item: any, index: number }) => (
+  const handleShare = async (item: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const url = `https://de.wikipedia.org/wiki/${encodeURIComponent(
+        item.name.replace(/ /g, "_"),
+      )}`;
+      await Share.share({
+        message: `Schau dir diesen Ort an: ${item.name}\n${url}`,
+        url: url,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const renderItem = ({ item, index }: { item: any; index: number }) => (
     <Animated.View
       entering={FadeInDown.delay(index * 100).springify()}
       style={styles.card}
@@ -66,7 +91,6 @@ export default function SavedScreen() {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => handleNavigate(item)}
-        style={{ flex: 1 }}
       >
         <View style={styles.imageContainer}>
           {item.thumbnail ? (
@@ -84,7 +108,10 @@ export default function SavedScreen() {
           )}
           <TouchableOpacity
             style={styles.removeButton}
-            onPress={() => handleRemove(item.name)}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleRemove(item.name);
+            }}
           >
             <Trash2 size={18} color="#FF4444" />
           </TouchableOpacity>
@@ -92,20 +119,32 @@ export default function SavedScreen() {
 
         <View style={styles.infoContainer}>
           <View style={styles.textContainer}>
-            <Text style={styles.placeName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.placeName} numberOfLines={1}>
+              {item.name}
+            </Text>
             <Text style={styles.placeLocation} numberOfLines={1}>
-              {item.region ? `${item.region}, ` : ""}{item.country || "Unknown"}
+              {item.region ? `${item.region}, ` : ""}
+              {item.country || "Unknown"}
             </Text>
           </View>
 
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => handleRoute(item)}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleRoute(item);
+              }}
             >
               <Navigation size={20} color="#2563EB" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleShare(item);
+              }}
+            >
               <Share2 size={20} color="#64748b" />
             </TouchableOpacity>
           </View>
@@ -128,9 +167,7 @@ export default function SavedScreen() {
             </View>
           </View>
           <Text style={styles.lockTitle}>{t("Premium_Feature")}</Text>
-          <Text style={styles.lockSub}>
-            {t("Premium_Lock_Sub")}
-          </Text>
+          <Text style={styles.lockSub}>{t("Premium_Lock_Sub")}</Text>
           <TouchableOpacity
             style={styles.unlockBtn}
             onPress={() => router.push("/paywall")}
@@ -286,9 +323,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 44,
       height: 44,
       borderRadius: isModern ? 16 : 14,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(255, 255, 255, 0.05)" : "#F1F5F9"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(255, 255, 255, 0.05)"
+          : "#F1F5F9",
       alignItems: "center",
       justifyContent: "center",
     },
@@ -301,9 +340,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 100,
       height: 100,
       borderRadius: isModern ? 32 : 50,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(255, 255, 255, 0.03)" : "#F1F5F9"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(255, 255, 255, 0.03)"
+          : "#F1F5F9",
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 24,
@@ -343,9 +384,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 120,
       height: 120,
       borderRadius: isModern ? 40 : 60,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(255, 255, 255, 0.03)" : "#F1F5F9"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(255, 255, 255, 0.03)"
+          : "#F1F5F9",
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 32,

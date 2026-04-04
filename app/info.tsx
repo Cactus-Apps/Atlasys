@@ -55,13 +55,13 @@ export default function Info() {
           <View style={styles.socialLinks}>
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => Linking.openURL("https://github.com/Cactus-Apps/GPS")}
+              onPress={() => Linking.openURL("https://github.com/Cactus-Apps/Atlasys")}
             >
               <Github size={20} color={textColor} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => Linking.openURL("https://cactus-apps.dev")}
+              onPress={() => Linking.openURL("")}
             >
               <Globe size={20} color={textColor} />
             </TouchableOpacity>

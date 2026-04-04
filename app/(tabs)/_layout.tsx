@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { AnimatedSplash } from "@/components/SplashScreen";
 import { fetchUnseen, Announcement } from "@/lib/announcements";
-import AnnouncementModal from "@/components/AnnouncementModal";
+import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();

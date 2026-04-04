@@ -67,7 +67,7 @@ import {
   GestureHandlerRootView,
   FlatList as GHFlatList,
 } from "react-native-gesture-handler";
-import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
 
 const { width, height } = Dimensions.get("window");
 

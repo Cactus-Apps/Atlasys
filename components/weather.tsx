@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CardSkeletonView, CardSkeletonViewText } from "./SkeletonView";
+import { CardSkeletonView } from "./SkeletonView";
 import { useAppTheme } from "@/lib/theme";
 
 export default function Weather() {

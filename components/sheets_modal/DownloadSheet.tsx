@@ -4,11 +4,9 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import Slider from "@react-native-community/slider";
 import { Download, X, AlertTriangle } from "lucide-react-native";
 import { tilesForBounds, estimateSizeMB } from "@/lib/storage/mbtiles";
 import { downloadRegion } from "@/lib/storage/downloadTiles";

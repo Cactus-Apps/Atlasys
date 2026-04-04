@@ -7,6 +7,7 @@ import {
   GeoJSONSource,
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
+import { useLocalSearchParams } from "expo-router";
 import Svg, {
   Circle,
   Polygon,
@@ -22,19 +23,19 @@ import {
   Box,
   Cloud,
   CloudRain,
-  Compass,
   ImageIcon,
   Search,
   Sun,
   History,
   X,
-  Layers,
   Heart,
   Share2,
   Route,
   Download,
   Navigation,
   MapIcon,
+  AlertCircleIcon,
+  AlertTriangle,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -63,17 +64,20 @@ import { Avatar } from "@kolking/react-native-avatar";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { LoadingOverlay } from "@/components/LoadingOverlay";
-import ProfileScreen from "./profilescreen";
+import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
+import MapStyleSheet, {
+  MapTheme,
+} from "@/components/sheets_modal/MapStyleSheet";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { FlatList as GHFlatList } from "react-native-gesture-handler";
-import { useSharedValue } from "react-native-reanimated";
-import { MapMouseEvent } from "maplibre-gl";
-import RouteSheet from "@/components/RouteSheet";
-import DownloadSheet from "@/components/DownloadSheet";
-import DrawBoundsOverlay from "@/components/DrawBoundsOverlay";
-import DraggableFAB from "@/components/DraggableFAB";
+import RouteSheet from "@/components/sheets_modal/RouteSheet";
+import DownloadSheet from "@/components/sheets_modal/DownloadSheet";
+import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
+import { useAuthStore } from "@/lib/storage/zustand";
+import { router } from "expo-router";
+import LottieView from "lottie-react-native";
+import ErrorSheet from "@/components/sheets_modal/ErrorSheet";
 
 const { width, height } = Dimensions.get("window");
 
@@ -127,7 +131,6 @@ const FILTERS = [
 
 export default function MapScreen() {
   const markerRef = useRef<MarkerRef | null>(null);
-  const markerRef2 = useRef<MarkerRef | null>(null);
   const mapCenterRef = useRef<[number, number] | null>(null);
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
@@ -135,7 +138,6 @@ export default function MapScreen() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
-  const hasCenteredTwich = useRef(false);
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
     "driving",
   );
@@ -151,7 +153,6 @@ export default function MapScreen() {
     "https://tiles.openfreemap.org/styles/bright",
   );
   const [ready, setReady] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [selected, setSelected] = useState<CityResult | null>(null);
@@ -165,6 +166,11 @@ export default function MapScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null,
   );
+  const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
+  const removePlace = useAuthStore((s) => s.removePlace);
+  const addPlace = useAuthStore((s) => s.addPlace);
+  const [isPlayingAnimation, setIsPlayingAnimation] = useState<boolean>(false);
+  const ref = useRef<LottieView>(null);
   const [mapThemeIndex, setMapThemeIndex] = useState(0);
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(
     null,
@@ -214,20 +220,23 @@ export default function MapScreen() {
   const [routePickMode, setRoutePickMode] = useState<"start" | "end" | null>(
     null,
   );
-  const bearingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const initialCenter = useRef<[number, number]>([0, 0]);
+  const initialZoom = useRef(5);
+  const [mapStyleSheetOpen, setMapStyleSheetOpen] = useState(false);
+  const [currentThemeKey, setCurrentThemeKey] = useState("bright");
+  const [errorSheetOpen, setErrorSheetOpen] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [drawStart, setDrawStart] = useState<[number, number] | null>(null);
   const [drawMode, setDrawMode] = useState(false);
-  const lastBearingUpdate = useRef(0);
   const lastBearingRef = useRef(0);
   const isSaved = useMemo(
     () => savedLocations.some((l) => l.name === city?.name),
     [savedLocations, city?.name],
   );
+  const [localSaved, setLocalSaved] = useState(isSaved);
+  const didHandleParams = useRef(false);
 
-  const setDrawModeWrapped = (val: boolean) => {
-    drawModeRef.current = val;
-    setDrawMode(val);
-  };
   const [drawBounds, setDrawBounds] = useState<{
     nw: [number, number];
     ne: [number, number];
@@ -243,6 +252,12 @@ export default function MapScreen() {
     !routePickMode &&
     BottomSheetIndex < 3 &&
     BottomSheetIndex2 < 3;
+
+  const { destLat, destLon, destName } = useLocalSearchParams<{
+    destLat: string;
+    destLon: string;
+    destName: string;
+  }>();
 
   const handleSetFilter = (label: string | null) => {
     activeFilterRef.current = label;
@@ -363,14 +378,32 @@ export default function MapScreen() {
     mapRef.current?.setProjection({ type: "globe" });
   };
 
+  useEffect(() => {
+    setLocalSaved(isPlaceSaved(city?.name ?? ""));
+  }, [city?.name]);
+
   const toggleFavorite = () => {
     if (!city) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const exists = savedLocations.find((l) => l.name === city.name);
-    if (exists) {
-      setSavedLocations((prev) => prev.filter((l) => l.name !== city.name));
+    const saved = localSaved;
+    if (saved) setLocalSaved(true);
+
+    if (!saved) {
+      setLocalSaved(true);
+      setIsPlayingAnimation(true);
+      ref.current?.play();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      addPlace({
+        name: city.name,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        region: city.region,
+        country: city.country,
+        thumbnail: article?.thumbnail,
+      });
     } else {
-      setSavedLocations((prev) => [...prev, city]);
+      setLocalSaved(false);
+      removePlace(city.name);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
@@ -388,12 +421,44 @@ export default function MapScreen() {
     }
   };
 
-  const nextTheme = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const next = (mapThemeIndex + 1) % mapThemes.length;
-    setMapThemeIndex(next);
-    setMapStyle(mapThemes[next]);
-  };
+  useEffect(() => {
+    if (!destLat || !destLon || !destName) return;
+    if (didHandleParams.current) return;
+
+    const lat = parseFloat(destLat);
+    const lon = parseFloat(destLon);
+
+    const tryNavigate = () => {
+      if (!mapRef.current) {
+        setTimeout(tryNavigate, 200);
+        return;
+      }
+
+      didHandleParams.current = true;
+
+      mapRef.current.flyTo({
+        center: [lon, lat],
+        zoom: 12,
+        duration: 1500,
+      });
+
+      setTimeout(() => {
+        selectCity({
+          name: destName,
+          latitude: lat,
+          longitude: lon,
+        });
+      }, 1600);
+    };
+
+    setTimeout(tryNavigate, 500);
+  }, [destLat, destLon, destName]);
+
+  useEffect(() => {
+    return () => {
+      didHandleParams.current = false;
+    };
+  }, []);
 
   const headers = {
     "User-Agent": "Atlasys/1.0 (cactus_apps@proton.me)",
@@ -673,6 +738,24 @@ export default function MapScreen() {
     });
   };
 
+  const handleSelectTheme = (theme: MapTheme) => {
+    const currentCenter = mapCenterRef.current;
+    const currentBearing = lastBearingRef.current;
+
+    setCurrentThemeKey(theme.key);
+    setMapStyle(theme.url);
+    setMapStyleSheetOpen(false);
+
+    setTimeout(() => {
+      if (currentCenter && mapRef.current) {
+        mapRef.current.jumpTo({
+          center: currentCenter,
+          bearing: currentBearing,
+        });
+      }
+    }, 150);
+  };
+
   useEffect(() => {
     if (!start || !end) return;
 
@@ -697,22 +780,6 @@ export default function MapScreen() {
 
     fetchRoute().catch(console.error);
   }, [start, end]);
-
-  const buildRouteToPoi = async (poi: any) => {
-    if (!markerPos) return;
-
-    const url =
-      `https://router.project-osrm.org/route/v1/driving/` +
-      `${markerPos[0]},${markerPos[1]};${poi.lon},${poi.lat}` +
-      `?overview=full&geometries=geojson`;
-
-    const res = await fetch(url);
-    const json = await res.json();
-
-    if (!json.routes?.length) return;
-
-    setRoute(json.routes);
-  };
 
   const onMapClick = async (event: any) => {
     const { lng, lat } = event.lngLat;
@@ -781,10 +848,24 @@ export default function MapScreen() {
     } catch {}
   };
 
+  useEffect(() => {
+    let timer: any;
+
+    if (locationReady) {
+      setShowError(false);
+      timer = setTimeout(() => {
+        setShowError(true);
+      }, 5000);
+    }
+
+    return () => clearTimeout(timer);
+  }, [locationReady]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {!locationReady && (
-        <View
+      {error && (
+        <TouchableOpacity
+          onPress={() => setErrorSheetOpen(true)}
           style={{
             position: "absolute",
             top: Platform.OS === "ios" ? 110 : 150,
@@ -802,12 +883,42 @@ export default function MapScreen() {
             shadowRadius: 6,
             elevation: 6,
           }}
+          activeOpacity={0.8}
         >
-          <ActivityIndicator size="small" color="#007AFF" />
+          <AlertCircleIcon color="#d53636" />
           <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
-            Standort wird ermittelt...
+            {error}
           </Text>
-        </View>
+        </TouchableOpacity>
+      )}
+      {!locationReady && (
+        <TouchableOpacity
+          onPress={() => setErrorSheetOpen(true)}
+          style={{
+            position: "absolute",
+            top: Platform.OS === "ios" ? 110 : 150,
+            alignSelf: "center",
+            backgroundColor: "#24262E",
+            borderRadius: 20,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            zIndex: 100,
+            shadowColor: "#000",
+            shadowOpacity: 0.2,
+            shadowRadius: 6,
+            elevation: 6,
+          }}
+          activeOpacity={0.8}
+        >
+          {!showError && <ActivityIndicator size="small" color="#007AFF" />}
+          {showError && <AlertTriangle color="#FF3B30" />}
+          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
+            {showError ? ("Standort konnte nicht ermittelt werden") : ("Standort wird ermittelt...")}
+          </Text>
+        </TouchableOpacity>
       )}
       <MapProvider>
         {routePickMode && (
@@ -972,11 +1083,8 @@ export default function MapScreen() {
           ref={mapRef}
           options={{
             style: MapStyle,
-            center: [
-              location?.coords.longitude ?? 0,
-              location?.coords.latitude ?? 0,
-            ],
-            zoom: 12,
+            center: initialCenter.current,
+            zoom: initialZoom.current,
           }}
           listeners={{
             click: {
@@ -1421,7 +1529,7 @@ export default function MapScreen() {
               },
               {
                 icon: <MapIcon color="#1E293B" size={22} />,
-                onPress: nextTheme,
+                onPress: () => setMapStyleSheetOpen(true),
                 divider: true,
               },
               {
@@ -1771,11 +1879,26 @@ export default function MapScreen() {
                           alignItems: "center",
                         }}
                       >
-                        <Heart
-                          color={isSaved ? "#FF3B30" : "#666"}
-                          fill={isSaved ? "#FF3B30" : "transparent"}
-                          size={24}
+                        <LottieView
+                          source={require("@/assets/animations/heart-animation.json")}
+                          style={{
+                            width: 50,
+                            height: 50,
+                            position: "absolute",
+                            opacity: isPlayingAnimation ? 1 : 0,
+                          }}
+                          loop={false}
+                          ref={ref}
+                          autoPlay={false}
+                          onAnimationFinish={() => setIsPlayingAnimation(false)}
                         />
+                        {!isPlayingAnimation && (
+                          <Heart
+                            color={localSaved ? "#FF3B30" : "#6B7280"}
+                            fill={localSaved ? "#FF3B30" : "transparent"}
+                            size={24}
+                          />
+                        )}
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={shareCity}
@@ -1965,16 +2088,34 @@ export default function MapScreen() {
           onClose={() => setDownloadSheetOpen(false)}
           onDownloadComplete={() => {
             setDownloadSheetOpen(false);
-            // Optional: Toast anzeigen
           }}
         />
+        <ErrorSheet
+          open={errorSheetOpen}
+          onClose={() => setErrorSheetOpen(false)}
+          errorTitle="Netzwerkfehler"
+          error="Network request failed. Bitte überprüfe deine Internetverbindung."
+          errorCode="ERR_NETWORK_001"
+          stillAvailable={[
+            "Offline-Karten anzeigen",
+            "Gespeicherte Orte nutzen",
+            "Routen berechnen",
+          ]}
+          githubRepo="cactus-apps/atlasys"
+        />
       </MapProvider>
+      <MapStyleSheet
+        open={mapStyleSheetOpen}
+        currentTheme={currentThemeKey}
+        onSelect={handleSelectTheme}
+        onClose={() => setMapStyleSheetOpen(false)}
+      />
     </GestureHandlerRootView>
   );
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { cardBg, textColor, subTextColor, borderColor, isModern } = theme;
   const isDark = theme.isDark;
 
   return StyleSheet.create({

@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
-import "../app/i18n";
 import { t } from "i18next";
 import { useloadingStore } from "@/lib/storage/zustand";
 
