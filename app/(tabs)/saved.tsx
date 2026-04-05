@@ -11,13 +11,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
 import { Image } from "expo-image";
+import * as Sentry from "@sentry/react-native";
 import {
-  Heart,
   MapPin,
   Navigation,
   Share2,
   Trash2,
-  ChevronRight,
   Bookmark,
   Lock,
 } from "lucide-react-native";
@@ -79,7 +78,7 @@ export default function SavedScreen() {
         url: url,
       });
     } catch (err) {
-      console.error(err);
+      Sentry.captureException(err);
     }
   };
 

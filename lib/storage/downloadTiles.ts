@@ -9,6 +9,7 @@ import {
   EncodingType,
 } from "expo-file-system/legacy";
 import { tilesForBounds, ensureDir, MBTILES_DIR, MBTilesInfo } from "./mbtiles";
+import * as Sentry from "@sentry/react-native";
 
 const TILE_URL = "https://tiles.openfreemap.org/planet/v3";
 const CONCURRENT_DOWNLOADS = 3;
@@ -22,7 +23,9 @@ export type DownloadProgress = {
 };
 
 async function downloadSingleTile(
-  z: number, x: number, y: number
+  z: number,
+  x: number,
+  y: number,
 ): Promise<string | null> {
   const url = `${TILE_URL}/${z}/${x}/${y}.pbf`;
   const localUri = `${cacheDirectory}tile_${z}_${x}_${y}_${Date.now()}.pbf`;
@@ -43,7 +46,8 @@ async function downloadSingleTile(
 
     await deleteAsync(result.uri, { idempotent: true });
     return base64;
-  } catch {
+  } catch (err: any) {
+    Sentry.captureException(err);
     await deleteAsync(localUri, { idempotent: true });
     return null;
   }
@@ -56,7 +60,7 @@ export async function downloadRegion(
   minZoom: number,
   maxZoom: number,
   onProgress: (p: DownloadProgress) => void,
-  cancelRef: { cancelled: boolean }
+  cancelRef: { cancelled: boolean },
 ): Promise<MBTilesInfo | null> {
   await ensureDir();
 
@@ -65,12 +69,24 @@ export async function downloadRegion(
   const total = tiles.length;
 
   if (total === 0) {
-    onProgress({ total: 0, downloaded: 0, failed: 0, percent: 0, status: "error" });
+    onProgress({
+      total: 0,
+      downloaded: 0,
+      failed: 0,
+      percent: 0,
+      status: "error",
+    });
     return null;
   }
 
   // Progress sofort melden damit UI reagiert
-  onProgress({ total, downloaded: 0, failed: 0, percent: 0, status: "downloading" });
+  onProgress({
+    total,
+    downloaded: 0,
+    failed: 0,
+    percent: 0,
+    status: "downloading",
+  });
 
   const dbPath = `${MBTILES_DIR}${id}.mbtiles`;
 
@@ -101,10 +117,22 @@ export async function downloadRegion(
     // Metadata
     await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["name", name]);
     await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["format", "pbf"]);
-    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["minzoom", String(minZoom)]);
-    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["maxzoom", String(maxZoom)]);
-    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["bounds", `${west},${south},${east},${north}`]);
-    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["type", "overlay"]);
+    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", [
+      "minzoom",
+      String(minZoom),
+    ]);
+    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", [
+      "maxzoom",
+      String(maxZoom),
+    ]);
+    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", [
+      "bounds",
+      `${west},${south},${east},${north}`,
+    ]);
+    await db.runAsync("INSERT INTO metadata VALUES (?, ?)", [
+      "type",
+      "overlay",
+    ]);
     await db.runAsync("INSERT INTO metadata VALUES (?, ?)", ["version", "1"]);
 
     let downloaded = 0;
@@ -116,7 +144,13 @@ export async function downloadRegion(
       if (cancelRef.cancelled) {
         await db.closeAsync();
         await deleteAsync(dbPath, { idempotent: true });
-        onProgress({ total, downloaded, failed, percent: 0, status: "cancelled" });
+        onProgress({
+          total,
+          downloaded,
+          failed,
+          percent: 0,
+          status: "cancelled",
+        });
         return null;
       }
 
@@ -127,7 +161,7 @@ export async function downloadRegion(
         batch.map(async ({ z, x, y }) => {
           const base64 = await downloadSingleTile(z, x, y);
           return { z, x, y, base64 };
-        })
+        }),
       );
 
       // Sequenziell in DB schreiben (verhindert DB-Lock)
@@ -142,10 +176,12 @@ export async function downloadRegion(
               `INSERT OR REPLACE INTO tiles
                (zoom_level, tile_column, tile_row, tile_data)
                VALUES (?, ?, ?, ?)`,
-              [z, x, tmsY, base64]
+              [z, x, tmsY, base64],
             );
             downloaded++;
-          } catch {
+          } catch (err) {
+            Sentry.captureException(err);
+
             failed++;
           }
         } else {
@@ -169,7 +205,7 @@ export async function downloadRegion(
 
     // Dateigröße
     const fileInfo = await getInfoAsync(dbPath);
-    const size = fileInfo.exists ? (fileInfo as any).size ?? 0 : 0;
+    const size = fileInfo.exists ? ((fileInfo as any).size ?? 0) : 0;
 
     const info: MBTilesInfo = {
       id,
@@ -184,18 +220,26 @@ export async function downloadRegion(
     };
 
     // Metadata JSON speichern
-    await writeAsStringAsync(
-      `${MBTILES_DIR}${id}.json`,
-      JSON.stringify(info)
-    );
+    await writeAsStringAsync(`${MBTILES_DIR}${id}.json`, JSON.stringify(info));
 
     onProgress({ total, downloaded, failed, percent: 100, status: "done" });
     return info;
-
   } catch (err) {
-    await db.closeAsync().catch(() => {});
+    Sentry.captureException(err);
+
+    await db.closeAsync().catch(() => {
+      {
+        Sentry.captureException(err);
+      }
+    });
     await deleteAsync(dbPath, { idempotent: true });
-    onProgress({ total, downloaded: 0, failed: total, percent: 0, status: "error" });
+    onProgress({
+      total,
+      downloaded: 0,
+      failed: total,
+      percent: 0,
+      status: "error",
+    });
     return null;
   }
 }

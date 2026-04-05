@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import { router } from "expo-router";
 import { useAuthStore } from "../storage/zustand";
 import { initRevenueCat, checkPremiumStatus } from "./revenuecat";
+import * as Sentry from "@sentry/react-native";
 
 type AuthContextType = {
   user: User | null;
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const timeout = setTimeout(() => {
         setIsLoadingUser(false);
         console.warn("Auth initialization timed out.");
-      }, 10000); // 10s safety timeout
+      }, 10000);
 
       try {
         const { data } = await supabase.auth.getSession();
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error("Auth init error:", err);
+        Sentry.captureException(err);
       } finally {
         clearTimeout(timeout);
         setIsLoadingUser(false);
@@ -73,7 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserId(targetUser.id);
       await initRevenueCat(targetUser.id);
 
-      // Check RevenueCat status first
       const isPremium = await checkPremiumStatus();
 
       setSubscribed(isPremium || !!metadata.is_subscribed);
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         useAuthStore.setState({ savedPlaces: metadata.saved_places });
       }
     } catch (err) {
+      Sentry.captureException(err);
       console.error("Metadata sync error:", err);
     }
   };
@@ -103,17 +105,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           saved_places: savedPlaces,
         },
       });
-    } catch (e) {
-      console.error("Error syncing to Supabase:", e);
+    } catch (err) {
+      Sentry.captureException(err);
+      console.error("Error syncing to Supabase:", err);
     }
   };
 
-  // Dedicated store subscriber to push changes to Supabase
   useEffect(() => {
     if (!user) return;
 
     const unsub = useAuthStore.subscribe((state, prevState) => {
-      // Only sync if actual data changed
       if (
         JSON.stringify(state.savedPlaces) !==
           JSON.stringify(prevState.savedPlaces) ||
@@ -133,8 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
       setUser(data.user ?? null);
-    } catch (error) {
-      console.log("Fehler beim Abrufen des Benutzers:", error);
+    } catch (err) {
+      Sentry.captureException(err);
+      console.log("Fehler beim Abrufen des Benutzers:", err);
       setUser(null);
     } finally {
       setIsLoadingUser(false);
@@ -162,8 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await getUser();
 
       return null;
-    } catch (error: any) {
-      return error.message || "Fehler bei der Registrierung";
+    } catch (err: any) {
+      Sentry.captureException(err);
+      return err.message || "Fehler bei der Registrierung";
     }
   };
 
@@ -176,8 +179,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       await getUser();
       return null;
-    } catch (error: any) {
-      return error.message || "Fehler beim Login";
+    } catch (err: any) {
+      Sentry.captureException(err);
+      return err.message || "Fehler beim Login";
     }
   };
 
@@ -186,11 +190,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
-      // clearStore() is handled by onAuthStateChange above
       router.replace("/auth");
       alert("Logout erfolgreich");
-    } catch (error) {
-      console.error("Fehler beim Logout:", error);
+    } catch (err) {
+      Sentry.captureException(err);
+      console.error("Fehler beim Logout:", err);
     }
   };
 

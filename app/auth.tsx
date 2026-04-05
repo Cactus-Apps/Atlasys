@@ -8,7 +8,6 @@ import {
   Platform,
   Dimensions,
   Image,
-  useColorScheme,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,15 +15,8 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useTranslation } from "react-i18next";
 import { Mail, Lock, ArrowRight, Github } from "lucide-react-native";
-import { BlurView } from "expo-blur";
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  Layout,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
+import * as Sentry from "@sentry/react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
 
@@ -69,7 +61,8 @@ export default function AuthScreen() {
         if (err) setError(err);
         else router.replace("/");
       }
-    } catch (e) {
+    } catch (err) {
+      Sentry.captureException(err);
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -88,12 +81,7 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: theme.bg },
-      ]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -107,9 +95,7 @@ export default function AuthScreen() {
                 resizeMode="contain"
               />
             </View>
-            <Text
-              style={[styles.title, { color: theme.textColor }]}
-            >
+            <Text style={[styles.title, { color: theme.textColor }]}>
               {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
             </Text>
             <Text style={styles.subtitle}>
@@ -131,10 +117,7 @@ export default function AuthScreen() {
                 color={focusedInput === "email" ? "#2563EB" : "#94A3B8"}
               />
               <TextInput
-                style={[
-                  styles.input,
-                  { color: theme.textColor },
-                ]}
+                style={[styles.input, { color: theme.textColor }]}
                 placeholder={t("E-Mail")}
                 placeholderTextColor={theme.subTextColor}
                 value={email}
@@ -157,10 +140,7 @@ export default function AuthScreen() {
                 color={focusedInput === "password" ? "#2563EB" : "#94A3B8"}
               />
               <TextInput
-                style={[
-                  styles.input,
-                  { color: theme.textColor },
-                ]}
+                style={[styles.input, { color: theme.textColor }]}
                 placeholder={t("Password")}
                 placeholderTextColor={theme.subTextColor}
                 value={password}
@@ -204,7 +184,7 @@ export default function AuthScreen() {
               <TouchableOpacity
                 style={[
                   styles.socialBtn,
-                  { 
+                  {
                     backgroundColor: theme.cardBg,
                     borderColor: theme.borderColor,
                     borderRadius: theme.isModern ? 24 : 20,

@@ -5,6 +5,8 @@ node_modules/
 
 android
 
+ios
+
 # Expo
 .expo/
 dist/
@@ -37,5 +39,8 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+.env.local
+.env.local
 
 .env.local

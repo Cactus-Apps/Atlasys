@@ -8,6 +8,7 @@ import {
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
 import { useLocalSearchParams } from "expo-router";
+import * as Sentry from "@sentry/react-native";
 import Svg, {
   Circle,
   Polygon,
@@ -315,7 +316,7 @@ export default function MapScreen() {
       );
 
       if (!cancelled) setSub(s);
-    })().catch((e: any) => setError(e?.message ?? "Unknown error"));
+    })().catch((err: any) => Sentry.captureException(err));
 
     return () => {
       cancelled = true;
@@ -417,7 +418,7 @@ export default function MapScreen() {
         url: url,
       });
     } catch (err) {
-      console.error(err);
+      Sentry.captureException(err);
     }
   };
 
@@ -582,9 +583,7 @@ export default function MapScreen() {
           images: imageUrls,
         });
       } catch (err: any) {
-        if (err.name === "AbortError") return;
-        console.error(err);
-        setError("Fehler beim Laden der Wikipedia-Daten");
+        Sentry.captureException(err);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -615,7 +614,7 @@ export default function MapScreen() {
           });
         }
       } catch (err) {
-        console.error("Weather error:", err);
+        Sentry.captureException(err);
       }
     };
 
@@ -660,7 +659,7 @@ export default function MapScreen() {
       }));
       setResults(arr);
     } catch (err) {
-      Alert.alert(t("Search_error"), `${err}`);
+      Sentry.captureException(err);
       setResults([]);
     } finally {
       setLoadingSearch(false);
@@ -778,7 +777,7 @@ export default function MapScreen() {
       fitRouteBounds();
     };
 
-    fetchRoute().catch(console.error);
+    fetchRoute().catch((err: any) => Sentry.captureException(err));
   }, [start, end]);
 
   const onMapClick = async (event: any) => {
@@ -845,7 +844,9 @@ export default function MapScreen() {
       if (Math.abs(b - lastBearingRef.current) < 0.5) return;
       lastBearingRef.current = b;
       setBearing(b);
-    } catch {}
+    } catch (err: any) {
+      Sentry.captureException(err);
+    }
   };
 
   useEffect(() => {
@@ -916,7 +917,9 @@ export default function MapScreen() {
           {!showError && <ActivityIndicator size="small" color="#007AFF" />}
           {showError && <AlertTriangle color="#FF3B30" />}
           <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
-            {showError ? ("Standort konnte nicht ermittelt werden") : ("Standort wird ermittelt...")}
+            {showError
+              ? "Standort konnte nicht ermittelt werden"
+              : "Standort wird ermittelt..."}
           </Text>
         </TouchableOpacity>
       )}
@@ -976,7 +979,9 @@ export default function MapScreen() {
                     label =
                       data.display_name?.split(",").slice(0, 2).join(", ") ??
                       label;
-                  } catch {}
+                  } catch (err: any) {
+                    Sentry.captureException(err);
+                  }
 
                   const point: RoutePoint = { label, coordinate: [lng, lat] };
                   if (routePickMode === "start") setRouteStart(point);

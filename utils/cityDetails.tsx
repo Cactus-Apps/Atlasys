@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/react-native";
+
 const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY!;
 const RAPIDAPI_HOST = process.env.EXPO_PUBLIC_RAPIDAPI_HOST!;
 
@@ -20,7 +22,7 @@ export async function fetchCityDetails(cityName: string, countryCode?: string) {
           "X-RapidAPI-Key": RAPIDAPI_KEY ?? "",
           "X-RapidAPI-Host": RAPIDAPI_HOST ?? "",
         },
-      }
+      },
     );
 
     if (!res.ok) {
@@ -48,10 +50,9 @@ export async function fetchCityDetails(cityName: string, countryCode?: string) {
       wikiDataId: cityData.wikiDataId,
       type: cityData.type,
     };
-  } catch (err) {
+  } catch (err: any) {
+    Sentry.captureException(err);
     console.error("GeoDB Fetch Error:", err);
     return null;
   }
 }
-
-

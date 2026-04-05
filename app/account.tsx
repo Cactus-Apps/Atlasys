@@ -1,15 +1,14 @@
 // Version 1.3.6 - © Cactus Apps 2026
-import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@/lib/auth/auth-context";
 import { supabase } from "@/lib/auth/supabase";
 import { Avatar } from "@kolking/react-native-avatar";
 import * as Clipboard from "expo-clipboard";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { t } from "i18next";
-import { Frown, Info, LogOut, ChevronRight, ChevronLeft } from "lucide-react-native";
+import { Info, LogOut, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import * as Sentry from "@sentry/react-native";
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +17,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -66,6 +64,7 @@ export default function AccountScreen() {
           setEmail(data.user?.email ?? null);
         }
       } catch (err: any) {
+        Sentry.captureException(err);
         Alert.alert(t("Error_loading_account"));
       } finally {
         setLoading(false);
@@ -114,11 +113,11 @@ export default function AccountScreen() {
         const utc2 = Date.UTC(
           expires.getFullYear(),
           expires.getMonth(),
-          expires.getDate()
+          expires.getDate(),
         );
         const days = Math.max(
           0,
-          Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24))
+          Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)),
         );
         setdaysLeft(days);
       }
@@ -162,7 +161,7 @@ export default function AccountScreen() {
     if (WantToDelete) {
       setModalVisible2(false);
       if (!userId || !email) {
-        Alert.alert(t("Error"), t('User_ID_or_email_could_not_be_fetched'));
+        Alert.alert(t("Error"), t("User_ID_or_email_could_not_be_fetched"));
         return;
       }
 
@@ -179,7 +178,7 @@ export default function AccountScreen() {
         .lt("requested_at", tomorrow.toISOString());
 
       if (existing && existing.length > 0) {
-        Alert.alert(t("Limit_reached"), t('only_one_deletion'));
+        Alert.alert(t("Limit_reached"), t("only_one_deletion"));
         return;
       }
       const verification_code = Math.random()
@@ -200,7 +199,7 @@ export default function AccountScreen() {
 
       if (error) {
         console.error(error);
-        Alert.alert(t("Error"), t('Request_could_not_be_sent'));
+        Alert.alert(t("Error"), t("Request_could_not_be_sent"));
       } else {
         Alert.alert(t("Success"), t("deletion_request_created"));
         setRequest(data as any);
@@ -226,7 +225,7 @@ export default function AccountScreen() {
             setRequest(updated);
             updateProgress(updated.status);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -248,10 +247,13 @@ export default function AccountScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          style={styles.backButton}
+        >
           <ChevronLeft size={24} color={textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('Account')}</Text>
+        <Text style={styles.headerTitle}>{t("Account")}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -276,13 +278,19 @@ export default function AccountScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Account Security</Text>
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => copy(userId ?? "")}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => copy(userId ?? "")}
+          >
             <View style={styles.menuIconContainer}>
               <Info size={20} color="#2563EB" />
             </View>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuLabel}>User ID</Text>
-              <Text style={styles.menuValue} numberOfLines={1}>{userId}</Text>
+              <Text style={styles.menuValue} numberOfLines={1}>
+                {userId}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -298,44 +306,75 @@ export default function AccountScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.deleteButtonText}>{t('Delete_account')}</Text>
+              <Text style={styles.deleteButtonText}>{t("Delete_account")}</Text>
             )}
           </TouchableOpacity>
           <Text style={styles.dangerNote}>
-            Deleting your account is permanent and cannot be undone. All your data will be removed.
+            Deleting your account is permanent and cannot be undone. All your
+            data will be removed.
           </Text>
         </View>
 
-        {request && (request.status === "pending" || request.status === "completed") && (
-          <View style={styles.requestCard}>
-            <View style={styles.requestHeader}>
-              <Text style={styles.requestTitle}>Deletion Request</Text>
-              <View style={[styles.statusTag, { backgroundColor: request.status === 'pending' ? '#FEF3C7' : '#D1FAE5' }]}>
-                <Text style={[styles.statusTagText, { color: request.status === 'pending' ? '#92400E' : '#065F46' }]}>
-                  {request.status === "pending" ? t("Pending") : t("Completed")}
+        {request &&
+          (request.status === "pending" || request.status === "completed") && (
+            <View style={styles.requestCard}>
+              <View style={styles.requestHeader}>
+                <Text style={styles.requestTitle}>Deletion Request</Text>
+                <View
+                  style={[
+                    styles.statusTag,
+                    {
+                      backgroundColor:
+                        request.status === "pending" ? "#FEF3C7" : "#D1FAE5",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusTagText,
+                      {
+                        color:
+                          request.status === "pending" ? "#92400E" : "#065F46",
+                      },
+                    ]}
+                  >
+                    {request.status === "pending"
+                      ? t("Pending")
+                      : t("Completed")}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarWrapper}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${progress * 100}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {(progress * 100).toFixed(0)}% Progress
                 </Text>
               </View>
+
+              {daysLeft !== null && (
+                <Text style={styles.daysText}>
+                  {t(`Your_account_will_be_deleted_in`)} {daysLeft} {t("days")}
+                </Text>
+              )}
             </View>
+          )}
 
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBarWrapper}>
-                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
-              </View>
-              <Text style={styles.progressText}>{(progress * 100).toFixed(0)}% Progress</Text>
-            </View>
-
-            {daysLeft !== null && (
-              <Text style={styles.daysText}>
-                {t(`Your_account_will_be_deleted_in`)} {daysLeft} {t('days')}
-              </Text>
-            )}
-          </View>
-        )}
-
-        <TouchableOpacity onPress={signOut} style={styles.signOutWrapper} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={signOut}
+          style={styles.signOutWrapper}
+          activeOpacity={0.7}
+        >
           <View style={styles.signOutButton}>
             <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
-            <Text style={styles.signOutText}>{t('Sign_Out')}</Text>
+            <Text style={styles.signOutText}>{t("Sign_Out")}</Text>
           </View>
         </TouchableOpacity>
       </ScrollView>
@@ -348,20 +387,20 @@ export default function AccountScreen() {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{t('Delete_account')}</Text>
-            <Text style={styles.modalText}>{t('sure_to_delete')}</Text>
+            <Text style={styles.modalTitle}>{t("Delete_account")}</Text>
+            <Text style={styles.modalText}>{t("sure_to_delete")}</Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 onPress={deleteAccuntAction}
                 style={styles.modalDeleteButton}
               >
-                <Text style={styles.modalButtonText}>{t('Delete')}</Text>
+                <Text style={styles.modalButtonText}>{t("Delete")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setModalVisible2(false)}
                 style={styles.modalCancelButton}
               >
-                <Text style={styles.modalButtonText}>{t('Cancel')}</Text>
+                <Text style={styles.modalButtonText}>{t("Cancel")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -377,13 +416,15 @@ export default function AccountScreen() {
         >
           <View style={styles.modalBackground}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>{t('No_permission')}</Text>
-              <Text style={styles.modalText}>{t('no_permission_to_delete')}</Text>
+              <Text style={styles.modalTitle}>{t("No_permission")}</Text>
+              <Text style={styles.modalText}>
+                {t("no_permission_to_delete")}
+              </Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 style={styles.modalCancelButton}
               >
-                <Text style={styles.modalButtonText}>{t('okay')}</Text>
+                <Text style={styles.modalButtonText}>{t("okay")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -495,9 +536,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 44,
       height: 44,
       borderRadius: innerRadius,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(37, 99, 235, 0.1)"
+          : "#EFF6FF",
       alignItems: "center",
       justifyContent: "center",
     },
@@ -523,7 +566,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: defaultRadius,
       padding: 20,
       borderWidth: 1,
-      borderColor: theme.isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.1)",
+      borderColor: theme.isDark
+        ? "rgba(239, 68, 68, 0.2)"
+        : "rgba(239, 68, 68, 0.1)",
       shadowColor: "#000",
       shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
       shadowRadius: isModern ? 12 : 0,

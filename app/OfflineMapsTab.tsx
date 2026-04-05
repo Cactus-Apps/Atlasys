@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
+import * as Sentry from "@sentry/react-native";
 import {
   Trash2,
   Map,
@@ -15,9 +16,7 @@ import {
   ChevronLeft,
 } from "lucide-react-native";
 import Svg, { Circle, G } from "react-native-svg";
-import {
-  getTotalDiskCapacityAsync,
-} from "expo-file-system/legacy";
+import { getTotalDiskCapacityAsync } from "expo-file-system/legacy";
 import { listMBTiles, deleteMBTiles, MBTilesInfo } from "@/lib/storage/mbtiles";
 import { AlertDialog, Host } from "@expo/ui/jetpack-compose";
 import { router } from "expo-router";
@@ -55,7 +54,7 @@ function StorageRing({
       : `${(usedMB / 1024).toFixed(2)} GB`;
 
   return (
-    <View style={{ alignItems: "center", paddingVertical: 8}}>
+    <View style={{ alignItems: "center", paddingVertical: 8 }}>
       <View
         style={{
           width: size,
@@ -204,7 +203,9 @@ export default function OfflineMapsTab() {
     try {
       const total = await getTotalDiskCapacityAsync();
       if (total) setTotalBytes(total);
-    } catch {}
+    } catch {
+      (err: any) => Sentry.captureException(err);
+    }
   };
 
   useEffect(() => {
@@ -217,7 +218,7 @@ export default function OfflineMapsTab() {
         getInfoAsync(dir).then((info) => console.log("DIR EXISTS:", info));
         readDirectoryAsync(dir)
           .then((files) => console.log("FILES:", files))
-          .catch((e) => console.log("DIR EMPTY/MISSING:", e));
+          .catch((err) => Sentry.captureException(err));
       },
     );
   }, []);
@@ -272,7 +273,7 @@ export default function OfflineMapsTab() {
 
   if (!loading && maps.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30}}>
+      <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30 }}>
         {AlertDialogOverlay}
         <View
           style={{
@@ -300,7 +301,7 @@ export default function OfflineMapsTab() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30}}>
+    <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30 }}>
       {AlertDialogOverlay}
       <View
         style={{

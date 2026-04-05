@@ -13,7 +13,8 @@ import ko from "../locales/ko.json";
 import pt from "../locales/pt.json";
 import ru from "../locales/ru.json";
 import zh from "../locales/zh.json";
-
+import * as Sentry from "@sentry/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -40,7 +41,9 @@ i18n.use(initReactI18next).init({
 const storeLanguage = async (lng) => {
   try {
     await AsyncStorage.setItem(LANGUAGE_KEY, lng);
-  } catch (e) {}
+  } catch (err) {
+    Sentry.captureException(err);
+  }
 };
 
 const loadLanguage = async () => {
@@ -49,7 +52,9 @@ const loadLanguage = async () => {
     if (lng) {
       i18n.changeLanguage(lng);
     }
-  } catch (e) {}
+  } catch (err) {
+    Sentry.captureException(err);
+  }
 };
 
 const changeLanguage = async (lng) => {

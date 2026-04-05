@@ -3,12 +3,13 @@ import {
   SortableItem,
   SortableRenderItemProps,
 } from "react-native-reanimated-dnd";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Button } from "react-native";
 import { JSX, useCallback } from "react";
 import Gpskoords from "@/components/HomeScreenComponents/Gpskoords";
 import Clock from "@/components/HomeScreenComponents/Clock";
 import Weather from "@/components/weather";
 import Timer from "@/components/HomeScreenComponents/Timer";
+import * as Sentry from "@sentry/react-native";
 
 const componentMap: Record<string, JSX.Element> = {
   "1": <Clock />,
@@ -38,12 +39,20 @@ export default function Notification() {
   );
 
   return (
-    <Sortable
-      data={tasks}
-      renderItem={renderItem}
-      contentContainerStyle={{padding: 25}}
-      itemHeight={130}
-    />
+    <>
+      <Sortable
+        data={tasks}
+        renderItem={renderItem}
+        contentContainerStyle={{ padding: 25 }}
+        itemHeight={130}
+      />
+      <Button
+        title="Try!"
+        onPress={() => {
+          Sentry.captureException(new Error("First error"));
+        }}
+      />
+    </>
   );
 }
 

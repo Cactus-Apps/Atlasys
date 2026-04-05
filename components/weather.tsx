@@ -5,6 +5,7 @@ import { t } from "i18next";
 import LottieView from "lottie-react-native";
 import { RefreshCcw } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
+import * as Sentry from "@sentry/react-native";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -47,8 +48,10 @@ export default function Weather() {
 
       setLocation(coords);
       await fetchWeather(coords.latitude, coords.longitude);
-    } catch (e) {
-      console.warn("Fehler beim Bestimmen des Standorts", e);
+    } catch (err: any) {
+      Sentry.captureException(err);
+
+      console.warn("Fehler beim Bestimmen des Standorts", err);
       setError("Fehler beim Bestimmen des Standorts");
       setLocation(null);
       setWeather(null);
@@ -65,15 +68,17 @@ export default function Weather() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setWeather(json.current_weather || null);
-    } catch (e) {
-      console.warn("Error loading weather", e);
+    } catch (err: any) {
+      Sentry.captureException(err);
+
+      console.warn("Error loading weather", err);
       setError("Error loading weather");
       setWeather(null);
     }
   };
 
   const getAnimation = (
-    animations: string | { uri: string }
+    animations: string | { uri: string },
   ): string | { uri: string } => {
     switch (animations) {
       case t("Clear_sky"):
@@ -207,7 +212,7 @@ export default function Weather() {
   if (loading) {
     return (
       <View style={styles.card2}>
-        <CardSkeletonView/>
+        <CardSkeletonView />
       </View>
     );
   }
@@ -216,7 +221,10 @@ export default function Weather() {
     <View style={styles.container}>
       {error && (
         <View>
-          <LinearGradient colors={[theme.cardBg, theme.cardBg]} style={styles.card}>
+          <LinearGradient
+            colors={[theme.cardBg, theme.cardBg]}
+            style={styles.card}
+          >
             <View>
               <Text style={styles.error}>{error}</Text>
             </View>
@@ -262,62 +270,63 @@ export default function Weather() {
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useAppTheme>) => StyleSheet.create({
-  container: {
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  card: {
-    borderRadius: theme.isModern ? 24 : 16,
-    borderColor: "transparent",
-    borderWidth: 1,
-    width: 340,
-    height: 120,
-    elevation: 1,
-    marginVertical: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 13,
-    flexDirection: "row",
-  },
-  card2: {
-    borderRadius: theme.isModern ? 24 : 16,
-    borderColor: "transparent",
-    borderWidth: 0,
-    width: 340,
-    height: 120,
-    marginVertical: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 13,
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  temp: {
-    fontSize: 36,
-    fontWeight: "700",
-  },
-  error: {
-    color: "red",
-    marginVertical: 8,
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  button: {
-    fontSize: 21,
-    fontWeight: "600",
-    borderRadius: 8,
-    left: 308,
-    bottom: 10,
-    position: "absolute",
-    alignSelf: "center",
-  },
-});
+const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
+  StyleSheet.create({
+    container: {
+      justifyContent: "center",
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: "600",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    card: {
+      borderRadius: theme.isModern ? 24 : 16,
+      borderColor: "transparent",
+      borderWidth: 1,
+      width: 340,
+      height: 120,
+      elevation: 1,
+      marginVertical: 12,
+      paddingVertical: 13,
+      paddingHorizontal: 13,
+      flexDirection: "row",
+    },
+    card2: {
+      borderRadius: theme.isModern ? 24 : 16,
+      borderColor: "transparent",
+      borderWidth: 0,
+      width: 340,
+      height: 120,
+      marginVertical: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 13,
+      flexDirection: "row",
+      justifyContent: "center",
+    },
+    temp: {
+      fontSize: 36,
+      fontWeight: "700",
+    },
+    error: {
+      color: "red",
+      marginVertical: 8,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    button: {
+      fontSize: 21,
+      fontWeight: "600",
+      borderRadius: 8,
+      left: 308,
+      bottom: 10,
+      position: "absolute",
+      alignSelf: "center",
+    },
+  });

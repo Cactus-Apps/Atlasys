@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Check, X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import * as Sentry from "@sentry/react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -85,7 +86,7 @@ export default function DrawBoundsOverlay({
       const se = await mapRef.current.unproject([box.right, box.bottom]);
       onConfirm([nw.lng, se.lat, se.lng, nw.lat]); // west, south, east, north
     } catch {
-      // Fallback via mapCenterRef
+      (err: any) => Sentry.captureException(err);
       onCancel();
     }
   };
@@ -186,69 +187,70 @@ export default function DrawBoundsOverlay({
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useAppTheme>) => StyleSheet.create({
-  dimmed: { position: "absolute", backgroundColor: "rgba(0,0,0,0.45)" },
-  rect: {
-    position: "absolute",
-    borderWidth: 2,
-    borderColor: "#2563EB",
-    backgroundColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  crossH: {
-    position: "absolute",
-    width: "100%",
-    height: 1,
-    backgroundColor: "rgba(37,99,235,0.3)",
-  },
-  crossV: {
-    position: "absolute",
-    height: "100%",
-    width: 1,
-    backgroundColor: "rgba(37,99,235,0.3)",
-  },
-  handle: {
-    position: "absolute",
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#2563EB",
-    borderWidth: 3,
-    borderColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: theme.bg,
-    paddingTop: 54,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  cancelBtn: {
-    backgroundColor: theme.iconBg,
-    borderRadius: 20,
-    padding: 8,
-  },
-  confirmBtn: {
-    backgroundColor: "#2563EB",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  confirmText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  headerTitle: { color: theme.textColor, fontSize: 17, fontWeight: "700" },
-  headerSub: { color: theme.subTextColor, fontSize: 12, marginTop: 2 },
-});
+const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
+  StyleSheet.create({
+    dimmed: { position: "absolute", backgroundColor: "rgba(0,0,0,0.45)" },
+    rect: {
+      position: "absolute",
+      borderWidth: 2,
+      borderColor: "#2563EB",
+      backgroundColor: "transparent",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    crossH: {
+      position: "absolute",
+      width: "100%",
+      height: 1,
+      backgroundColor: "rgba(37,99,235,0.3)",
+    },
+    crossV: {
+      position: "absolute",
+      height: "100%",
+      width: 1,
+      backgroundColor: "rgba(37,99,235,0.3)",
+    },
+    handle: {
+      position: "absolute",
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: "#2563EB",
+      borderWidth: 3,
+      borderColor: "#fff",
+      shadowColor: "#000",
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 6,
+    },
+    header: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.bg,
+      paddingTop: 54,
+      paddingBottom: 16,
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    cancelBtn: {
+      backgroundColor: theme.iconBg,
+      borderRadius: 20,
+      padding: 8,
+    },
+    confirmBtn: {
+      backgroundColor: "#2563EB",
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    confirmText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+    headerTitle: { color: theme.textColor, fontSize: 17, fontWeight: "700" },
+    headerSub: { color: theme.subTextColor, fontSize: 12, marginTop: 2 },
+  });

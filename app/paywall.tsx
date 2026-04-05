@@ -7,11 +7,11 @@ import {
 } from "react-native";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Sentry from "@sentry/react-native";
 import {
-  ChevronRight,
   CheckCircle2,
   Rocket,
   Zap,
@@ -20,7 +20,6 @@ import {
   ChevronLeft,
 } from "lucide-react-native";
 import { purchasePremium } from "@/lib/auth/revenuecat";
-import { useColorScheme } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
 
@@ -31,7 +30,7 @@ export default function PaywallScreen() {
   const theme = useAppTheme();
   const isDark = theme.isDark;
   const styles = getStyles(theme);
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
 
   const handleSubscribe = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -42,12 +41,12 @@ export default function PaywallScreen() {
         setSubscribed(true);
         router.navigate("/onboarding");
       }
-    } catch (e: any) {
-      console.warn("Purchase error:", e.message);
-      // For development/mock purposes:
+    } catch (err: any) {
+      console.warn("Purchase error:", err.message);
+      Sentry.captureException(err);
       if (
-        e.message?.includes("placeholder") ||
-        e.message?.includes("configure")
+        err.message?.includes("placeholder") ||
+        err.message?.includes("configure")
       ) {
         setSubscribed(true);
         router.navigate("/onboarding");
@@ -178,9 +177,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 120,
       height: 120,
       borderRadius: isModern ? 60 : 60,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(37, 99, 235, 0.1)"
+          : "#EFF6FF",
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,
@@ -219,9 +220,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 48,
       height: 48,
       borderRadius: isModern ? 16 : 14,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(255, 255, 255, 0.03)" : "#F1F5F9"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(255, 255, 255, 0.03)"
+          : "#F1F5F9",
       alignItems: "center",
       justifyContent: "center",
     },
@@ -246,7 +249,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
       marginBottom: 24,
       borderWidth: 1,
-      borderColor: theme.isDark ? "rgba(37, 99, 235, 0.2)" : "rgba(37, 99, 235, 0.1)",
+      borderColor: theme.isDark
+        ? "rgba(37, 99, 235, 0.2)"
+        : "rgba(37, 99, 235, 0.1)",
     },
     pricingTitle: {
       fontSize: 14,

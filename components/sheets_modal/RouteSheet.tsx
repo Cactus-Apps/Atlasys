@@ -5,8 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  TextInput,
-  FlatList,
 } from "react-native";
 import BottomSheet, {
   BottomSheetScrollView,
@@ -21,8 +19,8 @@ import {
   Navigation,
   ArrowLeftRight,
   X,
-  Search,
 } from "lucide-react-native";
+import * as Sentry from "@sentry/react-native";
 
 type RoutePoint = { label: string; coordinate: [number, number] };
 type Profile = "driving" | "cycling" | "walking";
@@ -115,7 +113,8 @@ export default function RouteSheet({
     const text = await res.text();
     try {
       return JSON.parse(text);
-    } catch {
+    } catch (err: any) {
+      Sentry.captureException(err);
       return [];
     }
   };
@@ -188,7 +187,8 @@ export default function RouteSheet({
         duration: json.routes[0].duration,
       });
       onRouteReady(json.routes, profile);
-    } catch {
+    } catch (err: any) {
+      Sentry.captureException(err);
       setRouteError("Fehler beim Laden der Route");
     } finally {
       setLoading(false);
@@ -226,10 +226,10 @@ export default function RouteSheet({
       index={-1}
       snapPoints={["25%", "40%", "55%", "80%"]}
       onClose={onClose}
-      backgroundStyle={{ 
-        borderTopLeftRadius: theme.isModern ? 32 : 24, 
+      backgroundStyle={{
+        borderTopLeftRadius: theme.isModern ? 32 : 24,
         borderTopRightRadius: theme.isModern ? 32 : 24,
-        backgroundColor: theme.bg
+        backgroundColor: theme.bg,
       }}
       handleIndicatorStyle={{ backgroundColor: theme.subTextColor, width: 40 }}
       keyboardBehavior="extend"
@@ -467,7 +467,8 @@ export default function RouteSheet({
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } = theme;
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } =
+    theme;
 
   return StyleSheet.create({
     container: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -488,7 +489,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 6,
       paddingVertical: 10,
       borderRadius: isModern ? 16 : 12,
-      backgroundColor: theme.isDark ? (isModern ? "#1E293B" : "#24262E") : "#F1F5F9",
+      backgroundColor: theme.isDark
+        ? isModern
+          ? "#1E293B"
+          : "#24262E"
+        : "#F1F5F9",
     },
     modeBtnActive: { backgroundColor: "#007AFF" },
     modeLabel: { fontSize: 13, fontWeight: "600", color: subTextColor },
@@ -505,7 +510,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderWidth: 1.5,
       borderColor: borderColor,
     },
-    fieldWrapperActive: { borderColor: "#007AFF", backgroundColor: theme.isDark ? (isModern ? "#0F172A" : "#1e1e1e") : "#EFF6FF" },
+    fieldWrapperActive: {
+      borderColor: "#007AFF",
+      backgroundColor: theme.isDark
+        ? isModern
+          ? "#0F172A"
+          : "#1e1e1e"
+        : "#EFF6FF",
+    },
     dot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
     fieldInput: { flex: 1, fontSize: 15, color: textColor, paddingVertical: 2 },
     connectorRow: {
@@ -554,7 +566,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 16 : 12,
       marginBottom: 12,
     },
-    pickHintText: { color: "#007AFF", fontSize: 13, fontWeight: "500", flex: 1 },
+    pickHintText: {
+      color: "#007AFF",
+      fontSize: 13,
+      fontWeight: "500",
+      flex: 1,
+    },
     infoBox: {
       flexDirection: "row",
       alignItems: "center",
@@ -574,10 +591,22 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
     },
     resultItem: { flex: 1, alignItems: "center" },
-    resultValue: { fontSize: 22, fontWeight: "700", color: theme.isDark ? "#BFDBFE" : "#1E40AF" },
+    resultValue: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: theme.isDark ? "#BFDBFE" : "#1E40AF",
+    },
     resultLabel: { fontSize: 12, color: subTextColor, marginTop: 2 },
-    resultDivider: { width: 1, height: 40, backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#BFDBFE" },
-    errorBox: { padding: 14, backgroundColor: theme.isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2", borderRadius: isModern ? 16 : 12 },
+    resultDivider: {
+      width: 1,
+      height: 40,
+      backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#BFDBFE",
+    },
+    errorBox: {
+      padding: 14,
+      backgroundColor: theme.isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2",
+      borderRadius: isModern ? 16 : 12,
+    },
     errorText: { color: "#EF4444", fontSize: 14 },
   });
 };

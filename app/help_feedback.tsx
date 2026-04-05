@@ -10,9 +10,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
-import { ChevronRight, Github, Mail, MessageSquare, LifeBuoy, ChevronLeft } from "lucide-react-native";
+import {
+  ChevronRight,
+  Github,
+  Mail,
+  MessageSquare,
+  LifeBuoy,
+  ChevronLeft,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import * as Sentry from "@sentry/react-native";
 
 const HelpFeedback = () => {
   const theme = useAppTheme();
@@ -23,21 +31,24 @@ const HelpFeedback = () => {
 
   const openGithub = () => {
     Linking.openURL("https://github.com/Cactus-Apps/Atlasys/issues/new").catch(
-      (err) => console.error("An error occurred", err)
+      (err) => Sentry.captureException(err),
     );
   };
 
   const openEmail = () => {
-    Linking.openURL("mailto:cactus_apps@proton.me").catch(
-      (err) => console.error("An error occurred", err)
+    Linking.openURL("mailto:cactus_apps@proton.me").catch((err) =>
+      Sentry.captureException(err),
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
-          <ChevronLeft size={24} color={theme.textColor}/>
+        <TouchableOpacity
+          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          style={styles.backButton}
+        >
+          <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("Help & Feedback")}</Text>
         <View style={{ width: 44 }} />
@@ -49,27 +60,39 @@ const HelpFeedback = () => {
             <LifeBuoy size={48} color="#2563EB" strokeWidth={2.5} />
           </View>
           <Text style={styles.heroTitle}>How can we help?</Text>
-          <Text style={styles.heroSub}>We're here to assist you with any questions or issues.</Text>
+          <Text style={styles.heroSub}>
+            We're here to assist you with any questions or issues.
+          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Options</Text>
           <View style={styles.card}>
-            <TouchableOpacity style={styles.menuItem} onPress={openGithub} activeOpacity={0.7}>
-              <View style={[styles.menuIcon, { backgroundColor: '#F1F5F9' }]}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={openGithub}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: "#F1F5F9" }]}>
                 <Github size={22} color="#000" />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Report Bug on GitHub</Text>
-                <Text style={styles.menuSub}>Create an issue on our repository</Text>
+                <Text style={styles.menuSub}>
+                  Create an issue on our repository
+                </Text>
               </View>
               <ChevronRight size={18} color="#94a3b8" />
             </TouchableOpacity>
 
             <View style={styles.separator} />
 
-            <TouchableOpacity style={styles.menuItem} onPress={openEmail} activeOpacity={0.7}>
-              <View style={[styles.menuIcon, { backgroundColor: '#EEF2FF' }]}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={openEmail}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: "#EEF2FF" }]}>
                 <Mail size={22} color="#4F46E5" />
               </View>
               <View style={styles.menuTextContainer}>
@@ -84,13 +107,19 @@ const HelpFeedback = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Community</Text>
           <View style={styles.card}>
-            <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
-              <View style={[styles.menuIcon, { backgroundColor: '#F0FDF4' }]}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              activeOpacity={0.7}
+              onPress={() => Sentry.showFeedbackForm()}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: "#F0FDF4" }]}>
                 <MessageSquare size={22} color="#16A34A" />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Feature Requests</Text>
-                <Text style={styles.menuSub}>Suggest new ideas for Atlasys</Text>
+                <Text style={styles.menuSub}>
+                  Suggest new ideas for Atlasys
+                </Text>
               </View>
               <ChevronRight size={18} color="#94a3b8" />
             </TouchableOpacity>
@@ -140,9 +169,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 96,
       height: 96,
       borderRadius: isModern ? 32 : 48,
-      backgroundColor: isModern 
-        ? theme.iconBg 
-        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(37, 99, 235, 0.1)"
+          : "#EFF6FF",
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,

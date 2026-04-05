@@ -1,6 +1,7 @@
 import { User } from "@supabase/supabase-js";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/auth/supabase";
+import * as Sentry from "@sentry/react-native";
 
 type AuthContextType = {
   user: User | null;
@@ -37,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
       setUser(data.user ?? null);
-    } catch (error) {
-      console.log("Fehler beim Abrufen des Benutzers:", error);
+    } catch (err) {
+      Sentry.captureException(err);
       setUser(null);
     } finally {
       setIsLoadingUser(false);
@@ -66,8 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await getUser();
 
       return null;
-    } catch (error: any) {
-      return error.message || "Fehler bei der Registrierung";
+    } catch (err: any) {
+      Sentry.captureException(err);
+
+      return err.message || "Fehler bei der Registrierung";
     }
   };
 
@@ -80,8 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       await getUser();
       return null;
-    } catch (error: any) {
-      return error.message || "Fehler beim Login";
+    } catch (err: any) {
+      Sentry.captureException(err);
+
+      return err.message || "Fehler beim Login";
     }
   };
 
@@ -90,8 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
-    } catch (error) {
-      console.error("Fehler beim Logout:", error);
+    } catch (err) {
+      Sentry.captureException(err);
     }
   };
 

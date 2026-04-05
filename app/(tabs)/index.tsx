@@ -8,14 +8,9 @@ import {
   RefreshCw,
   X,
 } from "lucide-react-native";
+import * as Sentry from "@sentry/react-native";
 import React, { useEffect, useState } from "react";
-import {
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAppTheme } from "@/lib/theme";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
@@ -131,11 +126,10 @@ export default function HomeScreen() {
   };
 
   const askLocationPermission = async () => {
-     const {status} = await Location.requestForegroundPermissionsAsync();
-     setStatus(status);
-     console.error(status)
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    setStatus(status);
+    console.error(status);
   };
-
 
   const startWatching = async () => {
     try {
@@ -158,6 +152,7 @@ export default function HomeScreen() {
 
       setSubscription(sub);
     } catch (err: any) {
+      Sentry.captureException(err);
       setErrorMsg(err.message);
     } finally {
       setloadingGpsCoords(false);
@@ -193,74 +188,71 @@ export default function HomeScreen() {
     );
   } else {
     return (
-        <AuthProvider>
-          <GestureHandlerRootView style={{flex: 1}}>
-            <View style={styles.header}>
-              <TouchableOpacity onPress={askLocationPermission}>
+      <AuthProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={askLocationPermission}>
               <Image
                 source={require("@/assets/images/logo.png")}
                 style={styles.image}
               />
+            </TouchableOpacity>
+            {dragEnabled ? (
+              <TouchableOpacity
+                style={styles.more}
+                onPress={() => setDragEnabled(false)}
+              >
+                <Check strokeWidth={3} />
               </TouchableOpacity>
-              {dragEnabled ? (
-                <TouchableOpacity
-                  style={styles.more}
-                  onPress={() => setDragEnabled(false)}
-                >
-                  <Check strokeWidth={3} />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={styles.more}
-                  onPress={() => setModalVisible(true)}
-                >
-                  <EllipsisVertical strokeWidth={2} size={30} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={{ paddingVertical: 12 }} />
-            <View>
-              <Render
-                order={order}
-                setOrder={setOrder}
-                dragEnabled={dragEnabled}
-                onOrderChange={saveOrder}
-              />
-            </View>
-            {modalVisible && (
-              <View style={styles.customModal}>
-                <>
-                  <View style={styles.modalContent}>
-                    <View style={styles.close}>
-                      <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => setModalVisible(false)}
-                      >
-                        <X strokeWidth={3} />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ paddingTop: 20 }}>
-                      <TouchableOpacity
-                        onPress={Startdragging}
-                        style={styles.button}
-                      >
-                        <ArrowDownUp />
-                        <Text style={styles.text}>{t("Drag_Elements")}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={loadOrder}
-                        style={styles.button}
-                      >
-                        <RefreshCw />
-                        <Text style={styles.text}>{t("Reload")}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </>
-              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.more}
+                onPress={() => setModalVisible(true)}
+              >
+                <EllipsisVertical strokeWidth={2} size={30} />
+              </TouchableOpacity>
             )}
-          </GestureHandlerRootView>
-        </AuthProvider>
+          </View>
+          <View style={{ paddingVertical: 12 }} />
+          <View>
+            <Render
+              order={order}
+              setOrder={setOrder}
+              dragEnabled={dragEnabled}
+              onOrderChange={saveOrder}
+            />
+          </View>
+          {modalVisible && (
+            <View style={styles.customModal}>
+              <>
+                <View style={styles.modalContent}>
+                  <View style={styles.close}>
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={() => setModalVisible(false)}
+                    >
+                      <X strokeWidth={3} />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{ paddingTop: 20 }}>
+                    <TouchableOpacity
+                      onPress={Startdragging}
+                      style={styles.button}
+                    >
+                      <ArrowDownUp />
+                      <Text style={styles.text}>{t("Drag_Elements")}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={loadOrder} style={styles.button}>
+                      <RefreshCw />
+                      <Text style={styles.text}>{t("Reload")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </>
+            </View>
+          )}
+        </GestureHandlerRootView>
+      </AuthProvider>
     );
   }
 }
@@ -379,7 +371,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       width: 32,
       height: 32,
       borderRadius: theme.isModern ? 16 : 35,
-      backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+      backgroundColor: theme.isDark
+        ? "rgba(255, 255, 255, 0.1)"
+        : "rgba(0, 0, 0, 0.05)",
       justifyContent: "center",
       alignItems: "center",
     },
