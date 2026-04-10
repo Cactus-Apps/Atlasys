@@ -242,7 +242,7 @@ export default function RouteSheet({
         <View style={s.header}>
           <Text style={s.title}>Route planen</Text>
           <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-            <X size={20} color="#64748B" />
+            <X size={20} color={theme.subTextColor} />
           </TouchableOpacity>
         </View>
 
@@ -254,7 +254,7 @@ export default function RouteSheet({
               style={[s.modeBtn, profile === key && s.modeBtnActive]}
               onPress={() => setProfile(key)}
             >
-              <Icon size={20} color={profile === key ? "#fff" : "#64748B"} />
+              <Icon size={20} color={profile === key ? theme.white : theme.subTextColor} />
               <Text style={[s.modeLabel, profile === key && s.modeLabelActive]}>
                 {label}
               </Text>
@@ -271,17 +271,17 @@ export default function RouteSheet({
               focusedField === "start" && s.fieldWrapperActive,
             ]}
           >
-            <View style={[s.dot, { backgroundColor: "#22C55E" }]} />
+            <View style={[s.dot, { backgroundColor: theme.success }]} />
             <BottomSheetTextInput
               style={s.fieldInput}
               placeholder="Startpunkt eingeben..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subTextColor}
               value={startQuery}
               onChangeText={setStartQuery}
               onFocus={() => setFocusedField("start")}
             />
             {searchingStart ? (
-              <ActivityIndicator size="small" color="#94A3B8" />
+              <ActivityIndicator size="small" color={theme.subTextColor} />
             ) : (
               <TouchableOpacity
                 onPress={() => {
@@ -291,7 +291,7 @@ export default function RouteSheet({
               >
                 <MapPin
                   size={16}
-                  color={pickMode === "start" ? "#2563EB" : "#94A3B8"}
+                  color={pickMode === "start" ? theme.primary : theme.subTextColor}
                 />
               </TouchableOpacity>
             )}
@@ -308,7 +308,7 @@ export default function RouteSheet({
                 >
                   <Navigation
                     size={14}
-                    color="#64748B"
+                    color={theme.subTextColor}
                     style={{ marginTop: 2 }}
                   />
                   <View style={{ flex: 1 }}>
@@ -328,7 +328,7 @@ export default function RouteSheet({
           <View style={s.connectorRow}>
             <View style={s.connectorLine} />
             <TouchableOpacity onPress={onSwap} style={s.swapBtn}>
-              <ArrowLeftRight size={16} color="#64748B" />
+              <ArrowLeftRight size={16} color={theme.subTextColor} />
             </TouchableOpacity>
           </View>
 
@@ -339,17 +339,17 @@ export default function RouteSheet({
               focusedField === "end" && s.fieldWrapperActive,
             ]}
           >
-            <View style={[s.dot, { backgroundColor: "#EF4444" }]} />
+            <View style={[s.dot, { backgroundColor: theme.danger }]} />
             <BottomSheetTextInput
               style={s.fieldInput}
               placeholder="Ziel eingeben..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.subTextColor}
               value={endQuery}
               onChangeText={setEndQuery}
               onFocus={() => setFocusedField("end")}
             />
             {searchingEnd ? (
-              <ActivityIndicator size="small" color="#94A3B8" />
+              <ActivityIndicator size="small" color={theme.subTextColor} />
             ) : (
               <TouchableOpacity
                 onPress={() => {
@@ -359,7 +359,7 @@ export default function RouteSheet({
               >
                 <MapPin
                   size={16}
-                  color={pickMode === "end" ? "#2563EB" : "#94A3B8"}
+                  color={pickMode === "end" ? theme.primary : theme.subTextColor}
                 />
               </TouchableOpacity>
             )}
@@ -376,7 +376,7 @@ export default function RouteSheet({
                 >
                   <Navigation
                     size={14}
-                    color="#64748B"
+                    color={theme.subTextColor}
                     style={{ marginTop: 2 }}
                   />
                   <View style={{ flex: 1 }}>
@@ -396,7 +396,7 @@ export default function RouteSheet({
         {/* Pick-Modus Hinweis */}
         {pickMode && (
           <View style={s.pickHint}>
-            <Navigation size={16} color="#2563EB" />
+            <Navigation size={16} color={theme.primary} />
             <Text style={s.pickHintText}>
               Tippe auf die Karte um{" "}
               {pickMode === "start" ? "den Startpunkt" : "das Ziel"} zu setzen
@@ -407,7 +407,7 @@ export default function RouteSheet({
         {/* Route-Ergebnis */}
         {loading && (
           <View style={s.infoBox}>
-            <ActivityIndicator color="#2563EB" />
+            <ActivityIndicator color={theme.primary} />
             <Text style={s.infoText}>Route wird berechnet...</Text>
           </View>
         )}
@@ -438,7 +438,7 @@ export default function RouteSheet({
             onPress={fetchRoute}
             style={{
               marginTop: 16,
-              backgroundColor: "#2563EB",
+              backgroundColor: theme.primary,
               borderRadius: 14,
               paddingVertical: 16,
               flexDirection: "row",
@@ -448,12 +448,12 @@ export default function RouteSheet({
             }}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.white} />
             ) : (
               <>
-                <Navigation size={20} color="#fff" />
+                <Navigation size={20} color={theme.white} />
                 <Text
-                  style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
+                  style={{ color: theme.white, fontWeight: "700", fontSize: 16 }}
                 >
                   Route berechnen
                 </Text>
@@ -467,7 +467,7 @@ export default function RouteSheet({
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } =
+  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, iconBg, primary, primaryLight, tabIndicator, white, danger, dangerLight } =
     theme;
 
   return StyleSheet.create({
@@ -489,15 +489,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 6,
       paddingVertical: 10,
       borderRadius: isModern ? 16 : 12,
-      backgroundColor: theme.isDark
-        ? isModern
-          ? "#1E293B"
-          : "#24262E"
-        : "#F1F5F9",
+      backgroundColor: cardBgSecondary,
     },
-    modeBtnActive: { backgroundColor: "#007AFF" },
+    modeBtnActive: { backgroundColor: tabIndicator },
     modeLabel: { fontSize: 13, fontWeight: "600", color: subTextColor },
-    modeLabelActive: { color: "#fff" },
+    modeLabelActive: { color: white },
     fields: { marginBottom: 16 },
     fieldWrapper: {
       flexDirection: "row",
@@ -511,12 +507,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderColor: borderColor,
     },
     fieldWrapperActive: {
-      borderColor: "#007AFF",
-      backgroundColor: theme.isDark
-        ? isModern
-          ? "#0F172A"
-          : "#1e1e1e"
-        : "#EFF6FF",
+      borderColor: tabIndicator,
+      backgroundColor: primaryLight,
     },
     dot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
     fieldInput: { flex: 1, fontSize: 15, color: textColor, paddingVertical: 2 },
@@ -562,12 +554,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
       gap: 8,
       padding: 12,
-      backgroundColor: theme.isDark ? "rgba(37,99,235,0.1)" : "#EFF6FF",
+      backgroundColor: primaryLight,
       borderRadius: isModern ? 16 : 12,
       marginBottom: 12,
     },
     pickHintText: {
-      color: "#007AFF",
+      color: tabIndicator,
       fontSize: 13,
       fontWeight: "500",
       flex: 1,
@@ -585,7 +577,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     infoText: { color: subTextColor, fontSize: 14 },
     resultBox: {
       flexDirection: "row",
-      backgroundColor: theme.isDark ? "rgba(37,99,235,0.1)" : "#EFF6FF",
+      backgroundColor: primaryLight,
       borderRadius: isModern ? 24 : 16,
       padding: 20,
       alignItems: "center",
@@ -594,19 +586,19 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     resultValue: {
       fontSize: 22,
       fontWeight: "700",
-      color: theme.isDark ? "#BFDBFE" : "#1E40AF",
+      color: primary,
     },
     resultLabel: { fontSize: 12, color: subTextColor, marginTop: 2 },
     resultDivider: {
       width: 1,
       height: 40,
-      backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#BFDBFE",
+      backgroundColor: borderColor,
     },
     errorBox: {
       padding: 14,
-      backgroundColor: theme.isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2",
+      backgroundColor: dangerLight,
       borderRadius: isModern ? 16 : 12,
     },
-    errorText: { color: "#EF4444", fontSize: 14 },
+    errorText: { color: danger, fontSize: 14 },
   });
 };

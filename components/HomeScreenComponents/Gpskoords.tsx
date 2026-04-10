@@ -122,7 +122,7 @@ function Gpskoords() {
       <View>
         <MapPin
           style={{ marginLeft: 120, marginTop: 22 }}
-          color="#EF4444"
+          color={theme.danger}
           strokeWidth={3}
           size={36}
         />

@@ -16,6 +16,8 @@ import zh from "../locales/zh.json";
 import * as Sentry from "@sentry/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const LANGUAGE_KEY = "userLanguage";
+
 i18n.use(initReactI18next).init({
   resources: {
     ar: { translation: ar },

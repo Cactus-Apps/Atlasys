@@ -17,10 +17,12 @@ import {
   MessageSquare,
   LifeBuoy,
   ChevronLeft,
+  TriangleAlertIcon,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as Sentry from "@sentry/react-native";
+import { FeedbackWidget } from "@sentry/react-native";
 
 const HelpFeedback = () => {
   const theme = useAppTheme();
@@ -41,6 +43,16 @@ const HelpFeedback = () => {
     );
   };
 
+  const handleBug = () => {
+    Sentry.setTag("type", "bug");
+    Sentry.showFeedbackWidget();
+  };
+
+  const handleFeature = () => {
+    Sentry.setTag("type", "feature");
+    Sentry.showFeedbackWidget();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -57,7 +69,7 @@ const HelpFeedback = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroSection}>
           <View style={styles.iconCircle}>
-            <LifeBuoy size={48} color="#2563EB" strokeWidth={2.5} />
+            <LifeBuoy size={48} color={theme.primary} strokeWidth={2.5} />
           </View>
           <Text style={styles.heroTitle}>How can we help?</Text>
           <Text style={styles.heroSub}>
@@ -73,47 +85,64 @@ const HelpFeedback = () => {
               onPress={openGithub}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuIcon, { backgroundColor: "#F1F5F9" }]}>
-                <Github size={22} color="#000" />
+              <View style={[styles.menuIcon, { backgroundColor: theme.cardBgSecondary }]}>
+                <Github size={22} color={theme.black} />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Report Bug on GitHub</Text>
                 <Text style={styles.menuSub}>
-                  Create an issue on our repository
+                  Create an issue (GitHub account required)
                 </Text>
               </View>
-              <ChevronRight size={18} color="#94a3b8" />
+              <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
 
             <View style={styles.separator} />
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={openEmail}
               activeOpacity={0.7}
+              onPress={handleBug}
             >
-              <View style={[styles.menuIcon, { backgroundColor: "#EEF2FF" }]}>
-                <Mail size={22} color="#4F46E5" />
+              <View style={[styles.menuIcon, { backgroundColor: theme.dangerLight }]}>
+                <TriangleAlertIcon size={22} color={theme.danger} />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Email Support</Text>
-                <Text style={styles.menuSub}>cactus_apps@proton.me</Text>
+                <Text style={styles.menuLabel}>Bug Report</Text>
+                <Text style={styles.menuSub}>Report found bugs in Atlasys</Text>
               </View>
-              <ChevronRight size={18} color="#94a3b8" />
+              <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Community</Text>
+          <Text style={styles.sectionTitle}>Support</Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
+              onPress={openEmail}
               activeOpacity={0.7}
-              onPress={() => Sentry.showFeedbackForm()}
             >
-              <View style={[styles.menuIcon, { backgroundColor: "#F0FDF4" }]}>
-                <MessageSquare size={22} color="#16A34A" />
+              <View style={[styles.menuIcon, { backgroundColor: theme.purpleLight }]}>
+                <Mail size={22} color={theme.purple} />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Email Support</Text>
+                <Text style={styles.menuSub}>cactus_apps@proton.me</Text>
+              </View>
+              <ChevronRight size={18} color={theme.chevronColor} />
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.navigate("/feature_request")}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: theme.successLight }]}>
+                <MessageSquare size={22} color={theme.success} />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Feature Requests</Text>
@@ -121,7 +150,7 @@ const HelpFeedback = () => {
                   Suggest new ideas for Atlasys
                 </Text>
               </View>
-              <ChevronRight size={18} color="#94a3b8" />
+              <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -131,7 +160,7 @@ const HelpFeedback = () => {
 };
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, primary, primaryLight, danger, dangerLight, purple, purpleLight, success, successLight, chevronColor } = theme;
 
   return StyleSheet.create({
     container: {
@@ -169,11 +198,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 96,
       height: 96,
       borderRadius: isModern ? 32 : 48,
-      backgroundColor: isModern
-        ? theme.iconBg
-        : theme.isDark
-          ? "rgba(37, 99, 235, 0.1)"
-          : "#EFF6FF",
+      backgroundColor: isModern ? theme.iconBg : primaryLight,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,

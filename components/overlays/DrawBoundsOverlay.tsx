@@ -179,7 +179,7 @@ export default function DrawBoundsOverlay({
           <Text style={s.headerSub}>Ecken ziehen · Rechteck verschieben</Text>
         </View>
         <TouchableOpacity onPress={handleConfirm} style={s.confirmBtn}>
-          <Check size={18} color="#fff" />
+          <Check size={18} color={theme.white} />
           <Text style={s.confirmText}>OK</Text>
         </TouchableOpacity>
       </View>
@@ -187,13 +187,16 @@ export default function DrawBoundsOverlay({
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
-  StyleSheet.create({
-    dimmed: { position: "absolute", backgroundColor: "rgba(0,0,0,0.45)" },
+const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
+  const { primary, bg, iconBg, textColor, subTextColor, white, overlay } =
+    theme;
+
+  return StyleSheet.create({
+    dimmed: { position: "absolute", backgroundColor: overlay },
     rect: {
       position: "absolute",
       borderWidth: 2,
-      borderColor: "#2563EB",
+      borderColor: primary,
       backgroundColor: "transparent",
       justifyContent: "center",
       alignItems: "center",
@@ -202,22 +205,24 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       position: "absolute",
       width: "100%",
       height: 1,
-      backgroundColor: "rgba(37,99,235,0.3)",
+      backgroundColor: primary,
+      opacity: 0.3,
     },
     crossV: {
       position: "absolute",
       height: "100%",
       width: 1,
-      backgroundColor: "rgba(37,99,235,0.3)",
+      backgroundColor: primary,
+      opacity: 0.3,
     },
     handle: {
       position: "absolute",
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       borderWidth: 3,
-      borderColor: "#fff",
+      borderColor: white,
       shadowColor: "#000",
       shadowOpacity: 0.3,
       shadowRadius: 4,
@@ -228,7 +233,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       top: 0,
       left: 0,
       right: 0,
-      backgroundColor: theme.bg,
+      backgroundColor: bg,
       paddingTop: 54,
       paddingBottom: 16,
       paddingHorizontal: 16,
@@ -237,12 +242,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       gap: 12,
     },
     cancelBtn: {
-      backgroundColor: theme.iconBg,
+      backgroundColor: iconBg,
       borderRadius: 20,
       padding: 8,
     },
     confirmBtn: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       borderRadius: 20,
       paddingHorizontal: 16,
       paddingVertical: 8,
@@ -250,7 +255,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       alignItems: "center",
       gap: 6,
     },
-    confirmText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-    headerTitle: { color: theme.textColor, fontSize: 17, fontWeight: "700" },
-    headerSub: { color: theme.subTextColor, fontSize: 12, marginTop: 2 },
+    confirmText: { color: white, fontWeight: "700", fontSize: 15 },
+    headerTitle: { color: textColor, fontSize: 17, fontWeight: "700" },
+    headerSub: { color: subTextColor, fontSize: 12, marginTop: 2 },
   });
+};

@@ -85,7 +85,7 @@ function Timer() {
       <View>
         <TimerIcon
           style={{ left: 158, top: 22, position: "absolute" }}
-          color="#22C55E"
+          color={theme.success}
           strokeWidth={3}
           size={36}
         />

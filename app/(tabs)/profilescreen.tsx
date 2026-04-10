@@ -163,14 +163,14 @@ export function ProfileScreen() {
                 email={email ?? undefined}
                 colorize={true}
                 radius={45}
-                badgeColor="#2563EB"
+                badgeColor={theme.primary}
               />
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{name}</Text>
               <Text style={styles.profileEmail}>{email}</Text>
               <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
-                <Rocket size={12} color="#fff" fill="#fff" />
+                <Rocket size={12} color={theme.white} fill={theme.white} />
                 <Text style={styles.badgeText}>Premium User</Text>
               </TouchableOpacity>
             </View>
@@ -213,7 +213,7 @@ export function ProfileScreen() {
                       </View>
                       <ChevronRight
                         size={18}
-                        color={styles.chevronColor}
+                        color={theme.chevronColor}
                         strokeWidth={3}
                       />
                     </TouchableOpacity>
@@ -238,7 +238,7 @@ export function ProfileScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, primary, white, chevronColor } = theme;
 
   const defaultRadius = isModern ? 24 : 20;
   const innerRadius = isModern ? 16 : 12;
@@ -251,7 +251,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     content: {
       paddingBottom: 40,
     },
-    chevronColor: theme.isDark ? "#4b5563" : ("#94a3b8" as any),
+    chevronColor: chevronColor,
     profileHeader: {
       padding: 30,
       paddingTop: 60,
@@ -285,7 +285,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     badge: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       alignSelf: "flex-start",
       paddingHorizontal: 8,
       paddingVertical: 4,
@@ -294,7 +294,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 4,
     },
     badgeText: {
-      color: "#fff",
+      color: white,
       fontSize: 11,
       fontWeight: "700",
     },
@@ -318,7 +318,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderWidth: 1,
       borderColor: borderColor,
       overflow: "hidden",
-      shadowColor: "#000",
+      shadowColor: theme.black,
       shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
       shadowRadius: isModern ? 12 : 0,
       elevation: isModern ? 4 : 0,
@@ -361,7 +361,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     footerText: {
       fontSize: 12,
-      color: "#94a3b8",
+      color: chevronColor,
       fontWeight: "600",
     },
   });

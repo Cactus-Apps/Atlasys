@@ -84,11 +84,11 @@ export default function Info() {
               style={styles.menuItem}
               onPress={() => router.navigate("/licenses")}
             >
-              <View style={[styles.menuIcon, { backgroundColor: '#EEF2FF' }]}>
-                <Copyright size={20} color="#4F46E5" />
+              <View style={[styles.menuIcon, { backgroundColor: theme.purpleLight }]}>
+                <Copyright size={20} color={theme.purple} />
               </View>
               <Text style={styles.menuLabel}>{t("licenses")}</Text>
-              <ChevronRight size={18} color="#94a3b8" />
+              <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
 
             <View style={styles.separator} />
@@ -97,11 +97,11 @@ export default function Info() {
               style={styles.menuItem}
               onPress={() => router.navigate("/updatelog")}
             >
-              <View style={[styles.menuIcon, { backgroundColor: '#F0FDF4' }]}>
-                <List size={20} color="#16A34A" />
+              <View style={[styles.menuIcon, { backgroundColor: theme.successLight }]}>
+                <List size={20} color={theme.success} />
               </View>
               <Text style={styles.menuLabel}>{t("update_log")}</Text>
-              <ChevronRight size={18} color="#94a3b8" />
+              <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -113,7 +113,21 @@ export default function Info() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    iconBg,
+    isModern,
+    purple,
+    purpleLight,
+    success,
+    successLight,
+    chevronColor,
+  } = theme;
 
   return StyleSheet.create({
     container: {
@@ -189,9 +203,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 44,
       height: 44,
       borderRadius: isModern ? 16 : 22,
-      backgroundColor: isModern
-        ? theme.iconBg
-        : (theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9"),
+      backgroundColor: isModern ? iconBg : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,

@@ -73,7 +73,7 @@ export default function Licenses() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.introSection}>
-          <FileText size={40} color="#2563EB" strokeWidth={2} />
+          <FileText size={40} color={theme.primary} strokeWidth={2} />
           <Text style={styles.introTitle}>Open Source Licenses</Text>
           <Text style={styles.introSub}>
             The software components used in GPS Explore.
@@ -94,7 +94,17 @@ export default function Licenses() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isDark,
+    isModern,
+    primary,
+  } = theme;
 
   return StyleSheet.create({
     container: {
@@ -156,7 +166,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginBottom: 12,
     },
     licenseContentWrapper: {
-      backgroundColor: theme.isDark ? "rgba(255, 255, 255, 0.03)" : "#F8FAFC",
+      backgroundColor: cardBgSecondary,
       padding: 16,
       borderRadius: isModern ? 24 : 16,
       borderWidth: 1,
@@ -165,7 +175,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     licenseText: {
       fontSize: 13,
       lineHeight: 20,
-      color: theme.isDark ? "#A1A1AA" : "#4B5563",
+      color: subTextColor,
       fontFamily: "monospace",
     },
   });

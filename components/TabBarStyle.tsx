@@ -80,8 +80,7 @@ export function CustomTabBar1({
         <View style={styles.indicatorMask}>
           <Animated.View
             style={[
-              styles.indicator,
-              { width: INDICATOR_WIDTH },
+              { width: INDICATOR_WIDTH, height: 4, backgroundColor: theme.accentColor, borderRadius: 2 },
               indicatorStyle,
             ]}
           />
@@ -93,7 +92,7 @@ export function CustomTabBar1({
           const label = options.title ?? route.name;
 
           const color = isFocused
-            ? "#007AFF"
+            ? theme.accentColor
             : theme.subTextColor;
 
           return (

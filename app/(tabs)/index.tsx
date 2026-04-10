@@ -176,13 +176,13 @@ export default function HomeScreen() {
 
   if (Admin) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ fontSize: 18, color: "#000" }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.bg }}>
+        <Text style={{ fontSize: 18, color: theme.black }}>
           Admin Panel Development Version
         </Text>
-        <Text style={{ color: "#000" }}>Notifications active.</Text>
+        <Text style={{ color: theme.black }}>Notifications active.</Text>
         <TouchableOpacity onPress={() => router.navigate("/_sitemap")}>
-          <Text style={{ color: "#000" }}> navigate </Text>
+          <Text style={{ color: theme.black }}> navigate </Text>
         </TouchableOpacity>
       </View>
     );

@@ -88,7 +88,7 @@ export default function OnboardingScreen() {
             style={styles.content}
           >
             <View style={styles.iconCircle}>
-              <Zap size={48} color="#2563EB" />
+              <Zap size={48} color={theme.primary} />
             </View>
             <Text style={styles.title}>Welcome to GPS Pro</Text>
             <Text style={styles.subtitle}>
@@ -116,7 +116,7 @@ export default function OnboardingScreen() {
               >
                 <Bell
                   size={24}
-                  color={localSettings.notifications ? "#2563EB" : "#64748b"}
+                  color={localSettings.notifications ? theme.primary : theme.chevronColor}
                 />
                 <View style={styles.optionText}>
                   <Text
@@ -132,9 +132,9 @@ export default function OnboardingScreen() {
                 <Switch
                   value={localSettings.notifications}
                   onValueChange={() => toggleSetting("notifications")}
-                  trackColor={{ false: "#d1d5db", true: "#bfdbfe" }}
+                  trackColor={{ false: theme.cardBgSecondary, true: theme.primaryLight }}
                   thumbColor={
-                    localSettings.notifications ? "#2563EB" : "#f4f3f4"
+                    localSettings.notifications ? theme.primary : theme.white
                   }
                 />
               </TouchableOpacity>
@@ -148,7 +148,7 @@ export default function OnboardingScreen() {
               >
                 <MapPin
                   size={24}
-                  color={localSettings.locationSharing ? "#2563EB" : "#64748b"}
+                  color={localSettings.locationSharing ? theme.primary : theme.chevronColor}
                 />
                 <View style={styles.optionText}>
                   <Text
@@ -166,9 +166,9 @@ export default function OnboardingScreen() {
                 <Switch
                   value={localSettings.locationSharing}
                   onValueChange={() => toggleSetting("locationSharing")}
-                  trackColor={{ false: "#d1d5db", true: "#bfdbfe" }}
+                  trackColor={{ false: theme.cardBgSecondary, true: theme.primaryLight }}
                   thumbColor={
-                    localSettings.locationSharing ? "#2563EB" : "#f4f3f4"
+                    localSettings.locationSharing ? theme.primary : theme.white
                   }
                 />
               </TouchableOpacity>
@@ -182,7 +182,7 @@ export default function OnboardingScreen() {
               >
                 <ShieldCheck
                   size={24}
-                  color={localSettings.analytics ? "#2563EB" : "#64748b"}
+                  color={localSettings.analytics ? theme.primary : theme.chevronColor}
                 />
                 <View style={styles.optionText}>
                   <Text
@@ -200,8 +200,8 @@ export default function OnboardingScreen() {
                 <Switch
                   value={localSettings.analytics}
                   onValueChange={() => toggleSetting("analytics")}
-                  trackColor={{ false: "#d1d5db", true: "#bfdbfe" }}
-                  thumbColor={localSettings.analytics ? "#2563EB" : "#f4f3f4"}
+                  trackColor={{ false: theme.cardBgSecondary, true: theme.primaryLight }}
+                  thumbColor={localSettings.analytics ? theme.primary : theme.white}
                 />
               </TouchableOpacity>
             </View>
@@ -210,8 +210,8 @@ export default function OnboardingScreen() {
       case 2:
         return (
           <Animated.View entering={FadeInUp} style={styles.content}>
-            <View style={[styles.iconCircle, { backgroundColor: "#FEF3C7" }]}>
-              <Star size={48} color="#D97706" />
+            <View style={[styles.iconCircle, { backgroundColor: theme.warningLight }]}>
+              <Star size={48} color={theme.warning} />
             </View>
             <Text style={styles.title}>Unlock Premium</Text>
             <Text style={styles.subtitle}>
@@ -220,15 +220,15 @@ export default function OnboardingScreen() {
 
             <View style={styles.premiumList}>
               <View style={styles.premiumItem}>
-                <CheckCircle2 size={20} color="#059669" />
+                <CheckCircle2 size={20} color={theme.success} />
                 <Text style={styles.premiumText}>Ad-free experience</Text>
               </View>
               <View style={styles.premiumItem}>
-                <CheckCircle2 size={20} color="#059669" />
+                <CheckCircle2 size={20} color={theme.success} />
                 <Text style={styles.premiumText}>Offline maps access</Text>
               </View>
               <View style={styles.premiumItem}>
-                <CheckCircle2 size={20} color="#059669" />
+                <CheckCircle2 size={20} color={theme.success} />
                 <Text style={styles.premiumText}>Unlimited saved places</Text>
               </View>
             </View>
@@ -291,7 +291,7 @@ export default function OnboardingScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { bg, cardBg, cardBgSecondary, primaryLight, textColor, subTextColor, borderColor, isModern, primary, primaryDark, warning, warningLight, white, chevronColor } = theme;
 
   return StyleSheet.create({
     container: {
@@ -307,10 +307,10 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     progressBar: {
       height: 4,
       borderRadius: 2,
-      backgroundColor: theme.isDark ? "rgba(255,255,255,0.1)" : "#E2E8F0",
+      backgroundColor: cardBgSecondary,
     },
     progressBarActive: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
     },
     main: {
       flex: 1,
@@ -326,7 +326,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 32 : 50,
       backgroundColor: isModern 
         ? theme.iconBg 
-        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#DBEAFE"),
+        : primaryLight,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 32,
@@ -360,8 +360,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderColor: borderColor,
     },
     optionCardActive: {
-      borderColor: isModern ? "#3B82F6" : "#BFDBFE",
-      backgroundColor: theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF",
+      borderColor: primary,
+      backgroundColor: primaryLight,
     },
     optionText: {
       flex: 1,
@@ -373,7 +373,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: textColor,
     },
     optionTitleActive: {
-      color: "#2563EB",
+      color: primary,
     },
     optionSub: {
       fontSize: 13,
@@ -401,11 +401,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       backgroundColor: cardBg,
       borderRadius: isModern ? 24 : 20,
       borderWidth: 2,
-      borderColor: "#F59E0B",
+      borderColor: warning,
       alignItems: "center",
     },
     premiumBtnText: {
-      color: "#D97706",
+      color: warning,
       fontSize: 16,
       fontWeight: "800",
     },
@@ -414,14 +414,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       paddingBottom: Platform.OS === "ios" ? 0 : 32,
     },
     nextBtn: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       padding: 20,
       borderRadius: isModern ? 24 : 24,
       gap: 8,
-      shadowColor: "#2563EB",
+      shadowColor: primary,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.3,
       shadowRadius: 12,
@@ -433,7 +433,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       elevation: 0,
     },
     nextBtnText: {
-      color: "#FFFFFF",
+      color: white,
       fontSize: 18,
       fontWeight: "800",
     },

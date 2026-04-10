@@ -316,7 +316,13 @@ export default function MapScreen() {
       );
 
       if (!cancelled) setSub(s);
-    })().catch((err: any) => Sentry.captureException(err));
+    })().catch((error: unknown) =>
+      Sentry.captureException(
+        error instanceof Error
+          ? error
+          : new Error("Failed to initialize location watcher"),
+      ),
+    );
 
     return () => {
       cancelled = true;
@@ -417,8 +423,8 @@ export default function MapScreen() {
         message: `Schau dir diesen Ort an: ${city.name}\n${url}`,
         url: url,
       });
-    } catch (err) {
-      Sentry.captureException(err);
+    } catch (error) {
+      Sentry.captureException(error);
     }
   };
 
@@ -582,8 +588,8 @@ export default function MapScreen() {
           thumbnail: finalThumbnail,
           images: imageUrls,
         });
-      } catch (err: any) {
-        Sentry.captureException(err);
+      } catch (error) {
+        Sentry.captureException(error);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -613,8 +619,8 @@ export default function MapScreen() {
             code: data.current_weather.weathercode,
           });
         }
-      } catch (err) {
-        Sentry.captureException(err);
+      } catch (error) {
+        Sentry.captureException(error);
       }
     };
 
@@ -658,8 +664,8 @@ export default function MapScreen() {
         population: it.population,
       }));
       setResults(arr);
-    } catch (err) {
-      Sentry.captureException(err);
+    } catch (error) {
+      Sentry.captureException(error);
       setResults([]);
     } finally {
       setLoadingSearch(false);
@@ -777,7 +783,11 @@ export default function MapScreen() {
       fitRouteBounds();
     };
 
-    fetchRoute().catch((err: any) => Sentry.captureException(err));
+    fetchRoute().catch((error: unknown) =>
+      Sentry.captureException(
+        error instanceof Error ? error : new Error("Failed to fetch route"),
+      ),
+    );
   }, [start, end]);
 
   const onMapClick = async (event: any) => {
@@ -844,8 +854,8 @@ export default function MapScreen() {
       if (Math.abs(b - lastBearingRef.current) < 0.5) return;
       lastBearingRef.current = b;
       setBearing(b);
-    } catch (err: any) {
-      Sentry.captureException(err);
+    } catch (error) {
+      Sentry.captureException(error);
     }
   };
 
@@ -886,8 +896,8 @@ export default function MapScreen() {
           }}
           activeOpacity={0.8}
         >
-          <AlertCircleIcon color="#d53636" />
-          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
+          <AlertCircleIcon color={theme.danger} />
+          <Text style={{ color: theme.white, fontSize: 13, fontWeight: "500" }}>
             {error}
           </Text>
         </TouchableOpacity>
@@ -914,9 +924,11 @@ export default function MapScreen() {
           }}
           activeOpacity={0.8}
         >
-          {!showError && <ActivityIndicator size="small" color="#007AFF" />}
-          {showError && <AlertTriangle color="#FF3B30" />}
-          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
+          {!showError && (
+            <ActivityIndicator size="small" color={theme.tabIndicator} />
+          )}
+          {showError && <AlertTriangle color={theme.danger} />}
+          <Text style={{ color: theme.white, fontSize: 13, fontWeight: "500" }}>
             {showError
               ? "Standort konnte nicht ermittelt werden"
               : "Standort wird ermittelt..."}
@@ -932,7 +944,7 @@ export default function MapScreen() {
                 top: 0,
                 left: 0,
                 right: 0,
-                backgroundColor: "#1a1a2e",
+                backgroundColor: theme.isDark ? "#1a1a2e" : "#1a1a2e",
                 paddingTop: Platform.OS === "ios" ? 54 : 36,
                 paddingBottom: 16,
                 paddingHorizontal: 16,
@@ -943,17 +955,27 @@ export default function MapScreen() {
               }}
             >
               <TouchableOpacity onPress={() => setPickMode(null)}>
-                <X size={24} color="#fff" />
+                <X size={24} color={theme.white} />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}
+                  style={{
+                    color: theme.white,
+                    fontSize: 18,
+                    fontWeight: "700",
+                  }}
                 >
                   {routePickMode === "start"
                     ? "Start auswählen"
                     : "Ziel auswählen"}
                 </Text>
-                <Text style={{ color: "#94A3B8", fontSize: 13, marginTop: 2 }}>
+                <Text
+                  style={{
+                    color: theme.subTextColor,
+                    fontSize: 13,
+                    marginTop: 2,
+                  }}
+                >
                   Karte unter Markierung schwenken...
                 </Text>
               </View>
@@ -979,8 +1001,8 @@ export default function MapScreen() {
                     label =
                       data.display_name?.split(",").slice(0, 2).join(", ") ??
                       label;
-                  } catch (err: any) {
-                    Sentry.captureException(err);
+                  } catch (error) {
+                    Sentry.captureException(error);
                   }
 
                   const point: RoutePoint = { label, coordinate: [lng, lat] };
@@ -989,14 +1011,18 @@ export default function MapScreen() {
                   setPickMode(null);
                 }}
                 style={{
-                  backgroundColor: "#2563EB",
+                  backgroundColor: theme.primary,
                   paddingHorizontal: 20,
                   paddingVertical: 8,
                   borderRadius: 20,
                 }}
               >
                 <Text
-                  style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
+                  style={{
+                    color: theme.white,
+                    fontWeight: "700",
+                    fontSize: 16,
+                  }}
                 >
                   Ok
                 </Text>
@@ -1020,7 +1046,7 @@ export default function MapScreen() {
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  shadowColor: "#000",
+                  shadowColor: theme.black,
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.35,
                   shadowRadius: 8,
@@ -1042,13 +1068,17 @@ export default function MapScreen() {
                       <Stop
                         offset="0%"
                         stopColor={
-                          routePickMode === "start" ? "#4ADE80" : "#F87171"
+                          routePickMode === "start"
+                            ? theme.success
+                            : theme.danger
                         }
                       />
                       <Stop
                         offset="100%"
                         stopColor={
-                          routePickMode === "start" ? "#15803D" : "#B91C1C"
+                          routePickMode === "start"
+                            ? theme.successDark
+                            : theme.dangerDark
                         }
                       />
                     </RadialGradient>
@@ -1067,7 +1097,9 @@ export default function MapScreen() {
                   width: 3,
                   height: 14,
                   backgroundColor:
-                    routePickMode === "start" ? "#15803D" : "#B91C1C",
+                    routePickMode === "start"
+                      ? theme.successDark
+                      : theme.dangerDark,
                   borderBottomLeftRadius: 2,
                   borderBottomRightRadius: 2,
                 }}
@@ -1308,12 +1340,10 @@ export default function MapScreen() {
           <View style={styles.searchWrapper}>
             <View style={styles.searchContainer}>
               <View style={styles.searchRow}>
-                <Search size={25} color="#667" />
+                <Search size={25} color={theme.subTextColor} />
                 <TextInput
                   placeholder={t("Search")}
-                  placeholderTextColor={
-                    scheme === "dark" ? "#d8d8d8ff" : "#667"
-                  }
+                  placeholderTextColor={theme.subTextColor}
                   style={styles.input}
                   value={query}
                   onChangeText={(value) => setQuery(value)}
@@ -1586,6 +1616,7 @@ export default function MapScreen() {
           backgroundStyle={{
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
+            backgroundColor: theme.bg,
           }}
           handleIndicatorStyle={{ backgroundColor: "#CBD5E1", width: 40 }}
         >
@@ -1606,6 +1637,7 @@ export default function MapScreen() {
                         fontSize: 23,
                         fontWeight: "600",
                         marginLeft: 20,
+                        color: theme.textColor,
                       }}
                     >
                       {selectedPoi.name}
@@ -1615,19 +1647,19 @@ export default function MapScreen() {
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        backgroundColor: "#EFF6FF",
+                        backgroundColor: theme.primaryLight,
                         paddingHorizontal: 10,
                         paddingVertical: 4,
                         borderRadius: 8,
-                        marginLeft: 30,
-                        marginRight: 260,
+                        marginLeft: 20,
+                        marginRight: 220,
                         marginVertical: 4,
                       }}
                     >
                       <Text
                         style={{
                           fontSize: 13,
-                          color: "#2563EB",
+                          color: theme.primary,
                           fontWeight: "600",
                           textTransform: "capitalize",
                         }}
@@ -1643,7 +1675,7 @@ export default function MapScreen() {
                         alignSelf: "flex-end",
                       }}
                     >
-                      <X strokeWidth={3} />
+                      <X strokeWidth={3} color={theme.textColor} />
                     </TouchableOpacity>
                   </View>
 
@@ -1664,7 +1696,7 @@ export default function MapScreen() {
                         sheetPoiRef.current?.close();
                       }}
                       style={{
-                        backgroundColor: "#2563EB",
+                        backgroundColor: theme.primary,
                         width: 220,
                         height: 50,
                         borderRadius: 12,
@@ -1676,12 +1708,12 @@ export default function MapScreen() {
                         marginLeft: 20,
                       }}
                     >
-                      <Route color="#fff" size={24} />
+                      <Route color={theme.white} size={24} />
                       <Text
                         style={{
                           fontWeight: "500",
                           fontSize: 18,
-                          color: "#fff",
+                          color: theme.white,
                           paddingHorizontal: 10,
                         }}
                       >
@@ -1697,7 +1729,7 @@ export default function MapScreen() {
                         });
                       }}
                       style={{
-                        backgroundColor: "#F3F4F6",
+                        backgroundColor: theme.cardBgSecondary,
                         width: 50,
                         height: 50,
                         borderRadius: 12,
@@ -1706,7 +1738,7 @@ export default function MapScreen() {
                         justifyContent: "center",
                       }}
                     >
-                      <Share2 color="#007AFF" size={24} />
+                      <Share2 color={theme.primary} size={24} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1716,7 +1748,9 @@ export default function MapScreen() {
               <View
                 style={{ paddingHorizontal: 20, paddingBottom: 40, gap: 12 }}
               >
-                <View style={{ height: 1, backgroundColor: "#F1F5F9" }} />
+                <View
+                  style={{ height: 1, backgroundColor: theme.borderColor }}
+                />
                 <View
                   style={{
                     flexDirection: "row",
@@ -1728,7 +1762,7 @@ export default function MapScreen() {
                   <Text
                     style={{
                       fontSize: 14,
-                      color: "#94A3B8",
+                      color: theme.subTextColor,
                       fontWeight: "500",
                     }}
                   >
@@ -1737,7 +1771,7 @@ export default function MapScreen() {
                   <Text
                     style={{
                       fontSize: 15,
-                      color: "#1E293B",
+                      color: theme.textColor,
                       fontWeight: "500",
                       textTransform: "capitalize",
                     }}
@@ -1755,13 +1789,13 @@ export default function MapScreen() {
                   <Text
                     style={{
                       fontSize: 14,
-                      color: "#94A3B8",
+                      color: theme.subTextColor,
                       fontWeight: "500",
                     }}
                   >
                     📍
                   </Text>
-                  <Text style={{ fontSize: 14, color: "#64748B" }}>
+                  <Text style={{ fontSize: 14, color: theme.subTextColor }}>
                     {selectedPoi.lat.toFixed(5)}, {selectedPoi.lon.toFixed(5)}
                   </Text>
                 </View>
@@ -1779,6 +1813,7 @@ export default function MapScreen() {
             backgroundStyle={{
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
+              backgroundColor: theme.bg,
             }}
             onChange={(i) => {
               setBottomSheetIndex;
@@ -1805,6 +1840,7 @@ export default function MapScreen() {
                           fontSize: 23,
                           fontWeight: "600",
                           marginLeft: 20,
+                          color: theme.textColor,
                         }}
                       >
                         {city.name}
@@ -1817,7 +1853,7 @@ export default function MapScreen() {
                           alignSelf: "flex-end",
                         }}
                       >
-                        <X strokeWidth={3} />
+                        <X strokeWidth={3} color={theme.textColor} />
                       </TouchableOpacity>
                       {weather && (
                         <View style={styles.weatherBadge}>
@@ -1847,7 +1883,7 @@ export default function MapScreen() {
                           sheetRef.current?.close();
                         }}
                         style={{
-                          backgroundColor: "#2563EB",
+                          backgroundColor: theme.primary,
                           width: 220,
                           height: 50,
                           borderRadius: 12,
@@ -1859,12 +1895,12 @@ export default function MapScreen() {
                           marginLeft: 20,
                         }}
                       >
-                        <Route color="#fff" size={24} />
+                        <Route color={theme.white} size={24} />
                         <Text
                           style={{
                             fontWeight: "500",
                             fontSize: 18,
-                            color: "#fff",
+                            color: theme.white,
                             paddingHorizontal: 10,
                           }}
                         >
@@ -1874,7 +1910,7 @@ export default function MapScreen() {
                       <TouchableOpacity
                         onPress={toggleFavorite}
                         style={{
-                          backgroundColor: "#F3F4F6",
+                          backgroundColor: theme.cardBgSecondary,
                           width: 50,
                           height: 50,
                           borderRadius: 12,
@@ -1899,8 +1935,10 @@ export default function MapScreen() {
                         />
                         {!isPlayingAnimation && (
                           <Heart
-                            color={localSaved ? "#FF3B30" : "#6B7280"}
-                            fill={localSaved ? "#FF3B30" : "transparent"}
+                            color={
+                              localSaved ? theme.danger : theme.subTextColor
+                            }
+                            fill={localSaved ? theme.danger : "transparent"}
                             size={24}
                           />
                         )}
@@ -1908,7 +1946,7 @@ export default function MapScreen() {
                       <TouchableOpacity
                         onPress={shareCity}
                         style={{
-                          backgroundColor: "#F3F4F6",
+                          backgroundColor: theme.cardBgSecondary,
                           width: 50,
                           height: 50,
                           borderRadius: 12,
@@ -1917,7 +1955,7 @@ export default function MapScreen() {
                           justifyContent: "center",
                         }}
                       >
-                        <Share2 color="#007AFF" size={24} />
+                        <Share2 color={theme.primary} size={24} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1942,7 +1980,7 @@ export default function MapScreen() {
                   {article.images.length > 0 && (
                     <View style={styles.imageSection}>
                       <View style={styles.sectionHeader}>
-                        <ImageIcon color="#007AFF" size={20} />
+                        <ImageIcon color={theme.primary} size={20} />
                         <Text style={styles.sectionTitle}>
                           Bilder ({article.images.length})
                         </Text>
@@ -2028,7 +2066,7 @@ export default function MapScreen() {
                 style={styles.closeButton}
                 onPress={() => setSelectedImageIndex(null)}
               >
-                <X color="#fff" size={28} />
+                <X color={theme.white} size={28} />
               </TouchableOpacity>
             </View>
           </View>
@@ -2098,9 +2136,12 @@ export default function MapScreen() {
         <ErrorSheet
           open={errorSheetOpen}
           onClose={() => setErrorSheetOpen(false)}
-          errorTitle="Netzwerkfehler"
-          error="Network request failed. Bitte überprüfe deine Internetverbindung."
-          errorCode="ERR_NETWORK_001"
+          errorTitle={error ? "Fehler" : "Standortfehler"}
+          error={
+            error ??
+            "Dein Standort konnte nicht geladen werden. Bitte pruefe Berechtigung und GPS."
+          }
+          errorCode={error ? "MAPSCREEN_ERROR" : "LOCATION_NOT_READY"}
           stillAvailable={[
             "Offline-Karten anzeigen",
             "Gespeicherte Orte nutzen",
@@ -2120,7 +2161,22 @@ export default function MapScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const {
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    primaryLight,
+    inputBg,
+    overlay,
+    overlayDark,
+    white,
+    tabIndicator,
+    black,
+  } = theme;
   const isDark = theme.isDark;
 
   return StyleSheet.create({
@@ -2128,7 +2184,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
-      backgroundColor: "#F1F5F9",
+      backgroundColor: cardBgSecondary,
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 8,
@@ -2136,7 +2192,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     weatherText: {
       fontSize: 14,
       fontWeight: "bold",
-      color: "#475569",
+      color: subTextColor,
     },
     articleHeader: {
       flexDirection: "row",
@@ -2161,31 +2217,33 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     filterChip: {
       paddingHorizontal: 14,
       paddingVertical: 6,
-      backgroundColor: "#EFEFEF",
+      backgroundColor: cardBgSecondary,
       borderRadius: 20,
-      borderColor: "#667",
+      borderColor: subTextColor,
       borderWidth: 2,
     },
     filterChipActive: {
-      backgroundColor: "#007AFF",
+      backgroundColor: tabIndicator,
     },
     filterText: {
       fontSize: 13,
-      color: "#333",
+      color: textColor,
     },
     filterTextActive: {
-      color: "#fff",
+      color: white,
       fontWeight: "600",
     },
     readMoreButton: {
       marginTop: 20,
       padding: 15,
-      backgroundColor: "#f0f7ff",
+      backgroundColor: "transparent",
       borderRadius: 12,
+      borderColor: primary,
+      borderWidth: 2,
       alignItems: "center",
     },
     readMoreText: {
-      color: "#007AFF",
+      color: primary,
       fontWeight: "600",
       fontSize: 16,
     },
@@ -2219,12 +2277,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 12,
       gap: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: "#eee",
+      borderBottomColor: borderColor,
     },
     historyHeaderText: {
       fontSize: 12,
       fontWeight: "600",
-      color: "#888",
+      color: subTextColor,
       textTransform: "uppercase",
       paddingRight: 170,
     },
@@ -2235,7 +2293,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: 12,
       justifyContent: "center",
       alignItems: "center",
-      shadowColor: "#000",
+      shadowColor: black,
       shadowOpacity: 0.2,
       shadowRadius: 5,
       elevation: 5,
@@ -2243,7 +2301,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     extractText: {
       fontSize: 16,
       lineHeight: 24,
-      color: "#444",
+      color: textColor,
       textAlign: "justify",
     },
     imageSection: {
@@ -2259,7 +2317,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
-      color: "#1a1a1a",
+      color: textColor,
     },
     imageList: {
       paddingRight: 20,
@@ -2270,8 +2328,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginRight: 15,
       borderRadius: 16,
       overflow: "hidden",
-      backgroundColor: "#eee",
-      shadowColor: "#000",
+      backgroundColor: cardBgSecondary,
+      shadowColor: black,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
@@ -2299,7 +2357,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 16 : 8,
       zIndex: 50,
       elevation: 8,
-      shadowColor: "#000",
+      shadowColor: black,
       shadowOpacity: 0.12,
       shadowRadius: 6,
     },
@@ -2313,9 +2371,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       flexDirection: "row",
       alignItems: "center",
       borderRadius: isModern ? 18 : 14,
-      backgroundColor: isDark ? "#24252a" : isModern ? "#F4F4F5" : "#FFFFFF",
+      backgroundColor: inputBg,
       elevation: 3,
-      shadowColor: "#000",
+      shadowColor: black,
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
@@ -2340,7 +2398,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalBackground: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.95)",
+      backgroundColor: overlayDark,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -2361,14 +2419,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       position: "absolute",
       top: 50,
       right: 20,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: overlay,
       padding: 10,
       borderRadius: 25,
     },
     heroImageContainer: {
       width: "100%",
       height: 250,
-      backgroundColor: "#f0f0f0",
+      backgroundColor: cardBgSecondary,
     },
     heroImage: {
       width: "100%",

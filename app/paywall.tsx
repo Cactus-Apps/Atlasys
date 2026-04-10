@@ -91,7 +91,7 @@ export default function PaywallScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroSection}>
           <View style={styles.iconCircle}>
-            <Crown size={60} color="#2563EB" strokeWidth={2.5} />
+            <Crown size={60} color={theme.primary} strokeWidth={2.5} />
           </View>
           <Text style={styles.heroTitle}>Go Premium</Text>
           <Text style={styles.heroSub}>
@@ -103,13 +103,13 @@ export default function PaywallScreen() {
           {features.map((item, index) => (
             <View key={index} style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <item.icon size={24} color="#2563EB" strokeWidth={2.5} />
+                <item.icon size={24} color={theme.primary} strokeWidth={2.5} />
               </View>
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureText}>{item.text}</Text>
                 <Text style={styles.featureSub}>{item.sub}</Text>
               </View>
-              <CheckCircle2 size={20} color="#22C55E" />
+              <CheckCircle2 size={20} color={theme.success} />
             </View>
           ))}
         </View>
@@ -143,7 +143,7 @@ export default function PaywallScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, primary, primaryLight, white, success, chevronColor } = theme;
 
   return StyleSheet.create({
     container: {
@@ -179,9 +179,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 60 : 60,
       backgroundColor: isModern
         ? theme.iconBg
-        : theme.isDark
-          ? "rgba(37, 99, 235, 0.1)"
-          : "#EFF6FF",
+        : primaryLight,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,
@@ -222,9 +220,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 16 : 14,
       backgroundColor: isModern
         ? theme.iconBg
-        : theme.isDark
-          ? "rgba(255, 255, 255, 0.03)"
-          : "#F1F5F9",
+        : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -243,7 +239,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginTop: 2,
     },
     pricingCard: {
-      backgroundColor: theme.isDark ? "rgba(37, 99, 235, 0.05)" : "#EEF2FF",
+      backgroundColor: primaryLight,
       borderRadius: isModern ? 32 : 24,
       padding: 24,
       alignItems: "center",
@@ -256,7 +252,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     pricingTitle: {
       fontSize: 14,
       fontWeight: "800",
-      color: "#2563EB",
+      color: primary,
       textTransform: "uppercase",
       letterSpacing: 1,
       marginBottom: 12,
@@ -289,24 +285,24 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontWeight: "500",
     },
     subscribeButton: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       paddingVertical: 18,
       borderRadius: 18,
       alignItems: "center",
-      shadowColor: "#2563EB",
+      shadowColor: primary,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.3,
       shadowRadius: 12,
       elevation: 8,
     },
     subscribeButtonText: {
-      color: "#fff",
+      color: white,
       fontSize: 18,
       fontWeight: "800",
     },
     footerNote: {
       fontSize: 12,
-      color: "#94a3b8",
+      color: chevronColor,
       textAlign: "center",
       marginTop: 20,
       lineHeight: 18,

@@ -102,7 +102,7 @@ export default function SavedScreen() {
             />
           ) : (
             <View style={styles.placeholderImage}>
-              <MapPin size={32} color="#94a3b8" />
+              <MapPin size={32} color={theme.chevronColor} />
             </View>
           )}
           <TouchableOpacity
@@ -112,7 +112,7 @@ export default function SavedScreen() {
               handleRemove(item.name);
             }}
           >
-            <Trash2 size={18} color="#FF4444" />
+            <Trash2 size={18} color={theme.danger} />
           </TouchableOpacity>
         </View>
 
@@ -135,7 +135,7 @@ export default function SavedScreen() {
                 handleRoute(item);
               }}
             >
-              <Navigation size={20} color="#2563EB" />
+              <Navigation size={20} color={theme.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
@@ -144,7 +144,7 @@ export default function SavedScreen() {
                 handleShare(item);
               }}
             >
-              <Share2 size={20} color="#64748b" />
+              <Share2 size={20} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -160,9 +160,9 @@ export default function SavedScreen() {
         </View>
         <View style={styles.lockContainer}>
           <View style={styles.lockIconCircle}>
-            <Bookmark size={48} color="#94a3b8" strokeWidth={1.5} />
+            <Bookmark size={48} color={theme.chevronColor} strokeWidth={1.5} />
             <View style={styles.lockBadge}>
-              <Lock size={16} color="#FFFFFF" strokeWidth={3} />
+              <Lock size={16} color={theme.white} strokeWidth={3} />
             </View>
           </View>
           <Text style={styles.lockTitle}>{t("Premium_Feature")}</Text>
@@ -196,7 +196,7 @@ export default function SavedScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
-              <Bookmark size={48} color="#94a3b8" strokeWidth={1.5} />
+              <Bookmark size={48} color={theme.chevronColor} strokeWidth={1.5} />
             </View>
             <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
             <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
@@ -214,7 +214,7 @@ export default function SavedScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, primary, primaryLight, white, chevronColor } = theme;
 
   return StyleSheet.create({
     container: {
@@ -237,14 +237,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       letterSpacing: -0.5,
     },
     badge: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       paddingHorizontal: 10,
       paddingVertical: 2,
       borderRadius: 12,
       marginLeft: 12,
     },
     badgeText: {
-      color: "#FFFFFF",
+      color: white,
       fontSize: 14,
       fontWeight: "800",
     },
@@ -259,7 +259,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       overflow: "hidden",
       borderWidth: 1,
       borderColor: borderColor,
-      shadowColor: "#000",
+      shadowColor: theme.black,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: isModern ? (theme.isDark ? 0 : 0.08) : 0.05,
       shadowRadius: isModern ? 16 : 12,
@@ -268,7 +268,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     imageContainer: {
       width: "100%",
       height: 180,
-      backgroundColor: theme.isDark ? "#21262d" : "#f1f5f9",
+      backgroundColor: cardBgSecondary,
     },
     image: {
       width: "100%",
@@ -290,7 +290,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: 18,
       alignItems: "center",
       justifyContent: "center",
-      shadowColor: "#000",
+      shadowColor: theme.black,
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
@@ -326,7 +326,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
         ? theme.iconBg
         : theme.isDark
           ? "rgba(255, 255, 255, 0.05)"
-          : "#F1F5F9",
+          : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -343,7 +343,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
         ? theme.iconBg
         : theme.isDark
           ? "rgba(255, 255, 255, 0.03)"
-          : "#F1F5F9",
+          : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 24,
@@ -363,13 +363,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     exploreBtn: {
       marginTop: 32,
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       paddingHorizontal: 24,
       paddingVertical: 14,
       borderRadius: isModern ? 20 : 16,
     },
     exploreBtnText: {
-      color: "#FFFFFF",
+      color: white,
       fontSize: 16,
       fontWeight: "800",
     },
@@ -387,7 +387,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
         ? theme.iconBg
         : theme.isDark
           ? "rgba(255, 255, 255, 0.03)"
-          : "#F1F5F9",
+          : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 32,
@@ -396,14 +396,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       position: "absolute",
       bottom: 0,
       right: 0,
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       width: 40,
       height: 40,
       borderRadius: 20,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 4,
-      borderColor: theme.bg,
+      borderColor: bg,
     },
     lockTitle: {
       fontSize: 24,
@@ -419,18 +419,18 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginBottom: 40,
     },
     unlockBtn: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       paddingHorizontal: 32,
       paddingVertical: 16,
       borderRadius: isModern ? 24 : 18,
-      shadowColor: "#2563EB",
+      shadowColor: primary,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.3,
       shadowRadius: 12,
       elevation: 8,
     },
     unlockBtnText: {
-      color: "#FFFFFF",
+      color: white,
       fontSize: 18,
       fontWeight: "800",
     },

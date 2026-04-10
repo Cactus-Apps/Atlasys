@@ -11,7 +11,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
   ScrollView,
 } from "react-native";
 import "./i18n";
@@ -19,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { useAuthStore } from "@/lib/storage/zustand";
+import { AppTheme } from "@/lib/theme";
 import { Lock, Palette } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 
@@ -28,8 +28,11 @@ const Settings = () => {
   const router = useRouter();
   const isSubscribed = useAuthStore((s) => s.isSubscribed);
   const updateSettings = useAuthStore((s) => s.updateSettings);
-  const designStyle = useAuthStore((s) => s.settings.designStyle) || "classic";
+  const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
+  const [themeModalVisible, setThemeModalVisible] = useState(false);
+
   const [DesignModalVisible, setDesignModalVisible] = useState(false);
+  const [ThemeModeModalVisible, setThemeModeModalVisible] = useState(false);
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const buildNumber = Application.nativeBuildVersion;
@@ -63,6 +66,80 @@ const Settings = () => {
 
   const currentLanguageLabel =
     languages.find((l) => l.code === i18n.language)?.label || "English";
+
+  const THEME_OPTIONS: {
+    value: AppTheme;
+    label: string;
+    previewBg: string;
+    previewCard: string;
+    previewAccent: string;
+    previewText: string;
+    previewSub: string;
+  }[] = [
+    {
+      value: "light",
+      label: "Hell",
+      previewBg: "#F4F7FB",
+      previewCard: "#FFFFFF",
+      previewAccent: "#2563EB",
+      previewText: "#2D4A6B",
+      previewSub: "#B0BEC5",
+    },
+    {
+      value: "dark",
+      label: "Dunkel",
+      previewBg: "#0F1B2A",
+      previewCard: "#17263A",
+      previewAccent: "#2563EB",
+      previewText: "#F3F7FC",
+      previewSub: "#4A6A8A",
+    },
+    {
+      value: "modern",
+      label: "Modern",
+      previewBg: "#F8F8F8",
+      previewCard: "#FFFFFF",
+      previewAccent: "#007AFF",
+      previewText: "#111111",
+      previewSub: "#CCCCCC",
+    },
+    {
+      value: "claude",
+      label: "Chill",
+      previewBg: "#1C1C1C",
+      previewCard: "#2A2A2A",
+      previewAccent: "#CFA06B",
+      previewText: "#F5F0E8",
+      previewSub: "#555555",
+    },
+    {
+      value: "midnight",
+      label: "Midnight",
+      previewBg: "#000000",
+      previewCard: "#0A0A0A",
+      previewAccent: "#6C63FF",
+      previewText: "#FFFFFF",
+      previewSub: "#333333",
+    },
+    {
+      value: "ocean",
+      label: "Ocean",
+      previewBg: "#0A1628",
+      previewCard: "#0F2040",
+      previewAccent: "#00B4D8",
+      previewText: "#E0F0FF",
+      previewSub: "#1A3A5A",
+    },
+    {
+      value: "forest",
+      label: "Forest",
+      previewBg: "#F0F7EE",
+      previewCard: "#FFFFFF",
+      previewAccent: "#2E7D32",
+      previewText: "#1B3A2D",
+      previewSub: "#C8E6C9",
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,27 +185,133 @@ const Settings = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              activeOpacity={0.7}
-              onPress={() => setDesignModalVisible(true)}
-            >
-              <View style={styles.menuIconContainer}>
-                <Palette size={20} color={theme.isDark ? "#FFFFFF" : "#1E293B"} />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={styles.menuLabel}>Design Theme</Text>
-                </View>
-                <Text style={styles.menuValue}>
-                  {designStyle === "modern" ? "Modern (Offline Maps)" : "Classic (Account)"}
-                </Text>
-              </View>
-              <ChevronRight size={20} color={styles.subTextColor} />
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionTitle}>Design</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              gap: 12,
+              paddingBottom: 8,
+            }}
+          >
+            {THEME_OPTIONS.map((t) => {
+              const isActive = currentTheme === t.value;
+              return (
+                <TouchableOpacity
+                  key={t.value}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    updateSettings({ theme: t.value });
+                  }}
+                  activeOpacity={0.8}
+                  style={{ alignItems: "center", width: 110 }}
+                >
+                  {/* Vorschaukarte */}
+                  <View
+                    style={[
+                      {
+                        width: 110,
+                        height: 85,
+                        borderRadius: 16,
+                        backgroundColor: t.previewBg,
+                        padding: 10,
+                        borderWidth: isActive ? 2.5 : 1,
+                        borderColor: isActive
+                          ? t.previewAccent
+                          : "rgba(128,128,128,0.2)",
+                        overflow: "hidden",
+                        position: "relative",
+                      },
+                    ]}
+                  >
+                    {/* Mini Card */}
+                    <View
+                      style={{
+                        backgroundColor: t.previewCard,
+                        borderRadius: 8,
+                        padding: 6,
+                        gap: 4,
+                      }}
+                    >
+                      {/* Accent Button simulieren */}
+                      <View
+                        style={{
+                          width: 36,
+                          height: 7,
+                          backgroundColor: t.previewAccent,
+                          borderRadius: 4,
+                          alignSelf: "flex-end",
+                        }}
+                      />
+                      {/* Text-Zeilen simulieren */}
+                      {[0.9, 0.7, 0.5].map((opacity, i) => (
+                        <View
+                          key={i}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                            marginTop: 2,
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: 3,
+                              backgroundColor: t.previewAccent,
+                              opacity,
+                            }}
+                          />
+                          <View
+                            style={{
+                              height: 4,
+                              borderRadius: 2,
+                              backgroundColor: t.previewText,
+                              flex: 1,
+                              opacity: opacity * 0.8,
+                            }}
+                          />
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Checkmark wenn aktiv */}
+                    {isActive && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          bottom: 8,
+                          right: 8,
+                          width: 22,
+                          height: 22,
+                          borderRadius: 11,
+                          backgroundColor: t.previewAccent,
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Check size={13} color="#fff" strokeWidth={3} />
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Label */}
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      fontSize: 13,
+                      fontWeight: isActive ? "700" : "500",
+                      color: isActive ? theme.primary : theme.subTextColor,
+                    }}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={styles.section}>
@@ -189,7 +372,7 @@ const Settings = () => {
                       {lang.label}
                     </Text>
                     {i18n.language === lang.code ? (
-                      <Check size={20} color="#2563EB" strokeWidth={3} />
+                      <Check size={20} color={theme.primary} strokeWidth={3} />
                     ) : isLocked ? (
                       <Lock size={16} color={styles.subTextColor} />
                     ) : null}
@@ -200,54 +383,23 @@ const Settings = () => {
           </View>
         </View>
       </Modal>
-
-      <Modal
-        visible={DesignModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDesignModalVisible(false)}
-      >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Theme</Text>
-              <TouchableOpacity onPress={() => setDesignModalVisible(false)}>
-                <Text style={styles.closeButtonText}>{t("Cancel")}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.languageList} showsVerticalScrollIndicator={false}>
-              {[
-                { label: "Classic (Account Style)", value: "classic" },
-                { label: "Modern (Offline Maps Style)", value: "modern" },
-              ].map((styleOption) => (
-                <TouchableOpacity
-                  key={styleOption.value}
-                  style={styles.languageItem}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    updateSettings({ designStyle: styleOption.value as "modern" | "classic" });
-                    setDesignModalVisible(false);
-                  }}
-                >
-                  <Text style={[styles.languageLabel, designStyle === styleOption.value && styles.selectedLanguageLabel]}>
-                    {styleOption.label}
-                  </Text>
-                  {designStyle === styleOption.value && (
-                    <Check size={20} color="#2563EB" strokeWidth={3} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    overlay,
+    white,
+  } = theme;
 
   // Adapt border radii for classic vs modern
   const defaultRadius = isModern ? 24 : 20;
@@ -301,7 +453,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderWidth: 1,
       borderColor: borderColor,
       overflow: "hidden",
-      shadowColor: "#000",
+      shadowColor: theme.black,
       shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
       shadowRadius: isModern ? 12 : 0,
       elevation: isModern ? 4 : 0,
@@ -315,7 +467,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 44,
       height: 44,
       borderRadius: innerRadius,
-      backgroundColor: isModern ? theme.iconBg : (theme.isDark ? "rgba(255, 255, 255, 0.05)" : "#F1F5F9"),
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(255, 255, 255, 0.05)"
+          : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -356,7 +512,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalBackground: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: overlay,
       justifyContent: "flex-end",
     },
     modalContent: {
@@ -382,7 +538,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     closeButtonText: {
       fontSize: 16,
       fontWeight: "700",
-      color: "#2563EB",
+      color: primary,
     },
     languageList: {
       marginBottom: 40,
@@ -405,11 +561,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: textColor,
     },
     selectedLanguageLabel: {
-      color: "#2563EB",
+      color: primary,
       fontWeight: "700",
     },
     premiumBadge: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 4,
@@ -417,7 +573,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     premiumBadgeText: {
       fontSize: 10,
       fontWeight: "900",
-      color: "#FFFFFF",
+      color: white,
     },
   });
 };

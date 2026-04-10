@@ -237,7 +237,7 @@ export default function AccountScreen() {
   if (loading) {
     return (
       <View style={styles.all}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -266,7 +266,7 @@ export default function AccountScreen() {
               email={email ?? undefined}
               colorize={true}
               radius={50}
-              badgeColor="#2563EB"
+              badgeColor={theme.primary}
             />
           </View>
           <Text style={styles.emailText}>{email}</Text>
@@ -284,7 +284,7 @@ export default function AccountScreen() {
             onPress={() => copy(userId ?? "")}
           >
             <View style={styles.menuIconContainer}>
-              <Info size={20} color="#2563EB" />
+              <Info size={20} color={theme.primary} />
             </View>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuLabel}>User ID</Text>
@@ -304,7 +304,7 @@ export default function AccountScreen() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.white} />
             ) : (
               <Text style={styles.deleteButtonText}>{t("Delete_account")}</Text>
             )}
@@ -373,7 +373,7 @@ export default function AccountScreen() {
           activeOpacity={0.7}
         >
           <View style={styles.signOutButton}>
-            <LogOut size={20} color="#EF4444" strokeWidth={2.5} />
+            <LogOut size={20} color={theme.danger} strokeWidth={2.5} />
             <Text style={styles.signOutText}>{t("Sign_Out")}</Text>
           </View>
         </TouchableOpacity>
@@ -435,7 +435,7 @@ export default function AccountScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
+  const { bg, cardBg, primaryLight, textColor, subTextColor, borderColor, isModern, primary, danger, dangerLight, success, successLight, overlay, white } = theme;
 
   const defaultRadius = isModern ? 24 : 20;
   const innerRadius = isModern ? 16 : 10;
@@ -491,7 +491,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     statusBadge: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme.isDark ? "rgba(34, 197, 94, 0.1)" : "#DCFCE7",
+      backgroundColor: successLight,
       paddingHorizontal: 10,
       paddingVertical: 4,
       borderRadius: innerRadius,
@@ -501,12 +501,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: "#22C55E",
+      backgroundColor: success,
     },
     statusText: {
       fontSize: 12,
       fontWeight: "700",
-      color: "#16A34A",
+      color: success,
     },
     card: {
       margin: 20,
@@ -536,11 +536,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 44,
       height: 44,
       borderRadius: innerRadius,
-      backgroundColor: isModern
-        ? theme.iconBg
-        : theme.isDark
-          ? "rgba(37, 99, 235, 0.1)"
-          : "#EFF6FF",
+      backgroundColor: isModern ? theme.iconBg : primaryLight,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -562,13 +558,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     dangerZone: {
       margin: 20,
       marginTop: 0,
-      backgroundColor: theme.isDark ? "rgba(239, 68, 68, 0.05)" : "#FEF2F2",
+      backgroundColor: dangerLight,
       borderRadius: defaultRadius,
       padding: 20,
       borderWidth: 1,
-      borderColor: theme.isDark
-        ? "rgba(239, 68, 68, 0.2)"
-        : "rgba(239, 68, 68, 0.1)",
+      borderColor: theme.isDark ? danger : "rgba(239, 68, 68, 0.1)",
       shadowColor: "#000",
       shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0,
       shadowRadius: isModern ? 12 : 0,
@@ -577,26 +571,26 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     dangerTitle: {
       fontSize: 14,
       fontWeight: "800",
-      color: "#EF4444",
+      color: danger,
       textTransform: "uppercase",
       letterSpacing: 1,
       marginBottom: 16,
     },
     deleteButton: {
-      backgroundColor: "#EF4444",
+      backgroundColor: danger,
       paddingVertical: 14,
       borderRadius: 14,
       alignItems: "center",
       marginBottom: 12,
     },
     deleteButtonText: {
-      color: "#fff",
+      color: white,
       fontWeight: "700",
       fontSize: 16,
     },
     dangerNote: {
       fontSize: 12,
-      color: "#991B1B",
+      color: danger,
       textAlign: "center",
       lineHeight: 18,
     },
@@ -616,7 +610,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 10,
     },
     signOutText: {
-      color: "#EF4444",
+      color: danger,
       fontWeight: "700",
       fontSize: 16,
     },
@@ -658,14 +652,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     progressBarWrapper: {
       height: 8,
-      backgroundColor: theme.isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
+      backgroundColor: theme.cardBgSecondary,
       borderRadius: 4,
       overflow: "hidden",
       marginBottom: 8,
     },
     progressBarFill: {
       height: "100%",
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       borderRadius: 4,
     },
     progressText: {
@@ -681,7 +675,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalBackground: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: overlay,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -713,14 +707,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalDeleteButton: {
       flex: 1,
-      backgroundColor: "#EF4444",
+      backgroundColor: danger,
       paddingVertical: 14,
       borderRadius: 14,
       alignItems: "center",
     },
     modalCancelButton: {
       flex: 1,
-      backgroundColor: theme.isDark ? "rgba(255,255,255,0.05)" : "#E2E8F0",
+      backgroundColor: theme.cardBgSecondary,
       paddingVertical: 14,
       borderRadius: 14,
       alignItems: "center",

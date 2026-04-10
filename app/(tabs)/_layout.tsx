@@ -11,6 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { AnimatedSplash } from "@/components/SplashScreen";
 import { fetchUnseen, Announcement } from "@/lib/announcements";
 import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
+import { useAppTheme } from "@/lib/theme";
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -39,7 +40,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function TabsLayout() {
-  const scheme = useColorScheme();
+  const theme = useAppTheme();
   const TabBar = useTabStore((s) => s.TabBar);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
@@ -47,13 +48,21 @@ export default function TabsLayout() {
     fetchUnseen().then(setAnnouncements);
   }, []);
 
+  const themeKey = `${theme.bg}|${theme.accentColor}|${theme.subTextColor}|${theme.borderColor}|${theme.theme}`;
+
   return (
     <>
       <RouteGuard>
         {TabBar === "CustomTabBar1" ? (
           <Tabs
             screenOptions={{ headerShown: false }}
-            tabBar={(props) => <CustomTabBar1 colorScheme={null} {...props} />}
+            tabBar={(props) => (
+              <CustomTabBar1
+                key={`tabbar-${themeKey}`}
+                colorScheme={null}
+                {...props}
+              />
+            )}
           >
             <Tabs.Screen name="index" options={{ title: "Home" }} />
             <Tabs.Screen name="mapscreen" options={{ title: "map" }} />
@@ -62,16 +71,17 @@ export default function TabsLayout() {
           </Tabs>
         ) : (
           <Tabs
+            key={`tabs-${themeKey}`}
             screenOptions={({ route }) => ({
               animation: "fade",
               contentStyle: {
-                backgroundColor: scheme === "dark" ? "#0D1117" : "#e2d7d7ff",
+                backgroundColor: theme.bg,
               },
               tabBarStyle: {
-                backgroundColor: scheme === "dark" ? "#2c2a28ff" : "#e2d7d7ff",
+                backgroundColor: theme.bg,
               },
               headerShown: false,
-              tabBarActiveTintColor: "#466483ff",
+              tabBarActiveTintColor: theme.accentColor,
               tabBarIcon: ({ color, size }) => {
                 let IconComponent;
                 switch (route.name) {

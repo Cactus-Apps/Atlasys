@@ -32,7 +32,7 @@ function Clock() {
       <View>
         <Clock4
           style={{ marginLeft: 158, marginTop: 22 }}
-          color="#3B82F6"
+          color={theme.primary}
           strokeWidth={3}
           size={36}
         />

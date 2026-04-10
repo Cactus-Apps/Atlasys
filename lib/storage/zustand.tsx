@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AppTheme } from "../theme";
 
 type StoreTabs = {
   TabBar: "CustomTabBar1" | "CustomTabBar2";
@@ -34,7 +35,6 @@ export const useloadingStore = create<Storeloading>((set) => ({
     })),
 }));
 
-
 type SavedPlace = {
   name: string;
   latitude: number;
@@ -55,8 +55,6 @@ type RouteData = {
   timestamp: string;
 };
 
-
-
 type StoreAuth = {
   isSubscribed: boolean;
   setSubscribed: (val: boolean) => void;
@@ -65,17 +63,17 @@ type StoreAuth = {
   removePlace: (name: string) => void;
   isPlaceSaved: (name: string) => boolean;
 
-  // Onboarding & Settings
+  // Onboarding & Settings & Theme
   isOnboardingCompleted: boolean;
   setOnboardingCompleted: (val: boolean) => void;
   settings: {
     notifications: boolean;
     locationSharing: boolean;
     analytics: boolean;
-    designStyle?: "modern" | "classic";
+    theme: AppTheme; // ← ersetzt beide alten Felder
   };
-  updateSettings: (settings: Partial<StoreAuth["settings"]>) => void;
 
+  updateSettings: (settings: Partial<StoreAuth["settings"]>) => void;
   // Routing
   currentRoute: RouteData | null;
   setCurrentRoute: (route: RouteData | null) => void;
@@ -98,7 +96,7 @@ const initialState = {
     notifications: false,
     locationSharing: false,
     analytics: false,
-    designStyle: "classic" as const,
+    theme: "light" as AppTheme,
   },
   currentRoute: null,
   routeHistory: [],
@@ -115,7 +113,10 @@ export const useAuthStore = create<StoreAuth>()(
       addPlace: (place) => {
         const newPlace = { ...place, addedAt: new Date().toISOString() };
         set((state) => ({
-          savedPlaces: [newPlace, ...state.savedPlaces.filter(p => p.name !== place.name)],
+          savedPlaces: [
+            newPlace,
+            ...state.savedPlaces.filter((p) => p.name !== place.name),
+          ],
         }));
       },
       removePlace: (name) => {
@@ -133,22 +134,25 @@ export const useAuthStore = create<StoreAuth>()(
         notifications: false,
         locationSharing: false,
         analytics: false,
-        designStyle: "classic",
+        theme: "light" as AppTheme,
       },
-      updateSettings: (newSettings) => set((state) => ({
-        settings: { ...state.settings, ...newSettings }
-      })),
+      updateSettings: (newSettings) =>
+        set((state) => ({
+          settings: { ...state.settings, ...newSettings },
+        })),
 
       currentRoute: null,
       setCurrentRoute: (route) => set({ currentRoute: route }),
       routeHistory: [],
-      addRouteToHistory: (route) => set((state) => ({
-        routeHistory: [route, ...state.routeHistory].slice(0, 10)
-      })),
+      addRouteToHistory: (route) =>
+        set((state) => ({
+          routeHistory: [route, ...state.routeHistory].slice(0, 10),
+        })),
 
       setUserId: (id) => set({ userId: id }),
       searchCount: 0,
-      incrementSearchCount: () => set((state) => ({ searchCount: state.searchCount + 1 })),
+      incrementSearchCount: () =>
+        set((state) => ({ searchCount: state.searchCount + 1 })),
       clearStore: () => set(initialState),
     }),
     {
@@ -159,7 +163,6 @@ export const useAuthStore = create<StoreAuth>()(
         settings: state.settings,
         userId: state.userId,
       }),
-    }
-  )
+    },
+  ),
 );
-

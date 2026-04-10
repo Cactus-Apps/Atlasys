@@ -1,7 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  Platform, Clipboard, Linking, Alert,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  Clipboard,
+  Linking,
+  Alert,
 } from "react-native";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { X, AlertCircle, Copy, Github, Check } from "lucide-react-native";
@@ -12,10 +18,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   errorTitle: string;
-  error: string;
-  errorCode?: string;          // z.B. "ERR_NETWORK_001"
-  stillAvailable?: string[];   // Was trotzdem noch geht
-  githubRepo?: string;         // z.B. "cactus-apps/atlasys"
+  error: string | Error | Record<string, any> | null | undefined;
+  errorCode?: string; // z.B. "ERR_NETWORK_001"
+  stillAvailable?: string[]; // Was trotzdem noch geht
+  githubRepo?: string; // z.B. "cactus-apps/atlasys"
 }
 
 export default function ErrorSheet({
@@ -37,7 +43,10 @@ export default function ErrorSheet({
   const buildNumber = Application.nativeBuildVersion ?? "–";
 
   useEffect(() => {
-    if (!didMount.current) { didMount.current = true; return; }
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
     if (open) {
       const t = setTimeout(() => sheetRef.current?.snapToIndex(1), 50);
       return () => clearTimeout(t);
@@ -46,15 +55,26 @@ export default function ErrorSheet({
     }
   }, [open]);
 
+  const errorMessage =
+    typeof error === "string"
+      ? error
+      : error instanceof Error
+        ? error.message
+        : error
+          ? JSON.stringify(error, null, 2)
+          : "Unbekannter Fehler";
+
   const errorDetails = [
     `Fehler: ${errorTitle}`,
-    `Nachricht: ${error}`,
+    `Nachricht: ${errorMessage}`,
     errorCode ? `Code: ${errorCode}` : null,
     `App-Version: v${appVersion}`,
     `Build: #${buildNumber}`,
     `Plattform: ${Platform.OS} ${Platform.Version}`,
     `Datum: ${new Date().toLocaleString("de")}`,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const handleCopy = () => {
     Clipboard.setString(errorDetails);
@@ -65,10 +85,10 @@ export default function ErrorSheet({
   const handleGithubIssue = () => {
     const title = encodeURIComponent(`[Bug] ${errorTitle}`);
     const body = encodeURIComponent(
-      `## Fehlerbeschreibung\n\n${error}\n\n## Details\n\`\`\`\n${errorDetails}\n\`\`\``
+      `## Fehlerbeschreibung\n\n${errorMessage}\n\n## Details\n\`\`\`\n${errorDetails}\n\`\`\``,
     );
     Linking.openURL(
-      `https://github.com/${githubRepo}/issues/new?title=${title}&body=${body}`
+      `https://github.com/${githubRepo}/issues/new?title=${title}&body=${body}`,
     );
   };
 
@@ -87,12 +107,11 @@ export default function ErrorSheet({
       handleIndicatorStyle={{ backgroundColor: theme.subTextColor, width: 40 }}
     >
       <BottomSheetScrollView contentContainerStyle={s.container}>
-
         {/* Header */}
         <View style={s.header}>
           <View style={s.headerLeft}>
             <View style={s.errorIconBox}>
-              <AlertCircle size={18} color="#E24B4A" />
+              <AlertCircle size={18} color={theme.danger} />
             </View>
             <View>
               <Text style={s.headerSub}>Fehlerdiagnose</Text>
@@ -106,7 +125,7 @@ export default function ErrorSheet({
 
         {/* Fehlermeldung */}
         <View style={s.errorBox}>
-          <Text style={s.errorText}>{error}</Text>
+          <Text style={s.errorText}>{errorMessage}</Text>
         </View>
 
         {/* Details Grid */}
@@ -145,7 +164,7 @@ export default function ErrorSheet({
             {stillAvailable.map((item, i) => (
               <View key={i} style={s.availableItem}>
                 <View style={s.checkCircle}>
-                  <Check size={12} color="#3B6D11" strokeWidth={3} />
+                  <Check size={12} color={theme.success} strokeWidth={3} />
                 </View>
                 <Text style={s.availableText}>{item}</Text>
               </View>
@@ -156,28 +175,42 @@ export default function ErrorSheet({
         {/* Buttons */}
         <View style={s.btnRow}>
           <TouchableOpacity style={s.btnSecondary} onPress={handleCopy}>
-            {copied
-              ? <Check size={16} color={theme.textColor} />
-              : <Copy size={16} color={theme.textColor} />
-            }
+            {copied ? (
+              <Check size={16} color={theme.textColor} />
+            ) : (
+              <Copy size={16} color={theme.textColor} />
+            )}
             <Text style={s.btnSecondaryText}>
               {copied ? "Kopiert!" : "Kopieren"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.btnPrimary} onPress={handleGithubIssue}>
-            <Github size={16} color="#fff" />
+            <Github size={16} color={theme.white} />
             <Text style={s.btnPrimaryText}>GitHub Issue</Text>
           </TouchableOpacity>
         </View>
-
       </BottomSheetScrollView>
     </BottomSheet>
   );
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } = theme;
+  const {
+    bg,
+    cardBg,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    iconBg,
+    danger,
+    dangerLight,
+    dangerDark,
+    success,
+    successLight,
+    white,
+  } = theme;
 
   return StyleSheet.create({
     container: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -189,30 +222,32 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
     errorIconBox: {
-      width: 36, height: 36,
+      width: 36,
+      height: 36,
       borderRadius: 10,
-      backgroundColor: "#FCEBEB",
+      backgroundColor: dangerLight,
       justifyContent: "center",
       alignItems: "center",
     },
     headerSub: { fontSize: 11, color: subTextColor },
     title: { fontSize: 17, fontWeight: "600", color: textColor },
     closeBtn: {
-      width: 32, height: 32,
+      width: 32,
+      height: 32,
       borderRadius: 16,
       backgroundColor: iconBg,
       justifyContent: "center",
       alignItems: "center",
     },
     errorBox: {
-      backgroundColor: "#FCEBEB",
+      backgroundColor: dangerLight,
       borderRadius: isModern ? 16 : 12,
       padding: 14,
       marginBottom: 14,
       borderWidth: 0.5,
-      borderColor: "#F7C1C1",
+      borderColor: danger,
     },
-    errorText: { fontSize: 13, color: "#A32D2D", lineHeight: 20 },
+    errorText: { fontSize: 13, color: danger, lineHeight: 20 },
     detailsBox: {
       backgroundColor: cardBg,
       borderRadius: isModern ? 16 : 12,
@@ -251,9 +286,10 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderColor: borderColor,
     },
     checkCircle: {
-      width: 20, height: 20,
+      width: 20,
+      height: 20,
       borderRadius: 10,
-      backgroundColor: "#EAF3DE",
+      backgroundColor: successLight,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -280,8 +316,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 8,
       paddingVertical: 13,
       borderRadius: isModern ? 16 : 12,
-      backgroundColor: "#E24B4A",
+      backgroundColor: danger,
     },
-    btnPrimaryText: { fontSize: 14, fontWeight: "500", color: "#fff" },
+    btnPrimaryText: { fontSize: 14, fontWeight: "500", color: white },
   });
 };

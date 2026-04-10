@@ -275,7 +275,7 @@ export default function DownloadSheet({
             min={4}
             max={maxZoom - 1}
             onChange={setMinZoom}
-            color="#2563EB"
+            color={theme.primary}
           />
           <ZoomStepper
             label="MAX ZOOM"
@@ -283,7 +283,7 @@ export default function DownloadSheet({
             min={minZoom + 1}
             max={16}
             onChange={setMaxZoom}
-            color="#2563EB"
+            color={theme.primary}
           />
         </View>
 
@@ -293,7 +293,7 @@ export default function DownloadSheet({
           </Text>
           {tileCount > 50000 && (
             <View style={s.warningRow}>
-              <AlertTriangle size={14} color="#F59E0B" />
+              <AlertTriangle size={14} color={theme.warning} />
               <Text style={s.warningText}>
                 Gebiet zu groß – Zoom reduzieren
               </Text>
@@ -304,7 +304,7 @@ export default function DownloadSheet({
         {status === "downloading" && (
           <View style={{ alignItems: "center", paddingVertical: 24, gap: 16 }}>
             <Host matchContents>
-              <CircularWavyProgress progress={progress / 100} color="#2563EB" />
+              <CircularWavyProgress progress={progress / 100} color={theme.primary} />
             </Host>
             <Text
               style={{
@@ -340,7 +340,7 @@ export default function DownloadSheet({
               (!bounds || tileCount > 50000) && s.downloadBtnDisabled,
             ]}
           >
-            <Download size={20} color="#fff" />
+            <Download size={20} color={theme.white} />
             <Text style={s.downloadBtnText}>Herunterladen</Text>
           </TouchableOpacity>
         )}
@@ -350,8 +350,24 @@ export default function DownloadSheet({
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, iconBg } =
-    theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    iconBg,
+    warning,
+    warningLight,
+    danger,
+    success,
+    successLight,
+    primary,
+    white,
+    chevronColor,
+  } = theme;
 
   return StyleSheet.create({
     container: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -381,33 +397,33 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 6,
       marginTop: 6,
     },
-    warningText: { fontSize: 13, color: "#F59E0B" },
+    warningText: { fontSize: 13, color: warning },
     progressBox: { marginBottom: 20 },
     progressBar: {
       height: 8,
-      backgroundColor: theme.isDark ? "rgb(255,255,255,0.1)" : "#E2E8F0",
+      backgroundColor: cardBgSecondary,
       borderRadius: 4,
       overflow: "hidden",
       marginBottom: 8,
     },
     progressFill: {
       height: "100%",
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       borderRadius: 4,
     },
     progressText: { fontSize: 14, color: subTextColor, textAlign: "center" },
     cancelBtn: { marginTop: 8, alignItems: "center" },
-    cancelText: { color: "#EF4444", fontWeight: "600" },
+    cancelText: { color: danger, fontWeight: "600" },
     doneBox: {
       padding: 16,
-      backgroundColor: theme.isDark ? "rgba(22, 163, 74, 0.1)" : "#F0FDF4",
+      backgroundColor: successLight,
       borderRadius: isModern ? 16 : 12,
       marginBottom: 20,
       alignItems: "center",
     },
-    doneText: { fontSize: 16, fontWeight: "600", color: "#16A34A" },
+    doneText: { fontSize: 16, fontWeight: "600", color: success },
     downloadBtn: {
-      backgroundColor: "#2563EB",
+      backgroundColor: primary,
       borderRadius: 14,
       paddingVertical: 16,
       flexDirection: "row",
@@ -416,8 +432,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 10,
     },
     downloadBtnDisabled: {
-      backgroundColor: theme.isDark ? "#334155" : "#94A3B8",
+      backgroundColor: chevronColor,
     },
-    downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+    downloadBtnText: { color: white, fontWeight: "700", fontSize: 16 },
   });
 };

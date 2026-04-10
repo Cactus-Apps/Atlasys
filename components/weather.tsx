@@ -260,7 +260,7 @@ export default function Weather() {
             />
           </View>
           <TouchableOpacity onPress={getLocationAsync} style={styles.button}>
-            <RefreshCcw strokeWidth={3} size={20} color={"#2e2c2cff"} />
+            <RefreshCcw strokeWidth={3} size={20} color={theme.textColor} />
           </TouchableOpacity>
         </LinearGradient>
       ) : (

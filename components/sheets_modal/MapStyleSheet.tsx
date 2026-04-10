@@ -191,7 +191,7 @@ export default function MapStyleSheet({
                 <Text
                   style={[
                     s.previewLabel,
-                    { color: isActive ? "#007AFF" : theme.textColor },
+                    { color: isActive ? theme.tabIndicator : theme.textColor },
                     isActive && { fontWeight: "700" },
                   ]}
                 >
