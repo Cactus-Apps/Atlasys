@@ -15,8 +15,6 @@ type ThemeTokens = {
   iconBg: string;
   inputBg: string;
   accentColor: string;
-  primary: string;
-  primaryDark: string;
 };
 
 export type AppTheme =
@@ -41,8 +39,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(0, 196, 180, 0.12)",
     inputBg: "#FFFFFF",
     accentColor: "#2563EB",
-    primary: "#2563EB",
-    primaryDark: "#1D4ED8",
   },
 
   dark: {
@@ -57,8 +53,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(45, 74, 107, 0.28)",
     inputBg: "#24262E",
     accentColor: "#2563EB",
-    primary: "#2563EB",
-    primaryDark: "#1D4ED8",
   },
 
   modern: {
@@ -73,8 +67,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(0,0,0,0.05)",
     inputBg: "#F4F4F5",
     accentColor: "#007AFF",
-    primary: "#007AFF",
-    primaryDark: "#1D4ED8",
   },
 
   claude: {
@@ -89,8 +81,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(207, 160, 107, 0.15)",
     inputBg: "#2A2A2A",
     accentColor: "#CFA06B",
-    primary: "#CFA06B",
-    primaryDark: "#d49e5f",
   },
 
   midnight: {
@@ -105,8 +95,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(255,255,255,0.06)",
     inputBg: "#111111",
     accentColor: "#6C63FF",
-    primary: "#6C63FF",
-    primaryDark: "#5852c9",
   },
 
   ocean: {
@@ -121,8 +109,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(0, 180, 216, 0.2)",
     inputBg: "#0F2040",
     accentColor: "#00B4D8",
-    primary: "#00B4D8",
-    primaryDark: "#00B4D8",
   },
 
   forest: {
@@ -137,8 +123,6 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(34, 139, 34, 0.1)",
     inputBg: "#F0F7EE",
     accentColor: "#2E7D32",
-    primary: "#2E7D32",
-    primaryDark: "#2E7D32",
   },
 };
 
@@ -157,6 +141,8 @@ const SEMANTIC = {
   white: "#FFFFFF",
   black: "#000000",
   tabIndicator: "#007AFF",
+  primary: "#2563EB",
+  primaryDark: "#1D4ED8",
 };
 
 // ── Hook ──────────────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { t } from "i18next";
-import { useloadingStore } from "@/lib/storage/zustand";
+import { useloadingStore, useAuthStore } from "@/lib/storage/zustand";
 
 function Gpskoords() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -22,6 +22,7 @@ function Gpskoords() {
   const [time, setTime] = useState(new Date());
 
   const setLoadingGpsCoords = useloadingStore((s) => s.setloadingGpsCoords);
+  const locationSharing = useAuthStore((s) => s.settings.locationSharing);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const theme = useAppTheme();
@@ -92,9 +93,15 @@ function Gpskoords() {
   };
 
   useEffect(() => {
+    if (!locationSharing) {
+      stopWatching();
+      setLocation(null);
+      setErrorMsg(null);
+      return;
+    }
     startWatching();
     return () => stopWatching();
-  }, []);
+  }, [locationSharing]);
 
   return (
     <View style={styles.card}>

@@ -15,10 +15,12 @@ import {
 } from "react-native";
 import { CardSkeletonView } from "./SkeletonView";
 import { useAppTheme } from "@/lib/theme";
+import { useAuthStore } from "@/lib/storage/zustand";
 
 export default function Weather() {
   const theme = useAppTheme();
   const styles = getStyles(theme);
+  const locationSharing = useAuthStore((s) => s.settings.locationSharing);
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -206,8 +208,15 @@ export default function Weather() {
   };
 
   useEffect(() => {
+    if (!locationSharing) {
+      setLocation(null);
+      setWeather(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     getLocationAsync();
-  }, []);
+  }, [locationSharing]);
 
   if (loading) {
     return (

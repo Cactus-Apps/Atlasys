@@ -28,7 +28,7 @@ import Timer from "@/components/HomeScreenComponents/Timer";
 import Weather from "@/components/weather";
 import { JSX } from "react";
 import DraggableFlatList from "react-native-draggable-flatlist";
-import { useloadingStore } from "@/lib/storage/zustand";
+import { useloadingStore, useAuthStore } from "@/lib/storage/zustand";
 
 const componentMap: Record<string, JSX.Element> = {
   "1": <Clock />,
@@ -68,6 +68,7 @@ export default function HomeScreen() {
     useState<Location.LocationSubscription | null>(null);
   const theme = useAppTheme();
   const styles = getStyles(theme);
+  const locationSharing = useAuthStore((s) => s.settings.locationSharing);
 
   const toggleDrag = () => setDragEnabled((prev) => !prev);
 
@@ -170,9 +171,13 @@ export default function HomeScreen() {
   }, [user]);
 
   useEffect(() => {
+    if (!locationSharing) {
+      stopWatching();
+      return;
+    }
     startWatching();
     return () => stopWatching();
-  }, []);
+  }, [locationSharing, status]);
 
   if (Admin) {
     return (

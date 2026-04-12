@@ -4,6 +4,7 @@
 node_modules/
 
 android
+android/sentry.properties
 
 ios
 

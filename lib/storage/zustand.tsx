@@ -70,7 +70,19 @@ type StoreAuth = {
     notifications: boolean;
     locationSharing: boolean;
     analytics: boolean;
+    /** Sentry: false = keine Crash-Reports senden (fehlt → an) */
+    crashReports?: boolean;
+    /** Expo Updates: Hintergrund-Check (fehlt → an) */
+    autoUpdateCheck?: boolean;
     theme: AppTheme; // ← ersetzt beide alten Felder
+    /** Feinsteuerung; fehlt bei alten Saves → Fallback auf `notifications` */
+    notificationTopics?: {
+      userAccount: boolean;
+      coolPlaces: boolean;
+      subscriptions: boolean;
+      offlineMaps: boolean;
+      updates: boolean;
+    };
   };
 
   updateSettings: (settings: Partial<StoreAuth["settings"]>) => void;
@@ -96,7 +108,16 @@ const initialState = {
     notifications: false,
     locationSharing: false,
     analytics: false,
+    crashReports: true,
+    autoUpdateCheck: true,
     theme: "light" as AppTheme,
+    notificationTopics: {
+      userAccount: false,
+      coolPlaces: false,
+      subscriptions: false,
+      offlineMaps: false,
+      updates: false,
+    },
   },
   currentRoute: null,
   routeHistory: [],
@@ -134,7 +155,16 @@ export const useAuthStore = create<StoreAuth>()(
         notifications: false,
         locationSharing: false,
         analytics: false,
+        crashReports: true,
+        autoUpdateCheck: true,
         theme: "light" as AppTheme,
+        notificationTopics: {
+          userAccount: false,
+          coolPlaces: false,
+          subscriptions: false,
+          offlineMaps: false,
+          updates: false,
+        },
       },
       updateSettings: (newSettings) =>
         set((state) => ({

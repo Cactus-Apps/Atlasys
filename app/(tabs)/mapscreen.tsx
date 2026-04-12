@@ -74,11 +74,12 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { FlatList as GHFlatList } from "react-native-gesture-handler";
 import RouteSheet from "@/components/sheets_modal/RouteSheet";
 import DownloadSheet from "@/components/sheets_modal/DownloadSheet";
-import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { router } from "expo-router";
 import LottieView from "lottie-react-native";
 import ErrorSheet from "@/components/sheets_modal/ErrorSheet";
+import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
+import NavigationSideBar from "@/components/overlays/NavigationSideBar";
 
 const { width, height } = Dimensions.get("window");
 
@@ -170,6 +171,7 @@ export default function MapScreen() {
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
+  const locationSharing = useAuthStore((s) => s.settings.locationSharing);
   const [isPlayingAnimation, setIsPlayingAnimation] = useState<boolean>(false);
   const ref = useRef<LottieView>(null);
   const [mapThemeIndex, setMapThemeIndex] = useState(0);
@@ -275,7 +277,16 @@ export default function MapScreen() {
 
   // Location/GPS Stuff
   useEffect(() => {
+    if (!locationSharing) {
+      setSub((current) => {
+        current?.remove();
+        return null;
+      });
+      return;
+    }
+
     let cancelled = false;
+    let liveSub: Location.LocationSubscription | null = null;
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -315,6 +326,7 @@ export default function MapScreen() {
         },
       );
 
+      liveSub = s;
       if (!cancelled) setSub(s);
     })().catch((error: unknown) =>
       Sentry.captureException(
@@ -326,10 +338,10 @@ export default function MapScreen() {
 
     return () => {
       cancelled = true;
-      sub?.remove();
+      liveSub?.remove();
       setSub(null);
     };
-  }, [ready]);
+  }, [ready, locationSharing]);
 
   // User Auth Stuff
   useEffect(() => {
@@ -521,26 +533,80 @@ export default function MapScreen() {
 
         const isJunk = (url: string) => {
           const lower = url.toLowerCase();
-          return (
-            lower.includes("flag") ||
-            lower.includes("wappen") ||
-            lower.includes("kupferstich") ||
-            lower.includes("buergermeister") ||
-            lower.includes("arena") ||
-            lower.includes("kulturzentrum") ||
-            lower.includes("coats") ||
-            lower.includes("spd") ||
-            lower.includes("stadium") ||
-            lower.includes("coat_of_arms") ||
-            lower.includes("climate") ||
-            lower.includes("klimadiagramm") ||
-            lower.includes("temperature") ||
-            lower.includes("map") ||
-            lower.includes("karte") ||
-            lower.includes("icon") ||
-            lower.includes("logo") ||
-            lower.includes(".svg")
-          );
+          return [
+            "locator_map",
+            "location_map",
+            "relief_map",
+            "topographic_map",
+            "orthophoto",
+            "planisphere",
+            "_map.",
+            "karte.",
+            "carte_",
+            "kaart_",
+            "карта",
+
+            "flag_of",
+            "flagge_",
+            "drapeau_",
+            "bandera_",
+            "bandeira_",
+            "ensign",
+            "pennant",
+
+            "coat_of_arms",
+            "coats_of",
+            "wappen_",
+            "coa_",
+            "heraldry",
+            "blazon",
+            "escudo_de",
+            "armoiries_de",
+
+            "klimadiagramm",
+            "climograph",
+            "climatograph",
+            "koppen",
+            "thornthwaite",
+            "climate_chart",
+            "climate_graph",
+
+            "icon",
+            "logo",
+            "favicon",
+            "commons-logo",
+            "wikimedia_logo",
+            "wikipedia_logo",
+
+            ".svg",
+
+            "buergermeister",
+            "mayor_of",
+            "portrait_of_the",
+            "governor_of",
+            "senator_of",
+
+            "spd_logo",
+            "cdu_logo",
+            "csu_logo",
+            "afd_logo",
+            "partei_logo",
+
+            "stadium_",
+            "arena_",
+
+            "kupferstich",
+            "engraving_of",
+            "lithograph_of",
+            "woodcut_of",
+
+            "blank_",
+            "placeholder",
+            "no_image",
+            "noimage",
+            "missing_image",
+            "transparent",
+          ].some((word) => lower.includes(word));
         };
 
         let imageUrls: string[] = [];
@@ -1530,79 +1596,19 @@ export default function MapScreen() {
               </G>
             </Svg>
           </TouchableOpacity>
-
-          <View
-            style={{
-              position: "absolute",
-              bottom: 110,
-              right: 16,
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              shadowColor: "#000",
-              shadowOpacity: 0.12,
-              shadowRadius: 8,
-              elevation: 6,
-              overflow: "hidden",
-            }}
-          >
-            {[
-              {
-                icon: <Navigation color="#1E293B" size={22} />,
-                onPress: () => {
-                  setRoute(null);
-                  setDistanceInfo(null);
-                  setRouteEnd(null);
-
-                  setRouteStart(
-                    markerPos
-                      ? { label: "Mein Standort", coordinate: markerPos }
-                      : null,
-                  );
-                  setRouteEnd(null);
-                  setRouteSheetOpen(true);
-                },
-              },
-              {
-                icon: <MapIcon color="#1E293B" size={22} />,
-                onPress: () => setMapStyleSheetOpen(true),
-                divider: true,
-              },
-              {
-                icon: <Box color="#1E293B" size={22} />,
-                onPress: resetPitch,
-              },
-              {
-                icon: <Download color="#1E293B" size={22} />,
-                onPress: () => setDrawMode(true),
-              },
-            ].map((item, idx) => (
-              <React.Fragment key={idx}>
-                {item.divider && (
-                  <View style={{ height: 1, backgroundColor: "#F1F5F9" }} />
-                )}
-                <TouchableOpacity
-                  onPress={item.onPress}
-                  style={{
-                    width: 48,
-                    height: 48,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {item.icon}
-                </TouchableOpacity>
-                {idx < 3 && !item.divider && (
-                  <View
-                    style={{
-                      height: StyleSheet.hairlineWidth,
-                      backgroundColor: "#F1F5F9",
-                    }}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </View>
         </>
+
+        <NavigationSideBar
+          markerPos={markerPos}
+          resetPitch={resetPitch}
+          setRoute={setRoute}
+          setDistanceInfo={setDistanceInfo}
+          setRouteEnd={setRouteEnd}
+          setRouteStart={setRouteStart}
+          setRouteSheetOpen={setRouteSheetOpen}
+          setMapStyleSheetOpen={setMapStyleSheetOpen}
+          setDrawMode={setDrawMode}
+        />
 
         <BottomSheet
           ref={sheetPoiRef}

@@ -1,17 +1,27 @@
 // Version 1.3.6 - © Cactus Apps 2026
 import { useRouter } from "expo-router";
-import { Bolt, ChevronRight, Check, ChevronLeft } from "lucide-react-native";
+import {
+  BarChart2,
+  Bug,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  RefreshCw,
+} from "lucide-react-native";
 import * as React from "react";
 import * as Application from "expo-application";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
-  ScrollView,
 } from "react-native";
 import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,7 +29,7 @@ import * as Haptics from "expo-haptics";
 
 import { useAuthStore } from "@/lib/storage/zustand";
 import { AppTheme } from "@/lib/theme";
-import { Lock, Palette } from "lucide-react-native";
+import { Lock } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 
 const Settings = () => {
@@ -28,6 +38,7 @@ const Settings = () => {
   const router = useRouter();
   const isSubscribed = useAuthStore((s) => s.isSubscribed);
   const updateSettings = useAuthStore((s) => s.updateSettings);
+  const appSettings = useAuthStore((s) => s.settings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
   const [themeModalVisible, setThemeModalVisible] = useState(false);
 
@@ -39,18 +50,18 @@ const Settings = () => {
   const version = Application.nativeApplicationVersion;
 
   const languages = [
-    { code: "en", label: "English", flag: "🇺🇸" },
-    { code: "de", label: "Deutsch", flag: "🇩🇪" },
-    { code: "ar", label: "العربية", flag: "🇸🇦" },
-    { code: "es", label: "Spanish", flag: "🇪🇸" },
-    { code: "fr", label: "French", flag: "🇫🇷" },
-    { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
-    { code: "it", label: "Italiano", flag: "🇮🇹" },
-    { code: "ja", label: "日本語", flag: "🇯🇵" },
-    { code: "ko", label: "한국어", flag: "🇰🇷" },
-    { code: "pt", label: "Português", flag: "🇵🇹" },
-    { code: "ru", label: "Русский", flag: "🇷🇺" },
-    { code: "zh", label: "中文", flag: "🇨🇳" },
+    { code: "en", label: "English" },
+    { code: "de", label: "Deutsch" },
+    { code: "ar", label: "العربية" },
+    { code: "es", label: "Spanish" },
+    { code: "fr", label: "French" },
+    { code: "hi", label: "हिन्दी" },
+    { code: "it", label: "Italiano" },
+    { code: "ja", label: "日本語" },
+    { code: "ko", label: "한국어" },
+    { code: "pt", label: "Português" },
+    { code: "ru", label: "Русский" },
+    { code: "zh", label: "中文" },
   ];
 
   const handleLanguagePress = (langCode: string) => {
@@ -66,6 +77,25 @@ const Settings = () => {
 
   const currentLanguageLabel =
     languages.find((l) => l.code === i18n.language)?.label || "English";
+
+  const crashReportsOn = appSettings.crashReports !== false;
+  const autoUpdateOn = appSettings.autoUpdateCheck !== false;
+
+  const togglePrivacy = (
+    key: "locationSharing" | "analytics" | "crashReports" | "autoUpdateCheck",
+    value: boolean,
+  ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (key === "crashReports") {
+      updateSettings({ crashReports: value });
+      return;
+    }
+    if (key === "autoUpdateCheck") {
+      updateSettings({ autoUpdateCheck: value });
+      return;
+    }
+    updateSettings({ [key]: value });
+  };
 
   const THEME_OPTIONS: {
     value: AppTheme;
@@ -315,6 +345,127 @@ const Settings = () => {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Location & privacy</Text>
+          <View style={styles.card}>
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <MapPin
+                  size={22}
+                  color={
+                    appSettings.locationSharing
+                      ? theme.primary
+                      : theme.subTextColor
+                  }
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Location</Text>
+                <Text style={styles.menuValue}>
+                  Map, GPS widget, and weather use your position
+                </Text>
+              </View>
+              <Switch
+                value={appSettings.locationSharing}
+                onValueChange={(v) => togglePrivacy("locationSharing", v)}
+                trackColor={{
+                  false: theme.cardBgSecondary,
+                  true: theme.primaryLight,
+                }}
+                thumbColor={
+                  appSettings.locationSharing ? theme.primary : theme.white
+                }
+                ios_backgroundColor={
+                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+                }
+              />
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <BarChart2
+                  size={22}
+                  color={
+                    appSettings.analytics ? theme.primary : theme.subTextColor
+                  }
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Analytics (Vexo)</Text>
+                <Text style={styles.menuValue}>
+                  Anonymous usage to improve the app
+                </Text>
+              </View>
+              <Switch
+                value={appSettings.analytics}
+                onValueChange={(v) => togglePrivacy("analytics", v)}
+                trackColor={{
+                  false: theme.cardBgSecondary,
+                  true: theme.primaryLight,
+                }}
+                thumbColor={appSettings.analytics ? theme.primary : theme.white}
+                ios_backgroundColor={
+                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+                }
+              />
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <Bug
+                  size={22}
+                  color={crashReportsOn ? theme.primary : theme.subTextColor}
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Crash reports</Text>
+                <Text style={styles.menuValue}>
+                  Send error reports via Sentry
+                </Text>
+              </View>
+              <Switch
+                value={crashReportsOn}
+                onValueChange={(v) => togglePrivacy("crashReports", v)}
+                trackColor={{
+                  false: theme.cardBgSecondary,
+                  true: theme.primaryLight,
+                }}
+                thumbColor={crashReportsOn ? theme.primary : theme.white}
+                ios_backgroundColor={
+                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+                }
+              />
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <RefreshCw
+                  size={22}
+                  color={autoUpdateOn ? theme.primary : theme.subTextColor}
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Automatic update check</Text>
+                <Text style={styles.menuValue}>
+                  Look for Expo OTA updates in the background
+                </Text>
+              </View>
+              <Switch
+                value={autoUpdateOn}
+                onValueChange={(v) => togglePrivacy("autoUpdateCheck", v)}
+                trackColor={{
+                  false: theme.cardBgSecondary,
+                  true: theme.primaryLight,
+                }}
+                thumbColor={autoUpdateOn ? theme.primary : theme.white}
+                ios_backgroundColor={
+                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+                }
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>App Info</Text>
           <View style={styles.card}>
             <View style={styles.infoItem}>
@@ -360,7 +511,6 @@ const Settings = () => {
                     style={styles.languageItem}
                     onPress={() => handleLanguagePress(lang.code)}
                   >
-                    <Text style={styles.languageFlag}>{lang.flag}</Text>
                     <Text
                       style={[
                         styles.languageLabel,
@@ -462,6 +612,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       flexDirection: "row",
       alignItems: "center",
       paddingVertical: isModern ? 4 : 0,
+    },
+    toggleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 10,
     },
     menuIconContainer: {
       width: 44,
