@@ -92,7 +92,7 @@ const UpdateLog = () => {
         <View style={styles.introSection}>
           <History size={40} color="#2563EB" strokeWidth={2.5} />
           <Text style={styles.introTitle}>Version History</Text>
-          <Text style={styles.introSub}>See what's new in GPS Explore.</Text>
+          <Text style={styles.introSub}>See what's new in Atlasys.</Text>
         </View>
 
         <View style={styles.timeline}>
@@ -230,7 +230,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: "#2563EB",
       backgroundColor: theme.isModern
         ? theme.iconBg
-        : (theme.isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF"),
+        : theme.isDark
+          ? "rgba(37, 99, 235, 0.1)"
+          : "#EFF6FF",
       paddingHorizontal: 8,
       paddingVertical: 2,
       borderRadius: isModern ? 8 : 6,

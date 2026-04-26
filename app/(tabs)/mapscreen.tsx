@@ -47,6 +47,7 @@ import {
   Keyboard,
   Linking,
   Modal,
+  PixelRatio,
   Platform,
   Pressable,
   ScrollView,
@@ -83,9 +84,6 @@ import NavigationSideBar from "@/components/overlays/NavigationSideBar";
 
 const { width, height } = Dimensions.get("window");
 
-const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY;
-const RAPIDAPI_HOST = process.env.EXPO_PUBLIC_RAPIDAPI_HOST;
-
 type CityResult = {
   id: number | string;
   city: string;
@@ -105,11 +103,18 @@ type SelectedCity = {
   country?: string;
 };
 
+type WikiArticleImage = {
+  /** Skalierte URL für die horizontale Galerie (kleinere Bytes). */
+  previewUrl: string;
+  /** Größere Server-Thumbnail-URL für die Vollbildansicht. */
+  fullUrl: string;
+};
+
 interface ArticleData {
   title: string;
   thumbnail: string | null;
   extract: string;
-  images: string[];
+  images: WikiArticleImage[];
 }
 
 type RoutePoint = {
@@ -137,7 +142,6 @@ export default function MapScreen() {
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
   const [zoom, setZoom] = useState(12);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
@@ -172,6 +176,12 @@ export default function MapScreen() {
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
   const locationSharing = useAuthStore((s) => s.settings.locationSharing);
+  const searchHistory = useAuthStore((s) => s.searchHistory);
+  const addToSearchHistory = useAuthStore((s) => s.addToSearchHistory);
+  const removeFromSearchHistory = useAuthStore(
+    (s) => s.removeFromSearchHistory,
+  );
+  const clearSearchHistory = useAuthStore((s) => s.clearSearchHistory);
   const [isPlayingAnimation, setIsPlayingAnimation] = useState<boolean>(false);
   const ref = useRef<LottieView>(null);
   const [mapThemeIndex, setMapThemeIndex] = useState(0);
@@ -199,10 +209,10 @@ export default function MapScreen() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null,
   );
+  const [isSearching, setIsSearching] = useState(false);
   const [poiModalVisible, setPoiModalVisible] = useState(false);
   const theme = useAppTheme();
   const isDark = theme.isDark;
-  const scheme = isDark ? "dark" : "light";
   const styles = useMemo(
     () => getStyles(theme),
     [theme.isDark, theme.isModern],
@@ -250,11 +260,7 @@ export default function MapScreen() {
   const drawModeRef = useRef(false);
   const [bearing, setBearing] = useState(0);
 
-  const searchBarVisible =
-    !drawMode &&
-    !routePickMode &&
-    BottomSheetIndex < 3 &&
-    BottomSheetIndex2 < 3;
+  const searchBarVisible = !drawMode && !routePickMode;
 
   const { destLat, destLon, destName } = useLocalSearchParams<{
     destLat: string;
@@ -269,13 +275,21 @@ export default function MapScreen() {
 
   const { t } = useTranslation();
 
-  const mapThemes = [
-    "https://tiles.openfreemap.org/styles/bright",
-    "https://tiles.openfreemap.org/styles/dark",
-    "https://tiles.openfreemap.org/styles/liberty",
-  ];
-
   // Location/GPS Stuff
+  // Neue Funktion: IP-basierter Standort als Fallback
+  const getIPLocation = async (): Promise<[number, number] | null> => {
+    try {
+      const res = await fetch("https://ipapi.co/json/");
+      const data = await res.json();
+      if (data.latitude && data.longitude) {
+        return [data.longitude, data.latitude];
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (!locationSharing) {
       setSub((current) => {
@@ -289,12 +303,54 @@ export default function MapScreen() {
     let liveSub: Location.LocationSubscription | null = null;
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      // Schritt 1: Sofort IP-Standort laden als Platzhalter
+      if (!hasCenteredOnce.current && mapRef.current) {
+        const ipCoords = await getIPLocation();
+        if (ipCoords && !cancelled && !hasCenteredOnce.current) {
+          mapRef.current.flyTo({
+            center: ipCoords,
+            zoom: 5, // Land-Zoom wie Google Maps
+            duration: 800,
+          });
+        }
+      }
+
+      // Schritt 2: GPS Permission anfragen
+      const { status, canAskAgain } =
+        await Location.requestForegroundPermissionsAsync();
+
       if (status !== "granted") {
-        setError("Location authorization denied");
+        if (!canAskAgain) {
+          // User hat "Nie wieder fragen" gewählt → zu Einstellungen
+          setError("location_denied_permanent");
+        } else {
+          setError("Location authorization denied");
+        }
+        setLocationReady(true); // Trotzdem UI freigeben
         return;
       }
 
+      // Schritt 3: Einmalige schnelle Position holen
+      try {
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        if (lastKnown && !cancelled && !hasCenteredOnce.current) {
+          const { latitude, longitude } = lastKnown.coords;
+          setMarkerPos([longitude, latitude]);
+          setLocationReady(true);
+          if (mapRef.current) {
+            hasCenteredOnce.current = true;
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              speed: 0.8,
+              duration: 600,
+            });
+            ensureGlobe();
+          }
+        }
+      } catch {}
+
+      // Schritt 4: Live GPS Watcher
       const s = await Location.watchPositionAsync(
         {
           accuracy:
@@ -309,10 +365,11 @@ export default function MapScreen() {
           lastLocRef.current = loc;
           const { latitude, longitude } = loc.coords;
           setMarkerPos([longitude, latitude]);
+
           if (!locationReady) setLocationReady(true);
+
           if (!hasCenteredOnce.current && mapRef.current) {
             hasCenteredOnce.current = true;
-
             mapRef.current.flyTo({
               center: [longitude, latitude],
               zoom: 14,
@@ -509,9 +566,27 @@ export default function MapScreen() {
         }
         const pageTitle = searchData[1][0];
 
+        const win = Dimensions.get("window");
+        const dpr = Math.min(PixelRatio.get(), 3);
+        const galleryThumbPx = Math.min(
+          840,
+          Math.max(440, Math.ceil(win.width * 0.7 * dpr)),
+        );
+        const fullscreenThumbPx = Math.min(
+          1680,
+          Math.max(
+            galleryThumbPx,
+            Math.ceil(Math.max(win.width, win.height) * dpr),
+          ),
+        );
+        const heroPageImagePx = Math.min(
+          880,
+          Math.max(520, Math.ceil(Math.max(win.width, 280) * dpr)),
+        );
+
         // 2. Extract + Thumbnail
         const extractRes = await fetch(
-          `https://de.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro&explaintext&piprop=thumbnail&pithumbsize=1000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
+          `https://de.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro&explaintext&piprop=thumbnail&pithumbsize=${heroPageImagePx}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
           { headers, signal: controller.signal },
         );
         const extractData = await extractRes.json();
@@ -609,42 +684,68 @@ export default function MapScreen() {
           ].some((word) => lower.includes(word));
         };
 
-        let imageUrls: string[] = [];
+        let imageUrls: WikiArticleImage[] = [];
         if (imageTitles.length > 0) {
           const titlesQuery = imageTitles
             .map((t: string) => encodeURIComponent(t))
             .join("|");
-          const imagesInfoRes = await fetch(
-            `https://de.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url&format=json&origin=*`,
-            { headers, signal: controller.signal },
-          );
-          const imagesInfoData = await imagesInfoRes.json();
+          const imageInfoUrl = (w: number) =>
+            `https://de.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=${w}&format=json&origin=*`;
 
-          if (imagesInfoData.query?.pages) {
-            const urlMap: Record<string, string> = {};
-            Object.values(imagesInfoData.query.pages).forEach((p: any) => {
-              if (p.imageinfo?.[0]?.url) urlMap[p.title] = p.imageinfo[0].url;
+          const [imagesInfoPreviewRes, imagesInfoFullRes] = await Promise.all([
+            fetch(imageInfoUrl(galleryThumbPx), {
+              headers,
+              signal: controller.signal,
+            }),
+            fetch(imageInfoUrl(fullscreenThumbPx), {
+              headers,
+              signal: controller.signal,
+            }),
+          ]);
+          const [imagesInfoPreviewData, imagesInfoFullData] = await Promise.all(
+            [imagesInfoPreviewRes.json(), imagesInfoFullRes.json()],
+          );
+
+          const mapInfos = (data: any) => {
+            const m: Record<string, { url?: string; thumburl?: string }> = {};
+            if (!data.query?.pages) return m;
+            Object.values(data.query.pages).forEach((p: any) => {
+              const info = p.imageinfo?.[0];
+              if (info?.url)
+                m[p.title] = { url: info.url, thumburl: info.thumburl };
             });
-            imageTitles.forEach((title: string) => {
-              const url = urlMap[title];
-              if (
-                url &&
-                !isJunk(url) &&
-                (url.endsWith(".jpg") ||
-                  url.endsWith(".png") ||
-                  url.endsWith(".jpeg"))
-              ) {
-                imageUrls.push(url);
-              }
-            });
-          }
+            return m;
+          };
+
+          const previewMap = mapInfos(imagesInfoPreviewData);
+          const fullMap = mapInfos(imagesInfoFullData);
+
+          imageTitles.forEach((title: string) => {
+            const p = previewMap[title];
+            const f = fullMap[title];
+            const canonicalUrl = f?.url ?? p?.url;
+            if (
+              !canonicalUrl ||
+              isJunk(canonicalUrl) ||
+              !(
+                canonicalUrl.endsWith(".jpg") ||
+                canonicalUrl.endsWith(".png") ||
+                canonicalUrl.endsWith(".jpeg")
+              )
+            ) {
+              return;
+            }
+            const previewUrl = p?.thumburl || p?.url;
+            const fullUrl = f?.thumburl || f?.url || previewUrl;
+            if (previewUrl && fullUrl) imageUrls.push({ previewUrl, fullUrl });
+          });
         }
 
         let finalThumbnail = thumbnail;
         if (finalThumbnail && isJunk(finalThumbnail))
-          finalThumbnail = imageUrls[0] || null;
+          finalThumbnail = imageUrls[0]?.previewUrl || null;
         else if (!finalThumbnail && imageUrls.length > 0)
-          finalThumbnail = imageUrls[0];
+          finalThumbnail = imageUrls[0].previewUrl;
 
         if (controller.signal.aborted) return;
 
@@ -703,15 +804,10 @@ export default function MapScreen() {
   async function searchCities(q: string) {
     setLoadingSearch(true);
     try {
-      const url = `https://${RAPIDAPI_HOST}/v1/geo/cities?namePrefix=${encodeURIComponent(
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
         q,
-      )}&limit=8&sort=-population`;
-      const resp = await fetch(url, {
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY ?? "",
-          "X-RapidAPI-Host": RAPIDAPI_HOST ?? "",
-        },
-      });
+      )}&count=8&language=de&format=json`;
+      const resp = await fetch(url);
       if (!resp.ok) {
         console.log(t("GeoDB_error"), `${resp.status}`);
         setResults([]);
@@ -719,12 +815,12 @@ export default function MapScreen() {
         return;
       }
       const json = await resp.json();
-      const arr = (json.data || []).map((it: any) => ({
+      const arr = (json.results || []).map((it: any) => ({
         id: it.id ?? `${it.latitude}-${it.longitude}`,
-        city: it.city || it.name || `${it.city}, ${it.country}`,
-        name: it.name ?? it.city,
+        city: it.name,
+        name: it.name,
         country: it.country,
-        region: it.region,
+        region: it.admin1,
         latitude: it.latitude,
         longitude: it.longitude,
         population: it.population,
@@ -753,10 +849,7 @@ export default function MapScreen() {
     Keyboard.dismiss();
     setZoom(9);
 
-    setSearchHistory((prev) => {
-      const filtered = prev.filter((q) => q !== (city.name ?? city.city));
-      return [city.name ?? city.city, ...filtered].slice(0, 5);
-    });
+    addToSearchHistory(city.name ?? city.city);
 
     selectCity({
       name: city.name ?? city.city,
@@ -857,6 +950,7 @@ export default function MapScreen() {
   }, [start, end]);
 
   const onMapClick = async (event: any) => {
+    Keyboard.dismiss();
     const { lng, lat } = event.lngLat;
     if (drawModeRef.current) return;
     if (!mapRef.current) return;
@@ -923,6 +1017,11 @@ export default function MapScreen() {
     } catch (error) {
       Sentry.captureException(error);
     }
+  };
+
+  const onBlur = () => {
+    Keyboard.dismiss();
+    setIsSearching(false);
   };
 
   useEffect(() => {
@@ -1413,6 +1512,8 @@ export default function MapScreen() {
                   style={styles.input}
                   value={query}
                   onChangeText={(value) => setQuery(value)}
+                  onBlur={onBlur}
+                  onFocus={() => setIsSearching(true)}
                 />
                 {!loadingSearch && query.length > 0 && (
                   <TouchableOpacity onPress={clearInput}>
@@ -1464,28 +1565,47 @@ export default function MapScreen() {
               ))}
             </ScrollView>
 
-            {query.length === 0 && searchHistory.length > 0 && (
-              <Animated.View entering={FadeInDown} style={styles.suggestionBox}>
-                <View style={styles.historyHeader}>
-                  <History size={16} color="#888" />
-                  <Text style={styles.historyHeaderText}>Zuletzt gesucht</Text>
-                  <TouchableOpacity onPress={() => setSearchHistory([])}>
-                    <X size={16} color="#888" />
-                  </TouchableOpacity>
-                </View>
-                {searchHistory.map((item, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    style={styles.suggestionItem}
-                    onPress={() => setQuery(item)}
-                  >
-                    <Text style={styles.suggTitle}>{item}</Text>
-                  </TouchableOpacity>
-                ))}
-              </Animated.View>
-            )}
+            {query.length === 0 &&
+              searchHistory.length > 0 &&
+              !city &&
+              isSearching && (
+                <Animated.View
+                  entering={FadeInDown}
+                  style={styles.suggestionBox}
+                >
+                  <View style={styles.historyHeader}>
+                    <History size={16} color="#888" />
+                    <Text style={styles.historyHeaderText}>
+                      Zuletzt gesucht
+                    </Text>
+                    <TouchableOpacity onPress={() => clearSearchHistory()}>
+                      <X size={16} color="#888" />
+                    </TouchableOpacity>
+                  </View>
+                  {searchHistory.map((item, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={styles.suggestionItem2}
+                      onPress={() => setQuery(item)}
+                    >
+                      <Text style={styles.suggTitle}>{item}</Text>
+                      <TouchableOpacity
+                        onPress={() => removeFromSearchHistory(item)}
+                        style={{
+                          marginLeft: "auto",
+                          padding: 4,
+                          borderRadius: 4,
+                          backgroundColor: "rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        <X size={16} color="#888" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+                </Animated.View>
+              )}
 
-            {results.length > 0 && query.length > 0 && (
+            {results.length > 0 && query.length > 0 && !city && (
               <View style={styles.suggestionBox}>
                 <FlatList
                   data={results}
@@ -1531,72 +1651,78 @@ export default function MapScreen() {
           />
         )}
 
-        <>
-          <TouchableOpacity
-            onPress={resetToNorth}
-            style={{
-              position: "absolute",
-              top: Platform.OS === "ios" ? 110 : 150,
-              right: 16,
-              width: 48,
-              height: 48,
-              zIndex: 100,
-            }}
-          >
-            <Svg width={48} height={48} viewBox="0 0 48 48">
-              <Circle cx="24" cy="24" r="23" fill="#1C1C1E" opacity="0.92" />
+        {/*Kompass*/}
+        {!isSearching && (
+          <>
+            <TouchableOpacity
+              onPress={resetToNorth}
+              style={{
+                position: "absolute",
+                top: Platform.OS === "ios" ? 110 : 150,
+                right: 16,
+                width: 48,
+                height: 48,
+                zIndex: 100,
+              }}
+            >
+              <Svg width={48} height={48} viewBox="0 0 48 48">
+                <Circle cx="24" cy="24" r="23" fill="#1C1C1E" opacity="0.92" />
 
-              <Circle
-                cx="24"
-                cy="24"
-                r="23"
-                fill="none"
-                stroke="#3A3A3C"
-                strokeWidth="1"
-              />
-              {Array.from({ length: 12 }, (_, i) => {
-                const angle = (i * 30 * Math.PI) / 180;
-                const isMajor = i % 3 === 0;
-                const inner = isMajor ? 16 : 17.5;
-                const outer = 21;
-                const x1 = 24 + inner * Math.sin(angle);
-                const y1 = 24 - inner * Math.cos(angle);
-                const x2 = 24 + outer * Math.sin(angle);
-                const y2 = 24 - outer * Math.cos(angle);
-                return (
-                  <Line
-                    key={i}
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke={isMajor ? "#FFFFFF" : "#555"}
-                    strokeWidth={isMajor ? 1.5 : 1}
-                    strokeLinecap="round"
+                <Circle
+                  cx="24"
+                  cy="24"
+                  r="23"
+                  fill="none"
+                  stroke="#3A3A3C"
+                  strokeWidth="1"
+                />
+                {Array.from({ length: 12 }, (_, i) => {
+                  const angle = (i * 30 * Math.PI) / 180;
+                  const isMajor = i % 3 === 0;
+                  const inner = isMajor ? 16 : 17.5;
+                  const outer = 21;
+                  const x1 = 24 + inner * Math.sin(angle);
+                  const y1 = 24 - inner * Math.cos(angle);
+                  const x2 = 24 + outer * Math.sin(angle);
+                  const y2 = 24 - outer * Math.cos(angle);
+                  return (
+                    <Line
+                      key={i}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke={isMajor ? "#FFFFFF" : "#555"}
+                      strokeWidth={isMajor ? 1.5 : 1}
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
+
+                <G rotation={-bearing} origin="24, 24">
+                  <Polygon points="24,8 26.5,22 24,20 21.5,22" fill="#EF4444" />
+                  <Polygon
+                    points="24,40 26.5,26 24,28 21.5,26"
+                    fill="#8E8E93"
                   />
-                );
-              })}
 
-              <G rotation={-bearing} origin="24, 24">
-                <Polygon points="24,8 26.5,22 24,20 21.5,22" fill="#EF4444" />
-                <Polygon points="24,40 26.5,26 24,28 21.5,26" fill="#8E8E93" />
-
-                <G rotation={bearing} origin="24, 24">
-                  <SvgText
-                    x="24"
-                    y="29"
-                    textAnchor="middle"
-                    fill="white"
-                    fontSize="11"
-                    fontWeight="700"
-                  >
-                    N
-                  </SvgText>
+                  <G rotation={bearing} origin="24, 24">
+                    <SvgText
+                      x="24"
+                      y="29"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="11"
+                      fontWeight="700"
+                    >
+                      N
+                    </SvgText>
+                  </G>
                 </G>
-              </G>
-            </Svg>
-          </TouchableOpacity>
-        </>
+              </Svg>
+            </TouchableOpacity>
+          </>
+        )}
 
         <NavigationSideBar
           markerPos={markerPos}
@@ -1996,7 +2122,9 @@ export default function MapScreen() {
                         data={article.images}
                         showsHorizontalScrollIndicator={false}
                         nestedScrollEnabled
-                        keyExtractor={(item: string) => item}
+                        keyExtractor={(item: WikiArticleImage, index: number) =>
+                          `${item.previewUrl}-${index}`
+                        }
                         renderItem={({ item, index }: any) => (
                           <TouchableOpacity
                             style={styles.imageWrapper}
@@ -2004,7 +2132,7 @@ export default function MapScreen() {
                             activeOpacity={0.8}
                           >
                             <Image
-                              source={{ uri: item }}
+                              source={{ uri: item.previewUrl }}
                               style={styles.image}
                               contentFit="cover"
                               transition={300}
@@ -2056,11 +2184,13 @@ export default function MapScreen() {
                   index,
                 })}
                 showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => `full-${item}`}
+                keyExtractor={(item: WikiArticleImage) =>
+                  `full-${item.fullUrl}`
+                }
                 renderItem={({ item }) => (
                   <View style={styles.fullscreenImageWrapper}>
                     <Image
-                      source={{ uri: item }}
+                      source={{ uri: item.fullUrl }}
                       style={styles.fullscreenImage}
                       contentFit="contain"
                       transition={300}
@@ -2077,6 +2207,7 @@ export default function MapScreen() {
             </View>
           </View>
         </Modal>
+
         <RouteSheet
           open={routeSheetOpen}
           start={routeStart}
@@ -2175,7 +2306,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     borderColor,
     isModern,
     primary,
-    primaryLight,
     inputBg,
     overlay,
     overlayDark,
@@ -2183,7 +2313,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     tabIndicator,
     black,
   } = theme;
-  const isDark = theme.isDark;
 
   return StyleSheet.create({
     weatherBadge: {
@@ -2371,6 +2500,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 12,
       borderBottomWidth: 1,
       borderBottomColor: borderColor,
+    },
+    suggestionItem2: {
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+      alignItems: "center",
+      flexDirection: "row",
     },
     searchRow: {
       paddingHorizontal: 12,

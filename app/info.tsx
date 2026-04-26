@@ -34,7 +34,10 @@ export default function Info() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("/(tabs)/profilescreen")} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          style={styles.backButton}
+        >
           <ChevronLeft size={24} color={textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("About GPS")}</Text>
@@ -55,13 +58,17 @@ export default function Info() {
           <View style={styles.socialLinks}>
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => Linking.openURL("https://github.com/Cactus-Apps/Atlasys")}
+              onPress={() =>
+                Linking.openURL("https://github.com/Cactus-Apps/Atlasys")
+              }
             >
               <Github size={20} color={textColor} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => Linking.openURL("")}
+              onPress={() =>
+                Linking.openURL("https://github.com/Cactus-Apps/Atlasys")
+              }
             >
               <Globe size={20} color={textColor} />
             </TouchableOpacity>
@@ -69,10 +76,11 @@ export default function Info() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('Development')}</Text>
+          <Text style={styles.sectionTitle}>{t("Development")}</Text>
           <View style={styles.card}>
             <Text style={styles.descriptionText}>
-              {t('We_are_Cactus_Apps')} {t('develops_apps')} {t('customer_satisfaction')}
+              {t("We_are_Cactus_Apps")} {t("develops_apps")}{" "}
+              {t("customer_satisfaction")}
             </Text>
           </View>
         </View>
@@ -84,7 +92,12 @@ export default function Info() {
               style={styles.menuItem}
               onPress={() => router.navigate("/licenses")}
             >
-              <View style={[styles.menuIcon, { backgroundColor: theme.purpleLight }]}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: theme.purpleLight },
+                ]}
+              >
                 <Copyright size={20} color={theme.purple} />
               </View>
               <Text style={styles.menuLabel}>{t("licenses")}</Text>
@@ -97,7 +110,12 @@ export default function Info() {
               style={styles.menuItem}
               onPress={() => router.navigate("/updatelog")}
             >
-              <View style={[styles.menuIcon, { backgroundColor: theme.successLight }]}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: theme.successLight },
+                ]}
+              >
                 <List size={20} color={theme.success} />
               </View>
               <Text style={styles.menuLabel}>{t("update_log")}</Text>
@@ -106,7 +124,9 @@ export default function Info() {
           </View>
         </View>
 
-        <Text style={styles.versionText}>Version 1.4.5 • © 2026 Cactus Apps</Text>
+        <Text style={styles.versionText}>
+          Version 1.4.5 • © 2026 Cactus Apps
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -134,6 +134,8 @@ function StorageRing({
 }
 
 function EmptyState({ dark }: { dark: boolean }) {
+  const theme = useAppTheme();
+
   return (
     <View
       style={{
@@ -176,6 +178,30 @@ function EmptyState({ dark }: { dark: boolean }) {
       >
         Open the map and tap the download icon to save a region for offline use
       </Text>
+      <TouchableOpacity
+        style={{
+          backgroundColor: theme.primary,
+          borderRadius: 14,
+          paddingVertical: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          paddingHorizontal: 30,
+        }}
+        onPress={() => router.push("/(tabs)/mapscreen")}
+      >
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "800",
+            color: dark ? "#F8FAFC" : "#0F172A",
+            letterSpacing: -0.5,
+          }}
+        >
+          Go to Map
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -215,10 +241,7 @@ export default function OfflineMapsTab() {
       ({ readDirectoryAsync, getInfoAsync }) => {
         const dir =
           require("expo-file-system/legacy").documentDirectory + "mbtiles/";
-        getInfoAsync(dir).then((info) => console.log("DIR EXISTS:", info));
-        readDirectoryAsync(dir)
-          .then((files) => console.log("FILES:", files))
-          .catch((err) => Sentry.captureException(err));
+        readDirectoryAsync(dir).catch((err) => Sentry.captureException(err));
       },
     );
   }, []);

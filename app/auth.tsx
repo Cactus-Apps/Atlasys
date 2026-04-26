@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -6,36 +6,75 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
   Image,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import ConfirmHcaptcha from "@hcaptcha/react-native-hcaptcha";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useTranslation } from "react-i18next";
-import { Mail, Lock, ArrowRight, Github } from "lucide-react-native";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  EyeIcon,
+  EyeOffIcon,
+} from "lucide-react-native";
 import * as Sentry from "@sentry/react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
+import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons";
 
-const { width } = Dimensions.get("window");
+const sitekey = process.env.EXPO_PUBLIC_HCAPTCHA_SITEKEY!;
 
 export default function AuthScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { signIn, signUp } = useAuth();
   const theme = useAppTheme();
   const isDark = theme.isDark;
-
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>(
+    undefined,
+  );
+  const pendingAuthRef = useRef(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const captcha = useRef<any>(null);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const { signIn, signUp, signInWithGoogle } = useAuth();
+
+  const onMessage = (event: any) => {
+    const data = event?.nativeEvent?.data;
+
+    if (!data) return;
+
+    if (data === "open" || data === "cancel") return;
+
+    if (data === "error") {
+      setError("Captcha fehlgeschlagen");
+      return;
+    }
+
+    if (typeof data === "string" && data.startsWith("P1_")) {
+      console.log("✅ CAPTCHA TOKEN:", data);
+
+      setCaptchaToken(data);
+      captcha.current?.hide();
+    }
+  };
+
+  useEffect(() => {
+    if (captchaToken && pendingAuthRef.current) {
+      pendingAuthRef.current = false;
+      handleAuth();
+    }
+  }, [captchaToken]);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -47,23 +86,27 @@ export default function AuthScreen() {
       return;
     }
 
+    if (!captchaToken) {
+      pendingAuthRef.current = true;
+      captcha.current?.show();
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      if (isSignUp) {
-        const err = await signUp(email, password);
-        if (err) setError(err);
-        else setIsSignUp(false);
-      } else {
-        const err = await signIn(email, password);
-        if (err) setError(err);
-        else router.replace("/");
-      }
+      const err = isSignUp
+        ? await signUp(email, password, { captchaToken })
+        : await signIn(email, password, { captchaToken });
+
+      setCaptchaToken(undefined);
+
+      if (err) setError(err);
+      else router.replace("/");
     } catch (err) {
       Sentry.captureException(err);
-      setError("An unexpected error occurred");
+      setError("Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -73,6 +116,23 @@ export default function AuthScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSignUp(!isSignUp);
     setError(null);
+    setCaptchaToken(undefined);
+  };
+
+  const handleGoogleAuth = async () => {
+    setOauthLoading(true);
+    setError(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const err = await signInWithGoogle();
+      if (err) setError(err);
+      else router.replace("/");
+    } catch (err) {
+      Sentry.captureException(err);
+      setError("An unexpected error occurred");
+    } finally {
+      setOauthLoading(false);
+    }
   };
 
   const getInputBorderColor = (name: string) => {
@@ -147,9 +207,18 @@ export default function AuthScreen() {
                 onChangeText={setPassword}
                 onFocus={() => setFocusedInput("password")}
                 onBlur={() => setFocusedInput(null)}
-                secureTextEntry
+                secureTextEntry={secureTextEntry}
                 autoCapitalize="none"
               />
+              <TouchableOpacity
+                onPress={() => setSecureTextEntry((prev) => !prev)}
+              >
+                {secureTextEntry ? (
+                  <EyeIcon size={20} color={"#94A3B8"} />
+                ) : (
+                  <EyeOffIcon size={20} color={"#94A3B8"} />
+                )}
+              </TouchableOpacity>
             </View>
 
             {error && (
@@ -159,9 +228,12 @@ export default function AuthScreen() {
             )}
 
             <TouchableOpacity
-              style={[styles.mainBtn, loading && { opacity: 0.7 }]}
+              style={[
+                styles.mainBtn,
+                (loading || oauthLoading) && { opacity: 0.7 },
+              ]}
               onPress={handleAuth}
-              disabled={loading}
+              disabled={loading || oauthLoading}
             >
               <Text style={styles.mainBtnText}>
                 {loading ? "..." : isSignUp ? t("Sign_up") : t("Login")}
@@ -178,23 +250,34 @@ export default function AuthScreen() {
             </TouchableOpacity>
           </Animated.View>
 
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          >
+            <ConfirmHcaptcha
+              ref={captcha}
+              siteKey="ebf833d4-fe80-42aa-8c4e-f1e0dc30910a"
+              baseUrl="http://localhost"
+              size="compact"
+              onMessage={onMessage}
+            />
+          </View>
+
           <Animated.View entering={FadeInDown.delay(600)} style={styles.footer}>
-            <Text style={styles.footerText}>Or continue with</Text>
-            <View style={styles.socialRow}>
-              <TouchableOpacity
-                style={[
-                  styles.socialBtn,
-                  {
-                    backgroundColor: theme.cardBg,
-                    borderColor: theme.borderColor,
-                    borderRadius: theme.isModern ? 24 : 20,
-                  },
-                ]}
-              >
-                <Github size={24} color={theme.textColor} />
-              </TouchableOpacity>
-              {/* Add more social providers if needed */}
-            </View>
+            <Text style={[styles.footerText, { color: theme.subTextColor }]}>
+              Or continue with
+            </Text>
+            <OAuthProviderButtons
+              isDark={isDark}
+              onGooglePress={handleGoogleAuth}
+              googleLoading={oauthLoading}
+              disabled={loading}
+            />
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
@@ -302,31 +385,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   footer: {
-    marginTop: 48,
+    marginTop: 40,
     alignItems: "center",
+    width: "100%",
   },
   footerText: {
     fontSize: 14,
-    color: "#64748B",
     fontWeight: "600",
-    marginBottom: 24,
-  },
-  socialRow: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  socialBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
+    marginBottom: 16,
   },
 });

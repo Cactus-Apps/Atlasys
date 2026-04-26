@@ -4,13 +4,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppTheme } from "../theme";
 
 type StoreTabs = {
-  TabBar: "CustomTabBar1" | "CustomTabBar2";
-  setTabBar: (tab: "CustomTabBar1" | "CustomTabBar2") => void;
+  NewTabBar: boolean;
+  setNewTabBar: (tab: boolean) => void;
 };
 
 export const useTabStore = create<StoreTabs>((set) => ({
-  TabBar: "CustomTabBar2",
-  setTabBar: (tab) => set({ TabBar: tab }),
+  NewTabBar: false,
+  setNewTabBar: (tab) => set({ NewTabBar: tab }),
 }));
 
 type Storeloading = {
@@ -92,6 +92,13 @@ type StoreAuth = {
   routeHistory: RouteData[];
   addRouteToHistory: (route: RouteData) => void;
 
+  // Search History
+  searchHistory: string[];
+  setSearchHistory: (history: string[]) => void;
+  addToSearchHistory: (item: string) => void;
+  removeFromSearchHistory: (item: string) => void;
+  clearSearchHistory: () => void;
+
   // Session Management
   userId: string | null;
   setUserId: (id: string | null) => void;
@@ -121,6 +128,7 @@ const initialState = {
   },
   currentRoute: null,
   routeHistory: [],
+  searchHistory: [],
   userId: null,
   searchCount: 0,
 };
@@ -179,6 +187,21 @@ export const useAuthStore = create<StoreAuth>()(
           routeHistory: [route, ...state.routeHistory].slice(0, 10),
         })),
 
+      searchHistory: [],
+      setSearchHistory: (history) => set({ searchHistory: history }),
+      addToSearchHistory: (item) =>
+        set((state) => ({
+          searchHistory: [
+            item,
+            ...state.searchHistory.filter((h) => h !== item),
+          ].slice(0, 5),
+        })),
+      removeFromSearchHistory: (item) =>
+        set((state) => ({
+          searchHistory: state.searchHistory.filter((h) => h !== item),
+        })),
+      clearSearchHistory: () => set({ searchHistory: [] }),
+
       setUserId: (id) => set({ userId: id }),
       searchCount: 0,
       incrementSearchCount: () =>
@@ -192,6 +215,7 @@ export const useAuthStore = create<StoreAuth>()(
         isOnboardingCompleted: state.isOnboardingCompleted,
         settings: state.settings,
         userId: state.userId,
+        searchHistory: state.searchHistory,
       }),
     },
   ),

@@ -19,6 +19,7 @@ import {
   Trash2,
   Bookmark,
   Lock,
+  ExternalLinkIcon,
 } from "lucide-react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useRouter } from "expo-router";
@@ -87,68 +88,61 @@ export default function SavedScreen() {
       entering={FadeInDown.delay(index * 100).springify()}
       style={styles.card}
     >
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => handleNavigate(item)}
-      >
-        <View style={styles.imageContainer}>
-          {item.thumbnail ? (
-            <Image
-              source={{ uri: item.thumbnail }}
-              style={styles.image}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={200}
-            />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <MapPin size={32} color={theme.chevronColor} />
-            </View>
-          )}
+      <View style={styles.imageContainer}>
+        {item.thumbnail ? (
+          <Image
+            source={{ uri: item.thumbnail }}
+            style={styles.image}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+          />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <MapPin size={32} color={theme.chevronColor} />
+          </View>
+        )}
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleRemove(item.name);
+          }}
+        >
+          <Trash2 size={18} color={theme.danger} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.infoContainer}>
+        <View style={styles.textContainer}>
+          <Text style={styles.placeName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles.placeLocation} numberOfLines={1}>
+            {item.region ? `${item.region}, ` : ""}
+            {item.country || "Unknown"}
+          </Text>
+        </View>
+
+        <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.removeButton}
+            style={styles.actionBtnPrimary}
+            onPress={() => handleNavigate(item)}
+          >
+            <ExternalLinkIcon size={20} color={theme.white} />
+            <Text style={styles.badgeText}>Open Map</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionBtn}
             onPress={(e) => {
               e.stopPropagation();
-              handleRemove(item.name);
+              handleShare(item);
             }}
           >
-            <Trash2 size={18} color={theme.danger} />
+            <Share2 size={20} color={theme.chevronColor} />
           </TouchableOpacity>
         </View>
-
-        <View style={styles.infoContainer}>
-          <View style={styles.textContainer}>
-            <Text style={styles.placeName} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <Text style={styles.placeLocation} numberOfLines={1}>
-              {item.region ? `${item.region}, ` : ""}
-              {item.country || "Unknown"}
-            </Text>
-          </View>
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleRoute(item);
-              }}
-            >
-              <Navigation size={20} color={theme.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleShare(item);
-              }}
-            >
-              <Share2 size={20} color={theme.chevronColor} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 
@@ -196,7 +190,11 @@ export default function SavedScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
-              <Bookmark size={48} color={theme.chevronColor} strokeWidth={1.5} />
+              <Bookmark
+                size={48}
+                color={theme.chevronColor}
+                strokeWidth={1.5}
+              />
             </View>
             <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
             <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
@@ -214,7 +212,19 @@ export default function SavedScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, primary, primaryLight, white, chevronColor } = theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    primaryLight,
+    white,
+    chevronColor,
+  } = theme;
 
   return StyleSheet.create({
     container: {
@@ -321,12 +331,27 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     actionBtn: {
       width: 44,
       height: 44,
+      flexDirection: "row",
       borderRadius: isModern ? 16 : 14,
       backgroundColor: isModern
         ? theme.iconBg
         : theme.isDark
           ? "rgba(255, 255, 255, 0.05)"
           : cardBgSecondary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    actionBtnPrimary: {
+      width: 120,
+      height: 44,
+      flexDirection: "row",
+      gap: 10,
+      borderRadius: isModern ? 16 : 14,
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? primary
+          : primary,
       alignItems: "center",
       justifyContent: "center",
     },

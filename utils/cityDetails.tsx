@@ -1,58 +1,38 @@
 import * as Sentry from "@sentry/react-native";
 
-const RAPIDAPI_KEY = process.env.EXPO_PUBLIC_RAPIDAPI_KEY!;
-const RAPIDAPI_HOST = process.env.EXPO_PUBLIC_RAPIDAPI_HOST!;
-
 export async function fetchCityDetails(cityName: string, countryCode?: string) {
-  const params = new URLSearchParams({
-    namePrefix: cityName,
-    limit: "1",
-    sort: "-population",
-  });
-
-  if (countryCode) {
-    params.append("countryIds", countryCode);
-  }
-
   try {
-    const res = await fetch(
-      `https://${RAPIDAPI_HOST}/v1/geo/cities?${params.toString()}`,
-      {
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY ?? "",
-          "X-RapidAPI-Host": RAPIDAPI_HOST ?? "",
-        },
-      },
-    );
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=de&format=json`;
+    const res = await fetch(url);
 
     if (!res.ok) {
-      console.error("GeoDB Error", res.status);
+      console.error("Open-Meteo Error", res.status);
       return null;
     }
 
     const json = await res.json();
-    const cityData = json.data?.[0];
+    const cityData = json.results?.[0];
     if (!cityData) return null;
 
     return {
       id: cityData.id,
       name: cityData.name,
-      city: cityData.city,
+      city: cityData.name,
       country: cityData.country,
-      countryCode: cityData.countryCode,
-      region: cityData.region,
-      regionCode: cityData.regionCode,
+      countryCode: cityData.country_code,
+      region: cityData.admin1,
+      regionCode: cityData.admin1_id,
       latitude: cityData.latitude,
       longitude: cityData.longitude,
       population: cityData.population,
-      elevationMeters: cityData.elevationMeters,
+      elevationMeters: cityData.elevation,
       timezone: cityData.timezone,
-      wikiDataId: cityData.wikiDataId,
-      type: cityData.type,
+      wikiDataId: null, // Open-Meteo hat kein wikiDataId
+      type: "city", // Annahme
     };
   } catch (err: any) {
     Sentry.captureException(err);
-    console.error("GeoDB Fetch Error:", err);
+    console.error("Open-Meteo Fetch Error:", err);
     return null;
   }
 }

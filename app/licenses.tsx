@@ -48,8 +48,8 @@ export default function Licenses() {
     },
     {
       title: "lordicon",
-      content: 'Thanks for the service.'
-    }
+      content: "Thanks for the service.",
+    },
   ];
 
   return (
@@ -59,10 +59,7 @@ export default function Licenses() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronLeft
-            size={24}
-            color={theme.textColor}
-          />
+          <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("licenses")}</Text>
         <View style={{ width: 44 }} />
@@ -76,7 +73,7 @@ export default function Licenses() {
           <FileText size={40} color={theme.primary} strokeWidth={2} />
           <Text style={styles.introTitle}>Open Source Licenses</Text>
           <Text style={styles.introSub}>
-            The software components used in GPS Explore.
+            The software components used in Atlasys.
           </Text>
         </View>
 

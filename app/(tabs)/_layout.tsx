@@ -41,7 +41,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
 export default function TabsLayout() {
   const theme = useAppTheme();
-  const TabBar = useTabStore((s) => s.TabBar);
+  const TabBar = useTabStore((s) => s.NewTabBar);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function TabsLayout() {
   return (
     <>
       <RouteGuard>
-        {TabBar === "CustomTabBar1" ? (
+        {TabBar ? (
           <Tabs
             screenOptions={{ headerShown: false }}
             tabBar={(props) => (
@@ -64,7 +64,6 @@ export default function TabsLayout() {
               />
             )}
           >
-            <Tabs.Screen name="index" options={{ title: "Home" }} />
             <Tabs.Screen name="mapscreen" options={{ title: "map" }} />
             <Tabs.Screen name="saved" options={{ title: "Saved" }} />
             <Tabs.Screen name="profilescreen" options={{ title: "profile" }} />
@@ -85,9 +84,6 @@ export default function TabsLayout() {
               tabBarIcon: ({ color, size }) => {
                 let IconComponent;
                 switch (route.name) {
-                  case "index":
-                    IconComponent = Home;
-                    break;
                   case "mapscreen":
                     IconComponent = MapIcon;
                     break;
@@ -107,7 +103,6 @@ export default function TabsLayout() {
               },
             })}
           >
-            <Tabs.Screen name="index" options={{ title: "Home" }} />
             <Tabs.Screen name="mapscreen" options={{ title: "Map" }} />
             <Tabs.Screen name="saved" options={{ title: "Saved" }} />
             <Tabs.Screen name="profilescreen" options={{ title: "Profile" }} />

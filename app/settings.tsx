@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  DockIcon,
   MapPin,
   RefreshCw,
 } from "lucide-react-native";
@@ -27,7 +28,7 @@ import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
-import { useAuthStore } from "@/lib/storage/zustand";
+import { useAuthStore, useTabStore } from "@/lib/storage/zustand";
 import { AppTheme } from "@/lib/theme";
 import { Lock } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
@@ -40,10 +41,8 @@ const Settings = () => {
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const appSettings = useAuthStore((s) => s.settings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
-  const [themeModalVisible, setThemeModalVisible] = useState(false);
-
-  const [DesignModalVisible, setDesignModalVisible] = useState(false);
-  const [ThemeModeModalVisible, setThemeModeModalVisible] = useState(false);
+  const NewTabBar = useTabStore((s) => s.NewTabBar);
+  const setTabBar = useTabStore((s) => s.setNewTabBar);
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const buildNumber = Application.nativeBuildVersion;
@@ -342,6 +341,37 @@ const Settings = () => {
               );
             })}
           </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <DockIcon
+                  size={22}
+                  color={NewTabBar ? theme.primary : theme.subTextColor}
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>Use new Botom Bar</Text>
+                <Text style={styles.menuValue}>
+                  Use Bottom Bar v2 (in beta)
+                </Text>
+              </View>
+              <Switch
+                value={NewTabBar}
+                onValueChange={(v) => setTabBar(v)}
+                trackColor={{
+                  false: theme.cardBgSecondary,
+                  true: theme.primaryLight,
+                }}
+                thumbColor={NewTabBar ? theme.primary : theme.white}
+                ios_backgroundColor={
+                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+                }
+              />
+            </View>
+          </View>
         </View>
 
         <View style={styles.section}>
