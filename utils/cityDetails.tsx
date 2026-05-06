@@ -5,10 +5,12 @@ export async function fetchCityDetails(cityName: string, countryCode?: string) {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=de&format=json`;
     const res = await fetch(url);
 
-    if (!res.ok) {
-      console.error("Open-Meteo Error", res.status);
-      return null;
-    }
+    if (!res.ok)
+      (err: any) => {
+        Sentry.captureException(err);
+
+        return null;
+      };
 
     const json = await res.json();
     const cityData = json.results?.[0];
@@ -32,7 +34,8 @@ export async function fetchCityDetails(cityName: string, countryCode?: string) {
     };
   } catch (err: any) {
     Sentry.captureException(err);
-    console.error("Open-Meteo Fetch Error:", err);
+    Sentry.captureException(err);
+
     return null;
   }
 }

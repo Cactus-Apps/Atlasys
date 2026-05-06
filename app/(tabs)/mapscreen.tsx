@@ -153,8 +153,6 @@ export default function MapScreen() {
     duration: number;
   } | null>();
   const [CityInfo, setCityInfo] = useState("");
-  const [subscription, setSubscription] =
-    useState<Location.LocationSubscription | null>(null);
   const [MapStyle, setMapStyle] = useState(
     "https://tiles.openfreemap.org/styles/bright",
   );
@@ -166,12 +164,8 @@ export default function MapScreen() {
   const [end, setEnd] = useState<[number, number] | null>();
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const [savedLocations, setSavedLocations] = useState<SelectedCity[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
   const [query, setQuery] = useState("");
   const [email, setEmail] = useState<string | null>();
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null,
-  );
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
@@ -184,11 +178,9 @@ export default function MapScreen() {
   const clearSearchHistory = useAuthStore((s) => s.clearSearchHistory);
   const [isPlayingAnimation, setIsPlayingAnimation] = useState<boolean>(false);
   const ref = useRef<LottieView>(null);
-  const [mapThemeIndex, setMapThemeIndex] = useState(0);
   const [weather, setWeather] = useState<{ temp: number; code: number } | null>(
     null,
   );
-  const [liked, setLiked] = useState(false);
   const [markerPos, setMarkerPos] = useState<[number, number]>();
   const [selectedPoi, setSelectedPoi] = useState<{
     name: string;
@@ -210,14 +202,11 @@ export default function MapScreen() {
     null,
   );
   const [isSearching, setIsSearching] = useState(false);
-  const [poiModalVisible, setPoiModalVisible] = useState(false);
   const theme = useAppTheme();
-  const isDark = theme.isDark;
   const styles = useMemo(
     () => getStyles(theme),
     [theme.isDark, theme.isModern],
   );
-  const [openRoute, setOpenRoute] = useState(false);
   const sheetPoiRef = useRef<BottomSheet>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const activeFilterRef = useRef<string | null>(null);
@@ -240,7 +229,6 @@ export default function MapScreen() {
   const [errorSheetOpen, setErrorSheetOpen] = useState(false);
   const [showError, setShowError] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [drawStart, setDrawStart] = useState<[number, number] | null>(null);
   const [drawMode, setDrawMode] = useState(false);
   const lastBearingRef = useRef(0);
   const isSaved = useMemo(
@@ -296,6 +284,8 @@ export default function MapScreen() {
         current?.remove();
         return null;
       });
+      setLocationReady(true);
+      setError(null);
       return;
     }
 
@@ -809,7 +799,6 @@ export default function MapScreen() {
       )}&count=8&language=de&format=json`;
       const resp = await fetch(url);
       if (!resp.ok) {
-        console.log(t("GeoDB_error"), `${resp.status}`);
         setResults([]);
         setLoadingSearch(false);
         return;
@@ -1046,7 +1035,7 @@ export default function MapScreen() {
             position: "absolute",
             top: Platform.OS === "ios" ? 110 : 150,
             alignSelf: "center",
-            backgroundColor: "#24262E",
+            backgroundColor: theme.cardBg,
             borderRadius: 20,
             paddingHorizontal: 14,
             paddingVertical: 8,
@@ -1054,7 +1043,7 @@ export default function MapScreen() {
             alignItems: "center",
             gap: 8,
             zIndex: 100,
-            shadowColor: "#000",
+            shadowColor: theme.black,
             shadowOpacity: 0.2,
             shadowRadius: 6,
             elevation: 6,
@@ -1074,7 +1063,7 @@ export default function MapScreen() {
             position: "absolute",
             top: Platform.OS === "ios" ? 110 : 150,
             alignSelf: "center",
-            backgroundColor: "#24262E",
+            backgroundColor: theme.cardBg,
             borderRadius: 20,
             paddingHorizontal: 14,
             paddingVertical: 8,
@@ -1082,7 +1071,7 @@ export default function MapScreen() {
             alignItems: "center",
             gap: 8,
             zIndex: 100,
-            shadowColor: "#000",
+            shadowColor: theme.black,
             shadowOpacity: 0.2,
             shadowRadius: 6,
             elevation: 6,
@@ -1436,7 +1425,7 @@ export default function MapScreen() {
                     type: "line",
                     paint: {
                       "line-width": i === 0 ? 6 : 3,
-                      "line-color": i === 0 ? "#1d4ed8" : "#94a3b8",
+                      "line-color": i === 0 ? theme.primaryDark : theme.subTextColor,
                     },
                   },
                 },
@@ -1504,35 +1493,33 @@ export default function MapScreen() {
         {searchBarVisible && (
           <View style={styles.searchWrapper}>
             <View style={styles.searchContainer}>
-              <View style={styles.searchRow}>
-                <Search size={25} color={theme.subTextColor} />
-                <TextInput
-                  placeholder={t("Search")}
-                  placeholderTextColor={theme.subTextColor}
-                  style={styles.input}
-                  value={query}
-                  onChangeText={(value) => setQuery(value)}
-                  onBlur={onBlur}
-                  onFocus={() => setIsSearching(true)}
-                />
-                {!loadingSearch && query.length > 0 && (
-                  <TouchableOpacity onPress={clearInput}>
-                    <X size={18} color="#667" />
-                  </TouchableOpacity>
-                )}
-                {loadingSearch && <ActivityIndicator size="small" />}
+              <Search size={25} color={theme.subTextColor} />
+              <TextInput
+                placeholder={t("Search")}
+                placeholderTextColor={theme.subTextColor}
+                style={styles.input}
+                value={query}
+                onChangeText={(value) => setQuery(value)}
+                onBlur={onBlur}
+                onFocus={() => setIsSearching(true)}
+              />
+              {!loadingSearch && query.length > 0 && (
+                <TouchableOpacity onPress={clearInput}>
+                  <X size={18} color={theme.subTextColor} />
+                </TouchableOpacity>
+              )}
+              {loadingSearch && <ActivityIndicator size="small" />}
 
-                <View style={styles.avatarView}>
-                  <Avatar
-                    size={34}
-                    name={email ?? undefined}
-                    email={email ?? undefined}
-                    colorize={true}
-                    radius={100}
-                    badgeColor="#146275ff"
-                    defaultSource={require("@/assets/images/icon.png")}
-                  />
-                </View>
+              <View style={styles.avatarView}>
+                <Avatar
+                  size={34}
+                  name={email ?? undefined}
+                  email={email ?? undefined}
+                  colorize={true}
+                  radius={100}
+                  badgeColor="#146275ff"
+                  defaultSource={require("@/assets/images/icon.png")}
+                />
               </View>
             </View>
             <ScrollView
@@ -1574,12 +1561,12 @@ export default function MapScreen() {
                   style={styles.suggestionBox}
                 >
                   <View style={styles.historyHeader}>
-                    <History size={16} color="#888" />
+                    <History size={16} color={theme.subTextColor} />
                     <Text style={styles.historyHeaderText}>
                       Zuletzt gesucht
                     </Text>
                     <TouchableOpacity onPress={() => clearSearchHistory()}>
-                      <X size={16} color="#888" />
+                      <X size={16} color={theme.subTextColor} />
                     </TouchableOpacity>
                   </View>
                   {searchHistory.map((item, idx) => (
@@ -1598,7 +1585,7 @@ export default function MapScreen() {
                           backgroundColor: "rgba(0,0,0,0.1)",
                         }}
                       >
-                        <X size={16} color="#888" />
+                        <X size={16} color={theme.subTextColor} />
                       </TouchableOpacity>
                     </TouchableOpacity>
                   ))}
@@ -1723,7 +1710,6 @@ export default function MapScreen() {
             </TouchableOpacity>
           </>
         )}
-
         <NavigationSideBar
           markerPos={markerPos}
           resetPitch={resetPitch}
@@ -1857,7 +1843,7 @@ export default function MapScreen() {
                       onPress={async () => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         await Share.share({
-                          message: `📍 ${selectedPoi.name}\nhttps://www.openstreetmap.org/node/${selectedPoi.osm_id}`,
+                          message: `${selectedPoi.name}\nhttps://www.openstreetmap.org/node/${selectedPoi.osm_id}`,
                         });
                       }}
                       style={{
@@ -2337,11 +2323,17 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginLeft: 10,
     },
     searchContainer: {
-      backgroundColor: cardBg,
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingBottom: 8,
       justifyContent: "center",
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: inputBg,
+      elevation: 3,
+      shadowColor: black,
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
     },
     filterRow: {
       paddingTop: 8,
@@ -2507,17 +2499,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderBottomColor: borderColor,
       alignItems: "center",
       flexDirection: "row",
-    },
-    searchRow: {
-      paddingHorizontal: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      borderRadius: isModern ? 18 : 14,
-      backgroundColor: inputBg,
-      elevation: 3,
-      shadowColor: black,
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
     },
     input: {
       flex: 1,

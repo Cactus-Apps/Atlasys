@@ -104,7 +104,7 @@ type StoreAuth = {
   setUserId: (id: string | null) => void;
   searchCount: number;
   incrementSearchCount: () => void;
-  clearStore: () => void;
+  clearStore: (options?: { preserveOnboarding?: boolean }) => void;
 };
 
 const initialState = {
@@ -206,15 +206,38 @@ export const useAuthStore = create<StoreAuth>()(
       searchCount: 0,
       incrementSearchCount: () =>
         set((state) => ({ searchCount: state.searchCount + 1 })),
-      clearStore: () => set(initialState),
+      clearStore: (options) =>
+        set((state) =>
+          options?.preserveOnboarding
+            ? {
+                ...initialState,
+                isOnboardingCompleted: state.isOnboardingCompleted,
+              }
+            : initialState,
+        ),
     }),
     {
       name: "auth-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persistedState: any) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return initialState;
+        }
+        return {
+          ...initialState,
+          ...persistedState,
+          settings: {
+            ...initialState.settings,
+            ...(persistedState.settings ?? {}),
+          },
+        };
+      },
       partialize: (state) => ({
         isOnboardingCompleted: state.isOnboardingCompleted,
         settings: state.settings,
         userId: state.userId,
+        savedPlaces: state.savedPlaces,
         searchHistory: state.searchHistory,
       }),
     },

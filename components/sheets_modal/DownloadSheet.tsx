@@ -1,18 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Download, X, AlertTriangle } from "lucide-react-native";
 import { tilesForBounds, estimateSizeMB } from "@/lib/storage/mbtiles";
 import { downloadRegion } from "@/lib/storage/downloadTiles";
-import { CircularWavyProgress, Host } from "@expo/ui/jetpack-compose";
+import { CircularWavyProgressIndicator, Host } from "@expo/ui/jetpack-compose";
 import { useAppTheme } from "@/lib/theme";
-import { reverseGeocode } from "@/lib/geocoding";
+import { reverseGeocode } from "@/utils/geocoding";
+import CircularProgress from "../overlays/CircularWavyProgressIndicator";
 
 interface Props {
   open: boolean;
@@ -303,9 +298,11 @@ export default function DownloadSheet({
 
         {status === "downloading" && (
           <View style={{ alignItems: "center", paddingVertical: 24, gap: 16 }}>
-            <Host matchContents>
-              <CircularWavyProgress progress={progress / 100} color={theme.primary} />
-            </Host>
+            <CircularProgress
+              progress={progress / 100}
+              color={theme.primary}
+              size={100}
+            />
             <Text
               style={{
                 fontSize: 16,
@@ -316,7 +313,11 @@ export default function DownloadSheet({
               {progress}% heruntergeladen
             </Text>
             <TouchableOpacity
-              onPress={() => (cancelRef.current.cancelled = true)}
+              onPress={() => {
+                cancelRef.current.cancelled = true;
+                setStatus("idle");
+                setProgress(0);
+              }}
               style={s.cancelBtn}
             >
               <Text style={s.cancelText}>Abbrechen</Text>

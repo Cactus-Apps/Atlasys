@@ -9,8 +9,6 @@ export const subscribeToNewRequests = () => {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "delete_requests" },
       async (payload: any) => {
-        console.log("New request:", payload.new);
-
         await Notifications.scheduleNotificationAsync({
           content: {
             title: "New deletion request",
@@ -19,7 +17,7 @@ export const subscribeToNewRequests = () => {
           },
           trigger: null,
         });
-      }
+      },
     )
     .subscribe();
 

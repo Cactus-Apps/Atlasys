@@ -62,8 +62,6 @@ export default function AuthScreen() {
     }
 
     if (typeof data === "string" && data.startsWith("P1_")) {
-      console.log("✅ CAPTCHA TOKEN:", data);
-
       setCaptchaToken(data);
       captcha.current?.hide();
     }
@@ -136,7 +134,7 @@ export default function AuthScreen() {
   };
 
   const getInputBorderColor = (name: string) => {
-    if (focusedInput === name) return "#2563EB";
+    if (focusedInput === name) return theme.primary;
     return theme.borderColor;
   };
 
@@ -158,7 +156,7 @@ export default function AuthScreen() {
             <Text style={[styles.title, { color: theme.textColor }]}>
               {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: theme.subTextColor }]}>
               {isSignUp
                 ? "Join our global community today"
                 : "Welcome back, explorer!"}
@@ -174,7 +172,9 @@ export default function AuthScreen() {
             >
               <Mail
                 size={20}
-                color={focusedInput === "email" ? "#2563EB" : "#94A3B8"}
+                color={
+                  focusedInput === "email" ? theme.primary : theme.subTextColor
+                }
               />
               <TextInput
                 style={[styles.input, { color: theme.textColor }]}
@@ -197,7 +197,11 @@ export default function AuthScreen() {
             >
               <Lock
                 size={20}
-                color={focusedInput === "password" ? "#2563EB" : "#94A3B8"}
+                color={
+                  focusedInput === "password"
+                    ? theme.primary
+                    : theme.subTextColor
+                }
               />
               <TextInput
                 style={[styles.input, { color: theme.textColor }]}
@@ -214,22 +218,28 @@ export default function AuthScreen() {
                 onPress={() => setSecureTextEntry((prev) => !prev)}
               >
                 {secureTextEntry ? (
-                  <EyeIcon size={20} color={"#94A3B8"} />
+                  <EyeIcon size={20} color={theme.subTextColor} />
                 ) : (
-                  <EyeOffIcon size={20} color={"#94A3B8"} />
+                  <EyeOffIcon size={20} color={theme.subTextColor} />
                 )}
               </TouchableOpacity>
             </View>
 
             {error && (
               <Animated.View entering={FadeInDown} style={styles.errorBox}>
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={[styles.errorText, { color: theme.danger }]}>
+                  {error}
+                </Text>
               </Animated.View>
             )}
 
             <TouchableOpacity
               style={[
                 styles.mainBtn,
+                {
+                  backgroundColor: theme.primary,
+                  shadowColor: theme.primary,
+                },
                 (loading || oauthLoading) && { opacity: 0.7 },
               ]}
               onPress={handleAuth}
@@ -244,7 +254,7 @@ export default function AuthScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.switchBtn} onPress={toggleMode}>
-              <Text style={styles.switchBtnText}>
+              <Text style={[styles.switchBtnText, { color: theme.primary }]}>
                 {isSignUp ? t("Already_account") : t("no_account")}
               </Text>
             </TouchableOpacity>
@@ -324,7 +334,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "#64748B",
   },
   form: {
     gap: 16,
@@ -350,13 +359,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   errorText: {
-    color: "#EF4444",
     fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
   },
   mainBtn: {
-    backgroundColor: "#2563EB",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -364,7 +371,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     gap: 12,
     marginTop: 8,
-    shadowColor: "#2563EB",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -380,7 +386,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   switchBtnText: {
-    color: "#2563EB",
     fontWeight: "700",
     fontSize: 15,
   },

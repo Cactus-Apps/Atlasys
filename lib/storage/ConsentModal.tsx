@@ -42,7 +42,6 @@ export default function ConsentModal({
         }
       } catch (err) {
         Sentry.captureException(err);
-        console.error("Consent check failed:", err);
         setVisible(true);
       } finally {
         if (mounted) setLoading(false);

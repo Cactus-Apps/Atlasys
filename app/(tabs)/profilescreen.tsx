@@ -78,32 +78,32 @@ export function ProfileScreen() {
           label: "Edit Profile",
           sub: "Update your photo and details",
           icon: UserRound,
-          color: "#4F46E5",
-          bg: "#EEF2FF",
+          color: theme.primary,
+          bg: theme.primaryLight,
           route: "/account",
         },
         {
           label: "Privacy & Security",
           sub: "Manage your privacy settings",
           icon: ShieldCheck,
-          color: "#9333EA",
-          bg: "#F5F3FF",
+          color: theme.purple,
+          bg: theme.purpleLight,
           route: "/settings",
         },
         {
           label: "Notifications",
           sub: "Customize your alerts",
           icon: Bell,
-          color: "#2563EB",
-          bg: "#EFF6FF",
+          color: theme.info,
+          bg: theme.infoLight,
           route: "/notifications",
         },
         {
           label: "Billing & Plans",
           sub: "Manage subscription and payment",
           icon: CreditCard,
-          color: "#16A34A",
-          bg: "#F0FDF4",
+          color: theme.success,
+          bg: theme.successLight,
           route: "/paywall",
         },
       ],
@@ -114,8 +114,8 @@ export function ProfileScreen() {
         {
           label: "Manage Offline Maps",
           icon: Download,
-          color: "#2563EB",
-          bg: "#EFF6FF",
+          color: theme.info,
+          bg: theme.infoLight,
           route: "/OfflineMapsTab",
         },
       ],
@@ -126,22 +126,22 @@ export function ProfileScreen() {
         {
           label: t("Help_&_Feedback"),
           icon: MessageCircleQuestionMark,
-          color: "#EA580C",
-          bg: "#FFF7ED",
+          color: theme.warningDark,
+          bg: theme.warningLight,
           route: "/help_feedback",
         },
         {
           label: t("Info"),
           icon: Info,
-          color: "#0284C7",
-          bg: "#F0F9FF",
+          color: theme.info,
+          bg: theme.infoLight,
           route: "/info",
         },
         {
           label: t("Admin_Panel"),
           icon: ShieldUser,
-          color: "#DC2626",
-          bg: "#FEF2F2",
+          color: theme.danger,
+          bg: theme.dangerLight,
           route: "/AdminPanel",
         },
       ],
@@ -228,7 +228,7 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity onPress={() => router.navigate("/test")}>
+          <TouchableOpacity activeOpacity={0.8}>
             <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>
         </View>
@@ -238,7 +238,17 @@ export function ProfileScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, textColor, subTextColor, borderColor, isModern, primary, white, chevronColor } = theme;
+  const {
+    bg,
+    cardBg,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    white,
+    chevronColor,
+  } = theme;
 
   const defaultRadius = isModern ? 24 : 20;
   const innerRadius = isModern ? 16 : 12;
@@ -251,7 +261,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     content: {
       paddingBottom: 40,
     },
-    chevronColor: chevronColor,
+
     profileHeader: {
       padding: 30,
       paddingTop: 60,

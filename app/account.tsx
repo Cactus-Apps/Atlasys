@@ -123,7 +123,6 @@ export default function AccountScreen() {
       }
 
       if (error) {
-        console.log(error);
         setRequest(null);
       } else {
         setRequest(data);
@@ -198,7 +197,7 @@ export default function AccountScreen() {
       ]);
 
       if (error) {
-        console.error(error);
+        Sentry.captureException(error);
         Alert.alert(t("Error"), t("Request_could_not_be_sent"));
       } else {
         Alert.alert(t("Success"), t("deletion_request_created"));
@@ -435,7 +434,22 @@ export default function AccountScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, primaryLight, textColor, subTextColor, borderColor, isModern, primary, danger, dangerLight, success, successLight, overlay, white } = theme;
+  const {
+    bg,
+    cardBg,
+    primaryLight,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    danger,
+    dangerLight,
+    success,
+    successLight,
+    overlay,
+    white,
+  } = theme;
 
   const defaultRadius = isModern ? 24 : 20;
   const innerRadius = isModern ? 16 : 10;

@@ -6,7 +6,9 @@ import { useAuthStore } from "../storage/zustand";
 import { initRevenueCat, checkPremiumStatus } from "./revenuecat";
 import * as Sentry from "@sentry/react-native";
 import * as WebBrowser from "expo-web-browser";
+import { syncConsentToServer } from "@/app/onboarding";
 import * as Linking from "expo-linking";
+import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -37,7 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadUser = async () => {
       const timeout = setTimeout(() => {
         setIsLoadingUser(false);
-        console.warn("Auth initialization timed out.");
       }, 10000);
 
       try {
@@ -49,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await syncStateFromMetadata(sessionUser);
         }
       } catch (err) {
-        console.error("Auth init error:", err);
         Sentry.captureException(err);
       } finally {
         clearTimeout(timeout);
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentUser) {
           await syncStateFromMetadata(currentUser);
         } else {
-          clearStore();
+          clearStore({ preserveOnboarding: true });
         }
       },
     );
@@ -99,7 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       Sentry.captureException(err);
-      console.error("Metadata sync error:", err);
     }
   };
 
@@ -119,7 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (err) {
       Sentry.captureException(err);
-      console.error("Error syncing to Supabase:", err);
     }
   };
 
@@ -146,9 +144,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
       setUser(data.user ?? null);
+      if (data.user?.id) {
+        await syncConsentToServer(data.user.id, supabase);
+      }
     } catch (err) {
       Sentry.captureException(err);
-      console.log("Fehler beim Abrufen des Benutzers:", err);
       setUser(null);
     } finally {
       setIsLoadingUser(false);
@@ -216,18 +216,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (): Promise<string | null> => {
     try {
-      const redirectTo = Linking.createURL("auth/callback");
+      const redirectTo =
+        Platform.OS === "web"
+          ? `${globalThis.location?.origin ?? "http://localhost:8081"}/callback`
+          : Linking.createURL("callback");
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo,
-          skipBrowserRedirect: true,
+          skipBrowserRedirect: Platform.OS !== "web",
         },
       });
 
       if (error) throw error;
       if (!data.url) return "Keine OAuth URL erhalten";
+
+      if (Platform.OS === "web") {
+        globalThis.location?.assign(data.url);
+        return null;
+      }
 
       const result = await WebBrowser.openAuthSessionAsync(
         data.url,
@@ -314,10 +322,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setUser(null);
       router.replace("/auth");
-      alert("Logout erfolgreich");
     } catch (err) {
       Sentry.captureException(err);
-      console.error("Fehler beim Logout:", err);
     }
   };
 

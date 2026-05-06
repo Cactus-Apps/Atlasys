@@ -1,32 +1,17 @@
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { runExpoUpdateCheck } from "@/lib/expoUpdateCheck";
-import { Slot } from "expo-router";
-import { useEffect, useState } from "react";
+import { runExpoUpdateCheck } from "@/utils/expoUpdateCheck";
+import { Slot, useRouter, useSegments } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { AnimatedSplash } from "@/components/SplashScreen";
 import * as Sentry from "@sentry/react-native";
 import type { ErrorEvent, EventHint } from "@sentry/core";
 import * as ImagePicker from "expo-image-picker";
-import { AppState, Text, TextInput } from "react-native";
-import { disableTracking, enableTracking, vexo } from "vexo-analytics";
-import {
-  DMSans_300Light,
-  DMSans_400Regular,
-  DMSans_500Medium,
-  useFonts as useDMSansFonts,
-} from "@expo-google-fonts/dm-sans";
-import {
-  Syne_600SemiBold,
-  Syne_700Bold,
-  Syne_800ExtraBold,
-  useFonts as useSyneFonts,
-} from "@expo-google-fonts/syne";
+import { AppState, View, useColorScheme } from "react-native";
+import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
-const VEXO_API_KEY = process.env.EXPO_PUBLIC_VEXO_API_KEY;
-
-let vexoSdkInitialized = false;
 
 function sentryBeforeSend(
   event: ErrorEvent,
@@ -50,7 +35,6 @@ const handleChooseImage = async (addScreenshot: (uri: string) => void) => {
   });
 
   if (result.canceled) {
-    console.log("User canceled image choice.");
   } else {
     const uri = result.assets[0].uri;
     addScreenshot(uri);
@@ -92,6 +76,8 @@ Sentry.init({
   enableLogs: true,
 });
 
+setupMapLibreLogger("error");
+
 SplashScreen.preventAutoHideAsync();
 
 function TelemetrySync() {
@@ -99,19 +85,6 @@ function TelemetrySync() {
   const autoUpdateCheck = useAuthStore(
     (s) => s.settings.autoUpdateCheck !== false,
   );
-
-  useEffect(() => {
-    if (!VEXO_API_KEY) return;
-    if (!vexoSdkInitialized) {
-      vexo(VEXO_API_KEY);
-      vexoSdkInitialized = true;
-    }
-    if (analytics) {
-      enableTracking().catch(() => {});
-    } else {
-      disableTracking().catch(() => {});
-    }
-  }, [analytics]);
 
   useEffect(() => {
     if (!autoUpdateCheck) return;
@@ -132,42 +105,86 @@ function TelemetrySync() {
 }
 
 function AppBootstrap() {
-  const { isLoadingUser } = useAuth();
+  const { isLoadingUser, user } = useAuth();
   const [animationDone, setAnimationDone] = useState(false);
-  const [dmSansLoaded] = useDMSansFonts({
-    DMSans_300Light,
-    DMSans_400Regular,
-    DMSans_500Medium,
-  });
-  const [syneLoaded] = useSyneFonts({
-    Syne_600SemiBold,
-    Syne_700Bold,
-    Syne_800ExtraBold,
-  });
+  const splashHiddenRef = useRef(false);
+  const [storeReady, setStoreReady] = useState(
+    useAuthStore.persist.hasHydrated(),
+  );
+  const isOnboardingCompleted = useAuthStore((s) => s.isOnboardingCompleted);
+  const segments = useSegments();
+  const router = useRouter();
+  const systemScheme = useColorScheme();
+  const updateSettings = useAuthStore((s) => s.updateSettings);
+  const currentTheme = useAuthStore((s) => s.settings.theme);
 
   useEffect(() => {
-    if (!dmSansLoaded || !syneLoaded) return;
-
-    (Text as any).defaultProps = (Text as any).defaultProps || {};
-    (Text as any).defaultProps.style = [
-      { fontFamily: "DMSans_400Regular" },
-      (Text as any).defaultProps.style,
-    ];
-
-    (TextInput as any).defaultProps = (TextInput as any).defaultProps || {};
-    (TextInput as any).defaultProps.style = [
-      { fontFamily: "DMSans_400Regular" },
-      (TextInput as any).defaultProps.style,
-    ];
-  }, [dmSansLoaded, syneLoaded]);
-
-  useEffect(() => {
-    if (!isLoadingUser && animationDone && dmSansLoaded && syneLoaded) {
-      SplashScreen.hideAsync();
+    if (splashHiddenRef.current) return;
+    if (!isLoadingUser && animationDone) {
+      splashHiddenRef.current = true;
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [isLoadingUser, animationDone, dmSansLoaded, syneLoaded]);
+  }, [isLoadingUser, animationDone]);
 
-  if (!dmSansLoaded || !syneLoaded) return null;
+  useEffect(() => {
+    if (animationDone) return;
+    const fallbackTimer = setTimeout(() => {
+      setAnimationDone(true);
+    }, 4000);
+
+    return () => clearTimeout(fallbackTimer);
+  }, [animationDone]);
+
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setStoreReady(true);
+      return;
+    }
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      setStoreReady(true);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!storeReady) return;
+
+    if (currentTheme === "light" && systemScheme) {
+      const autoTheme = systemScheme === "dark" ? "dark" : "light";
+      updateSettings({ theme: autoTheme });
+    }
+  }, [storeReady, currentTheme, systemScheme, updateSettings]);
+
+  useEffect(() => {
+    if (!storeReady || isLoadingUser) return;
+
+    const inAuthGroup = segments[0] === "auth" || segments[0] === "(auth)";
+    const inOnboarding = segments[0] === "onboarding";
+    const inLegalScreen = segments[0] === "(legal)";
+
+    if (inLegalScreen) return;
+
+    if (!isOnboardingCompleted && !inOnboarding && !inLegalScreen && !inAuthGroup) {
+      router.replace("/onboarding");
+      return;
+    }
+
+    if (isOnboardingCompleted && !user && !inAuthGroup) {
+      router.replace("/auth");
+      return;
+    }
+
+    if (isOnboardingCompleted && user && inAuthGroup) {
+      router.replace("/(tabs)/mapscreen");
+      return;
+    }
+  }, [storeReady, isLoadingUser, user, isOnboardingCompleted, segments]);
+
+  const isReady = storeReady && !isLoadingUser;
+
+  if (!isReady) {
+    return <View style={{ flex: 1, backgroundColor: "#0A1628" }} />;
+  }
 
   return (
     <>

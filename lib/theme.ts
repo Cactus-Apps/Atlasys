@@ -159,7 +159,7 @@ export function useAppTheme() {
       : theme;
 
   const tokens = THEMES[resolvedTheme] ?? THEMES.light;
-  const { isDark, isModern } = tokens;
+  const { isDark } = tokens;
 
   // Dynamische Semantic-Farben (light/dark Varianten)
   const primaryLight = isDark ? "rgba(37, 99, 235, 0.2)" : "#EFF6FF";

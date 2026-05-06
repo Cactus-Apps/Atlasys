@@ -2,9 +2,8 @@ import Purchases from "react-native-purchases";
 import { Platform } from "react-native";
 import * as Sentry from "@sentry/react-native";
 
-// These should ideally be in .env
-const REVENUECAT_API_KEY_IOS = "goog_placeholder_ios"; // TODO: Replace with real key
-const REVENUECAT_API_KEY_ANDROID = "goog_placeholder_android"; // TODO: Replace with real key
+const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY!;
+const REVENUECAT_API_KEY_ANDROID = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY!;
 
 export const ENTITLEMENT_ID = "pro";
 
@@ -45,7 +44,6 @@ export const initRevenueCat = async (userId: string) => {
     }
   } catch (err) {
     Sentry.captureException(err);
-    console.error("Error configuring RevenueCat:", err);
   }
 };
 
@@ -58,7 +56,6 @@ export const checkPremiumStatus = async (): Promise<boolean> => {
     return purchaserInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
   } catch (err) {
     Sentry.captureException(err);
-    console.error("Error checking premium status:", err);
     return false;
   }
 };
@@ -81,7 +78,6 @@ export const purchasePremium = async (): Promise<boolean> => {
   } catch (err: any) {
     if (err.userCancelled) return false;
     Sentry.captureException(err);
-    console.error("Error purchasing premium:", err);
     throw err;
   }
 };

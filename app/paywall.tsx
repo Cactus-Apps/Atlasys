@@ -22,6 +22,7 @@ import {
 import { purchasePremium } from "@/lib/auth/revenuecat";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 
 export default function PaywallScreen() {
   const { user } = useAuth();
@@ -31,6 +32,23 @@ export default function PaywallScreen() {
   const isDark = theme.isDark;
   const styles = getStyles(theme);
   const [loading, setLoading] = useState(false);
+
+  async function presentPaywall(): Promise<boolean> {
+    // Present paywall for current offering:
+    const paywallResult: PAYWALL_RESULT = await RevenueCatUI.presentPaywall();
+
+    switch (paywallResult) {
+      case PAYWALL_RESULT.NOT_PRESENTED:
+      case PAYWALL_RESULT.ERROR:
+      case PAYWALL_RESULT.CANCELLED:
+        return false;
+      case PAYWALL_RESULT.PURCHASED:
+      case PAYWALL_RESULT.RESTORED:
+        return true;
+      default:
+        return false;
+    }
+  }
 
   const handleSubscribe = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -42,7 +60,6 @@ export default function PaywallScreen() {
         router.navigate("/onboarding");
       }
     } catch (err: any) {
-      console.warn("Purchase error:", err.message);
       Sentry.captureException(err);
       if (
         err.message?.includes("placeholder") ||
@@ -143,7 +160,20 @@ export default function PaywallScreen() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, primary, primaryLight, white, success, chevronColor } = theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    primaryLight,
+    white,
+    success,
+    chevronColor,
+  } = theme;
 
   return StyleSheet.create({
     container: {
@@ -177,9 +207,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 120,
       height: 120,
       borderRadius: isModern ? 60 : 60,
-      backgroundColor: isModern
-        ? theme.iconBg
-        : primaryLight,
+      backgroundColor: isModern ? theme.iconBg : primaryLight,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 20,
@@ -218,9 +246,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       width: 48,
       height: 48,
       borderRadius: isModern ? 16 : 14,
-      backgroundColor: isModern
-        ? theme.iconBg
-        : cardBgSecondary,
+      backgroundColor: isModern ? theme.iconBg : cardBgSecondary,
       alignItems: "center",
       justifyContent: "center",
     },

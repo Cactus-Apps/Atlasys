@@ -8,8 +8,6 @@ export const setOnboardingCompleted = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, "true");
   } catch (err: any) {
     Sentry.captureException(err);
-
-    console.error("Fehler beim Speichern:", err);
   }
 };
 
@@ -19,8 +17,6 @@ export const hasCompletedOnboarding = async (): Promise<boolean> => {
     return value === "true";
   } catch (err: any) {
     Sentry.captureException(err);
-
-    console.error("Fehler beim Lesen:", err);
     return false;
   }
 };

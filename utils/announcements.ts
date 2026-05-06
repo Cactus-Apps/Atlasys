@@ -60,5 +60,4 @@ export async function markAllSeen(ids: string[]) {
 
 export async function fetchAll() {
   const { data, error } = await supabase.from("announcements").select("*");
-  console.log("RAW data:", data, "Error:", error);
 }

@@ -274,7 +274,6 @@ export default function MapScreen() {
               300 * Math.pow(2, attempts),
             );
           } else {
-            console.warn("Location not available for routing");
             // Still show the destination
             mapRef.current?.flyTo({
               center: [dLon, dLat],
@@ -704,7 +703,6 @@ export default function MapScreen() {
     };
 
     if (!isSubscribed) {
-      console.log("Weather restricted for non-pro users");
       return;
     }
     fetchWeather();
@@ -719,7 +717,6 @@ export default function MapScreen() {
 
   async function searchCities(q: string) {
     if (!isSubscribed && searchCount >= 5) {
-      console.warn("Search limit reached for free users.");
       setError("Search limit reached. Upgrade to Pro for unlimited searches.");
       setResults([]);
       setLoadingSearch(false);
@@ -728,9 +725,6 @@ export default function MapScreen() {
     }
 
     if (!RAPIDAPI_KEY || !RAPIDAPI_HOST) {
-      console.warn(
-        "RapidAPI credentials are missing. City search will not work.",
-      );
       setError("Suche ist derzeit nicht verfügbar (API-Konfiguration fehlt).");
       setResults([]);
       setLoadingSearch(false);
@@ -749,7 +743,6 @@ export default function MapScreen() {
         },
       });
       if (!resp.ok) {
-        console.log(t("GeoDB_error"), `${resp.status}`);
         setResults([]);
         setLoadingSearch(false);
         return;
