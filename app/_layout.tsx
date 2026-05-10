@@ -1,7 +1,14 @@
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
+import { UpdateProvider } from "@/lib/auth/update-context";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { runExpoUpdateCheck } from "@/utils/expoUpdateCheck";
-import { Slot, useRouter, useSegments } from "expo-router";
+import {
+  Slot,
+  usePathname,
+  useGlobalSearchParams,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { AnimatedSplash } from "@/components/SplashScreen";
@@ -10,6 +17,8 @@ import type { ErrorEvent, EventHint } from "@sentry/core";
 import * as ImagePicker from "expo-image-picker";
 import { AppState, View, useColorScheme } from "react-native";
 import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
+import { PostHogProvider } from "posthog-react-native";
+import { posthog } from "@/lib/config/posthog";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
@@ -81,7 +90,6 @@ setupMapLibreLogger("error");
 SplashScreen.preventAutoHideAsync();
 
 function TelemetrySync() {
-  const analytics = useAuthStore((s) => s.settings.analytics);
   const autoUpdateCheck = useAuthStore(
     (s) => s.settings.autoUpdateCheck !== false,
   );
@@ -164,7 +172,12 @@ function AppBootstrap() {
 
     if (inLegalScreen) return;
 
-    if (!isOnboardingCompleted && !inOnboarding && !inLegalScreen && !inAuthGroup) {
+    if (
+      !isOnboardingCompleted &&
+      !inOnboarding &&
+      !inLegalScreen &&
+      !inAuthGroup
+    ) {
       router.replace("/onboarding");
       return;
     }
@@ -198,9 +211,20 @@ function AppBootstrap() {
 
 export default Sentry.wrap(function RooLayout() {
   return (
-    <AuthProvider>
-      <TelemetrySync />
-      <AppBootstrap />
-    </AuthProvider>
+    <PostHogProvider
+      client={posthog}
+      autocapture={{
+        captureScreens: false,
+        captureTouches: true,
+        propsToCapture: ["testID"],
+      }}
+    >
+      <UpdateProvider>
+        <AuthProvider>
+          <TelemetrySync />
+          <AppBootstrap />
+        </AuthProvider>
+      </UpdateProvider>
+    </PostHogProvider>
   );
 });

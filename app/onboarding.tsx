@@ -7,6 +7,7 @@ import {
   Dimensions,
   Platform,
   Image,
+  ScrollView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -32,6 +33,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
+import { posthog } from "@/lib/config/posthog";
+import { applyAnalyticsChoice } from "@/lib/analytics";
 
 const CONSENT_VERSION = "1.0";
 const CONSENT_KEY = "atlasys_consent_v" + CONSENT_VERSION;
@@ -312,6 +315,11 @@ export default function OnboardingScreen() {
   const theme = useAppTheme();
   const s = useMemo(() => getStyles(theme), [theme.isDark, theme.isModern]);
 
+  type AnalyticsChoice = "full" | "anonymous" | "none";
+  const [analyticsChoice, setAnalyticsChoice] =
+    useState<AnalyticsChoice>("none");
+  const updateSettings = useAuthStore((s) => s.updateSettings);
+
   const router = useRouter();
   const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
 
@@ -342,6 +350,11 @@ export default function OnboardingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       await saveConsentLocally();
+      updateSettings({ analytics: analyticsChoice });
+      applyAnalyticsChoice(analyticsChoice, undefined);
+      posthog.capture("onboarding_completed", {
+        analytics_choice: analyticsChoice,
+      });
     } catch (error) {
       Sentry.captureException(error);
     } finally {
@@ -374,7 +387,7 @@ export default function OnboardingScreen() {
 
   if (showConsent) {
     return (
-      <View style={s.root}>
+      <ScrollView style={s.root}>
         <StatusBar style="auto" />
         <LinearGradient
           colors={["#0A0F1E", "#101828", "#0A0F1E"]}
@@ -473,6 +486,58 @@ export default function OnboardingScreen() {
               </TouchableOpacity>
             </View>
 
+            <View style={s.analyticsSection}>
+              <Text style={s.sectionLabel}>Analyse & Verbesserung</Text>
+              <Text style={s.consentLegal}>
+                Hilf uns Atlasys zu verbessern. Du kannst das jederzeit in den
+                Einstellungen ändern.
+              </Text>
+
+              {(["full", "anonymous", "none"] as AnalyticsChoice[]).map(
+                (choice) => (
+                  <TouchableOpacity
+                    key={choice}
+                    style={[
+                      s.analyticsOption,
+                      analyticsChoice === choice && s.analyticsOptionActive,
+                    ]}
+                    onPress={() => {
+                      setAnalyticsChoice(choice);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                  >
+                    <View
+                      style={[
+                        s.radioOuter,
+                        analyticsChoice === choice && {
+                          borderColor: "#00C4B4",
+                        },
+                      ]}
+                    >
+                      {analyticsChoice === choice && (
+                        <View style={s.radioInner} />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.analyticsOptionTitle}>
+                        {choice === "full" && "Vollständige Analytics"}
+                        {choice === "anonymous" &&
+                          "Anonyme Analytics (empfohlen)"}
+                        {choice === "none" && "Keine Analytics"}
+                      </Text>
+                      <Text style={s.analyticsOptionSub}>
+                        {choice === "full" &&
+                          "Nutzungsverhalten mit deinem Account verknüpft"}
+                        {choice === "anonymous" &&
+                          "Nur anonyme Daten, kein Account-Bezug"}
+                        {choice === "none" && "Keine Daten werden gesendet"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ),
+              )}
+            </View>
+
             {consentError && (
               <Animated.View entering={FadeIn.duration(200)} style={s.errorBox}>
                 <Text style={s.errorText}>
@@ -530,7 +595,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
           </Animated.View>
         </View>
-      </View>
+      </ScrollView>
     );
   }
 
@@ -1161,6 +1226,61 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: 10,
       borderWidth: 1,
       alignSelf: "flex-start",
+    },
+
+    analyticsSection: {
+      marginBottom: 16,
+    },
+    analyticsOption: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+      padding: 14,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: "rgba(255,255,255,0.1)",
+      backgroundColor: "rgba(255,255,255,0.04)",
+      marginBottom: 8,
+    },
+    analyticsOptionActive: {
+      borderColor: "#00C4B4",
+      backgroundColor: "rgba(0,196,180,0.08)",
+    },
+    analyticsOptionTitle: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#fff",
+      marginBottom: 2,
+    },
+    analyticsOptionSub: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.5)",
+      lineHeight: 16,
+    },
+    radioOuter: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: "rgba(255,255,255,0.3)",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 1,
+      flexShrink: 0,
+    },
+    radioInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: "#00C4B4",
+    },
+    sectionLabel: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: "rgba(255,255,255,0.6)",
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+      marginBottom: 8,
     },
   });
 };

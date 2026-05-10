@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppTheme } from "../theme";
+import { AnalyticsChoice } from "@/lib/analytics";
 
 type StoreTabs = {
   NewTabBar: boolean;
@@ -69,7 +70,7 @@ type StoreAuth = {
   settings: {
     notifications: boolean;
     locationSharing: boolean;
-    analytics: boolean;
+    analytics: AnalyticsChoice;
     /** Sentry: false = keine Crash-Reports senden (fehlt → an) */
     crashReports?: boolean;
     /** Expo Updates: Hintergrund-Check (fehlt → an) */
@@ -114,7 +115,7 @@ const initialState = {
   settings: {
     notifications: false,
     locationSharing: false,
-    analytics: false,
+    analytics: "none" as AnalyticsChoice,
     crashReports: true,
     autoUpdateCheck: true,
     theme: "light" as AppTheme,
@@ -162,7 +163,7 @@ export const useAuthStore = create<StoreAuth>()(
       settings: {
         notifications: false,
         locationSharing: false,
-        analytics: false,
+        analytics: "none",
         crashReports: true,
         autoUpdateCheck: true,
         theme: "light" as AppTheme,
@@ -206,15 +207,14 @@ export const useAuthStore = create<StoreAuth>()(
       searchCount: 0,
       incrementSearchCount: () =>
         set((state) => ({ searchCount: state.searchCount + 1 })),
-      clearStore: (options) =>
-        set((state) =>
-          options?.preserveOnboarding
-            ? {
-                ...initialState,
-                isOnboardingCompleted: state.isOnboardingCompleted,
-              }
-            : initialState,
-        ),
+      clearStore: (options?: { preserveOnboarding?: boolean }) =>
+        set((state) => ({
+          ...initialState,
+          isOnboardingCompleted: options?.preserveOnboarding
+            ? state.isOnboardingCompleted
+            : initialState.isOnboardingCompleted,
+          settings: state.settings,
+        })),
     }),
     {
       name: "auth-storage",

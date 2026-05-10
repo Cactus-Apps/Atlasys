@@ -3,30 +3,19 @@ import { Avatar } from "@kolking/react-native-avatar";
 import { useRouter } from "expo-router";
 import {
   Bell,
-  Bolt,
   ChevronRight,
   CreditCard,
   Download,
-  HeartHandshake,
   Info,
   MessageCircleQuestionMark,
   Rocket,
   ShieldCheck,
   ShieldUser,
-  TestTube,
-  TestTube2,
-  User,
   UserRound,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "@/lib/auth/supabase";
 import {
   GestureHandlerRootView,
@@ -34,6 +23,8 @@ import {
 } from "react-native-gesture-handler";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
+import { UpdateBanner } from "@/components/UpdateBanner";
+import { posthog } from "@/lib/config/posthog";
 
 export function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -177,6 +168,8 @@ export function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
+        <UpdateBanner />
+
         <View style={styles.listContainer}>
           {menuItems.map((group, gIdx) => (
             <View key={gIdx} style={styles.group}>
@@ -228,7 +221,10 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity activeOpacity={0.8}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => posthog.capture("test")}
+          >
             <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>
         </View>

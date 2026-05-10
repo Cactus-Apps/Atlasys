@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/auth/supabase";
+import { GoogleLogo } from "@/components/auth/OAuthProviderButtons";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -13,7 +14,6 @@ export default function AuthCallback() {
       }
     });
 
-    // Fallback: falls Session schon da ist
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.replace("/(tabs)/mapscreen");
     });
@@ -22,8 +22,18 @@ export default function AuthCallback() {
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <ActivityIndicator size="large" color="#2563EB" />
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+      }}
+    >
+      <GoogleLogo size={40} />
+      <Text style={{ fontSize: 26, color: "#fff", gap: 16 }}>
+        Signing in with Google
+      </Text>
     </View>
   );
 }

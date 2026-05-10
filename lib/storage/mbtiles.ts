@@ -1,11 +1,9 @@
-import * as SQLite from "expo-sqlite";
 import {
   documentDirectory,
   getInfoAsync,
   makeDirectoryAsync,
   readDirectoryAsync,
   readAsStringAsync,
-  writeAsStringAsync,
   deleteAsync,
 } from "expo-file-system/legacy";
 

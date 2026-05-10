@@ -21,7 +21,6 @@ import Svg, {
 } from "react-native-svg";
 import * as Location from "expo-location";
 import {
-  Box,
   Cloud,
   CloudRain,
   ImageIcon,
@@ -32,9 +31,6 @@ import {
   Heart,
   Share2,
   Route,
-  Download,
-  Navigation,
-  MapIcon,
   AlertCircleIcon,
   AlertTriangle,
 } from "lucide-react-native";
@@ -61,7 +57,7 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
-
+import { getOsmIdFromNominatim } from "@/lib/overpass";
 import { Avatar } from "@kolking/react-native-avatar";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -76,11 +72,11 @@ import { FlatList as GHFlatList } from "react-native-gesture-handler";
 import RouteSheet from "@/components/sheets_modal/RouteSheet";
 import DownloadSheet from "@/components/sheets_modal/DownloadSheet";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { router } from "expo-router";
 import LottieView from "lottie-react-native";
 import ErrorSheet from "@/components/sheets_modal/ErrorSheet";
 import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
 import NavigationSideBar from "@/components/overlays/NavigationSideBar";
+import PoiSheet from "@/components/sheets_modal/PoiSheet";
 
 const { width, height } = Dimensions.get("window");
 
@@ -945,10 +941,20 @@ export default function MapScreen() {
     if (!mapRef.current) return;
     if (routePickModeRef.current) return;
 
-    const allFeatures = await mapRef.current.queryRenderedFeatures(
-      event.point,
-      { layers: ["poi_r1", "poi_transit"] },
+    const allFeatures = await mapRef.current.queryRenderedFeatures(undefined);
+    const poiFeatures = allFeatures.filter((f: any) =>
+      f.layer?.id?.startsWith("poi_"),
     );
+    if (!poiFeatures?.length) return;
+
+    const debugFeatures = await mapRef.current.queryRenderedFeatures(undefined);
+    const poiLayers = [
+      ...new Set(
+        debugFeatures
+          .filter((f: any) => f.layer?.id?.toLowerCase().includes("poi"))
+          .map((f: any) => f.layer?.id),
+      ),
+    ];
 
     if (!allFeatures?.length) return;
 
@@ -983,11 +989,24 @@ export default function MapScreen() {
     if (closest.geometry.type !== "Point") return;
 
     const [lon, lat2] = (closest.geometry as any).coordinates;
+    let osm_id = Number(closest.properties?.osm_id) || 0;
+    if (osm_id === 0) {
+      // Try to get osm_id from Nominatim
+      const nominatimResult = await getOsmIdFromNominatim(
+        closest.properties?.name ?? "",
+        lat2,
+        lon,
+      );
+      if (nominatimResult) {
+        osm_id = nominatimResult.osm_id;
+        // If way, make negative for consistency, but since we use abs, no need
+      }
+    }
     const data = {
       name: closest.properties?.name ?? "Unbekannter POI",
       type: closest.properties?.class ?? "",
       subclass: closest.properties?.subclass ?? "",
-      osm_id: closest.properties?.osm_id ?? 0,
+      osm_id,
       lat: lat2,
       lon,
     };
@@ -1425,7 +1444,8 @@ export default function MapScreen() {
                     type: "line",
                     paint: {
                       "line-width": i === 0 ? 6 : 3,
-                      "line-color": i === 0 ? theme.primaryDark : theme.subTextColor,
+                      "line-color":
+                        i === 0 ? theme.primaryDark : theme.subTextColor,
                     },
                   },
                 },
@@ -1722,205 +1742,23 @@ export default function MapScreen() {
           setDrawMode={setDrawMode}
         />
 
-        <BottomSheet
-          ref={sheetPoiRef}
-          index={BottomSheetIndex2}
+        <PoiSheet
+          sheetRef={sheetPoiRef}
+          selectedPoi={selectedPoi}
           snapPoints={SNAP_POINTS}
-          onChange={(i) => {
-            setBottomSheetIndex2;
-            setBottomSheetIndex2(i);
-            if (i === -1) setSelectedPoi(null);
+          markerPos={markerPos}
+          onClose={() => {
+            setSelectedPoi(null);
+            setBottomSheetIndex2(-1);
           }}
-          backgroundStyle={{
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            backgroundColor: theme.bg,
+          onRouteStart={(start, end) => {
+            setRoute(null);
+            setDistanceInfo(null);
+            setRouteStart(start);
+            setRouteEnd(end);
+            setRouteSheetOpen(true);
           }}
-          handleIndicatorStyle={{ backgroundColor: "#CBD5E1", width: 40 }}
-        >
-          {selectedPoi && (
-            <BottomSheetScrollView>
-              {/* Header – identisch zum City-Sheet */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 20,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <View style={styles.articleHeader}>
-                    <Text
-                      style={{
-                        fontSize: 23,
-                        fontWeight: "600",
-                        marginLeft: 20,
-                        color: theme.textColor,
-                      }}
-                    >
-                      {selectedPoi.name}
-                    </Text>
-                    {/* Kategorie-Badge statt Wetter */}
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        backgroundColor: theme.primaryLight,
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                        borderRadius: 8,
-                        marginLeft: 20,
-                        marginRight: 220,
-                        marginVertical: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: theme.primary,
-                          fontWeight: "600",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {selectedPoi.subclass || selectedPoi.type}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => sheetPoiRef.current?.close()}
-                      style={{
-                        position: "absolute",
-                        right: 10,
-                        alignSelf: "flex-end",
-                      }}
-                    >
-                      <X strokeWidth={3} color={theme.textColor} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Action-Buttons – gleiche Struktur wie City */}
-                  <View style={styles.headerActions}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setRouteStart(
-                          markerPos
-                            ? { label: "Mein Standort", coordinate: markerPos }
-                            : null,
-                        );
-                        setRouteEnd({
-                          label: selectedPoi.name,
-                          coordinate: [selectedPoi.lon, selectedPoi.lat],
-                        });
-                        setRouteSheetOpen(true);
-                        sheetPoiRef.current?.close();
-                      }}
-                      style={{
-                        backgroundColor: theme.primary,
-                        width: 220,
-                        height: 50,
-                        borderRadius: 12,
-                        flexDirection: "row",
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginLeft: 20,
-                      }}
-                    >
-                      <Route color={theme.white} size={24} />
-                      <Text
-                        style={{
-                          fontWeight: "500",
-                          fontSize: 18,
-                          color: theme.white,
-                          paddingHorizontal: 10,
-                        }}
-                      >
-                        Route starten
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={async () => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        await Share.share({
-                          message: `${selectedPoi.name}\nhttps://www.openstreetmap.org/node/${selectedPoi.osm_id}`,
-                        });
-                      }}
-                      style={{
-                        backgroundColor: theme.cardBgSecondary,
-                        width: 50,
-                        height: 50,
-                        borderRadius: 12,
-                        padding: 10,
-                        alignSelf: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Share2 color={theme.primary} size={24} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
-              {/* Info-Bereich */}
-              <View
-                style={{ paddingHorizontal: 20, paddingBottom: 40, gap: 12 }}
-              >
-                <View
-                  style={{ height: 1, backgroundColor: theme.borderColor }}
-                />
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 10,
-                    alignItems: "center",
-                    paddingTop: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: theme.subTextColor,
-                      fontWeight: "500",
-                    }}
-                  >
-                    TYP
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      color: theme.textColor,
-                      fontWeight: "500",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {selectedPoi.type}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: theme.subTextColor,
-                      fontWeight: "500",
-                    }}
-                  >
-                    📍
-                  </Text>
-                  <Text style={{ fontSize: 14, color: theme.subTextColor }}>
-                    {selectedPoi.lat.toFixed(5)}, {selectedPoi.lon.toFixed(5)}
-                  </Text>
-                </View>
-              </View>
-            </BottomSheetScrollView>
-          )}
-        </BottomSheet>
+        />
 
         {city && (
           <BottomSheet

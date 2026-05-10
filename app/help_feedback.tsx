@@ -22,7 +22,6 @@ import {
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as Sentry from "@sentry/react-native";
-import { FeedbackWidget } from "@sentry/react-native";
 
 const HelpFeedback = () => {
   const theme = useAppTheme();
@@ -45,11 +44,6 @@ const HelpFeedback = () => {
 
   const handleBug = () => {
     Sentry.setTag("type", "bug");
-    Sentry.showFeedbackWidget();
-  };
-
-  const handleFeature = () => {
-    Sentry.setTag("type", "feature");
     Sentry.showFeedbackWidget();
   };
 
@@ -85,8 +79,13 @@ const HelpFeedback = () => {
               onPress={openGithub}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuIcon, { backgroundColor: theme.cardBgSecondary }]}>
-                <Github size={22} color={theme.black} />
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: theme.cardBgSecondary },
+                ]}
+              >
+                <Github size={22} color={theme.subTextColor} />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>Report Bug on GitHub</Text>
@@ -104,7 +103,12 @@ const HelpFeedback = () => {
               activeOpacity={0.7}
               onPress={handleBug}
             >
-              <View style={[styles.menuIcon, { backgroundColor: theme.dangerLight }]}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: theme.dangerLight },
+                ]}
+              >
                 <TriangleAlertIcon size={22} color={theme.danger} />
               </View>
               <View style={styles.menuTextContainer}>
@@ -124,7 +128,12 @@ const HelpFeedback = () => {
               onPress={openEmail}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuIcon, { backgroundColor: theme.purpleLight }]}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: theme.purpleLight },
+                ]}
+              >
                 <Mail size={22} color={theme.purple} />
               </View>
               <View style={styles.menuTextContainer}>
@@ -141,7 +150,12 @@ const HelpFeedback = () => {
               onPress={() => router.navigate("/feature_request")}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuIcon, { backgroundColor: theme.successLight }]}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: theme.successLight },
+                ]}
+              >
                 <MessageSquare size={22} color={theme.success} />
               </View>
               <View style={styles.menuTextContainer}>
@@ -160,7 +174,24 @@ const HelpFeedback = () => {
 };
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, primary, primaryLight, danger, dangerLight, purple, purpleLight, success, successLight, chevronColor } = theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    primary,
+    primaryLight,
+    danger,
+    dangerLight,
+    purple,
+    purpleLight,
+    success,
+    successLight,
+    chevronColor,
+  } = theme;
 
   return StyleSheet.create({
     container: {

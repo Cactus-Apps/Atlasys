@@ -8,6 +8,8 @@ import {
   Github,
   Globe,
   ChevronLeft,
+  ScaleIcon,
+  ShieldIcon,
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -86,6 +88,46 @@ export default function Info() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.navigate("/(legal)/Privacy_Policy")}
+            >
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: "rgba(0,196,180,0.15)" },
+                ]}
+              >
+                <ShieldIcon size={20} color={"#00C4B4"} />
+              </View>
+              <Text style={styles.menuLabel}>Privacy Policy</Text>
+              <ChevronRight size={18} color={theme.chevronColor} />
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.navigate("/(legal)/Terms_of_Use")}
+            >
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: "rgba(59,130,246,0.15)" },
+                ]}
+              >
+                <ScaleIcon size={20} color={"#3B82F6"} />
+              </View>
+              <Text style={styles.menuLabel}>Terms of Use</Text>
+              <ChevronRight size={18} color={theme.chevronColor} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Resources</Text>
           <View style={styles.card}>
             <TouchableOpacity
@@ -100,7 +142,7 @@ export default function Info() {
               >
                 <Copyright size={20} color={theme.purple} />
               </View>
-              <Text style={styles.menuLabel}>{t("licenses")}</Text>
+              <Text style={styles.menuLabel}>Licenses</Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
 

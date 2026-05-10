@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  Modal,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Sentry from "@sentry/react-native";
@@ -212,7 +213,7 @@ export default function OfflineMapsTab() {
   const [maps, setMaps] = useState<MBTilesInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalBytes, setTotalBytes] = useState(64 * 1024 * 1024 * 1024);
-  const [visible, setVisible] = useState(false);
+  const [ModalVisible, setModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
@@ -237,13 +238,11 @@ export default function OfflineMapsTab() {
   useEffect(() => {
     load();
 
-    import("expo-file-system/legacy").then(
-      ({ readDirectoryAsync, getInfoAsync }) => {
-        const dir =
-          require("expo-file-system/legacy").documentDirectory + "mbtiles/";
-        readDirectoryAsync(dir).catch((err) => Sentry.captureException(err));
-      },
-    );
+    import("expo-file-system/legacy").then(({ readDirectoryAsync }) => {
+      const dir =
+        require("expo-file-system/legacy").documentDirectory + "mbtiles/";
+      readDirectoryAsync(dir).catch((err) => Sentry.captureException(err));
+    });
   }, []);
 
   const totalUsedBytes = maps.reduce((sum, m) => sum + m.size, 0);
@@ -261,6 +260,14 @@ export default function OfflineMapsTab() {
       year: "numeric",
     });
 
+  const deleteMBTilesfunction = async () => {
+    if (deleteTarget) {
+      await deleteMBTiles(deleteTarget.id);
+      setDeleteTarget(null);
+      load();
+    }
+  };
+
   const bg = theme.bg;
   const cardBg = theme.cardBg;
   const border = theme.borderColor;
@@ -270,28 +277,91 @@ export default function OfflineMapsTab() {
   const defaultRadius = theme.isModern ? 24 : 20;
   const innerRadius = theme.isModern ? 18 : 16;
   const itemRadius = theme.isModern ? 14 : 12;
+  const danger = theme.danger;
+  const overlay = theme.overlay;
 
   const AlertDialogOverlay = (
-    <>
-      <Host matchContents>
-        <AlertDialog
-          visible={deleteTarget !== null}
-          title="Karte löschen"
-          text={`Möchtest du "${deleteTarget?.name}" wirklich löschen?`}
-          confirmButtonText="Löschen"
-          dismissButtonText="Abbrechen"
-          confirmButtonColors={{ contentColor: "#EF4444" }}
-          onConfirmPressed={async () => {
-            if (deleteTarget) {
-              await deleteMBTiles(deleteTarget.id);
-              setDeleteTarget(null);
-              load();
-            }
+    <Modal
+      visible={deleteTarget !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: overlay,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            width: "85%",
+            backgroundColor: cardBg,
+            borderRadius: defaultRadius,
+            padding: 24,
+            borderWidth: 1,
+            borderColor: border,
           }}
-          onDismissPressed={() => setDeleteTarget(null)}
-        />
-      </Host>
-    </>
+        >
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "800",
+              color: textPrimary,
+              textAlign: "center",
+              marginBottom: 12,
+            }}
+          >
+            Karte löschen
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              color: textSecondary,
+              textAlign: "center",
+              marginBottom: 24,
+              lineHeight: 22,
+            }}
+          >{`Möchtest du "${deleteTarget?.name}" wirklich löschen?`}</Text>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <TouchableOpacity
+              onPress={deleteMBTilesfunction}
+              style={{
+                flex: 1,
+                backgroundColor: danger,
+                paddingVertical: 14,
+                borderRadius: 14,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{ fontSize: 16, fontWeight: "700", color: textPrimary }}
+              >
+                Löschen
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={{
+                flex: 1,
+                backgroundColor: theme.cardBgSecondary,
+                paddingVertical: 14,
+                borderRadius: 14,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{ fontSize: 16, fontWeight: "700", color: textPrimary }}
+              >
+                Abbrechen
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 
   if (!loading && maps.length === 0) {
