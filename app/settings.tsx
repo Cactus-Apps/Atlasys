@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   DockIcon,
+  LanguagesIcon,
   MapPin,
   RefreshCw,
 } from "lucide-react-native";
@@ -32,12 +33,14 @@ import { useAuthStore, useTabStore } from "@/lib/storage/zustand";
 import { AppTheme } from "@/lib/theme";
 import { Lock } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { AnalyticsChoice } from "@/lib/auth/analytics";
 
-const Settings = () => {
+export default function Settings() {
   const [ModalVisible, setModalVisible] = useState(false);
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const isSubscribed = useAuthStore((s) => s.isSubscribed);
+  const [analyticsChoice, setAnalyticsChoice] =
+    useState<AnalyticsChoice>("none");
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const appSettings = useAuthStore((s) => s.settings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
@@ -64,11 +67,6 @@ const Settings = () => {
   ];
 
   const handleLanguagePress = (langCode: string) => {
-    if (!isSubscribed && langCode !== i18n.language && langCode !== "en") {
-      setModalVisible(false);
-      router.push("/paywall");
-      return;
-    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     i18n.changeLanguage(langCode);
     setModalVisible(false);
@@ -193,18 +191,13 @@ const Settings = () => {
               onPress={() => setModalVisible(true)}
             >
               <View style={styles.menuIconContainer}>
-                <Text style={{ fontSize: 20 }}>🌐</Text>
+                <LanguagesIcon size={25} color={theme.primary} />
               </View>
               <View style={styles.menuTextContainer}>
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
                   <Text style={styles.menuLabel}>{t("Laguage")}</Text>
-                  {!isSubscribed && (
-                    <View style={styles.premiumBadge}>
-                      <Text style={styles.premiumBadgeText}>PREMIUM</Text>
-                    </View>
-                  )}
                 </View>
                 <Text style={styles.menuValue}>{currentLanguageLabel}</Text>
               </View>
@@ -375,6 +368,55 @@ const Settings = () => {
         </View>
 
         <View style={styles.section}>
+          <View style={styles.card}>
+            <Text style={styles.sectionLabel}>Analyse & Verbesserung</Text>
+            {(["full", "anonymous", "none"] as AnalyticsChoice[]).map(
+              (choice) => (
+                <TouchableOpacity
+                  key={choice}
+                  style={[
+                    styles.analyticsOption,
+                    analyticsChoice === choice && styles.analyticsOptionActive,
+                  ]}
+                  onPress={() => {
+                    setAnalyticsChoice(choice);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.radioOuter,
+                      analyticsChoice === choice && {
+                        borderColor: theme.primary,
+                      },
+                    ]}
+                  >
+                    {analyticsChoice === choice && (
+                      <View style={styles.radioInner} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.analyticsOptionTitle}>
+                      {choice === "full" && "Vollständige Analytics"}
+                      {choice === "anonymous" &&
+                        "Anonyme Analytics (empfohlen)"}
+                      {choice === "none" && "Keine Analytics"}
+                    </Text>
+                    <Text style={styles.analyticsOptionSub}>
+                      {choice === "full" &&
+                        "Nutzungsverhalten mit deinem Account verknüpft"}
+                      {choice === "anonymous" &&
+                        "Nur anonyme Daten, kein Account-Bezug"}
+                      {choice === "none" && "Keine Daten werden gesendet"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ),
+            )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location & privacy</Text>
           <View style={styles.card}>
             <View style={styles.toggleRow}>
@@ -404,35 +446,6 @@ const Settings = () => {
                 thumbColor={
                   appSettings.locationSharing ? theme.primary : theme.white
                 }
-                ios_backgroundColor={
-                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
-                }
-              />
-            </View>
-            <View style={styles.separator} />
-            <View style={styles.toggleRow}>
-              <View style={styles.menuIconContainer}>
-                <BarChart2
-                  size={22}
-                  color={
-                    appSettings.analytics ? theme.primary : theme.subTextColor
-                  }
-                />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Analytics (Vexo)</Text>
-                <Text style={styles.menuValue}>
-                  Anonymous usage to improve the app
-                </Text>
-              </View>
-              <Switch
-                value={appSettings.analytics}
-                onValueChange={(v) => togglePrivacy("analytics", v)}
-                trackColor={{
-                  false: theme.cardBgSecondary,
-                  true: theme.primaryLight,
-                }}
-                thumbColor={appSettings.analytics ? theme.primary : theme.white}
                 ios_backgroundColor={
                   Platform.OS === "ios" ? theme.cardBgSecondary : undefined
                 }
@@ -531,10 +544,6 @@ const Settings = () => {
               showsVerticalScrollIndicator={false}
             >
               {languages.map((lang) => {
-                const isLocked =
-                  !isSubscribed &&
-                  lang.code !== i18n.language &&
-                  lang.code !== "en";
                 return (
                   <TouchableOpacity
                     key={lang.code}
@@ -546,16 +555,14 @@ const Settings = () => {
                         styles.languageLabel,
                         i18n.language === lang.code &&
                           styles.selectedLanguageLabel,
-                        isLocked && { color: styles.subTextColor },
+                        { color: styles.subTextColor },
                       ]}
                     >
                       {lang.label}
                     </Text>
-                    {i18n.language === lang.code ? (
+                    {i18n.language === lang.code && (
                       <Check size={20} color={theme.primary} strokeWidth={3} />
-                    ) : isLocked ? (
-                      <Lock size={16} color={styles.subTextColor} />
-                    ) : null}
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -565,7 +572,7 @@ const Settings = () => {
       </Modal>
     </SafeAreaView>
   );
-};
+}
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
@@ -579,6 +586,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     primary,
     overlay,
     white,
+    primaryLight,
   } = theme;
 
   // Adapt border radii for classic vs modern
@@ -590,7 +598,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       flex: 1,
       backgroundColor: bg,
     },
-    textColor: textColor as any, // Helper for component usage
+    textColor: textColor as any,
     subTextColor: subTextColor as any,
     header: {
       flexDirection: "row",
@@ -760,7 +768,56 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontWeight: "900",
       color: white,
     },
+    radioOuter: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: subTextColor,
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 1,
+      flexShrink: 0,
+    },
+    radioInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: primary,
+    },
+    sectionLabel: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+      marginBottom: 8,
+    },
+    analyticsOption: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+      padding: 14,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: subTextColor,
+      backgroundColor: "rgba(255,255,255,0.04)",
+      marginBottom: 8,
+    },
+    analyticsOptionActive: {
+      borderColor: primary,
+      backgroundColor: primaryLight,
+    },
+    analyticsOptionTitle: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: textColor,
+      marginBottom: 2,
+    },
+    analyticsOptionSub: {
+      fontSize: 12,
+      color: subTextColor,
+      lineHeight: 16,
+    },
   });
 };
-
-export default Settings;

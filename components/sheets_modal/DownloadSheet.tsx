@@ -6,7 +6,7 @@ import { tilesForBounds, estimateSizeMB } from "@/lib/storage/mbtiles";
 import { downloadRegion } from "@/lib/storage/downloadTiles";
 import { CircularWavyProgressIndicator, Host } from "@expo/ui/jetpack-compose";
 import { useAppTheme } from "@/lib/theme";
-import { reverseGeocode } from "@/utils/geocoding";
+import { reverseGeocode } from "@/lib/geocoding/geocoding";
 import CircularProgress from "../overlays/CircularWavyProgressIndicator";
 
 interface Props {

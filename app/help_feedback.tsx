@@ -25,7 +25,6 @@ import * as Sentry from "@sentry/react-native";
 
 const HelpFeedback = () => {
   const theme = useAppTheme();
-  const isDark = theme.isDark;
   const router = useRouter();
   const { t } = useTranslation();
   const styles = getStyles(theme);
@@ -177,20 +176,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
     bg,
     cardBg,
-    cardBgSecondary,
     textColor,
     subTextColor,
     borderColor,
     isModern,
-    primary,
     primaryLight,
-    danger,
-    dangerLight,
-    purple,
-    purpleLight,
-    success,
-    successLight,
-    chevronColor,
   } = theme;
 
   return StyleSheet.create({
@@ -266,6 +256,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 8,
       borderWidth: 1,
       borderColor: borderColor,
+      elevation: 3,
     },
     menuItem: {
       flexDirection: "row",

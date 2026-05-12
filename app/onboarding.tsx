@@ -34,7 +34,7 @@ import * as Haptics from "expo-haptics";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
 import { posthog } from "@/lib/config/posthog";
-import { applyAnalyticsChoice } from "@/lib/analytics";
+import { applyAnalyticsChoice } from "@/lib/auth/analytics";
 
 const CONSENT_VERSION = "1.0";
 const CONSENT_KEY = "atlasys_consent_v" + CONSENT_VERSION;
@@ -488,54 +488,46 @@ export default function OnboardingScreen() {
 
             <View style={s.analyticsSection}>
               <Text style={s.sectionLabel}>Analyse & Verbesserung</Text>
-              <Text style={s.consentLegal}>
-                Hilf uns Atlasys zu verbessern. Du kannst das jederzeit in den
-                Einstellungen ändern.
-              </Text>
 
-              {(["full", "anonymous", "none"] as AnalyticsChoice[]).map(
-                (choice) => (
-                  <TouchableOpacity
-                    key={choice}
-                    style={[
-                      s.analyticsOption,
-                      analyticsChoice === choice && s.analyticsOptionActive,
-                    ]}
-                    onPress={() => {
-                      setAnalyticsChoice(choice);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                  >
-                    <View
+              {/* Kompakte Chip-Reihe */}
+              <View style={s.analyticsChipRow}>
+                {(["none", "anonymous", "full"] as AnalyticsChoice[]).map(
+                  (choice) => (
+                    <TouchableOpacity
+                      key={choice}
                       style={[
-                        s.radioOuter,
-                        analyticsChoice === choice && {
-                          borderColor: "#00C4B4",
-                        },
+                        s.analyticsChip,
+                        analyticsChoice === choice && s.analyticsChipActive,
                       ]}
+                      onPress={() => {
+                        setAnalyticsChoice(choice);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      }}
                     >
-                      {analyticsChoice === choice && (
-                        <View style={s.radioInner} />
-                      )}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.analyticsOptionTitle}>
-                        {choice === "full" && "Vollständige Analytics"}
-                        {choice === "anonymous" &&
-                          "Anonyme Analytics (empfohlen)"}
-                        {choice === "none" && "Keine Analytics"}
+                      <Text
+                        style={[
+                          s.analyticsChipText,
+                          analyticsChoice === choice &&
+                            s.analyticsChipTextActive,
+                        ]}
+                      >
+                        {choice === "none" && "Keine"}
+                        {choice === "anonymous" && "Anonym ✓"}
+                        {choice === "full" && "Vollständig"}
                       </Text>
-                      <Text style={s.analyticsOptionSub}>
-                        {choice === "full" &&
-                          "Nutzungsverhalten mit deinem Account verknüpft"}
-                        {choice === "anonymous" &&
-                          "Nur anonyme Daten, kein Account-Bezug"}
-                        {choice === "none" && "Keine Daten werden gesendet"}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ),
-              )}
+                    </TouchableOpacity>
+                  ),
+                )}
+              </View>
+
+              {/* Kurze Beschreibung nur der gewählten Option */}
+              <Text style={s.analyticsHint}>
+                {analyticsChoice === "none" && "Keine Daten werden gesendet."}
+                {analyticsChoice === "anonymous" &&
+                  "Nur anonyme Nutzungsdaten, kein Account-Bezug."}
+                {analyticsChoice === "full" &&
+                  "Nutzungsverhalten wird mit deinem Account verknüpft."}
+              </Text>
             </View>
 
             {consentError && (
@@ -713,7 +705,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     bg,
     textColor,
     subTextColor,
-    primary,
     white,
     borderColor,
     cardBg,
@@ -721,6 +712,10 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     danger,
     dangerLight,
     primaryLight,
+    sub3,
+    sub5,
+    sub6,
+    sub1,
   } = theme;
 
   return StyleSheet.create({
@@ -1227,10 +1222,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderWidth: 1,
       alignSelf: "flex-start",
     },
-
-    analyticsSection: {
-      marginBottom: 16,
-    },
     analyticsOption: {
       flexDirection: "row",
       alignItems: "flex-start",
@@ -1238,7 +1229,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 14,
       borderRadius: 14,
       borderWidth: 1.5,
-      borderColor: "rgba(255,255,255,0.1)",
+      borderColor: sub1,
       backgroundColor: "rgba(255,255,255,0.04)",
       marginBottom: 8,
     },
@@ -1254,7 +1245,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     analyticsOptionSub: {
       fontSize: 12,
-      color: "rgba(255,255,255,0.5)",
+      color: sub5,
       lineHeight: 16,
     },
     radioOuter: {
@@ -1262,7 +1253,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       height: 20,
       borderRadius: 10,
       borderWidth: 2,
-      borderColor: "rgba(255,255,255,0.3)",
+      borderColor: sub3,
       justifyContent: "center",
       alignItems: "center",
       marginTop: 1,
@@ -1277,10 +1268,44 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     sectionLabel: {
       fontSize: 13,
       fontWeight: "700",
-      color: "rgba(255,255,255,0.6)",
+      color: sub6,
       textTransform: "uppercase",
       letterSpacing: 0.8,
       marginBottom: 8,
+    },
+    analyticsSection: {
+      marginBottom: 12,
+    },
+    analyticsChipRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 6,
+    },
+    analyticsChip: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      borderColor: "rgba(255,255,255,0.15)",
+      backgroundColor: "rgba(255,255,255,0.05)",
+      alignItems: "center",
+    },
+    analyticsChipActive: {
+      borderColor: "#00C4B4",
+      backgroundColor: "rgba(0,196,180,0.15)",
+    },
+    analyticsChipText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: sub5,
+    },
+    analyticsChipTextActive: {
+      color: "#00C4B4",
+    },
+    analyticsHint: {
+      fontSize: 11,
+      color: sub1,
+      textAlign: "center",
     },
   });
 };

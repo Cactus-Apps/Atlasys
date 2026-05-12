@@ -1,10 +1,13 @@
-import { FeedbackForm } from "@sentry/react-native";
+import { FeedbackWidget } from "@sentry/react-native";
 import { router } from "expo-router";
 import * as Sentry from "@sentry/react-native";
+import { useAppTheme } from "@/lib/theme";
 
 export default function FeatureRequest() {
+  const theme = useAppTheme();
+
   return (
-    <FeedbackForm
+    <FeedbackWidget
       submitButtonLabel="Send"
       formTitle="Give Feedback"
       isEmailRequired={true}
@@ -12,7 +15,7 @@ export default function FeatureRequest() {
       messagePlaceholder="Describe the requested feature"
       onFormClose={() => router.push("/help_feedback")}
       onFormSubmitted={() => router.push("/help_feedback")}
-      onSubmitError={(error) =>
+      onSubmitError={(error: any) =>
         Sentry.captureException(
           error instanceof Error
             ? error
@@ -21,19 +24,80 @@ export default function FeatureRequest() {
       }
       styles={{
         container: {
-          margin: 15,
-          marginTop: 30,
-          backgroundColor: "transparent",
+          padding: 15,
+          paddingTop: 50,
+          backgroundColor: theme.bg,
           borderWidth: 0,
           shadowColor: "transparent",
           elevation: 0,
+          flex: 1,
+        },
+        title: {
+          color: theme.textColor,
+          fontSize: 32,
+          fontWeight: "bold",
+          paddingRight: 34,
+        },
+        label: {
+          color: theme.textColor,
+          fontSize: 16,
+          paddingVertical: 8,
+        },
+        input: {
+          color: theme.textColor,
+          backgroundColor: theme.inputBg,
+          borderColor: theme.borderColor,
+          borderWidth: 1,
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          fontSize: 16,
+        },
+        textArea: {
+          color: theme.textColor,
+          backgroundColor: theme.inputBg,
+          borderColor: theme.borderColor,
+          borderWidth: 1,
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          fontSize: 16,
+          minHeight: 100,
         },
         submitButton: {
-          backgroundColor: "#16A34A",
+          backgroundColor: theme.success,
           borderRadius: 10,
+          paddingHorizontal: 34,
+          paddingVertical: 13,
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 20,
+        },
+        submitText: {
+          color: theme.white,
+          fontSize: 16,
+          fontWeight: "600",
         },
         cancelButton: {
           borderRadius: 10,
+          paddingHorizontal: 34,
+          paddingVertical: 13,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 2,
+          borderColor: theme.subTextColor,
+          backgroundColor: theme.cardBgSecondary,
+          marginTop: 8,
+        },
+        cancelText: {
+          color: theme.subTextColor,
+          fontSize: 16,
+          fontWeight: "600",
+        },
+        sentryLogo: {
+          tintColor: theme.textColor,
+          width: 50,
+          height: 50,
         },
       }}
     />

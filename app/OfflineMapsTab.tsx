@@ -19,7 +19,6 @@ import {
 import Svg, { Circle, G } from "react-native-svg";
 import { getTotalDiskCapacityAsync } from "expo-file-system/legacy";
 import { listMBTiles, deleteMBTiles, MBTilesInfo } from "@/lib/storage/mbtiles";
-import { AlertDialog, Host } from "@expo/ui/jetpack-compose";
 import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
@@ -155,6 +154,7 @@ function EmptyState({ dark }: { dark: boolean }) {
           backgroundColor: dark ? "#1E293B" : "#F1F5F9",
           justifyContent: "center",
           alignItems: "center",
+          elevation: 3,
         }}
       >
         <WifiOff size={36} color={dark ? "#334155" : "#CBD5E1"} />
@@ -189,6 +189,7 @@ function EmptyState({ dark }: { dark: boolean }) {
           justifyContent: "center",
           gap: 10,
           paddingHorizontal: 30,
+          elevation: 3,
         }}
         onPress={() => router.push("/(tabs)/mapscreen")}
       >
@@ -196,7 +197,7 @@ function EmptyState({ dark }: { dark: boolean }) {
           style={{
             fontSize: 20,
             fontWeight: "800",
-            color: dark ? "#F8FAFC" : "#0F172A",
+            color: theme.white,
             letterSpacing: -0.5,
           }}
         >
@@ -381,9 +382,11 @@ export default function OfflineMapsTab() {
             onPress={() => router.navigate("/(tabs)/profilescreen")}
             style={{ padding: 8 }}
           >
-            <ChevronLeft size={24} color={"#fff"} />
+            <ChevronLeft size={24} color={theme.textColor} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}>
+          <Text
+            style={{ fontSize: 18, fontWeight: "700", color: theme.textColor }}
+          >
             Offline Maps
           </Text>
           <View style={{ width: 44 }} />
@@ -409,9 +412,11 @@ export default function OfflineMapsTab() {
           onPress={() => router.navigate("/(tabs)/profilescreen")}
           style={{ padding: 8 }}
         >
-          <ChevronLeft size={24} color={"#fff"} />
+          <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}>
+        <Text
+          style={{ fontSize: 18, fontWeight: "700", color: theme.textColor }}
+        >
           Offline Maps
         </Text>
         <View style={{ width: 44 }} />

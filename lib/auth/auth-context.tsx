@@ -3,14 +3,13 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { router } from "expo-router";
 import { useAuthStore } from "../storage/zustand";
-import { initRevenueCat, checkPremiumStatus } from "./revenuecat";
 import * as Sentry from "@sentry/react-native";
 import * as WebBrowser from "expo-web-browser";
 import { syncConsentToServer } from "@/app/onboarding";
 import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 import { posthog } from "../config/posthog";
-import { applyAnalyticsChoice } from "../analytics";
+import { applyAnalyticsChoice } from "./analytics";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -87,9 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const metadata = targetUser.user_metadata || {};
 
       setUserId(targetUser.id);
-      await initRevenueCat(targetUser.id);
-      const isPremium = await checkPremiumStatus();
-      setSubscribed(isPremium || !!metadata.is_subscribed);
 
       if (metadata.onboarding_completed !== undefined)
         setOnboardingCompleted(!!metadata.onboarding_completed);

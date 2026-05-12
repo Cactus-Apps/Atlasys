@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppTheme } from "../theme";
-import { AnalyticsChoice } from "@/lib/analytics";
+import { AnalyticsChoice } from "@/lib/auth/analytics";
 
 type StoreTabs = {
   NewTabBar: boolean;
@@ -12,28 +12,6 @@ type StoreTabs = {
 export const useTabStore = create<StoreTabs>((set) => ({
   NewTabBar: false,
   setNewTabBar: (tab) => set({ NewTabBar: tab }),
-}));
-
-type Storeloading = {
-  loadingGpsCoords: boolean;
-  loadingWeather: boolean;
-  loadingAll: boolean;
-  setloadingGpsCoords: (val: boolean) => void;
-  setloadingWeather: (val: boolean) => void;
-};
-
-export const useloadingStore = create<Storeloading>((set) => ({
-  loadingGpsCoords: true,
-  loadingWeather: true,
-  loadingAll: true,
-  setloadingGpsCoords: (val) =>
-    set(() => ({
-      loadingGpsCoords: val,
-    })),
-  setloadingWeather: (val) =>
-    set(() => ({
-      loadingWeather: val,
-    })),
 }));
 
 type SavedPlace = {
@@ -57,8 +35,6 @@ type RouteData = {
 };
 
 type StoreAuth = {
-  isSubscribed: boolean;
-  setSubscribed: (val: boolean) => void;
   savedPlaces: SavedPlace[];
   addPlace: (place: Omit<SavedPlace, "addedAt">) => void;
   removePlace: (name: string) => void;
@@ -90,8 +66,6 @@ type StoreAuth = {
   // Routing
   currentRoute: RouteData | null;
   setCurrentRoute: (route: RouteData | null) => void;
-  routeHistory: RouteData[];
-  addRouteToHistory: (route: RouteData) => void;
 
   // Search History
   searchHistory: string[];
@@ -109,12 +83,11 @@ type StoreAuth = {
 };
 
 const initialState = {
-  isSubscribed: false,
   savedPlaces: [],
   isOnboardingCompleted: false,
   settings: {
     notifications: false,
-    locationSharing: false,
+    locationSharing: true,
     analytics: "none" as AnalyticsChoice,
     crashReports: true,
     autoUpdateCheck: true,
@@ -128,7 +101,6 @@ const initialState = {
     },
   },
   currentRoute: null,
-  routeHistory: [],
   searchHistory: [],
   userId: null,
   searchCount: 0,
@@ -138,7 +110,6 @@ export const useAuthStore = create<StoreAuth>()(
   persist(
     (set, get) => ({
       ...initialState,
-      setSubscribed: (val) => set({ isSubscribed: val }),
       savedPlaces: [],
       addPlace: (place) => {
         const newPlace = { ...place, addedAt: new Date().toISOString() };
@@ -182,11 +153,6 @@ export const useAuthStore = create<StoreAuth>()(
 
       currentRoute: null,
       setCurrentRoute: (route) => set({ currentRoute: route }),
-      routeHistory: [],
-      addRouteToHistory: (route) =>
-        set((state) => ({
-          routeHistory: [route, ...state.routeHistory].slice(0, 10),
-        })),
 
       searchHistory: [],
       setSearchHistory: (history) => set({ searchHistory: history }),

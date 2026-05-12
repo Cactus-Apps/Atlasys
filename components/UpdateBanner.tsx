@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { X, Download, RotateCcw } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
-import { useUpdate } from "@/lib/auth/update-context";
+import { useUpdate } from "@/lib/update/update-context";
 
 export function UpdateBanner() {
   const { state, dismiss, reload } = useUpdate();

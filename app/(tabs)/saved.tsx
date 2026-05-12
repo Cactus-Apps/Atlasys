@@ -36,7 +36,6 @@ export default function SavedScreen() {
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
-  const isSubscribed = useAuthStore((state) => state.isSubscribed);
 
   const handleRemove = (name: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -145,32 +144,6 @@ export default function SavedScreen() {
       </View>
     </Animated.View>
   );
-
-  if (!isSubscribed) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t("Saved_Places")}</Text>
-        </View>
-        <View style={styles.lockContainer}>
-          <View style={styles.lockIconCircle}>
-            <Bookmark size={48} color={theme.chevronColor} strokeWidth={1.5} />
-            <View style={styles.lockBadge}>
-              <Lock size={16} color={theme.white} strokeWidth={3} />
-            </View>
-          </View>
-          <Text style={styles.lockTitle}>{t("Premium_Feature")}</Text>
-          <Text style={styles.lockSub}>{t("Premium_Lock_Sub")}</Text>
-          <TouchableOpacity
-            style={styles.unlockBtn}
-            onPress={() => router.push("/paywall")}
-          >
-            <Text style={styles.unlockBtnText}>{t("Unlock_Now")}</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>

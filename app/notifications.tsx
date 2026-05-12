@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import {
+  AlertTriangleIcon,
   Bell,
   ChevronLeft,
   CreditCard,
@@ -20,6 +21,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useAppTheme } from "@/lib/theme";
@@ -115,60 +117,82 @@ export default function NotificationsScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <Text style={styles.sectionHint}>
-            Choose which updates we may send you. You can change this anytime.
-          </Text>
-          <View style={styles.card}>
-            {TOPIC_ROWS.map((row, index) => {
-              const enabled = topics[row.key];
-              const Icon = row.Icon;
-              return (
-                <View key={row.key}>
-                  {index > 0 ? <View style={styles.separator} /> : null}
-                  <View style={styles.row}>
-                    <View style={styles.menuIconContainer}>
-                      <Icon
-                        size={22}
-                        color={enabled ? theme.primary : theme.subTextColor}
-                      />
-                    </View>
-                    <View style={styles.menuTextContainer}>
-                      <Text style={styles.menuLabel}>{row.label}</Text>
-                      <Text style={styles.menuValue}>{row.description}</Text>
-                    </View>
-                    <Switch
-                      value={enabled}
-                      onValueChange={(v) => setTopic(row.key, v)}
-                      trackColor={{
-                        false: theme.cardBgSecondary,
-                        true: theme.primaryLight,
-                      }}
-                      thumbColor={enabled ? theme.primary : theme.white}
-                      ios_backgroundColor={
-                        Platform.OS === "ios"
-                          ? theme.cardBgSecondary
-                          : undefined
-                      }
-                    />
-                  </View>
-                </View>
-              );
-            })}
+          <View style={styles.introBanner}>
+            <View style={styles.introIconWrap}>
+              <AlertTriangleIcon size={28} color={theme.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.introTitle}>
+                Atlasys ist noch in der Beta!
+              </Text>
+              <Text style={styles.introSub}>
+                Atlasys ist noch in der Beta darum ist diese Feature noch nicht
+                verfügbar.
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.footerNote}>
-            <Bell size={18} color={theme.subTextColor} />
-            <Text style={styles.footerNoteText}>
-              System notification permission is managed in your device settings.
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Categories</Text>
+            <Text style={styles.sectionHint}>
+              Choose which updates we may send you. You can change this anytime.
             </Text>
+            <View style={styles.card}>
+              {TOPIC_ROWS.map((row, index) => {
+                const enabled = topics[row.key];
+                const Icon = row.Icon;
+                return (
+                  <View key={row.key}>
+                    {index > 0 ? <View style={styles.separator} /> : null}
+                    <View style={styles.row}>
+                      <View style={styles.menuIconContainer}>
+                        <Icon
+                          size={22}
+                          color={enabled ? theme.primary : theme.subTextColor}
+                        />
+                      </View>
+                      <View style={styles.menuTextContainer}>
+                        <Text style={styles.menuLabel}>{row.label}</Text>
+                        <Text style={styles.menuValue}>{row.description}</Text>
+                      </View>
+                      <Switch
+                        value={enabled}
+                        disabled={true}
+                        onValueChange={(v) => setTopic(row.key, v)}
+                        trackColor={{
+                          false: theme.cardBgSecondary,
+                          true: theme.primaryLight,
+                        }}
+                        thumbColor={enabled ? theme.primary : theme.white}
+                        ios_backgroundColor={
+                          Platform.OS === "ios"
+                            ? theme.cardBgSecondary
+                            : undefined
+                        }
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+
+          <View style={styles.section}>
+            <View style={styles.footerNote}>
+              <Bell size={18} color={theme.subTextColor} />
+              <Text style={styles.footerNoteText}>
+                System notification permission is managed in your device
+                settings.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+        <BlurView style={styles.disabledOverlay} intensity={35} tint="dark" />
+      </View>
     </SafeAreaView>
   );
 }
@@ -182,6 +206,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     subTextColor,
     borderColor,
     isModern,
+    danger,
+    dangerDark,
+    dangerLight,
   } = theme;
 
   const defaultRadius = isModern ? 24 : 20;
@@ -210,6 +237,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     backButton: {
       padding: 8,
       borderRadius: 12,
+    },
+    disabledOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
     scrollContent: {
       paddingBottom: 40,
@@ -299,6 +333,36 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontSize: 13,
       lineHeight: 18,
       color: subTextColor,
+    },
+    introBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      backgroundColor: dangerLight,
+      borderWidth: 1,
+      borderColor: dangerDark,
+      borderRadius: isModern ? 18 : 12,
+      padding: 16,
+      marginBottom: 24,
+    },
+    introIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: dangerLight,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    introTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: textColor,
+      marginBottom: 3,
+    },
+    introSub: {
+      fontSize: 13,
+      color: subTextColor,
+      lineHeight: 18,
     },
   });
 };

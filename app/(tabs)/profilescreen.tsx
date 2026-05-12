@@ -4,13 +4,13 @@ import { useRouter } from "expo-router";
 import {
   Bell,
   ChevronRight,
-  CreditCard,
   Download,
   Info,
+  MapIcon,
   MessageCircleQuestionMark,
-  Rocket,
-  ShieldCheck,
+  SettingsIcon,
   ShieldUser,
+  UserIcon,
   UserRound,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -24,7 +24,6 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
 import { UpdateBanner } from "@/components/UpdateBanner";
-import { posthog } from "@/lib/config/posthog";
 
 export function ProfileScreen() {
   const { t, i18n } = useTranslation();
@@ -67,16 +66,16 @@ export function ProfileScreen() {
       items: [
         {
           label: "Edit Profile",
-          sub: "Update your photo and details",
+          sub: "Sign out and Account details",
           icon: UserRound,
           color: theme.primary,
           bg: theme.primaryLight,
           route: "/account",
         },
         {
-          label: "Privacy & Security",
-          sub: "Manage your privacy settings",
-          icon: ShieldCheck,
+          label: "Privacy & Settings",
+          sub: "Manage your settings",
+          icon: SettingsIcon,
           color: theme.purple,
           bg: theme.purpleLight,
           route: "/settings",
@@ -85,17 +84,9 @@ export function ProfileScreen() {
           label: "Notifications",
           sub: "Customize your alerts",
           icon: Bell,
-          color: theme.info,
-          bg: theme.infoLight,
-          route: "/notifications",
-        },
-        {
-          label: "Billing & Plans",
-          sub: "Manage subscription and payment",
-          icon: CreditCard,
           color: theme.success,
           bg: theme.successLight,
-          route: "/paywall",
+          route: "/notifications",
         },
       ],
     },
@@ -103,7 +94,8 @@ export function ProfileScreen() {
       group: "OFFLINE MAPS",
       items: [
         {
-          label: "Manage Offline Maps",
+          label: "Offline Maps",
+          sub: "Manage your offline Maps",
           icon: Download,
           color: theme.info,
           bg: theme.infoLight,
@@ -112,10 +104,24 @@ export function ProfileScreen() {
       ],
     },
     {
+      group: "Tools",
+      items: [
+        {
+          label: "Just a Map Mode",
+          sub: "It's a Map",
+          icon: MapIcon,
+          color: theme.success,
+          bg: theme.successLight,
+          route: "/just_map",
+        },
+      ],
+    },
+    {
       group: "APP INFO",
       items: [
         {
           label: t("Help_&_Feedback"),
+          sub: "Give Feedback and get Help",
           icon: MessageCircleQuestionMark,
           color: theme.warningDark,
           bg: theme.warningLight,
@@ -123,6 +129,7 @@ export function ProfileScreen() {
         },
         {
           label: t("Info"),
+          sub: "Info about the App",
           icon: Info,
           color: theme.info,
           bg: theme.infoLight,
@@ -130,6 +137,8 @@ export function ProfileScreen() {
         },
         {
           label: t("Admin_Panel"),
+          sub: "Not for you 🤨 !",
+
           icon: ShieldUser,
           color: theme.danger,
           bg: theme.dangerLight,
@@ -161,8 +170,8 @@ export function ProfileScreen() {
               <Text style={styles.profileName}>{name}</Text>
               <Text style={styles.profileEmail}>{email}</Text>
               <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
-                <Rocket size={12} color={theme.white} fill={theme.white} />
-                <Text style={styles.badgeText}>Premium User</Text>
+                <UserIcon size={12} color={theme.white} fill={theme.white} />
+                <Text style={styles.badgeText}>Normal User</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -221,10 +230,7 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => posthog.capture("test")}
-          >
+          <TouchableOpacity activeOpacity={0.8}>
             <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>
         </View>

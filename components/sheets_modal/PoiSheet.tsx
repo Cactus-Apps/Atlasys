@@ -30,7 +30,7 @@ import {
   fetchPOIDetails,
   parseOpeningHours,
   OverpassPOIDetails,
-} from "@/lib/overpass";
+} from "@/lib/geocoding/overpass";
 
 type SelectedPoi = {
   name: string;

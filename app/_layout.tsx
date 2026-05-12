@@ -1,17 +1,11 @@
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
-import { UpdateProvider } from "@/lib/auth/update-context";
+import { UpdateProvider } from "@/lib/update/update-context";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { runExpoUpdateCheck } from "@/utils/expoUpdateCheck";
-import {
-  Slot,
-  usePathname,
-  useGlobalSearchParams,
-  useRouter,
-  useSegments,
-} from "expo-router";
+import { runExpoUpdateCheck } from "@/lib/update/expoUpdateCheck";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
-import { AnimatedSplash } from "@/components/SplashScreen";
+import AnimatedSplash from "@/components/SplashScreen";
 import * as Sentry from "@sentry/react-native";
 import type { ErrorEvent, EventHint } from "@sentry/core";
 import * as ImagePicker from "expo-image-picker";

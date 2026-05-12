@@ -57,7 +57,7 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
-import { getOsmIdFromNominatim } from "@/lib/overpass";
+import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
 import { Avatar } from "@kolking/react-native-avatar";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
