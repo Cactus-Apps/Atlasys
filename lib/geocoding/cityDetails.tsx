@@ -29,8 +29,8 @@ export async function fetchCityDetails(cityName: string, countryCode?: string) {
       population: cityData.population,
       elevationMeters: cityData.elevation,
       timezone: cityData.timezone,
-      wikiDataId: null, // Open-Meteo hat kein wikiDataId
-      type: "city", // Annahme
+      wikiDataId: null, // Open-Meteo has no wikiDataId
+      type: "city",
     };
   } catch (err: any) {
     Sentry.captureException(err);

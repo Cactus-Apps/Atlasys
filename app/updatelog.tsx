@@ -1,13 +1,5 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import { t } from "i18next";
-import {
-  Rocket,
-  ChevronRight,
-  History,
-  Zap,
-  Sparkles,
-  ChevronLeft,
-} from "lucide-react-native";
+import { History, Zap, Sparkles, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
 import {
   ScrollView,
@@ -81,7 +73,7 @@ const UpdateLog = () => {
         >
           <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t("update_log")}</Text>
+        <Text style={styles.headerTitle}>{t("Info_menu_update_log")}</Text>
         <View style={{ width: 44 }} />
       </View>
 

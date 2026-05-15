@@ -1,4 +1,3 @@
-// Version 1.3.6 - © Cactus Apps 2025
 import * as React from "react";
 import {
   Linking,
@@ -55,7 +54,7 @@ const HelpFeedback = () => {
         >
           <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t("Help & Feedback")}</Text>
+        <Text style={styles.headerTitle}>{t("Help_and_Feedback")}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -64,14 +63,12 @@ const HelpFeedback = () => {
           <View style={styles.iconCircle}>
             <LifeBuoy size={48} color={theme.primary} strokeWidth={2.5} />
           </View>
-          <Text style={styles.heroTitle}>How can we help?</Text>
-          <Text style={styles.heroSub}>
-            We're here to assist you with any questions or issues.
-          </Text>
+          <Text style={styles.heroTitle}>{t("Help_hero_title")}</Text>
+          <Text style={styles.heroSub}>{t("Help_hero_sub")}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Options</Text>
+          <Text style={styles.sectionTitle}>{t("Help_section_contact")}</Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
@@ -87,9 +84,11 @@ const HelpFeedback = () => {
                 <Github size={22} color={theme.subTextColor} />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Report Bug on GitHub</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Help_github_report_label")}
+                </Text>
                 <Text style={styles.menuSub}>
-                  Create an issue (GitHub account required)
+                  {t("Help_github_report_sub")}
                 </Text>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
@@ -111,8 +110,10 @@ const HelpFeedback = () => {
                 <TriangleAlertIcon size={22} color={theme.danger} />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Bug Report</Text>
-                <Text style={styles.menuSub}>Report found bugs in Atlasys</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Help_bug_report_label")}
+                </Text>
+                <Text style={styles.menuSub}>{t("Help_bug_report_sub")}</Text>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
@@ -120,7 +121,7 @@ const HelpFeedback = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
+          <Text style={styles.sectionTitle}>{t("Help_section_support")}</Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
@@ -136,7 +137,7 @@ const HelpFeedback = () => {
                 <Mail size={22} color={theme.purple} />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Email Support</Text>
+                <Text style={styles.menuLabel}>{t("Help_email_label")}</Text>
                 <Text style={styles.menuSub}>cactus_apps@proton.me</Text>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
@@ -158,9 +159,11 @@ const HelpFeedback = () => {
                 <MessageSquare size={22} color={theme.success} />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Feature Requests</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Help_feature_requests_label")}
+                </Text>
                 <Text style={styles.menuSub}>
-                  Suggest new ideas for Atlasys
+                  {t("Help_feature_requests_sub")}
                 </Text>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />

@@ -21,14 +21,14 @@ export type MBTilesInfo = {
   tileCount: number;
 };
 
-// Sicherstellen dass Ordner existiert
+// Ensure the MBTiles directory exists
 export async function ensureDir() {
   const info = await getInfoAsync(MBTILES_DIR);
   if (!info.exists)
     await makeDirectoryAsync(MBTILES_DIR, { intermediates: true });
 }
 
-// Alle gespeicherten MBTiles laden
+// Load all stored MBTiles metadata from disk
 export async function listMBTiles(): Promise<MBTilesInfo[]> {
   await ensureDir();
   const files = await readDirectoryAsync(MBTILES_DIR);
@@ -41,13 +41,13 @@ export async function listMBTiles(): Promise<MBTilesInfo[]> {
   return results.sort((a, b) => b.createdAt - a.createdAt);
 }
 
-// MBTiles löschen
+// Delete MBTiles files for an offline region id
 export async function deleteMBTiles(id: string) {
   await deleteAsync(MBTILES_DIR + id + ".mbtiles", { idempotent: true });
   await deleteAsync(MBTILES_DIR + id + ".json", { idempotent: true });
 }
 
-// Tile-Koordinaten für Bounding Box berechnen
+// Compute tile x/y indices covering a geographic bounding box
 export function tilesForBounds(
   west: number,
   south: number,
@@ -90,8 +90,8 @@ function lat2tile(lat: number, zoom: number) {
   );
 }
 
-// Größenschätzung in MB
+// Rough size estimate in MB (~15 KB per vector tile on average)
 export function estimateSizeMB(tileCount: number): number {
-  // Durchschnittlich ~15KB pro PBF Tile
+  // Average ~15 KB per PBF tile
   return Math.round((tileCount * 15) / 1024);
 }

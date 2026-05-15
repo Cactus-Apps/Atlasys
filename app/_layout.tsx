@@ -1,3 +1,4 @@
+import { ensureTranslationsLoaded } from "./i18n";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
 import { UpdateProvider } from "@/lib/update/update-context";
 import { useAuthStore } from "@/lib/storage/zustand";
@@ -13,6 +14,7 @@ import { AppState, View, useColorScheme } from "react-native";
 import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
 import { PostHogProvider } from "posthog-react-native";
 import { posthog } from "@/lib/config/posthog";
+import { StatusBar } from "expo-status-bar";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
@@ -110,6 +112,7 @@ function AppBootstrap() {
   const { isLoadingUser, user } = useAuth();
   const [animationDone, setAnimationDone] = useState(false);
   const splashHiddenRef = useRef(false);
+  const [i18nGate, setI18nGate] = useState(false);
   const [storeReady, setStoreReady] = useState(
     useAuthStore.persist.hasHydrated(),
   );
@@ -146,6 +149,16 @@ function AppBootstrap() {
       setStoreReady(true);
     });
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    ensureTranslationsLoaded().then(() => {
+      if (!cancelled) setI18nGate(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -187,7 +200,7 @@ function AppBootstrap() {
     }
   }, [storeReady, isLoadingUser, user, isOnboardingCompleted, segments]);
 
-  const isReady = storeReady && !isLoadingUser;
+  const isReady = storeReady && !isLoadingUser && i18nGate;
 
   if (!isReady) {
     return <View style={{ flex: 1, backgroundColor: "#0A1628" }} />;
@@ -216,6 +229,7 @@ export default Sentry.wrap(function RooLayout() {
       <UpdateProvider>
         <AuthProvider>
           <TelemetrySync />
+          <StatusBar style="dark" />
           <AppBootstrap />
         </AuthProvider>
       </UpdateProvider>

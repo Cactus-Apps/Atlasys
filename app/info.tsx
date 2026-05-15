@@ -1,6 +1,6 @@
 // Version 1.3.6 - © Cactus Apps 2026
 import { useRouter } from "expo-router";
-import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 import {
   ChevronRight,
   Copyright,
@@ -21,12 +21,12 @@ import {
   View,
   ScrollView,
 } from "react-native";
-import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
 
 export default function Info() {
   const router = useRouter();
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const isDark = theme.isDark;
   const styles = getStyles(theme);
@@ -42,7 +42,7 @@ export default function Info() {
         >
           <ChevronLeft size={24} color={textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t("About GPS")}</Text>
+        <Text style={styles.headerTitle}>{t("Info_title_about_app")}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -54,8 +54,8 @@ export default function Info() {
               style={styles.logo}
             />
           </View>
-          <Text style={styles.appName}>Cactus Apps</Text>
-          <Text style={styles.tagline}>Premium Mobile Experiences</Text>
+          <Text style={styles.appName}>{t("Cactus_Apps")}</Text>
+          <Text style={styles.tagline}>{t("Info_tagline")}</Text>
 
           <View style={styles.socialLinks}>
             <TouchableOpacity
@@ -82,13 +82,13 @@ export default function Info() {
           <View style={styles.card}>
             <Text style={styles.descriptionText}>
               {t("We_are_Cactus_Apps")} {t("develops_apps")}{" "}
-              {t("customer_satisfaction")}
+              {t("Customer_satisfaction_suffix")}
             </Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Legal</Text>
+          <Text style={styles.sectionTitle}>{t("Info_section_legal")}</Text>
 
           <View style={styles.card}>
             <TouchableOpacity
@@ -103,7 +103,7 @@ export default function Info() {
               >
                 <ShieldIcon size={20} color={"#00C4B4"} />
               </View>
-              <Text style={styles.menuLabel}>Privacy Policy</Text>
+              <Text style={styles.menuLabel}>{t("Info_menu_privacy_policy")}</Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
 
@@ -121,14 +121,14 @@ export default function Info() {
               >
                 <ScaleIcon size={20} color={"#3B82F6"} />
               </View>
-              <Text style={styles.menuLabel}>Terms of Use</Text>
+              <Text style={styles.menuLabel}>{t("Info_menu_terms_of_use")}</Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resources</Text>
+          <Text style={styles.sectionTitle}>{t("Info_section_resources")}</Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
@@ -142,7 +142,7 @@ export default function Info() {
               >
                 <Copyright size={20} color={theme.purple} />
               </View>
-              <Text style={styles.menuLabel}>Licenses</Text>
+              <Text style={styles.menuLabel}>{t("Licenses_screen_title")}</Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
 
@@ -160,14 +160,14 @@ export default function Info() {
               >
                 <List size={20} color={theme.success} />
               </View>
-              <Text style={styles.menuLabel}>{t("update_log")}</Text>
+              <Text style={styles.menuLabel}>{t("Info_menu_update_log")}</Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.versionText}>
-          Version 1.4.5 • © 2026 Cactus Apps
+          {t("Info_version_footer", { version: "1.4.5", year: 2026 })}
         </Text>
       </ScrollView>
     </SafeAreaView>

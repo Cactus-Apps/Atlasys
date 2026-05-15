@@ -57,7 +57,7 @@ export default function AuthScreen() {
     if (data === "open" || data === "cancel") return;
 
     if (data === "error") {
-      setError("Captcha fehlgeschlagen");
+      setError(t("Auth_captcha_failed"));
       return;
     }
 
@@ -104,7 +104,7 @@ export default function AuthScreen() {
       else router.replace("/");
     } catch (err) {
       Sentry.captureException(err);
-      setError("Unexpected error");
+      setError(t("Auth_error_unexpected"));
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ export default function AuthScreen() {
       else router.replace("/");
     } catch (err) {
       Sentry.captureException(err);
-      setError("An unexpected error occurred");
+      setError(t("Auth_error_unexpected"));
     } finally {
       setOauthLoading(false);
     }
@@ -158,8 +158,8 @@ export default function AuthScreen() {
             </Text>
             <Text style={[styles.subtitle, { color: theme.subTextColor }]}>
               {isSignUp
-                ? "Join our global community today"
-                : "Welcome back, explorer!"}
+                ? t("Auth_subtitle_signup")
+                : t("Auth_subtitle_signin")}
             </Text>
           </Animated.View>
 
@@ -178,7 +178,7 @@ export default function AuthScreen() {
               />
               <TextInput
                 style={[styles.input, { color: theme.textColor }]}
-                placeholder={t("E-Mail")}
+                placeholder={t("Poi_label_email")}
                 placeholderTextColor={theme.subTextColor}
                 value={email}
                 onChangeText={setEmail}
@@ -246,7 +246,7 @@ export default function AuthScreen() {
               disabled={loading || oauthLoading}
             >
               <Text style={styles.mainBtnText}>
-                {loading ? "..." : isSignUp ? t("Sign_up") : t("Login")}
+                {loading ? t("Auth_loading_ellipsis") : isSignUp ? t("Sign_up") : t("Login")}
               </Text>
               {!loading && (
                 <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />

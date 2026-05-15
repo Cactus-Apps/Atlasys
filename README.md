@@ -1,31 +1,26 @@
-![Alt-Text](./assets/images/banner.jpeg)
+![Banner](./assets/images/banner.jpeg)
 
-# GPS
-## Explore the world
+# Atlasys
 
-## What is GPS
+Open, privacy-focused maps and navigation built on OpenStreetMap.
 
-GPS is a smart navigation app that can be used for hiking or other activities.
+## What is Atlasys?
 
-> [!IMPORTANT]
-> The Apk is comming on the 10.12
+Atlasys is a navigation and map app for hiking, travel, and everyday use. It supports offline regions, routing (via OSRM), and saved places, with a strong emphasis on transparency and open source.
 
 ## Installation
 
-1. To install GPS, go to Releases and select the latest version. 
-2. Then download the APK file.
-> Apple isn't yet supported. 
-3. After downloading, you can go to your file manager and click on the file you just downloaded
-4. If your smartphone asks you if you want to install the app from an unknown source, press Yes.
-5. Then you can press Install. 
+1. Open the [Releases](https://github.com/Cactus-Apps/Atlasys/releases) page and pick the latest build.
+2. Download the APK for Android.
+3. Open the file in your file manager and install when prompted.
+4. If Android asks about installing from an unknown source, allow it for this install, then tap **Install**.
+
+> Apple distribution is planned; check the repository for current platform support.
 
 ## Troubleshooting
 
-- If you find an error, please report it as an issue.
+If something breaks, open an issue on GitHub with steps to reproduce and your device/OS version.
 
 ## License
-This project is licensed under the GNU General Public License v3.0 (GPLv3).  
-See the [LICENSE](LICENSE.md) file for details.
 
-old slogan
-Your smart navigation App.
+This project is licensed under the GNU General Public License v3.0 (GPLv3). See [LICENSE](LICENSE.md) for details.

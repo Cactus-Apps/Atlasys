@@ -13,7 +13,7 @@ import {
   UserIcon,
   UserRound,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "@/lib/auth/supabase";
@@ -26,7 +26,7 @@ import * as Application from "expo-application";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
 export function ProfileScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState<string | undefined>("");
   const theme = useAppTheme();
@@ -43,7 +43,7 @@ export function ProfileScreen() {
     fetchUserEmail();
   }, []);
 
-  let username = email ? email.split("@")[0] : "User";
+  let username = email ? email.split("@")[0] : t("Profile_default_name");
 
   let name = username
     .split(/[_-]/)
@@ -60,29 +60,30 @@ export function ProfileScreen() {
       bg: string;
       route: string;
     }[];
-  }[] = [
+  }[] = useMemo(
+    () => [
     {
-      group: "ACCOUNT SETTINGS",
+      group: t("Profile_group_Account_Settings"),
       items: [
         {
-          label: "Edit Profile",
-          sub: "Sign out and Account details",
+          label: t("Profile_edit_profile"),
+          sub: t("Profile_edit_profile_sub"),
           icon: UserRound,
           color: theme.primary,
           bg: theme.primaryLight,
           route: "/account",
         },
         {
-          label: "Privacy & Settings",
-          sub: "Manage your settings",
+          label: t("Profile_privacy_settings"),
+          sub: t("Profile_privacy_settings_sub"),
           icon: SettingsIcon,
           color: theme.purple,
           bg: theme.purpleLight,
           route: "/settings",
         },
         {
-          label: "Notifications",
-          sub: "Customize your alerts",
+          label: t("Profile_notifications"),
+          sub: t("Profile_notifications_sub"),
           icon: Bell,
           color: theme.success,
           bg: theme.successLight,
@@ -91,11 +92,11 @@ export function ProfileScreen() {
       ],
     },
     {
-      group: "OFFLINE MAPS",
+      group: t("Profile_group_Offline_Maps"),
       items: [
         {
-          label: "Offline Maps",
-          sub: "Manage your offline Maps",
+          label: t("Profile_offline_maps"),
+          sub: t("Profile_offline_maps_sub"),
           icon: Download,
           color: theme.info,
           bg: theme.infoLight,
@@ -104,11 +105,11 @@ export function ProfileScreen() {
       ],
     },
     {
-      group: "Tools",
+      group: t("Profile_group_Tools"),
       items: [
         {
-          label: "Just a Map Mode",
-          sub: "It's a Map",
+          label: t("Profile_just_map"),
+          sub: t("Profile_just_map_sub"),
           icon: MapIcon,
           color: theme.success,
           bg: theme.successLight,
@@ -117,11 +118,11 @@ export function ProfileScreen() {
       ],
     },
     {
-      group: "APP INFO",
+      group: t("Profile_group_App_Info"),
       items: [
         {
-          label: t("Help_&_Feedback"),
-          sub: "Give Feedback and get Help",
+          label: t("Help_and_Feedback"),
+          sub: t("Profile_help_sub"),
           icon: MessageCircleQuestionMark,
           color: theme.warningDark,
           bg: theme.warningLight,
@@ -129,7 +130,7 @@ export function ProfileScreen() {
         },
         {
           label: t("Info"),
-          sub: "Info about the App",
+          sub: t("Profile_info_sub"),
           icon: Info,
           color: theme.info,
           bg: theme.infoLight,
@@ -137,7 +138,7 @@ export function ProfileScreen() {
         },
         {
           label: t("Admin_Panel"),
-          sub: "Not for you 🤨 !",
+          sub: t("Profile_admin_sub"),
 
           icon: ShieldUser,
           color: theme.danger,
@@ -146,7 +147,9 @@ export function ProfileScreen() {
         },
       ],
     },
-  ];
+  ],
+    [t, theme],
+  );
 
   return (
     <GestureHandlerRootView>
@@ -171,7 +174,7 @@ export function ProfileScreen() {
               <Text style={styles.profileEmail}>{email}</Text>
               <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
                 <UserIcon size={12} color={theme.white} fill={theme.white} />
-                <Text style={styles.badgeText}>Normal User</Text>
+                <Text style={styles.badgeText}>{t("Profile_badge_normal_user")}</Text>
               </TouchableOpacity>
             </View>
           </View>

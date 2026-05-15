@@ -8,14 +8,17 @@ import {
 } from "react-native";
 import { X, Download, RotateCcw } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 import { useUpdate } from "@/lib/update/update-context";
+import { posthog } from "@/lib/config/posthog";
 
 export function UpdateBanner() {
+  const { t } = useTranslation();
   const { state, dismiss, reload } = useUpdate();
   const theme = useAppTheme();
   const styles = getStyles(theme);
 
-  // Nur banner zeigen wenn ein update available oder downloading oder ready ist
+  // Show banner only when an update is available, downloading, or ready
   if (
     !state ||
     state.status === "idle" ||
@@ -27,6 +30,7 @@ export function UpdateBanner() {
 
   const handleReload = async () => {
     await reload();
+    posthog.capture("ota_update_applied");
   };
 
   return (
@@ -48,9 +52,9 @@ export function UpdateBanner() {
               <View style={styles.textContainer}>
                 <Download size={20} color={theme.primary} />
                 <View style={styles.textContent}>
-                  <Text style={styles.title}>Update verfügbar</Text>
+                  <Text style={styles.title}>{t("Update_available")}</Text>
                   <Text style={styles.subtitle}>
-                    Neue Version wird heruntergeladen...
+                    {t("Update_downloading_sub")}
                   </Text>
                 </View>
               </View>
@@ -63,7 +67,9 @@ export function UpdateBanner() {
               <View style={styles.textContainer}>
                 <ActivityIndicator color={theme.primary} size="small" />
                 <View style={styles.textContent}>
-                  <Text style={styles.title}>Download läuft</Text>
+                  <Text style={styles.title}>
+                    {t("Update_download_in_progress")}
+                  </Text>
                   <Text style={styles.subtitle}>
                     {Math.round(state.progress)}%
                   </Text>
@@ -82,14 +88,19 @@ export function UpdateBanner() {
               <View style={styles.textContainer}>
                 <RotateCcw size={20} color={theme.success} />
                 <View style={styles.textContent}>
-                  <Text style={styles.title}>Update bereit!</Text>
-                  <Text style={styles.subtitle}>Tippen zum Neustarten</Text>
+                  <Text style={styles.title}>{t("Update_ready_title")}</Text>
+                  <Text style={styles.subtitle}>
+                    {t("Update_ready_subtitle")}
+                  </Text>
                 </View>
               </View>
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={[styles.button, styles.dismissButton]}
-                  onPress={dismiss}
+                  onPress={() => {
+                    dismiss;
+                    posthog.capture("ota_update_dismissed");
+                  }}
                 >
                   <X size={16} color={theme.textColor} />
                 </TouchableOpacity>

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { View, Animated, Easing, Text } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -13,11 +14,12 @@ export default function CircularProgress({
   color: string;
   size?: number;
 }) {
+  const { t } = useTranslation();
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Animierter Fortschritt
+  // Animated ring progress
   const animatedProgress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function CircularProgress({
       toValue: progress,
       duration: 300,
       easing: Easing.out(Easing.quad),
-      useNativeDriver: false, // SVG props brauchen false
+      useNativeDriver: false, // SVG stroke props
     }).start();
   }, [progress]);
 
@@ -46,7 +48,7 @@ export default function CircularProgress({
       }}
     >
       <Svg width={size} height={size} style={{ position: "absolute" }}>
-        {/* Hintergrund-Ring */}
+        {/* Background track */}
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -55,7 +57,7 @@ export default function CircularProgress({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        {/* Fortschritts-Ring */}
+        {/* Progress arc */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -66,13 +68,13 @@ export default function CircularProgress({
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          // Startet oben statt rechts
+          // Start at top instead of right
           rotation="-90"
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
 
-      {/* Prozentanzeige in der Mitte */}
+      {/* Center label */}
       <View style={{ alignItems: "center" }}>
         <Text
           style={{
@@ -93,7 +95,7 @@ export default function CircularProgress({
               marginTop: 2,
             }}
           >
-            lädt...
+            {t("Progress_loading")}
           </Text>
         )}
         {percent === 100 && (
@@ -105,7 +107,7 @@ export default function CircularProgress({
               marginTop: 2,
             }}
           >
-            ✓ fertig
+            {t("Progress_done")}
           </Text>
         )}
       </View>

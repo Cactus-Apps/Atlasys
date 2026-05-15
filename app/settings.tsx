@@ -25,7 +25,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
@@ -34,6 +33,7 @@ import { AppTheme } from "@/lib/theme";
 import { Lock } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { AnalyticsChoice } from "@/lib/auth/analytics";
+import { posthog } from "@/lib/config/posthog";
 
 export default function Settings() {
   const [ModalVisible, setModalVisible] = useState(false);
@@ -70,6 +70,7 @@ export default function Settings() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     i18n.changeLanguage(langCode);
     setModalVisible(false);
+    posthog.capture("language_changed");
   };
 
   const currentLanguageLabel =
@@ -96,7 +97,7 @@ export default function Settings() {
 
   const THEME_OPTIONS: {
     value: AppTheme;
-    label: string;
+    labelKey: string;
     previewBg: string;
     previewCard: string;
     previewAccent: string;
@@ -105,7 +106,7 @@ export default function Settings() {
   }[] = [
     {
       value: "light",
-      label: "Hell",
+      labelKey: "Theme_label_light",
       previewBg: "#F4F7FB",
       previewCard: "#FFFFFF",
       previewAccent: "#2563EB",
@@ -114,7 +115,7 @@ export default function Settings() {
     },
     {
       value: "dark",
-      label: "Dunkel",
+      labelKey: "Theme_label_dark",
       previewBg: "#0F1B2A",
       previewCard: "#17263A",
       previewAccent: "#2563EB",
@@ -123,7 +124,7 @@ export default function Settings() {
     },
     {
       value: "modern",
-      label: "Modern",
+      labelKey: "Theme_label_modern",
       previewBg: "#F8F8F8",
       previewCard: "#FFFFFF",
       previewAccent: "#007AFF",
@@ -132,7 +133,7 @@ export default function Settings() {
     },
     {
       value: "claude",
-      label: "Chill",
+      labelKey: "Theme_label_chill",
       previewBg: "#1C1C1C",
       previewCard: "#2A2A2A",
       previewAccent: "#CFA06B",
@@ -141,7 +142,7 @@ export default function Settings() {
     },
     {
       value: "midnight",
-      label: "Midnight",
+      labelKey: "Theme_label_midnight",
       previewBg: "#000000",
       previewCard: "#0A0A0A",
       previewAccent: "#6C63FF",
@@ -150,7 +151,7 @@ export default function Settings() {
     },
     {
       value: "ocean",
-      label: "Ocean",
+      labelKey: "Theme_label_ocean",
       previewBg: "#0A1628",
       previewCard: "#0F2040",
       previewAccent: "#00B4D8",
@@ -159,7 +160,7 @@ export default function Settings() {
     },
     {
       value: "forest",
-      label: "Forest",
+      labelKey: "Theme_label_forest",
       previewBg: "#F0F7EE",
       previewCard: "#FFFFFF",
       previewAccent: "#2E7D32",
@@ -183,7 +184,9 @@ export default function Settings() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={styles.sectionTitle}>
+            {t("Settings_section_Preferences")}
+          </Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
@@ -197,7 +200,9 @@ export default function Settings() {
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
-                  <Text style={styles.menuLabel}>{t("Laguage")}</Text>
+                  <Text style={styles.menuLabel}>
+                    {t("Settings_label_language")}
+                  </Text>
                 </View>
                 <Text style={styles.menuValue}>{currentLanguageLabel}</Text>
               </View>
@@ -207,7 +212,9 @@ export default function Settings() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Design</Text>
+          <Text style={styles.sectionTitle}>
+            {t("Settings_section_Design")}
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -217,56 +224,59 @@ export default function Settings() {
               paddingBottom: 8,
             }}
           >
-            {THEME_OPTIONS.map((t) => {
-              const isActive = currentTheme === t.value;
+            {THEME_OPTIONS.map((opt) => {
+              const isActive = currentTheme === opt.value;
               return (
                 <TouchableOpacity
-                  key={t.value}
+                  key={opt.value}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    updateSettings({ theme: t.value });
+                    updateSettings({ theme: opt.value });
+                    posthog.capture("theme_changed", {
+                      theme: opt.value,
+                    });
                   }}
                   activeOpacity={0.8}
                   style={{ alignItems: "center", width: 110 }}
                 >
-                  {/* Vorschaukarte */}
+                  {/* Preview card */}
                   <View
                     style={[
                       {
                         width: 110,
                         height: 85,
                         borderRadius: 16,
-                        backgroundColor: t.previewBg,
+                        backgroundColor: opt.previewBg,
                         padding: 10,
                         borderWidth: isActive ? 2.5 : 1,
                         borderColor: isActive
-                          ? t.previewAccent
+                          ? opt.previewAccent
                           : "rgba(128,128,128,0.2)",
                         overflow: "hidden",
                         position: "relative",
                       },
                     ]}
                   >
-                    {/* Mini Card */}
+                    {/* Mini card */}
                     <View
                       style={{
-                        backgroundColor: t.previewCard,
+                        backgroundColor: opt.previewCard,
                         borderRadius: 8,
                         padding: 6,
                         gap: 4,
                       }}
                     >
-                      {/* Accent Button simulieren */}
+                      {/* Accent bar */}
                       <View
                         style={{
                           width: 36,
                           height: 7,
-                          backgroundColor: t.previewAccent,
+                          backgroundColor: opt.previewAccent,
                           borderRadius: 4,
                           alignSelf: "flex-end",
                         }}
                       />
-                      {/* Text-Zeilen simulieren */}
+                      {/* Placeholder text lines */}
                       {[0.9, 0.7, 0.5].map((opacity, i) => (
                         <View
                           key={i}
@@ -282,7 +292,7 @@ export default function Settings() {
                               width: 6,
                               height: 6,
                               borderRadius: 3,
-                              backgroundColor: t.previewAccent,
+                              backgroundColor: opt.previewAccent,
                               opacity,
                             }}
                           />
@@ -290,7 +300,7 @@ export default function Settings() {
                             style={{
                               height: 4,
                               borderRadius: 2,
-                              backgroundColor: t.previewText,
+                              backgroundColor: opt.previewText,
                               flex: 1,
                               opacity: opacity * 0.8,
                             }}
@@ -299,7 +309,7 @@ export default function Settings() {
                       ))}
                     </View>
 
-                    {/* Checkmark wenn aktiv */}
+                    {/* Active checkmark */}
                     {isActive && (
                       <View
                         style={{
@@ -309,7 +319,7 @@ export default function Settings() {
                           width: 22,
                           height: 22,
                           borderRadius: 11,
-                          backgroundColor: t.previewAccent,
+                          backgroundColor: opt.previewAccent,
                           justifyContent: "center",
                           alignItems: "center",
                         }}
@@ -328,7 +338,7 @@ export default function Settings() {
                       color: isActive ? theme.primary : theme.subTextColor,
                     }}
                   >
-                    {t.label}
+                    {t(opt.labelKey)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -346,9 +356,11 @@ export default function Settings() {
                 />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Use new Botom Bar</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Settings_tab_bar_new_label")}
+                </Text>
                 <Text style={styles.menuValue}>
-                  Use Bottom Bar v2 (in beta)
+                  {t("Settings_tab_bar_new_sub")}
                 </Text>
               </View>
               <Switch
@@ -369,7 +381,9 @@ export default function Settings() {
 
         <View style={styles.section}>
           <View style={styles.card}>
-            <Text style={styles.sectionLabel}>Analyse & Verbesserung</Text>
+            <Text style={styles.sectionLabel}>
+              {t("Settings_section_Analytics")}
+            </Text>
             {(["full", "anonymous", "none"] as AnalyticsChoice[]).map(
               (choice) => (
                 <TouchableOpacity
@@ -397,17 +411,16 @@ export default function Settings() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.analyticsOptionTitle}>
-                      {choice === "full" && "Vollständige Analytics"}
+                      {choice === "full" && t("Settings_analytics_full")}
                       {choice === "anonymous" &&
-                        "Anonyme Analytics (empfohlen)"}
-                      {choice === "none" && "Keine Analytics"}
+                        t("Settings_analytics_anonymous")}
+                      {choice === "none" && t("Settings_analytics_none")}
                     </Text>
                     <Text style={styles.analyticsOptionSub}>
-                      {choice === "full" &&
-                        "Nutzungsverhalten mit deinem Account verknüpft"}
+                      {choice === "full" && t("Settings_analytics_full_sub")}
                       {choice === "anonymous" &&
-                        "Nur anonyme Daten, kein Account-Bezug"}
-                      {choice === "none" && "Keine Daten werden gesendet"}
+                        t("Settings_analytics_anonymous_sub")}
+                      {choice === "none" && t("Settings_analytics_none_sub")}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -417,7 +430,9 @@ export default function Settings() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location & privacy</Text>
+          <Text style={styles.sectionTitle}>
+            {t("Settings_section_Location_privacy")}
+          </Text>
           <View style={styles.card}>
             <View style={styles.toggleRow}>
               <View style={styles.menuIconContainer}>
@@ -431,9 +446,11 @@ export default function Settings() {
                 />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Location</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Settings_location_label")}
+                </Text>
                 <Text style={styles.menuValue}>
-                  Map, GPS widget, and weather use your position
+                  {t("Settings_location_sub")}
                 </Text>
               </View>
               <Switch
@@ -460,9 +477,11 @@ export default function Settings() {
                 />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Crash reports</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Settings_crash_reports_label")}
+                </Text>
                 <Text style={styles.menuValue}>
-                  Send error reports via Sentry
+                  {t("Settings_crash_reports_sub")}
                 </Text>
               </View>
               <Switch
@@ -487,9 +506,11 @@ export default function Settings() {
                 />
               </View>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>Automatic update check</Text>
+                <Text style={styles.menuLabel}>
+                  {t("Settings_auto_update_label")}
+                </Text>
                 <Text style={styles.menuValue}>
-                  Look for Expo OTA updates in the background
+                  {t("Settings_auto_update_sub")}
                 </Text>
               </View>
               <Switch
@@ -509,15 +530,19 @@ export default function Settings() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Info</Text>
+          <Text style={styles.sectionTitle}>
+            {t("Settings_section_App_Info")}
+          </Text>
           <View style={styles.card}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Version</Text>
+              <Text style={styles.infoLabel}>
+                {t("Settings_label_version")}
+              </Text>
               <Text style={styles.infoValue}>{version}</Text>
             </View>
             <View style={styles.separator} />
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Build</Text>
+              <Text style={styles.infoLabel}>{t("Settings_label_build")}</Text>
               <Text style={styles.infoValue}>{buildNumber}</Text>
             </View>
           </View>
@@ -533,7 +558,7 @@ export default function Settings() {
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t("Select Language")}</Text>
+              <Text style={styles.modalTitle}>{t("Select_Language")}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Text style={styles.closeButtonText}>{t("Cancel")}</Text>
               </TouchableOpacity>

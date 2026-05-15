@@ -20,6 +20,7 @@ import Svg, { Circle, G } from "react-native-svg";
 import { getTotalDiskCapacityAsync } from "expo-file-system/legacy";
 import { listMBTiles, deleteMBTiles, MBTilesInfo } from "@/lib/storage/mbtiles";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 const { width } = Dimensions.get("window");
 
@@ -209,6 +210,7 @@ function EmptyState({ dark }: { dark: boolean }) {
 }
 
 export default function OfflineMapsTab() {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const dark = theme.isDark;
   const [maps, setMaps] = useState<MBTilesInfo[]>([]);
@@ -315,7 +317,7 @@ export default function OfflineMapsTab() {
               marginBottom: 12,
             }}
           >
-            Karte löschen
+            {t("Offline_delete_map_title")}
           </Text>
           <Text
             style={{
@@ -325,7 +327,11 @@ export default function OfflineMapsTab() {
               marginBottom: 24,
               lineHeight: 22,
             }}
-          >{`Möchtest du "${deleteTarget?.name}" wirklich löschen?`}</Text>
+          >
+            {t("Offline_delete_map_confirm", {
+              name: deleteTarget?.name ?? "",
+            })}
+          </Text>
           <View style={{ flexDirection: "row", gap: 12 }}>
             <TouchableOpacity
               onPress={deleteMBTilesfunction}
@@ -340,7 +346,7 @@ export default function OfflineMapsTab() {
               <Text
                 style={{ fontSize: 16, fontWeight: "700", color: textPrimary }}
               >
-                Löschen
+                {t("Delete")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -356,7 +362,7 @@ export default function OfflineMapsTab() {
               <Text
                 style={{ fontSize: 16, fontWeight: "700", color: textPrimary }}
               >
-                Abbrechen
+                {t("Cancel")}
               </Text>
             </TouchableOpacity>
           </View>

@@ -21,6 +21,8 @@ import {
   X,
 } from "lucide-react-native";
 import * as Sentry from "@sentry/react-native";
+import { useTranslation } from "react-i18next";
+import { posthog } from "@/lib/config/posthog";
 
 type RoutePoint = { label: string; coordinate: [number, number] };
 type Profile = "driving" | "cycling" | "walking";
@@ -39,10 +41,14 @@ interface Props {
   onSetEnd: (point: RoutePoint) => void;
 }
 
-const PROFILES: { key: Profile; label: string; Icon: any }[] = [
-  { key: "driving", label: "Auto", Icon: Car },
-  { key: "cycling", label: "Fahrrad", Icon: Bike },
-  { key: "walking", label: "Fuß", Icon: Footprints },
+const PROFILE_DEFS: {
+  key: Profile;
+  labelKey: string;
+  Icon: any;
+}[] = [
+  { key: "driving", labelKey: "Route_profile_driving", Icon: Car },
+  { key: "cycling", labelKey: "Route_profile_cycling", Icon: Bike },
+  { key: "walking", labelKey: "Route_profile_walking", Icon: Footprints },
 ];
 
 type SearchResult = { display_name: string; lat: string; lon: string };
@@ -61,6 +67,15 @@ export default function RouteSheet({
   onSetEnd,
 }: Props) {
   const sheetRef = useRef<BottomSheet>(null);
+  const { t, i18n } = useTranslation();
+  const profiles = React.useMemo(
+    () =>
+      PROFILE_DEFS.map((p) => ({
+        ...p,
+        label: t(p.labelKey),
+      })),
+    [t],
+  );
   const [profile, setProfile] = useState<Profile>("driving");
   const [loading, setLoading] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{
@@ -107,7 +122,7 @@ export default function RouteSheet({
   const searchNominatim = async (query: string): Promise<SearchResult[]> => {
     if (query.length < 2) return [];
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=de`,
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=${encodeURIComponent(i18n.language || "en")}`,
       { headers: { "User-Agent": "GPS/1.0 (cactus_apps@proton.me)" } },
     );
     const text = await res.text();
@@ -179,7 +194,7 @@ export default function RouteSheet({
       const res = await fetch(url);
       const json = await res.json();
       if (!json.routes?.length) {
-        setRouteError("Keine Route gefunden");
+        setRouteError(t("Route_not_found"));
         return;
       }
       setRouteInfo({
@@ -189,7 +204,7 @@ export default function RouteSheet({
       onRouteReady(json.routes, profile);
     } catch (err: any) {
       Sentry.captureException(err);
-      setRouteError("Fehler beim Laden der Route");
+      setRouteError(t("Route_error_load"));
     } finally {
       setLoading(false);
     }
@@ -212,20 +227,28 @@ export default function RouteSheet({
     setFocusedField(null);
   };
 
-  const formatDuration = (s: number) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    return h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`;
+  const formatDuration = (sec: number) => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return h > 0
+      ? t("Route_duration_hours_mins", { h, m })
+      : t("Route_duration_mins", { m });
   };
   const formatDistance = (m: number) =>
     m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+
+  function onSheetClose() {
+    onClose();
+    setEndQuery("");
+    setStartQuery("");
+  }
 
   return (
     <BottomSheet
       ref={sheetRef}
       index={-1}
-      snapPoints={["25%", "40%", "55%", "80%"]}
-      onClose={onClose}
+      snapPoints={["25%", "40%", "48%", "55%", "80%"]}
+      onClose={onSheetClose}
       backgroundStyle={{
         borderTopLeftRadius: theme.isModern ? 32 : 24,
         borderTopRightRadius: theme.isModern ? 32 : 24,
@@ -240,21 +263,27 @@ export default function RouteSheet({
       >
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.title}>Route planen</Text>
-          <TouchableOpacity onPress={onClose} style={s.closeBtn}>
+          <Text style={s.title}>{t("Route_plan_title")}</Text>
+          <TouchableOpacity onPress={onSheetClose} style={s.closeBtn}>
             <X size={20} color={theme.subTextColor} />
           </TouchableOpacity>
         </View>
 
         {/* Transport-Modi */}
         <View style={s.modeRow}>
-          {PROFILES.map(({ key, label, Icon }) => (
+          {profiles.map(({ key, label, Icon }) => (
             <TouchableOpacity
               key={key}
               style={[s.modeBtn, profile === key && s.modeBtnActive]}
-              onPress={() => setProfile(key)}
+              onPress={() => {
+                (setProfile(key),
+                  posthog.capture("route_profile_changed", { profile: key }));
+              }}
             >
-              <Icon size={20} color={profile === key ? theme.white : theme.subTextColor} />
+              <Icon
+                size={20}
+                color={profile === key ? theme.white : theme.subTextColor}
+              />
               <Text style={[s.modeLabel, profile === key && s.modeLabelActive]}>
                 {label}
               </Text>
@@ -274,7 +303,7 @@ export default function RouteSheet({
             <View style={[s.dot, { backgroundColor: theme.success }]} />
             <BottomSheetTextInput
               style={s.fieldInput}
-              placeholder="Startpunkt eingeben..."
+              placeholder={t("Route_placeholder_start")}
               placeholderTextColor={theme.subTextColor}
               value={startQuery}
               onChangeText={setStartQuery}
@@ -291,13 +320,15 @@ export default function RouteSheet({
               >
                 <MapPin
                   size={16}
-                  color={pickMode === "start" ? theme.primary : theme.subTextColor}
+                  color={
+                    pickMode === "start" ? theme.primary : theme.subTextColor
+                  }
                 />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Start-Vorschläge */}
+          {/* Start suggestions */}
           {focusedField === "start" && startResults.length > 0 && (
             <View style={s.suggestBox}>
               {startResults.map((r, i) => (
@@ -332,7 +363,7 @@ export default function RouteSheet({
             </TouchableOpacity>
           </View>
 
-          {/* Ziel-Feld */}
+          {/* End-Feld */}
           <View
             style={[
               s.fieldWrapper,
@@ -342,7 +373,7 @@ export default function RouteSheet({
             <View style={[s.dot, { backgroundColor: theme.danger }]} />
             <BottomSheetTextInput
               style={s.fieldInput}
-              placeholder="Ziel eingeben..."
+              placeholder={t("Route_placeholder_end")}
               placeholderTextColor={theme.subTextColor}
               value={endQuery}
               onChangeText={setEndQuery}
@@ -359,13 +390,15 @@ export default function RouteSheet({
               >
                 <MapPin
                   size={16}
-                  color={pickMode === "end" ? theme.primary : theme.subTextColor}
+                  color={
+                    pickMode === "end" ? theme.primary : theme.subTextColor
+                  }
                 />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Ziel-Vorschläge */}
+          {/* Destination suggestions */}
           {focusedField === "end" && endResults.length > 0 && (
             <View style={s.suggestBox}>
               {endResults.map((r, i) => (
@@ -398,8 +431,9 @@ export default function RouteSheet({
           <View style={s.pickHint}>
             <Navigation size={16} color={theme.primary} />
             <Text style={s.pickHintText}>
-              Tippe auf die Karte um{" "}
-              {pickMode === "start" ? "den Startpunkt" : "das Ziel"} zu setzen
+              {pickMode === "start"
+                ? t("Route_pick_map_tap_hint_start")
+                : t("Route_pick_map_tap_hint_end")}
             </Text>
           </View>
         )}
@@ -408,7 +442,7 @@ export default function RouteSheet({
         {loading && (
           <View style={s.infoBox}>
             <ActivityIndicator color={theme.primary} />
-            <Text style={s.infoText}>Route wird berechnet...</Text>
+            <Text style={s.infoText}>{t("Route_calculating")}</Text>
           </View>
         )}
         {!loading && routeInfo && (
@@ -417,14 +451,14 @@ export default function RouteSheet({
               <Text style={s.resultValue}>
                 {formatDuration(routeInfo.duration)}
               </Text>
-              <Text style={s.resultLabel}>Fahrzeit</Text>
+              <Text style={s.resultLabel}>{t("Route_duration_label")}</Text>
             </View>
             <View style={s.resultDivider} />
             <View style={s.resultItem}>
               <Text style={s.resultValue}>
                 {formatDistance(routeInfo.distance)}
               </Text>
-              <Text style={s.resultLabel}>Distanz</Text>
+              <Text style={s.resultLabel}>{t("Route_distance_label")}</Text>
             </View>
           </View>
         )}
@@ -453,9 +487,13 @@ export default function RouteSheet({
               <>
                 <Navigation size={20} color={theme.white} />
                 <Text
-                  style={{ color: theme.white, fontWeight: "700", fontSize: 16 }}
+                  style={{
+                    color: theme.white,
+                    fontWeight: "700",
+                    fontSize: 16,
+                  }}
                 >
-                  Route berechnen
+                  {t("Route_calculate_button")}
                 </Text>
               </>
             )}
@@ -467,8 +505,22 @@ export default function RouteSheet({
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const { bg, cardBg, cardBgSecondary, textColor, subTextColor, borderColor, isModern, iconBg, primary, primaryLight, tabIndicator, white, danger, dangerLight } =
-    theme;
+  const {
+    bg,
+    cardBg,
+    cardBgSecondary,
+    textColor,
+    subTextColor,
+    borderColor,
+    isModern,
+    iconBg,
+    primary,
+    primaryLight,
+    tabIndicator,
+    white,
+    danger,
+    dangerLight,
+  } = theme;
 
   return StyleSheet.create({
     container: { paddingHorizontal: 20, paddingBottom: 40 },

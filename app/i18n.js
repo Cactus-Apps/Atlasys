@@ -1,4 +1,4 @@
-// Version 1.3.6 - © Cactus Apps 2025
+// Version 1.3.6 - © Cactus Apps 2026
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import ar from "../locales/ar.json";
@@ -18,27 +18,42 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LANGUAGE_KEY = "userLanguage";
 
-i18n.use(initReactI18next).init({
-  resources: {
-    ar: { translation: ar },
-    de: { translation: de },
-    en: { translation: en },
-    es: { translation: es },
-    fr: { translation: fr },
-    hi: { translation: hi },
-    it: { translation: it },
-    ja: { translation: ja },
-    ko: { translation: ko },
-    pt: { translation: pt },
-    ru: { translation: ru },
-    zh: { translation: zh },
-  },
-  lng: "en",
-  fallbackLng: "en",
-  interpolation: {
-    escapeValue: false,
-  },
-});
+/**
+ * Resolves when default i18n init and persisted language restore have finished.
+ * Gate the root UI on this so the first paint does not show raw translation keys.
+ */
+export const i18nReady = i18n
+  .use(initReactI18next)
+  .init({
+    resources: {
+      ar: { translation: ar },
+      de: { translation: de },
+      en: { translation: en },
+      es: { translation: es },
+      fr: { translation: fr },
+      hi: { translation: hi },
+      it: { translation: it },
+      ja: { translation: ja },
+      ko: { translation: ko },
+      pt: { translation: pt },
+      ru: { translation: ru },
+      zh: { translation: zh },
+    },
+    lng: "en",
+    fallbackLng: "en",
+    interpolation: {
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
+    },
+  })
+  .then(() => loadLanguage());
+
+/** @returns {Promise<void>} Resolves when bundled strings and persisted language are applied. */
+export function ensureTranslationsLoaded() {
+  return i18nReady;
+}
 
 const storeLanguage = async (lng) => {
   try {
@@ -52,7 +67,7 @@ const loadLanguage = async () => {
   try {
     const lng = await AsyncStorage.getItem(LANGUAGE_KEY);
     if (lng) {
-      i18n.changeLanguage(lng);
+      await i18n.changeLanguage(lng);
     }
   } catch (err) {
     Sentry.captureException(err);

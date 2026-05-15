@@ -2,6 +2,8 @@
 import { useAppTheme } from "@/lib/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Shield } from "lucide-react-native";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   Text,
@@ -12,68 +14,27 @@ import {
   StatusBar,
 } from "react-native";
 
-// ─── Inhalt ───────────────────────────────────────────────────────────────────
-
-const SECTIONS = [
-  {
-    title: "Verantwortlicher",
-    content: `Cactus Apps\nE-Mail: cactus_apps@proton.me\n\nDiese Datenschutzerklärung gilt für die mobile App Atlasys und beschreibt, welche personenbezogenen Daten wir verarbeiten, zu welchem Zweck, auf welcher Rechtsgrundlage und welche Rechte dir zustehen.`,
-  },
-  {
-    title: "1. Welche Daten wir verarbeiten",
-    content: `Je nach Nutzung der App können folgende Datenkategorien verarbeitet werden:\n\n• Identifikationsdaten: E-Mail-Adresse, Nutzername\n• Kontodaten: Profilinformationen, Account-ID\n• Nutzungsdaten: Anonyme Nutzungsstatistiken (nur mit deiner Einwilligung)\n• Verbindungsdaten: Login-Zeitstempel, IP-Adresse (temporär)\n• Einwilligungsnachweis: Zeitstempel und Version deiner Zustimmung zu AGB und Datenschutz (DSGVO Art. 7)`,
-  },
-  {
-    title: "2. Standortdaten",
-    content: `Die App kann deinen ungefähren Standort (Stadt/Region) zur Bereitstellung von Kartenfunktionen anfragen.\n\nWichtig: Dein Standort wird nicht in unserer Datenbank gespeichert, nicht protokolliert und nicht an Dritte weitergegeben. Er wird ausschließlich im Arbeitsspeicher des Geräts verwendet und danach sofort verworfen.\n\nDie Abfrage erfolgt über Expo Location und nur nach deiner ausdrücklichen Genehmigung. Du kannst diese Berechtigung jederzeit in den Geräteeinstellungen widerrufen.`,
-  },
-  {
-    title: "3. Rechtsgrundlagen",
-    content: `• Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO): z. B. Bereitstellung deines Kontos\n• Einwilligung (Art. 6 Abs. 1 lit. a DSGVO): z. B. Standortabfrage, Analysedaten\n• Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO): z. B. Sicherheitslogs, Betrugsprävention`,
-  },
-  {
-    title: "4. Open Source & Transparenz",
-    content: `Atlasys ist vollständig Open Source. Der gesamte Quellcode ist unter github.com/Cactus-Apps/Atlasys einsehbar. Es gibt keine versteckten Datensammlungen, Werbe-SDKs oder Tracker.\n\nVerwendete Kartendaten stammen von OpenStreetMap (openstreetmap.org) und werden unter der ODbL-Lizenz genutzt. Routing läuft über OSRM lokal – deine Route verlässt niemals dein Gerät.`,
-  },
-  {
-    title: "5. Aufbewahrungsfristen",
-    content: `• Kontodaten: Solange dein Konto aktiv ist oder gesetzliche Pflichten bestehen\n• Sicherheitslogs: Begrenzte Zeit für Debug- und Sicherheitszwecke\n• Einwilligungsnachweise: Solange zum Nachweis der Compliance erforderlich oder bis zum Widerruf`,
-  },
-  {
-    title: "6. Empfänger / Auftragsverarbeiter",
-    content: `• Supabase: Authentifizierung, Datenbank und Speicher (Auftragsverarbeitungsvertrag vorhanden)\n• Sentry: Absturzberichte zur Qualitätssicherung\n• OpenFreeMap / OpenStreetMap: Kartenkacheln (keine personenbezogenen Daten übertragen)\n• OSRM: Routing (lokal berechnet, keine Serveranfragen mit personenbezogenen Daten)`,
-  },
-  {
-    title: "7. Internationale Übermittlungen",
-    content: `Wenn Daten außerhalb der EU/des EWR übertragen werden, erfolgt dies auf Basis geeigneter Garantien (z. B. Angemessenheitsbeschluss oder Standardvertragsklauseln der EU-Kommission).`,
-  },
-  {
-    title: "8. Deine Rechte",
-    content: `Du hast folgende Rechte nach DSGVO:\n\n• Auskunft (Art. 15)\n• Berichtigung (Art. 16)\n• Löschung (Art. 17)\n• Einschränkung der Verarbeitung (Art. 18)\n• Datenübertragbarkeit (Art. 20)\n• Widerspruch (Art. 21)\n• Widerruf der Einwilligung (Art. 7 Abs. 3)\n\nZur Ausübung deiner Rechte wende dich an: cactus_apps@proton.me\n\nDu hast außerdem das Recht, eine Beschwerde bei der zuständigen Datenschutz-Aufsichtsbehörde einzureichen.`,
-  },
-  {
-    title: "9. Datenpannenmeldung",
-    content: `Im Fall einer Datenpanne melden wir den Vorfall innerhalb von 72 Stunden der zuständigen Aufsichtsbehörde (sofern ein Risiko besteht) und informieren betroffene Nutzer bei voraussichtlich hohem Risiko.`,
-  },
-  {
-    title: "10. Änderungen",
-    content: `Diese Datenschutzerklärung kann aus rechtlichen oder technischen Gründen aktualisiert werden. Die aktuelle Version ist stets in der App und auf unserer Website verfügbar. Bei wesentlichen Änderungen wirst du erneut um Einwilligung gebeten.\n\nAktualisiert: Mai 2026 · Version 1.0`,
-  },
-];
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
+const PRIVACY_SECTION_COUNT = 11;
 
 export default function Privacy_Policy() {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const styles = getStyles(theme);
 
-  // Wenn aus dem Onboarding-Consent geöffnet → zurück zum Consent Gate
+  const sections = useMemo(
+    () =>
+      Array.from({ length: PRIVACY_SECTION_COUNT }, (_, i) => ({
+        title: t(`PP_${i}_title`),
+        content: t(`PP_${i}_content`),
+      })),
+    [t],
+  );
+
   const params = useLocalSearchParams<{ from?: string }>();
   const fromConsent = params.from === "consent";
 
   const handleBack = () => {
     if (fromConsent) {
-      // Direkt zum Consent Gate zurück, nicht zum Start des Onboardings
       router.replace({
         pathname: "/onboarding",
         params: { showConsent: "true" },
@@ -87,12 +48,11 @@ export default function Privacy_Policy() {
     <View style={styles.root}>
       <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Datenschutzerklärung</Text>
+        <Text style={styles.headerTitle}>{t("Privacy_policy_title")}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -101,42 +61,32 @@ export default function Privacy_Policy() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Intro-Banner */}
         <View style={styles.introBanner}>
           <View style={styles.introIconWrap}>
             <Shield size={28} color="#00C4B4" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.introTitle}>Deine Daten, deine Kontrolle.</Text>
-            <Text style={styles.introSub}>
-              Atlasys ist Open Source und sammelt keine Daten ohne deine
-              Einwilligung.
-            </Text>
+            <Text style={styles.introTitle}>{t("Privacy_intro_title")}</Text>
+            <Text style={styles.introSub}>{t("Privacy_intro_sub")}</Text>
           </View>
         </View>
 
-        {/* Sektionen */}
-        {SECTIONS.map((section, i) => (
+        {sections.map((section, i) => (
           <View key={i} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             <Text style={styles.sectionContent}>{section.content}</Text>
-            {i < SECTIONS.length - 1 && <View style={styles.divider} />}
+            {i < sections.length - 1 && <View style={styles.divider} />}
           </View>
         ))}
 
-        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Fragen? cactus_apps@proton.me</Text>
-          <Text style={styles.footerText}>
-            Quellcode: github.com/Cactus-Apps/Atlasys
-          </Text>
+          <Text style={styles.footerText}>{t("Legal_footer_questions")}</Text>
+          <Text style={styles.footerText}>{t("Legal_footer_source")}</Text>
         </View>
       </ScrollView>
     </View>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
@@ -183,7 +133,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 20,
       paddingBottom: 48,
     },
-    // Intro Banner
     introBanner: {
       flexDirection: "row",
       alignItems: "center",
@@ -214,7 +163,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: subTextColor,
       lineHeight: 18,
     },
-    // Sektionen
     section: {
       marginBottom: 4,
     },
@@ -235,7 +183,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       backgroundColor: borderColor,
       marginVertical: 20,
     },
-    // Footer
     footer: {
       marginTop: 28,
       paddingTop: 20,

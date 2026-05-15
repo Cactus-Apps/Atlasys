@@ -13,15 +13,16 @@ import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { X, AlertCircle, Copy, Github, Check } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   errorTitle: string;
   error: string | Error | Record<string, any> | null | undefined;
-  errorCode?: string; // z.B. "ERR_NETWORK_001"
-  stillAvailable?: string[]; // Was trotzdem noch geht
-  githubRepo?: string; // z.B. "cactus-apps/atlasys"
+  errorCode?: string; // e.g. "ERR_NETWORK_001"
+  stillAvailable?: string[]; // Features that still work
+  githubRepo?: string; // e.g. "cactus-apps/atlasys"
 }
 
 export default function ErrorSheet({
@@ -33,6 +34,7 @@ export default function ErrorSheet({
   stillAvailable = [],
   githubRepo = "cactus-apps/atlasys",
 }: Props) {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const s = getStyles(theme);
   const sheetRef = useRef<BottomSheet>(null);
@@ -48,8 +50,8 @@ export default function ErrorSheet({
       return;
     }
     if (open) {
-      const t = setTimeout(() => sheetRef.current?.snapToIndex(1), 50);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => sheetRef.current?.snapToIndex(1), 50);
+      return () => clearTimeout(timer);
     } else {
       sheetRef.current?.close();
     }
@@ -62,16 +64,16 @@ export default function ErrorSheet({
         ? error.message
         : error
           ? JSON.stringify(error, null, 2)
-          : "Unbekannter Fehler";
+          : t("Error_unknown");
 
   const errorDetails = [
-    `Fehler: ${errorTitle}`,
-    `Nachricht: ${errorMessage}`,
-    errorCode ? `Code: ${errorCode}` : null,
-    `App-Version: v${appVersion}`,
-    `Build: #${buildNumber}`,
-    `Plattform: ${Platform.OS} ${Platform.Version}`,
-    `Datum: ${new Date().toLocaleString("de")}`,
+    `${t("Error_report_prefix")} ${errorTitle}`,
+    `${t("Error_report_message")} ${errorMessage}`,
+    errorCode ? `${t("Error_report_code")} ${errorCode}` : null,
+    `${t("Error_report_app_version")} v${appVersion}`,
+    `${t("Error_report_build")} #${buildNumber}`,
+    `${t("Error_report_platform")} ${Platform.OS} ${Platform.Version}`,
+    `${t("Error_report_date")} ${new Date().toLocaleString()}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -85,7 +87,7 @@ export default function ErrorSheet({
   const handleGithubIssue = () => {
     const title = encodeURIComponent(`[Bug] ${errorTitle}`);
     const body = encodeURIComponent(
-      `## Fehlerbeschreibung\n\n${errorMessage}\n\n## Details\n\`\`\`\n${errorDetails}\n\`\`\``,
+      `## ${t("Github_issue_body_title")}\n\n${errorMessage}\n\n## ${t("Github_issue_body_details")}\n\`\`\`\n${errorDetails}\n\`\`\``,
     );
     Linking.openURL(
       `https://github.com/${githubRepo}/issues/new?title=${title}&body=${body}`,
@@ -114,7 +116,7 @@ export default function ErrorSheet({
               <AlertCircle size={18} color={theme.danger} />
             </View>
             <View>
-              <Text style={s.headerSub}>Fehlerdiagnose</Text>
+              <Text style={s.headerSub}>{t("Error_diagnosis")}</Text>
               <Text style={s.title}>{errorTitle}</Text>
             </View>
           </View>
@@ -123,33 +125,33 @@ export default function ErrorSheet({
           </TouchableOpacity>
         </View>
 
-        {/* Fehlermeldung */}
+        {/* Error message */}
         <View style={s.errorBox}>
           <Text style={s.errorText}>{errorMessage}</Text>
         </View>
 
         {/* Details Grid */}
         <View style={s.detailsBox}>
-          <Text style={s.sectionLabel}>Details</Text>
+          <Text style={s.sectionLabel}>{t("Details")}</Text>
           <View style={s.detailsGrid}>
             {errorCode && (
               <View style={s.detailItem}>
-                <Text style={s.detailKey}>Fehlercode</Text>
+                <Text style={s.detailKey}>{t("Error_code")}</Text>
                 <Text style={[s.detailValue, { fontFamily: "monospace" }]}>
                   {errorCode}
                 </Text>
               </View>
             )}
             <View style={s.detailItem}>
-              <Text style={s.detailKey}>App-Version</Text>
+              <Text style={s.detailKey}>{t("App_Version")}</Text>
               <Text style={s.detailValue}>v{appVersion}</Text>
             </View>
             <View style={s.detailItem}>
-              <Text style={s.detailKey}>Build</Text>
+              <Text style={s.detailKey}>{t("Build")}</Text>
               <Text style={s.detailValue}>#{buildNumber}</Text>
             </View>
             <View style={s.detailItem}>
-              <Text style={s.detailKey}>Plattform</Text>
+              <Text style={s.detailKey}>{t("Platform")}</Text>
               <Text style={s.detailValue}>
                 {Platform.OS === "ios" ? "iOS" : "Android"} {Platform.Version}
               </Text>
@@ -157,10 +159,10 @@ export default function ErrorSheet({
           </View>
         </View>
 
-        {/* Weiterhin verfügbar */}
+        {/* Still works */}
         {stillAvailable.length > 0 && (
           <View style={s.availableBox}>
-            <Text style={s.sectionLabel}>Weiterhin verfügbar</Text>
+            <Text style={s.sectionLabel}>{t("Still_available")}</Text>
             {stillAvailable.map((item, i) => (
               <View key={i} style={s.availableItem}>
                 <View style={s.checkCircle}>
@@ -181,13 +183,13 @@ export default function ErrorSheet({
               <Copy size={16} color={theme.textColor} />
             )}
             <Text style={s.btnSecondaryText}>
-              {copied ? "Kopiert!" : "Kopieren"}
+              {copied ? t("Copied") : t("Error_copy_clipboard")}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.btnPrimary} onPress={handleGithubIssue}>
             <Github size={16} color={theme.white} />
-            <Text style={s.btnPrimaryText}>GitHub Issue</Text>
+            <Text style={s.btnPrimaryText}>{t("Error_github_issue")}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetScrollView>

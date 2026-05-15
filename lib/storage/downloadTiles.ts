@@ -79,7 +79,7 @@ export async function downloadRegion(
     return null;
   }
 
-  // Progress sofort melden damit UI reagiert
+  // Report progress immediately so the UI can update
   onProgress({
     total,
     downloaded: 0,
@@ -90,13 +90,13 @@ export async function downloadRegion(
 
   const dbPath = `${MBTILES_DIR}${id}.mbtiles`;
 
-  // Alte DB löschen falls vorhanden
+  // Remove any previous database for this id
   await deleteAsync(dbPath, { idempotent: true });
 
   const db = await SQLite.openDatabaseAsync(`${MBTILES_DIR}${id}.mbtiles`);
 
   try {
-    // Schema erstellen
+    // Create schema
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS metadata (
@@ -203,7 +203,7 @@ export async function downloadRegion(
 
     await db.closeAsync();
 
-    // Dateigröße
+    // File size on disk
     const fileInfo = await getInfoAsync(dbPath);
     const size = fileInfo.exists ? ((fileInfo as any).size ?? 0) : 0;
 
@@ -219,7 +219,7 @@ export async function downloadRegion(
       tileCount: downloaded,
     };
 
-    // Metadata JSON speichern
+    // Persist sidecar JSON metadata
     await writeAsStringAsync(`${MBTILES_DIR}${id}.json`, JSON.stringify(info));
 
     onProgress({ total, downloaded, failed, percent: 100, status: "done" });

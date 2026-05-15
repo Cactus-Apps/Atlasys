@@ -106,7 +106,7 @@ class UpdateManager extends EventEmitter {
 
 export const updateManager = new UpdateManager();
 
-/** Prüft und lädt OTA-Updates im Hintergrund (wirkt beim nächsten App-Start). */
+/** Checks for and downloads OTA updates in the background (applied on next app launch). */
 export async function runExpoUpdateCheck(): Promise<void> {
   await updateManager.checkForUpdate();
 }

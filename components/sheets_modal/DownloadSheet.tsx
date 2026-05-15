@@ -7,7 +7,9 @@ import { downloadRegion } from "@/lib/storage/downloadTiles";
 import { CircularWavyProgressIndicator, Host } from "@expo/ui/jetpack-compose";
 import { useAppTheme } from "@/lib/theme";
 import { reverseGeocode } from "@/lib/geocoding/geocoding";
+import { useTranslation } from "react-i18next";
 import CircularProgress from "../overlays/CircularWavyProgressIndicator";
+import { posthog } from "@/lib/config/posthog";
 
 interface Props {
   open: boolean;
@@ -153,6 +155,7 @@ export default function DownloadSheet({
   onClose,
   onDownloadComplete,
 }: Props) {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const s = getStyles(theme);
 
@@ -193,11 +196,24 @@ export default function DownloadSheet({
     if (!bounds) return;
     if (tileCount > 50000) {
       Alert.alert(
-        "Zu groß",
-        "Bitte wähle ein kleineres Gebiet oder weniger Zoom-Stufen.",
+        t("Download_area_too_large_title"),
+        t("Download_area_too_large_message"),
       );
+      posthog.capture("Download_area_too_large", {
+        min_zoom: minZoom,
+        max_zoom: maxZoom,
+        estimated_tiles: tileCount,
+        estimated_mb: estimatedMB,
+      });
       return;
     }
+
+    posthog.capture("offline_download_started", {
+      min_zoom: minZoom,
+      max_zoom: maxZoom,
+      estimated_tiles: tileCount,
+      estimated_mb: estimatedMB,
+    });
 
     setProgress(0);
     setStatus("downloading");
@@ -213,7 +229,7 @@ export default function DownloadSheet({
       const label = await reverseGeocode(centerLat, centerLng);
       regionName =
         label.split(",")[0].trim() ||
-        `Region ${new Date().toLocaleDateString("de")}`;
+        `Region ${new Date().toLocaleDateString()}`;
     }
 
     const result = await downloadRegion(
@@ -238,6 +254,9 @@ export default function DownloadSheet({
 
     if (result) {
       setStatus("done");
+      posthog.capture("offline_download_completed", {
+        tile_count: tileCount,
+      });
       onDownloadComplete();
     }
   };
@@ -257,7 +276,7 @@ export default function DownloadSheet({
     >
       <BottomSheetScrollView contentContainerStyle={s.container}>
         <View style={s.header}>
-          <Text style={s.title}>Karte herunterladen</Text>
+          <Text style={s.title}>{t("Download_sheet_title")}</Text>
           <TouchableOpacity onPress={onClose} style={s.closeBtn}>
             <X size={20} color={theme.subTextColor} />
           </TouchableOpacity>
@@ -284,14 +303,15 @@ export default function DownloadSheet({
 
         <View style={s.estimateBox}>
           <Text style={s.estimateText}>
-            ~{tileCount.toLocaleString()} Tiles · ca. {estimatedMB} MB
+            {t("Download_tiles_estimate", {
+              count: tileCount.toLocaleString(),
+              mb: estimatedMB,
+            })}
           </Text>
           {tileCount > 50000 && (
             <View style={s.warningRow}>
               <AlertTriangle size={14} color={theme.warning} />
-              <Text style={s.warningText}>
-                Gebiet zu groß – Zoom reduzieren
-              </Text>
+              <Text style={s.warningText}>{t("Download_area_warning")}</Text>
             </View>
           )}
         </View>
@@ -310,24 +330,28 @@ export default function DownloadSheet({
                 color: theme.textColor,
               }}
             >
-              {progress}% heruntergeladen
+              {t("Download_progress", { percent: Math.round(progress) })}
             </Text>
             <TouchableOpacity
               onPress={() => {
                 cancelRef.current.cancelled = true;
                 setStatus("idle");
                 setProgress(0);
+                posthog.capture("offline_download_cancelled", {
+                  progress_at_cancel: progress,
+                  tiles_done: Math.round((tileCount * progress) / 100),
+                });
               }}
               style={s.cancelBtn}
             >
-              <Text style={s.cancelText}>Abbrechen</Text>
+              <Text style={s.cancelText}>{t("Cancel")}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {status === "done" && (
           <View style={s.doneBox}>
-            <Text style={s.doneText}>Download abgeschlossen!</Text>
+            <Text style={s.doneText}>{t("Download_done")}</Text>
           </View>
         )}
 
@@ -342,7 +366,7 @@ export default function DownloadSheet({
             ]}
           >
             <Download size={20} color={theme.white} />
-            <Text style={s.downloadBtnText}>Herunterladen</Text>
+            <Text style={s.downloadBtnText}>{t("Download_button")}</Text>
           </TouchableOpacity>
         )}
       </BottomSheetScrollView>

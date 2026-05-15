@@ -1,6 +1,7 @@
 import { MapIcon, Box, Download, Navigation } from "lucide-react-native";
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
+import i18n from "@/app/i18n";
 
 interface Props {
   markerPos: [number, number] | undefined;
@@ -36,7 +37,7 @@ export default function NavigationSideBar({
             setRouteEnd(null);
             setRouteStart(
               markerPos
-                ? { label: "Mein Standort", coordinate: markerPos }
+                ? { label: i18n.t("Poi_my_location"), coordinate: markerPos }
                 : null,
             );
             setRouteSheetOpen(true);

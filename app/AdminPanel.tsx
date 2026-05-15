@@ -36,6 +36,23 @@ interface DeleteRequest {
   expires_at: string;
 }
 
+const DELETE_REQUEST_STATUSES = [
+  "pending",
+  "completed",
+  "rejected",
+  "deleted",
+] as const;
+
+function deleteRequestStatusI18nKey(status: string): string {
+  const map: Record<string, string> = {
+    pending: "Admin_status_pending",
+    completed: "Admin_status_completed",
+    rejected: "Admin_status_rejected",
+    deleted: "Admin_status_deleted",
+  };
+  return map[status.toLowerCase()] ?? status;
+}
+
 export default function AdminPanel() {
   const [requests, setRequests] = useState<DeleteRequest[]>([]);
   const { t } = useTranslation();
@@ -123,7 +140,7 @@ export default function AdminPanel() {
             style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}
           >
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {item.status}
+              {t(deleteRequestStatusI18nKey(item.status))}
             </Text>
           </View>
         </View>
@@ -169,7 +186,7 @@ export default function AdminPanel() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <ShieldCheck size={48} color="#94a3b8" strokeWidth={1.5} />
-              <Text style={styles.emptyText}>No deletion requests found</Text>
+              <Text style={styles.emptyText}>{t("Admin_empty_requests")}</Text>
             </View>
           }
         />
@@ -185,7 +202,7 @@ export default function AdminPanel() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Request Details</Text>
+              <Text style={styles.modalTitle}>{t("Admin_modal_request_details")}</Text>
               <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
                 <X size={24} color={theme.textColor} />
               </TouchableOpacity>
@@ -196,7 +213,7 @@ export default function AdminPanel() {
                 <View style={styles.detailItem}>
                   <Mail size={20} color={styles.subTextColor} />
                   <View style={styles.detailTextContainer}>
-                    <Text style={styles.detailLabel}>Email Address</Text>
+                    <Text style={styles.detailLabel}>{t("Admin_label_email_address")}</Text>
                     <Text style={styles.detailValue}>
                       {selectedRequest.email}
                     </Text>
@@ -209,14 +226,14 @@ export default function AdminPanel() {
                     color={getStatusColor(selectedRequest.status).text}
                   />
                   <View style={styles.detailTextContainer}>
-                    <Text style={styles.detailLabel}>Current Status</Text>
+                    <Text style={styles.detailLabel}>{t("Admin_label_current_status")}</Text>
                     <Text
                       style={[
                         styles.detailValue,
                         { color: getStatusColor(selectedRequest.status).text },
                       ]}
                     >
-                      {selectedRequest.status}
+                      {t(deleteRequestStatusI18nKey(selectedRequest.status))}
                     </Text>
                   </View>
                 </View>
@@ -224,7 +241,7 @@ export default function AdminPanel() {
                 <View style={styles.detailItem}>
                   <Hash size={20} color={styles.subTextColor} />
                   <View style={styles.detailTextContainer}>
-                    <Text style={styles.detailLabel}>Verification Code</Text>
+                    <Text style={styles.detailLabel}>{t("Admin_label_verification_code")}</Text>
                     <Text style={styles.detailValue}>
                       {selectedRequest.verification_code}
                     </Text>
@@ -234,9 +251,11 @@ export default function AdminPanel() {
                 <View style={styles.detailItem}>
                   <Clock size={20} color={styles.subTextColor} />
                   <View style={styles.detailTextContainer}>
-                    <Text style={styles.detailLabel}>Time Remaining</Text>
+                    <Text style={styles.detailLabel}>{t("Admin_label_time_remaining")}</Text>
                     <Text style={styles.detailValue}>
-                      {getDaysLeft(selectedRequest.expires_at)} days left
+                      {t("Admin_days_remaining", {
+                        count: getDaysLeft(selectedRequest.expires_at),
+                      })}
                     </Text>
                   </View>
                 </View>
@@ -245,7 +264,7 @@ export default function AdminPanel() {
                   style={styles.actionButton}
                   onPress={() => setStatusModalVisible(true)}
                 >
-                  <Text style={styles.actionButtonText}>Update Status</Text>
+                  <Text style={styles.actionButtonText}>{t("Admin_action_update_status")}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -262,18 +281,19 @@ export default function AdminPanel() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.statusModalBox}>
-            <Text style={styles.modalTitle}>Select New Status</Text>
-            {["Pending", "Completed", "Rejected", "Deleted"].map((status) => (
+            <Text style={styles.modalTitle}>{t("Select_new_status")}</Text>
+            {DELETE_REQUEST_STATUSES.map((status) => (
               <TouchableOpacity
                 key={status}
                 style={styles.statusOption}
                 onPress={() =>
-                  updateStatus(selectedRequest!.id, status.toLowerCase())
+                  updateStatus(selectedRequest!.id, status)
                 }
               >
-                <Text style={styles.statusOptionText}>{status}</Text>
-                {selectedRequest?.status.toLowerCase() ===
-                  status.toLowerCase() && (
+                <Text style={styles.statusOptionText}>
+                  {t(deleteRequestStatusI18nKey(status))}
+                </Text>
+                {selectedRequest?.status.toLowerCase() === status && (
                   <Check size={20} color="#2563EB" strokeWidth={3} />
                 )}
               </TouchableOpacity>
@@ -282,7 +302,7 @@ export default function AdminPanel() {
               style={styles.cancelButton}
               onPress={() => setStatusModalVisible(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("Cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>

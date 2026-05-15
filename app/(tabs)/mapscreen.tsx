@@ -77,6 +77,7 @@ import ErrorSheet from "@/components/sheets_modal/ErrorSheet";
 import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
 import NavigationSideBar from "@/components/overlays/NavigationSideBar";
 import PoiSheet from "@/components/sheets_modal/PoiSheet";
+import { posthog } from "@/lib/config/posthog";
 
 const { width, height } = Dimensions.get("window");
 
@@ -100,9 +101,9 @@ type SelectedCity = {
 };
 
 type WikiArticleImage = {
-  /** Skalierte URL für die horizontale Galerie (kleinere Bytes). */
+  /** Smaller preview URL for the horizontal gallery. */
   previewUrl: string;
-  /** Größere Server-Thumbnail-URL für die Vollbildansicht. */
+  /** Larger thumbnail URL for full-screen view. */
   fullUrl: string;
 };
 
@@ -120,17 +121,22 @@ type RoutePoint = {
 
 const SNAP_POINTS = ["15%", "25%", "50%", "80%", "100%"];
 
-const FILTERS = [
-  { label: "Restaurants", subclass: ["restaurant"] },
-  { label: "Cafés", subclass: ["cafe"] },
-  { label: "Hotels", subclass: ["hotel", "hostel"] },
+const FILTER_DEFS = [
+  { id: "restaurants", labelKey: "Restaurants", subclass: ["restaurant"] },
+  { id: "cafes", labelKey: "Cafés", subclass: ["cafe"] },
+  { id: "hotels", labelKey: "Hotels", subclass: ["hotel", "hostel"] },
   {
-    label: "Sehenswürdigkeiten",
+    id: "attractions",
+    labelKey: "Attractions",
     subclass: ["attraction", "museum", "monument", "artwork"],
   },
-  { label: "Bars", subclass: ["bar", "pub"] },
-  { label: "Shopping", subclass: ["mall", "supermarket", "shop"] },
-];
+  { id: "bars", labelKey: "Bars", subclass: ["bar", "pub"] },
+  {
+    id: "shopping",
+    labelKey: "Shopping",
+    subclass: ["mall", "supermarket", "shop"],
+  },
+] as const;
 
 export default function MapScreen() {
   const markerRef = useRef<MarkerRef | null>(null);
@@ -203,6 +209,16 @@ export default function MapScreen() {
     () => getStyles(theme),
     [theme.isDark, theme.isModern],
   );
+  const { t, i18n } = useTranslation();
+  const filters = useMemo(
+    () =>
+      FILTER_DEFS.map((f) => ({
+        id: f.id,
+        label: t(f.labelKey),
+        subclass: [...f.subclass],
+      })),
+    [t],
+  );
   const sheetPoiRef = useRef<BottomSheet>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const activeFilterRef = useRef<string | null>(null);
@@ -252,15 +268,13 @@ export default function MapScreen() {
     destName: string;
   }>();
 
-  const handleSetFilter = (label: string | null) => {
-    activeFilterRef.current = label;
-    setActiveFilter(label);
+  const handleSetFilter = (filterId: string | null) => {
+    activeFilterRef.current = filterId;
+    setActiveFilter(filterId);
   };
 
-  const { t } = useTranslation();
-
   // Location/GPS Stuff
-  // Neue Funktion: IP-basierter Standort als Fallback
+  // IP-based location as a fallback when GPS is not ready
   const getIPLocation = async (): Promise<[number, number] | null> => {
     try {
       const res = await fetch("https://ipapi.co/json/");
@@ -289,34 +303,33 @@ export default function MapScreen() {
     let liveSub: Location.LocationSubscription | null = null;
 
     (async () => {
-      // Schritt 1: Sofort IP-Standort laden als Platzhalter
+      // Step 1: load IP-based location as a placeholder
       if (!hasCenteredOnce.current && mapRef.current) {
         const ipCoords = await getIPLocation();
         if (ipCoords && !cancelled && !hasCenteredOnce.current) {
           mapRef.current.flyTo({
             center: ipCoords,
-            zoom: 5, // Land-Zoom wie Google Maps
+            zoom: 5, // country-level zoom
             duration: 800,
           });
         }
       }
 
-      // Schritt 2: GPS Permission anfragen
+      // Step 2: request GPS permission
       const { status, canAskAgain } =
         await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
         if (!canAskAgain) {
-          // User hat "Nie wieder fragen" gewählt → zu Einstellungen
-          setError("location_denied_permanent");
+          setError(t("Location_denied_permanent"));
         } else {
-          setError("Location authorization denied");
+          setError(t("Location_authorization_denied"));
         }
         setLocationReady(true); // Trotzdem UI freigeben
         return;
       }
 
-      // Schritt 3: Einmalige schnelle Position holen
+      // Step 3: one quick position fix
       try {
         const lastKnown = await Location.getLastKnownPositionAsync();
         if (lastKnown && !cancelled && !hasCenteredOnce.current) {
@@ -336,7 +349,7 @@ export default function MapScreen() {
         }
       } catch {}
 
-      // Schritt 4: Live GPS Watcher
+      // Step 4: live GPS watcher
       const s = await Location.watchPositionAsync(
         {
           accuracy:
@@ -384,7 +397,7 @@ export default function MapScreen() {
       liveSub?.remove();
       setSub(null);
     };
-  }, [ready, locationSharing]);
+  }, [ready, locationSharing, t]);
 
   // User Auth Stuff
   useEffect(() => {
@@ -406,12 +419,13 @@ export default function MapScreen() {
   const openURL = async () => {
     if (!city?.name) return;
     const title = city.name.replace(/ /g, "_");
-    const url = `https://de.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+    const wikiLang = (i18n.language || "en").split("-")[0];
+    const url = `https://${wikiLang}.wikipedia.org/wiki/${encodeURIComponent(title)}`;
     const supported = await Linking.canOpenURL(url);
     if (supported) {
       await Linking.openURL(url);
     } else {
-      Alert.alert("Kann Wikipedia nicht öffnen");
+      Alert.alert(t("Wikipedia_could_not_open"));
     }
   };
 
@@ -428,12 +442,14 @@ export default function MapScreen() {
   const resetToNorth = () => {
     mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 500 });
     setPitch(false);
+    posthog.capture("compass_reset_to_north");
   };
 
   const resetPitch = () => {
     const nextPitch = !pitch;
     mapRef.current?.easeTo({ pitch: nextPitch ? 60 : 0, duration: 500 });
     setPitch(nextPitch);
+    posthog.capture("pitch_reset");
   };
 
   const ensureGlobe = () => {
@@ -546,7 +562,7 @@ export default function MapScreen() {
         );
         const searchData = await searchRes.json();
         if (!searchData[1]?.length) {
-          setError("Kein Artikel gefunden.");
+          setError(t("Article_not_found"));
           setLoading(false);
           return;
         }
@@ -737,7 +753,7 @@ export default function MapScreen() {
 
         setArticle({
           title: pageTitle,
-          extract: extract || "Keine Zusammenfassung verfügbar.",
+          extract: extract || t("No_summary_available"),
           thumbnail: finalThumbnail,
           images: imageUrls,
         });
@@ -893,6 +909,10 @@ export default function MapScreen() {
 
     setCurrentThemeKey(theme.key);
     setMapStyle(theme.url);
+    posthog.capture("map_style_changed", {
+      style: currentThemeKey,
+    });
+
     setMapStyleSheetOpen(false);
 
     setTimeout(() => {
@@ -920,6 +940,10 @@ export default function MapScreen() {
       if (!json.routes?.length) return;
 
       setRoute(json.routes);
+      posthog.capture("route_started", {
+        profile: profile,
+      });
+
       setDistanceInfo({
         distance: json.routes[0].distance,
         duration: json.routes[0].duration,
@@ -958,10 +982,9 @@ export default function MapScreen() {
 
     if (!allFeatures?.length) return;
 
-    // Aktiven Filter anwenden
+    // Apply active POI filter
     const activeSubclasses = activeFilterRef.current
-      ? (FILTERS.find((f) => f.label === activeFilterRef.current)?.subclass ??
-        [])
+      ? (filters.find((f) => f.id === activeFilterRef.current)?.subclass ?? [])
       : null;
 
     const filtered = activeSubclasses
@@ -1003,13 +1026,21 @@ export default function MapScreen() {
       }
     }
     const data = {
-      name: closest.properties?.name ?? "Unbekannter POI",
+      name: closest.properties?.name ?? t("Unknown_poi"),
       type: closest.properties?.class ?? "",
       subclass: closest.properties?.subclass ?? "",
       osm_id,
       lat: lat2,
       lon,
     };
+
+    if (closest) {
+      posthog.capture("poi_tapped", {
+        type: closest.properties?.subclass || closest.properties?.class,
+        has_name: !!closest.properties?.name,
+        layer: closest.layer?.id,
+      });
+    }
 
     setSelectedPoi(data);
     sheetPoiRef.current?.snapToIndex(0);
@@ -1103,8 +1134,8 @@ export default function MapScreen() {
           {showError && <AlertTriangle color={theme.danger} />}
           <Text style={{ color: theme.white, fontSize: 13, fontWeight: "500" }}>
             {showError
-              ? "Standort konnte nicht ermittelt werden"
-              : "Standort wird ermittelt..."}
+              ? t("Location_could_not_resolve")
+              : t("Location_resolving")}
           </Text>
         </TouchableOpacity>
       )}
@@ -1139,8 +1170,8 @@ export default function MapScreen() {
                   }}
                 >
                   {routePickMode === "start"
-                    ? "Start auswählen"
-                    : "Ziel auswählen"}
+                    ? t("Route_pick_start_title")
+                    : t("Route_pick_end_title")}
                 </Text>
                 <Text
                   style={{
@@ -1149,7 +1180,7 @@ export default function MapScreen() {
                     marginTop: 2,
                   }}
                 >
-                  Karte unter Markierung schwenken...
+                  {t("Route_pick_map_hint")}
                 </Text>
               </View>
               <TouchableOpacity
@@ -1164,7 +1195,7 @@ export default function MapScreen() {
                       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
                       {
                         headers: {
-                          "Accept-Language": "de",
+                          "Accept-Language": i18n.language || "en",
                           "User-Agent": "Atlasys/1.0 (cactus_apps@proton.me)",
                         },
                       },
@@ -1353,7 +1384,7 @@ export default function MapScreen() {
                   line-height: 1;
                 }
               </style>
-              <div class="pin" title="Standort">
+              <div class="pin" title="Location">
               </div>
             `,
               },
@@ -1500,10 +1531,11 @@ export default function MapScreen() {
                   setBottomSheetIndex(2);
                   sheetRef.current?.snapToIndex(2);
                   selectCity({
-                    name: closest.properties?.name ?? "Unbekannter Ort",
+                    name: closest.properties?.name ?? t("Unknown_poi"),
                     latitude: lat,
                     longitude: lon,
                   });
+                  posthog.capture("city_tapped");
                 },
               },
             },
@@ -1547,23 +1579,21 @@ export default function MapScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterRow}
             >
-              {FILTERS.map((item) => (
+              {filters.map((item) => (
                 <TouchableOpacity
-                  key={item.label}
+                  key={item.id}
                   style={[
                     styles.filterChip,
-                    activeFilter === item.label && styles.filterChipActive,
+                    activeFilter === item.id && styles.filterChipActive,
                   ]}
                   onPress={() =>
-                    handleSetFilter(
-                      activeFilter === item.label ? null : item.label,
-                    )
+                    handleSetFilter(activeFilter === item.id ? null : item.id)
                   }
                 >
                   <Text
                     style={[
                       styles.filterText,
-                      activeFilter === item.label && styles.filterTextActive,
+                      activeFilter === item.id && styles.filterTextActive,
                     ]}
                   >
                     {item.label}
@@ -1583,7 +1613,7 @@ export default function MapScreen() {
                   <View style={styles.historyHeader}>
                     <History size={16} color={theme.subTextColor} />
                     <Text style={styles.historyHeaderText}>
-                      Zuletzt gesucht
+                      {t("Recently_searched")}
                     </Text>
                     <TouchableOpacity onPress={() => clearSearchHistory()}>
                       <X size={16} color={theme.subTextColor} />
@@ -1826,7 +1856,7 @@ export default function MapScreen() {
                           setRouteStart(
                             markerPos
                               ? {
-                                  label: "Mein Standort",
+                                  label: t("Poi_my_location"),
                                   coordinate: markerPos,
                                 }
                               : null,
@@ -2051,6 +2081,7 @@ export default function MapScreen() {
             const tmp = routeStart;
             setRouteStart(routeEnd);
             setRouteEnd(tmp);
+            posthog.capture("route_start_end_swapped");
           }}
           onSetStart={(point) => setRouteStart(point)}
           onSetEnd={(point) => setRouteEnd(point)}
@@ -2061,7 +2092,7 @@ export default function MapScreen() {
               duration: routes[0].duration,
             });
 
-            // Karte auf Route zoomen
+            // Fit map to route bounds
             if (!mapRef.current || !routes[0].geometry) return;
             const coords: [number, number][] = routes[0].geometry.coordinates;
             if (!coords.length) return;
@@ -2097,16 +2128,13 @@ export default function MapScreen() {
         <ErrorSheet
           open={errorSheetOpen}
           onClose={() => setErrorSheetOpen(false)}
-          errorTitle={error ? "Fehler" : "Standortfehler"}
-          error={
-            error ??
-            "Dein Standort konnte nicht geladen werden. Bitte pruefe Berechtigung und GPS."
-          }
+          errorTitle={error ? t("Error_generic") : t("Error_location")}
+          error={error ?? t("Location_load_failed_message")}
           errorCode={error ? "MAPSCREEN_ERROR" : "LOCATION_NOT_READY"}
           stillAvailable={[
-            "Offline-Karten anzeigen",
-            "Gespeicherte Orte nutzen",
-            "Routen berechnen",
+            t("Still_available_offline_maps"),
+            t("Still_available_saved_places"),
+            t("Still_available_routes"),
           ]}
           githubRepo="cactus-apps/atlasys"
         />

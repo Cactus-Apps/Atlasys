@@ -12,30 +12,31 @@ import {
 } from "react-native";
 import { X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 
 export type MapTheme = {
   key: string;
-  label: string;
+  labelKey: string;
   url: string;
-  colors: string[]; // ← statt preview
+  colors: string[]; // preview swatches instead of bitmap thumbnails
 };
 
 export const MAP_THEMES: MapTheme[] = [
   {
     key: "bright",
-    label: "Standard",
+    labelKey: "Map_theme_bright",
     url: "https://tiles.openfreemap.org/styles/bright",
-    colors: ["#a8d5a2", "#f5f0e8", "#c8e6f5"], // grün, beige, blau
+    colors: ["#a8d5a2", "#f5f0e8", "#c8e6f5"], // green, beige, blue
   },
   {
     key: "dark",
-    label: "Dunkel",
+    labelKey: "Map_theme_dark",
     url: "https://tiles.openfreemap.org/styles/dark",
     colors: ["#2d4a3e", "#1a1a2e", "#16213e"],
   },
   {
     key: "liberty",
-    label: "Gelände",
+    labelKey: "Map_theme_liberty",
     url: "https://tiles.openfreemap.org/styles/liberty",
     colors: ["#c8d8a8", "#e8d5b0", "#b8c8d8"],
   },
@@ -54,6 +55,7 @@ export default function MapStyleSheet({
   onSelect,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const theme = useAppTheme();
 
   return (
@@ -74,7 +76,9 @@ export default function MapStyleSheet({
 
         {/* Header */}
         <View style={s.header}>
-          <Text style={[s.title, { color: theme.textColor }]}>Kartentyp</Text>
+          <Text style={[s.title, { color: theme.textColor }]}>
+            {t("Map_style_sheet_title")}
+          </Text>
           <TouchableOpacity
             onPress={onClose}
             style={[s.closeBtn, { backgroundColor: theme.iconBg }]}
@@ -83,18 +87,18 @@ export default function MapStyleSheet({
           </TouchableOpacity>
         </View>
 
-        {/* Vorschaubilder */}
+        {/* Theme previews */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.previewRow}
         >
-          {MAP_THEMES.map((t) => {
-            const isActive = t.key === currentTheme;
+          {MAP_THEMES.map((mt) => {
+            const isActive = mt.key === currentTheme;
             return (
               <TouchableOpacity
-                key={t.key}
-                onPress={() => onSelect(t)}
+                key={mt.key}
+                onPress={() => onSelect(mt)}
                 style={s.previewItem}
               >
                 <View
@@ -103,9 +107,9 @@ export default function MapStyleSheet({
                     isActive && s.previewImageWrapperActive,
                   ]}
                 >
-                  {/* Farbige Karten-Simulation */}
-                  <View style={{ flex: 1, backgroundColor: t.colors[1] }}>
-                    {/* Straßen simulieren */}
+                  {/* Stylized map preview */}
+                  <View style={{ flex: 1, backgroundColor: mt.colors[1] }}>
+                    {/* Road-like strokes */}
                     <View
                       style={{
                         position: "absolute",
@@ -113,7 +117,7 @@ export default function MapStyleSheet({
                         left: 0,
                         right: 0,
                         height: 3,
-                        backgroundColor: t.colors[0],
+                        backgroundColor: mt.colors[0],
                         opacity: 0.8,
                       }}
                     />
@@ -124,7 +128,7 @@ export default function MapStyleSheet({
                         left: 0,
                         right: 0,
                         height: 2,
-                        backgroundColor: t.colors[0],
+                        backgroundColor: mt.colors[0],
                         opacity: 0.6,
                       }}
                     />
@@ -135,7 +139,7 @@ export default function MapStyleSheet({
                         bottom: 0,
                         left: "30%",
                         width: 2,
-                        backgroundColor: t.colors[0],
+                        backgroundColor: mt.colors[0],
                         opacity: 0.6,
                       }}
                     />
@@ -146,11 +150,11 @@ export default function MapStyleSheet({
                         bottom: 0,
                         left: "65%",
                         width: 3,
-                        backgroundColor: t.colors[0],
+                        backgroundColor: mt.colors[0],
                         opacity: 0.8,
                       }}
                     />
-                    {/* Wasser */}
+                    {/* Water */}
                     <View
                       style={{
                         position: "absolute",
@@ -158,12 +162,12 @@ export default function MapStyleSheet({
                         left: 0,
                         right: "40%",
                         height: "25%",
-                        backgroundColor: t.colors[2],
+                        backgroundColor: mt.colors[2],
                         opacity: 0.7,
                         borderTopRightRadius: 12,
                       }}
                     />
-                    {/* Gebäude */}
+                    {/* Buildings */}
                     <View
                       style={{
                         position: "absolute",
@@ -171,7 +175,7 @@ export default function MapStyleSheet({
                         left: "35%",
                         width: 14,
                         height: 14,
-                        backgroundColor: t.colors[0],
+                        backgroundColor: mt.colors[0],
                         opacity: 0.5,
                       }}
                     />
@@ -182,7 +186,7 @@ export default function MapStyleSheet({
                         left: "52%",
                         width: 10,
                         height: 10,
-                        backgroundColor: t.colors[0],
+                        backgroundColor: mt.colors[0],
                         opacity: 0.4,
                       }}
                     />
@@ -195,7 +199,7 @@ export default function MapStyleSheet({
                     isActive && { fontWeight: "700" },
                   ]}
                 >
-                  {t.label}
+                  {t(mt.labelKey)}
                 </Text>
               </TouchableOpacity>
             );

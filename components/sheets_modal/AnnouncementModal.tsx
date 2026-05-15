@@ -11,6 +11,8 @@ import {
 import { Info, Sparkles, AlertTriangle, X } from "lucide-react-native";
 import { Announcement, markAllSeen } from "@/utils/announcements";
 import { useAppTheme } from "@/lib/theme";
+import { posthog } from "@/lib/config/posthog";
+import { t } from "i18next";
 
 interface Props {
   announcements: Announcement[];
@@ -115,6 +117,10 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
   const handleClose = async () => {
     await markAllSeen(announcements.map((a) => a.id));
     onClose();
+    posthog.capture("announcement_viewed", {
+      count: announcements.length,
+      type: announcements[0]?.type,
+    });
   };
 
   if (!announcements.length) return null;
@@ -133,9 +139,9 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
             <Text style={[s.cardTitle, { color: theme.textColor }]}>
               {announcements.length === 1
                 ? announcements[0].type === "update"
-                  ? "🆕 Was ist neu"
-                  : "📢 Nachricht"
-                : `📢 ${announcements.length} Neuigkeiten`}
+                  ? " Was ist neu"
+                  : "Nachricht"
+                : `${announcements.length} Neuigkeiten`}
             </Text>
             <TouchableOpacity onPress={handleClose} style={s.closeBtn}>
               <X size={18} color={theme.subTextColor} />
@@ -188,7 +194,9 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
 
           {/* Button */}
           <TouchableOpacity style={s.okBtn} onPress={handleClose}>
-            <Text style={[s.okText, { color: theme.white }]}>Verstanden</Text>
+            <Text style={[s.okText, { color: theme.white }]}>
+              {t("Got it")}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

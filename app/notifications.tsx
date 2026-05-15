@@ -25,6 +25,7 @@ import { BlurView } from "expo-blur";
 
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 
 type TopicKey =
   | "userAccount"
@@ -50,43 +51,44 @@ function resolveTopics(settings: {
 
 const TOPIC_ROWS: {
   key: TopicKey;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   Icon: React.ComponentType<{ size?: number; color?: string }>;
 }[] = [
   {
     key: "userAccount",
-    label: "User & account",
-    description: "Security, login, and profile alerts",
+    labelKey: "Notifications_topic_user",
+    descriptionKey: "Notifications_topic_user_sub",
     Icon: UserRound,
   },
   {
     key: "coolPlaces",
-    label: "Cool places",
-    description: "Tips and highlights near you",
+    labelKey: "Notifications_topic_places",
+    descriptionKey: "Notifications_topic_places_sub",
     Icon: MapPin,
   },
   {
     key: "subscriptions",
-    label: "Subscriptions",
-    description: "Billing, renewals, and plan changes",
+    labelKey: "Notifications_topic_subscriptions",
+    descriptionKey: "Notifications_topic_subscriptions_sub",
     Icon: CreditCard,
   },
   {
     key: "offlineMaps",
-    label: "Offline maps",
-    description: "Download and sync status",
+    labelKey: "Notifications_topic_offline",
+    descriptionKey: "Notifications_topic_offline_sub",
     Icon: Download,
   },
   {
     key: "updates",
-    label: "Updates",
-    description: "New features and release notes",
+    labelKey: "Notifications_topic_updates",
+    descriptionKey: "Notifications_topic_updates_sub",
     Icon: Rocket,
   },
 ];
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const settings = useAuthStore((s) => s.settings);
   const updateSettings = useAuthStore((s) => s.updateSettings);
@@ -109,11 +111,11 @@ export default function NotificationsScreen() {
           onPress={() => router.push("/(tabs)/profilescreen")}
           style={styles.backButton}
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t("Accessibility_back")}
         >
           <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={styles.headerTitle}>{t("Notifications")}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -125,11 +127,10 @@ export default function NotificationsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.introTitle}>
-                Atlasys ist noch in der Beta!
+                {t("Notifications_beta_title")}
               </Text>
               <Text style={styles.introSub}>
-                Atlasys ist noch in der Beta darum ist diese Feature noch nicht
-                verfügbar.
+                {t("Notifications_beta_sub")}
               </Text>
             </View>
           </View>
@@ -137,9 +138,11 @@ export default function NotificationsScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Categories</Text>
+            <Text style={styles.sectionTitle}>
+              {t("Notifications_section_categories")}
+            </Text>
             <Text style={styles.sectionHint}>
-              Choose which updates we may send you. You can change this anytime.
+              {t("Notifications_section_hint")}
             </Text>
             <View style={styles.card}>
               {TOPIC_ROWS.map((row, index) => {
@@ -156,8 +159,12 @@ export default function NotificationsScreen() {
                         />
                       </View>
                       <View style={styles.menuTextContainer}>
-                        <Text style={styles.menuLabel}>{row.label}</Text>
-                        <Text style={styles.menuValue}>{row.description}</Text>
+                        <Text style={styles.menuLabel}>
+                          {t(row.labelKey)}
+                        </Text>
+                        <Text style={styles.menuValue}>
+                          {t(row.descriptionKey)}
+                        </Text>
                       </View>
                       <Switch
                         value={enabled}

@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { Check, X } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/lib/theme";
 import * as Sentry from "@sentry/react-native";
 
@@ -25,10 +26,11 @@ export default function DrawBoundsOverlay({
   onCancel,
   mapRef,
 }: Props) {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const s = getStyles(theme);
 
-  // Start mit einem Rechteck in der Bildschirmmitte (als Pixel)
+  // Start with a centered rectangle (screen pixels)
   const [box, setBox] = useState({
     left: width * 0.15,
     top: height * 0.25,
@@ -64,7 +66,7 @@ export default function DrawBoundsOverlay({
       },
     });
 
-  // PanResponder für das gesamte Rechteck (verschieben)
+  // Pan responder to drag the whole rectangle
   const moveResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onPanResponderMove: (_, g) => {
@@ -80,7 +82,7 @@ export default function DrawBoundsOverlay({
 
   const handleConfirm = async () => {
     if (!mapRef.current) return;
-    // Pixel → Geo-Koordinaten konvertieren
+    // Convert pixels to geographic coordinates
     try {
       const nw = await mapRef.current.unproject([box.left, box.top]);
       const se = await mapRef.current.unproject([box.right, box.bottom]);
@@ -98,7 +100,7 @@ export default function DrawBoundsOverlay({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Dunkle Overlay-Bereiche außerhalb des Rechtecks */}
+      {/* Dimmed areas outside the selection rectangle */}
       <View
         style={[s.dimmed, { top: 0, left: 0, right: 0, height: box.top }]}
       />
@@ -128,7 +130,7 @@ export default function DrawBoundsOverlay({
         ]}
       />
 
-      {/* Rechteck-Rahmen + verschiebbar */}
+      {/* Rectangle frame (draggable) */}
       <View
         {...moveResponder.panHandlers}
         style={[
@@ -141,12 +143,12 @@ export default function DrawBoundsOverlay({
           },
         ]}
       >
-        {/* Kreuz-Linien in der Mitte */}
+        {/* Crosshair at center */}
         <View style={s.crossH} />
         <View style={s.crossV} />
       </View>
 
-      {/* Eck-Handles */}
+      {/* Corner handles */}
       {(
         [
           ["nw", box.left, box.top],
@@ -175,12 +177,12 @@ export default function DrawBoundsOverlay({
           <X size={20} color={theme.textColor} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>Bereich auswählen</Text>
-          <Text style={s.headerSub}>Ecken ziehen · Rechteck verschieben</Text>
+          <Text style={s.headerTitle}>{t("DrawBounds_select_area")}</Text>
+          <Text style={s.headerSub}>{t("DrawBounds_drag_hint")}</Text>
         </View>
         <TouchableOpacity onPress={handleConfirm} style={s.confirmBtn}>
           <Check size={18} color={theme.white} />
-          <Text style={s.confirmText}>OK</Text>
+          <Text style={s.confirmText}>{t("OK")}</Text>
         </TouchableOpacity>
       </View>
     </View>

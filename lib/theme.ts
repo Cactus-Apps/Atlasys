@@ -126,7 +126,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
   },
 };
 
-// ── Semantic Colors (theme-unabhängig) ────────────────────────────────────────
+// ── Semantic colors (not tied to a single theme) ────────────────────────────────
 const SEMANTIC = {
   danger: "#EF4444",
   dangerDark: "#B91C1C",

@@ -1,3 +1,5 @@
+import i18n from "@/app/i18n";
+
 export type OverpassPOIDetails = {
   name?: string;
   phone?: string;
@@ -107,11 +109,15 @@ export function parseOpeningHours(raw: string): OpenStatus {
   if (!raw)
     return {
       isOpen: false,
-      label: "Öffnungszeiten unbekannt",
+      label: i18n.t("Opening_hours_unknown"),
       color: "#94A3B8",
     };
   if (raw.toLowerCase() === "24/7") {
-    return { isOpen: true, label: "Immer geöffnet", color: "#22C55E" };
+    return {
+      isOpen: true,
+      label: i18n.t("Opening_hours_always_open"),
+      color: "#22C55E",
+    };
   }
 
   try {
@@ -175,26 +181,32 @@ export function parseOpeningHours(raw: string): OpenStatus {
         return {
           isOpen: true,
           label: closingSoon
-            ? `Schließt bald · ${closeStr}`
-            : `Geöffnet · schließt ${closeStr}`,
+            ? i18n.t("Opening_hours_closes_soon", { time: closeStr })
+            : i18n.t("Opening_hours_open_until", { time: closeStr }),
           color: closingSoon ? "#F59E0B" : "#22C55E",
         };
       } else if (currentMinutes < openMin) {
         return {
           isOpen: false,
-          label: `Geschlossen · öffnet ${openStr}`,
+          label: i18n.t("Opening_hours_closed_opens", { time: openStr }),
           color: "#EF4444",
         };
       } else {
         return {
           isOpen: false,
-          label: `Geschlossen · öffnet morgen ${openStr}`,
+          label: i18n.t("Opening_hours_closed_opens_tomorrow", {
+            time: openStr,
+          }),
           color: "#EF4444",
         };
       }
     }
 
-    return { isOpen: false, label: "Heute geschlossen", color: "#EF4444" };
+    return {
+      isOpen: false,
+      label: i18n.t("Opening_hours_closed_today"),
+      color: "#EF4444",
+    };
   } catch {
     return { isOpen: false, label: raw, color: "#94A3B8" };
   }

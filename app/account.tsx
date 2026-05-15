@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
+import { posthog } from "@/lib/config/posthog";
 
 interface DeleteRequest {
   id: string;
@@ -200,6 +201,7 @@ export default function AccountScreen() {
         Sentry.captureException(error);
         Alert.alert(t("Error"), t("Request_could_not_be_sent"));
       } else {
+        posthog.capture("user_delete-account");
         Alert.alert(t("Success"), t("deletion_request_created"));
         setRequest(data as any);
         updateProgress("pending");
@@ -271,12 +273,12 @@ export default function AccountScreen() {
           <Text style={styles.emailText}>{email}</Text>
           <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Active Account</Text>
+            <Text style={styles.statusText}>{t("Account_status_active")}</Text>
           </View>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account Security</Text>
+          <Text style={styles.cardTitle}>{t("Account_section_security")}</Text>
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.7}
@@ -286,7 +288,7 @@ export default function AccountScreen() {
               <Info size={20} color={theme.primary} />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuLabel}>User ID</Text>
+              <Text style={styles.menuLabel}>{t("Account_menu_user_id")}</Text>
               <Text style={styles.menuValue} numberOfLines={1}>
                 {userId}
               </Text>
@@ -295,7 +297,9 @@ export default function AccountScreen() {
         </View>
 
         <View style={styles.dangerZone}>
-          <Text style={styles.dangerTitle}>Danger Zone</Text>
+          <Text style={styles.dangerTitle}>
+            {t("Account_danger_zone_title")}
+          </Text>
           <TouchableOpacity
             onPress={createDeleteRequest}
             disabled={loading}
@@ -308,17 +312,16 @@ export default function AccountScreen() {
               <Text style={styles.deleteButtonText}>{t("Delete_account")}</Text>
             )}
           </TouchableOpacity>
-          <Text style={styles.dangerNote}>
-            Deleting your account is permanent and cannot be undone. All your
-            data will be removed.
-          </Text>
+          <Text style={styles.dangerNote}>{t("Account_danger_zone_note")}</Text>
         </View>
 
         {request &&
           (request.status === "pending" || request.status === "completed") && (
             <View style={styles.requestCard}>
               <View style={styles.requestHeader}>
-                <Text style={styles.requestTitle}>Deletion Request</Text>
+                <Text style={styles.requestTitle}>
+                  {t("Account_deletion_request_title")}
+                </Text>
                 <View
                   style={[
                     styles.statusTag,
@@ -354,7 +357,9 @@ export default function AccountScreen() {
                   />
                 </View>
                 <Text style={styles.progressText}>
-                  {(progress * 100).toFixed(0)}% Progress
+                  {t("Account_progress_percent", {
+                    percent: (progress * 100).toFixed(0),
+                  })}
                 </Text>
               </View>
 

@@ -11,11 +11,11 @@ export function applyAnalyticsChoice(choice: AnalyticsChoice, userId?: string) {
 
     case "anonymous":
       posthog.optIn();
-      posthog.reset(); // keine User-ID
+      posthog.reset(); // no User-ID
       break;
 
     case "none":
-      posthog.optOut(); // keine Events mehr
+      posthog.optOut(); // no events anymore
       break;
   }
 }

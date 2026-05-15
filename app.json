@@ -2,13 +2,13 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "orientation": "portrait",
-    "icon": "assets/images/icon.png",
+    "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#DDDDDD",
       "dark": {
         "backgroundColor": "#2c2a2aff"
       }
@@ -20,8 +20,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "assets/images/icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "assets/images/icons/adaptive-icon.png",
+        "monochromeImage": "assets/images/icons/adaptive-icon.png",
+        "backgroundColor": "#DDDDDD"
       },
       "package": "com.cactus_apps.Atlasys",
       "versionCode": 10,
@@ -68,10 +69,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "assets/images/logo2.png",
+          "image": "assets/images/icons/Vector-dark.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#DDDDDD",
+          "dark": {
+            "image": "assets/images/icons/Vector-light.png",
+            "ackgroundColor": "#333333"
+          }
         }
       ],
       "expo-secure-store",

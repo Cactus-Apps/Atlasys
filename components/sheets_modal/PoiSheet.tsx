@@ -26,6 +26,7 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 import {
   fetchPOIDetails,
   parseOpeningHours,
@@ -99,7 +100,7 @@ function InfoRow({
   );
 }
 
-// ─── Haupt-Komponente ─────────────────────────────────────────────────────────
+// ─── Main component ─────────────────────────────────────────────────────────
 
 export default function PoiSheet({
   sheetRef,
@@ -109,12 +110,13 @@ export default function PoiSheet({
   onClose,
   onRouteStart,
 }: Props) {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const [details, setDetails] = useState<OverpassPOIDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const lastOsmId = useRef<number | null>(null);
 
-  // Overpass-Daten laden wenn POI sich ändert
+  // Load Overpass details when the selected POI changes
   useEffect(() => {
     if (!selectedPoi?.osm_id || selectedPoi.osm_id === lastOsmId.current)
       return;
@@ -173,7 +175,7 @@ export default function PoiSheet({
               {selectedPoi.name}
             </Text>
 
-            {/* Kategorie-Badge + Öffnungsstatus */}
+            {/* Category badge + opening status */}
             <View style={s.badgeRow}>
               <View style={[s.badge, { backgroundColor: theme.primaryLight }]}>
                 <Text style={[s.badgeText, { color: theme.primary }]}>
@@ -221,7 +223,7 @@ export default function PoiSheet({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onRouteStart(
                 markerPos
-                  ? { label: "Mein Standort", coordinate: markerPos }
+                  ? { label: t("Poi_my_location"), coordinate: markerPos }
                   : null,
                 {
                   label: selectedPoi.name,
@@ -233,7 +235,7 @@ export default function PoiSheet({
             style={[s.primaryBtn, { backgroundColor: theme.primary }]}
           >
             <Route color="#fff" size={20} />
-            <Text style={s.primaryBtnText}>Route starten</Text>
+            <Text style={s.primaryBtnText}>{t("Poi_start_route")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -281,7 +283,7 @@ export default function PoiSheet({
           <View style={s.loadingRow}>
             <ActivityIndicator color={theme.primary} size="small" />
             <Text style={[s.loadingText, { color: theme.subTextColor }]}>
-              Details werden geladen…
+              {t("Poi_loading_details")}
             </Text>
           </View>
         )}
@@ -289,11 +291,11 @@ export default function PoiSheet({
         {/* ── Info-Zeilen ── */}
         {!loading && details && (
           <View style={s.infoSection}>
-            {/* Öffnungszeiten (vollständig) */}
+            {/* Full opening hours string */}
             {details.openingHours && (
               <InfoRow
                 icon={<Clock size={16} color={theme.primary} />}
-                label="Öffnungszeiten"
+                label={t("Poi_label_opening_hours")}
                 value={details.openingHours}
                 valueColor={openStatus?.color}
               />
@@ -303,7 +305,7 @@ export default function PoiSheet({
             {address ? (
               <InfoRow
                 icon={<MapPin size={16} color={theme.primary} />}
-                label="Adresse"
+                label={t("Poi_label_address")}
                 value={address}
                 onPress={() =>
                   Linking.openURL(
@@ -317,7 +319,7 @@ export default function PoiSheet({
             {details.phone && (
               <InfoRow
                 icon={<Phone size={16} color={theme.success} />}
-                label="Telefon"
+                label={t("Poi_label_phone")}
                 value={details.phone}
                 onPress={() => Linking.openURL(`tel:${details.phone}`)}
                 valueColor={theme.success}
@@ -328,7 +330,7 @@ export default function PoiSheet({
             {details.website && (
               <InfoRow
                 icon={<Globe size={16} color={theme.info} />}
-                label="Website"
+                label={t("Poi_label_website")}
                 value={details.website.replace(/^https?:\/\//, "")}
                 onPress={() =>
                   Linking.openURL(
@@ -345,18 +347,18 @@ export default function PoiSheet({
             {details.email && (
               <InfoRow
                 icon={<Mail size={16} color={theme.purple} />}
-                label="E-Mail"
+                label={t("Poi_label_email")}
                 value={details.email}
                 onPress={() => Linking.openURL(`mailto:${details.email}`)}
                 valueColor={theme.purple}
               />
             )}
 
-            {/* Küche (Restaurants) */}
+            {/* Cuisine (restaurants) */}
             {details.cuisine && (
               <InfoRow
                 icon={<ChefHat size={16} color={theme.warning} />}
-                label="Küche"
+                label={t("Poi_label_cuisine")}
                 value={details.cuisine}
               />
             )}
@@ -365,8 +367,11 @@ export default function PoiSheet({
             {details.stars && (
               <InfoRow
                 icon={<Star size={16} color={theme.warning} />}
-                label="Kategorie"
-                value={`${"★".repeat(parseInt(details.stars))} (${details.stars} Sterne)`}
+                label={t("Poi_label_category")}
+                value={t("Poi_stars_value", {
+                  stars: "★".repeat(parseInt(details.stars)),
+                  n: details.stars,
+                })}
               />
             )}
 
@@ -374,13 +379,13 @@ export default function PoiSheet({
             {details.wheelchair && (
               <InfoRow
                 icon={<Accessibility size={16} color={theme.info} />}
-                label="Barrierefreiheit"
+                label={t("Poi_label_accessibility")}
                 value={
                   details.wheelchair === "yes"
-                    ? "Rollstuhlgerecht"
+                    ? t("Poi_wheelchair_yes")
                     : details.wheelchair === "limited"
-                      ? "Eingeschränkt zugänglich"
-                      : "Nicht rollstuhlgerecht"
+                      ? t("Poi_wheelchair_limited")
+                      : t("Poi_wheelchair_no")
                 }
                 valueColor={
                   details.wheelchair === "yes"
@@ -395,15 +400,15 @@ export default function PoiSheet({
             {/* Koordinaten */}
             <InfoRow
               icon={<MapPin size={16} color={theme.subTextColor} />}
-              label="Koordinaten"
+              label={t("Poi_label_coordinates")}
               value={`${selectedPoi.lat.toFixed(5)}, ${selectedPoi.lon.toFixed(5)}`}
             />
 
             {/* OSM Link */}
             <InfoRow
               icon={<Info size={16} color={theme.subTextColor} />}
-              label="Quelle"
-              value="OpenStreetMap · Daten bearbeiten"
+              label={t("Poi_label_source")}
+              value={t("Poi_osm_edit_hint")}
               onPress={() => {
                 const elementType = selectedPoi.osm_id > 0 ? "node" : "way";
                 Linking.openURL(
@@ -415,10 +420,10 @@ export default function PoiSheet({
           </View>
         )}
 
-        {/* Keine Details verfügbar */}
+        {/* No details */}
         {!loading && !details && (
           <Text style={[s.noDetails, { color: theme.subTextColor }]}>
-            Keine weiteren Details verfügbar.
+            {t("Poi_no_details")}
           </Text>
         )}
       </BottomSheetScrollView>

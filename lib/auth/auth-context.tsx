@@ -10,6 +10,7 @@ import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 import { posthog } from "../config/posthog";
 import { applyAnalyticsChoice } from "./analytics";
+import i18n from "@/app/i18n";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -77,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const syncStateFromMetadata = async (targetUser: User) => {
     try {
       const {
-        setSubscribed,
         setOnboardingCompleted,
         updateSettings,
         setUserId,
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (metadata.settings) {
         updateSettings({
           ...metadata.settings,
-          // Gerätespezifische Settings nie vom Server überschreiben
+          // Never overwrite device-specific settings from server metadata
           locationSharing: settings.locationSharing,
           analytics: settings.analytics,
         });
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         useAuthStore.setState({ savedPlaces: metadata.saved_places });
       }
 
-      // Analytics-Modus anwenden – nach Settings-Sync damit der richtige Wert gelesen wird
+      // Apply analytics mode after settings sync so the latest value is used
       const analyticsChoice =
         useAuthStore.getState().settings.analytics ?? "none";
       applyAnalyticsChoice(analyticsChoice, targetUser.id);
@@ -114,12 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const syncStateToMetadata = async () => {
     if (!user) return;
-    const { isSubscribed, isOnboardingCompleted, settings, savedPlaces } =
+    const { isOnboardingCompleted, settings, savedPlaces } =
       useAuthStore.getState();
     try {
       await supabase.auth.updateUser({
         data: {
-          is_subscribed: isSubscribed,
           onboarding_completed: isOnboardingCompleted,
           settings,
           saved_places: savedPlaces,
@@ -136,7 +135,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (
         JSON.stringify(state.savedPlaces) !==
           JSON.stringify(prevState.savedPlaces) ||
-        state.isSubscribed !== prevState.isSubscribed ||
         state.isOnboardingCompleted !== prevState.isOnboardingCompleted
       ) {
         const timer = setTimeout(syncStateToMetadata, 3000);
@@ -146,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [user?.id]);
 
-  // ── getUser: nach Login aufgerufen, einmalig ──────────────────────────────
+  // getUser: called once after successful login
   const getUser = async () => {
     try {
       const { data, error } = await supabase.auth.getUser();
@@ -157,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await syncConsentToServer(data.user.id, supabase);
       }
       if (data.user) {
-        // Analytics-Event einmalig hier – egal ob Email oder Google
+        // One-time analytics event for email or Google sign-in
         posthog.capture("user_signed_in", {
           method: data.user.app_metadata?.provider ?? "email",
         });
@@ -171,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ── signUp ────────────────────────────────────────────────────────────────
+  // signUp
   const signUp = async (
     email: string,
     password: string,
@@ -197,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (loginError) {
         if (loginError.message.includes("Email not confirmed")) {
-          return "Bitte bestätige deine E-Mail-Adresse.";
+          return i18n.t("Auth_confirm_email");
         }
         throw loginError;
       }
@@ -207,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     } catch (err: any) {
       Sentry.captureException(err);
-      return err.message || "Fehler bei der Registrierung";
+      return err.message || i18n.t("Auth_signup_error");
     }
   };
 
@@ -227,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     } catch (err: any) {
       Sentry.captureException(err);
-      return err.message || "Fehler beim Login";
+      return err.message || i18n.t("Auth_signin_error");
     }
   };
 
@@ -247,7 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      if (!data.url) return "Keine OAuth URL erhalten";
+      if (!data.url) return i18n.t("Auth_oauth_no_url");
 
       if (Platform.OS === "web") {
         globalThis.location?.assign(data.url);
@@ -275,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await getUser();
           return null;
         }
-        return "Anmeldung nicht abgeschlossen";
+        return i18n.t("Auth_signin_incomplete");
       }
 
       try {
@@ -321,7 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     } catch (err: any) {
       Sentry.captureException(err);
-      return err.message ?? "Google-Anmeldung fehlgeschlagen";
+      return err.message ?? i18n.t("Auth_google_signin_failed");
     }
   };
 
@@ -349,7 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be inside off <AuthProvider>");
+    throw new Error("useAuth must be used inside <AuthProvider>");
   }
   return context;
 }

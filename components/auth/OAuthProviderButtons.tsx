@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 
 export function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
@@ -35,7 +36,7 @@ type Props = {
   isDark: boolean;
   onGooglePress: () => void;
   googleLoading: boolean;
-  /** z. B. während E-Mail-Login aktiv */
+  /** e.g. while email/password login is in progress */
   disabled?: boolean;
 };
 
@@ -45,6 +46,7 @@ export function OAuthProviderButtons({
   googleLoading,
   disabled = false,
 }: Props) {
+  const { t } = useTranslation();
   const busy = disabled || googleLoading;
   const googleBg = isDark ? "#131314" : "#FFFFFF";
   const googleBorder = isDark ? "#5F6368" : "#747775";
@@ -73,7 +75,7 @@ export function OAuthProviderButtons({
           )}
         </View>
         <Text style={[styles.label, { color: googleText }]}>
-          {googleLoading ? "Signing in…" : "Sign in with Google"}
+          {googleLoading ? t("Auth_google_signing_in") : t("Auth_google_sign_in")}
         </Text>
       </TouchableOpacity>
     </View>

@@ -35,6 +35,7 @@ import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
 import { posthog } from "@/lib/config/posthog";
 import { applyAnalyticsChoice } from "@/lib/auth/analytics";
+import { useTranslation } from "react-i18next";
 
 const CONSENT_VERSION = "1.0";
 const CONSENT_KEY = "atlasys_consent_v" + CONSENT_VERSION;
@@ -81,48 +82,40 @@ type Slide = {
   visual: "map_preview" | "privacy" | "routing" | "offline" | "opensource";
 };
 
-const SLIDES: Slide[] = [
+type SlideBase = {
+  id: number;
+  accentColor: string;
+  gradientColors: readonly [string, string, string];
+  visual: Slide["visual"];
+};
+
+const SLIDE_BASE: SlideBase[] = [
   {
     id: 1,
-    tag: "Karte neu gedacht",
-    headline: "Deine Karte.\nKeine Werbung.\nKeine Tracker.",
-    sub: "Atlasys basiert auf OpenStreetMap – offen, transparent und komplett ohne Datensammlung.",
     accentColor: "#00C4B4",
     gradientColors: ["#0A1628", "#0D2137", "#0A1628"],
     visual: "map_preview",
   },
   {
     id: 2,
-    tag: "Open Source",
-    headline: "100% offen.\nGeprüft von\njedem.",
-    sub: "Der vollständige Quellcode ist auf GitHub einsehbar. Keine versteckten Hintertüren – vertrau dem Code, nicht unserem Wort.",
     accentColor: "#3B82F6",
     gradientColors: ["#0A1220", "#0F1E35", "#0A1220"],
     visual: "opensource",
   },
   {
     id: 3,
-    tag: "Navigation",
-    headline: "Route planen\nwie ein Profi.",
-    sub: "Auto, Fahrrad, zu Fuß – Routen werden über den öffentlichen OSRM-Dienst berechnet. Dabei werden nur anonyme Koordinaten übertragen – kein Name, kein Account, keine Speicherung.",
     accentColor: "#22C55E",
     gradientColors: ["#081A12", "#0D2A1C", "#081A12"],
     visual: "routing",
   },
   {
     id: 4,
-    tag: "Offline-Karten",
-    headline: "Kein Netz?\nKein Problem.",
-    sub: "Lade ganze Regionen herunter und navigiere auch ohne Internetverbindung – ideal für Berge, Reisen und Randgebiete.",
     accentColor: "#F59E0B",
     gradientColors: ["#1A1200", "#2A1D00", "#1A1200"],
     visual: "offline",
   },
   {
     id: 5,
-    tag: "Deine Privatsphäre",
-    headline: "Du gehörst\nnicht zum\nProdukt.",
-    sub: "Kein Account nötig für die Grundfunktionen. Kein Google. Kein Tracking. Atlasys gehört dir.",
     accentColor: "#A855F7",
     gradientColors: ["#120A1A", "#1E0F2A", "#120A1A"],
     visual: "privacy",
@@ -136,6 +129,7 @@ function VisualPlaceholder({
   type: Slide["visual"];
   accent: string;
 }) {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const s = useMemo(() => getStyles(theme), [theme.isDark, theme.isModern]);
   if (type === "map_preview") {
@@ -160,20 +154,22 @@ function VisualPlaceholder({
             resizeMode="cover"
           />
           <View style={s.modeRow}>
-            {["Auto", "Rad", "Fuß"].map((m) => (
+            {[
+              t("Onboarding_mode_car"),
+              t("Onboarding_mode_bike"),
+              t("Onboarding_mode_walk"),
+            ].map((m, i) => (
               <View
                 key={m}
                 style={[
                   s.modeChip,
-                  m.includes("Auto") && {
+                  i === 0 && {
                     backgroundColor: accent + "30",
                     borderColor: accent,
                   },
                 ]}
               >
-                <Text
-                  style={[s.modeText, m.includes("Auto") && { color: accent }]}
-                >
+                <Text style={[s.modeText, i === 0 && { color: accent }]}>
                   {m}
                 </Text>
               </View>
@@ -190,7 +186,7 @@ function VisualPlaceholder({
             <Text style={[s.infoVal, { color: accent }]}>8.4 km</Text>
           </View>
           <Text style={s.privacyNote}>
-            🔒 Berechnung erfolgt lokal · Keine Serverdaten
+            {t("Onboarding_route_privacy_note")}
           </Text>
         </View>
       </View>
@@ -203,11 +199,19 @@ function VisualPlaceholder({
         <View style={s.offlineCard}>
           <WifiOff size={32} color={accent} />
           <Text style={[s.offlineTitle, { color: accent }]}>
-            Offline bereit
+            {t("Onboarding_offline_ready_title")}
           </Text>
           {[
-            { name: "Bayern, Deutschland", size: "142 MB", tiles: "12.400" },
-            { name: "Wien, Österreich", size: "48 MB", tiles: "4.200" },
+            {
+              name: t("Onboarding_demo_region_1"),
+              size: "142 MB",
+              tiles: "12.400",
+            },
+            {
+              name: t("Onboarding_demo_region_2"),
+              size: "48 MB",
+              tiles: "4.200",
+            },
           ].map((r) => (
             <View
               key={r.name}
@@ -224,7 +228,7 @@ function VisualPlaceholder({
               </View>
             </View>
           ))}
-          <Text style={s.privacyNote}>Speicherplatz selbst verwalten</Text>
+          <Text style={s.privacyNote}>{t("Onboarding_storage_note")}</Text>
         </View>
       </View>
     );
@@ -238,11 +242,11 @@ function VisualPlaceholder({
             <Shield size={52} color={accent} />
           </View>
           {[
-            { label: "Kein Google Analytics", ok: true },
-            { label: "Kein Facebook SDK", ok: true },
-            { label: "Keine Werbung", ok: true },
-            { label: "Kein Databroker", ok: true },
-            { label: "Lokale Verarbeitung", ok: true },
+            { label: t("Onboarding_privacy_row_no_ga"), ok: true },
+            { label: t("Onboarding_privacy_row_no_fb"), ok: true },
+            { label: t("Onboarding_privacy_row_no_ads"), ok: true },
+            { label: t("Onboarding_privacy_row_no_broker"), ok: true },
+            { label: t("Onboarding_privacy_row_local"), ok: true },
           ].map((item) => (
             <View key={item.label} style={s.checkRow}>
               <View style={[s.checkBullet, { backgroundColor: accent + "30" }]}>
@@ -273,13 +277,17 @@ function VisualPlaceholder({
         </View>
         <View style={s.codeBody}>
           {[
-            { indent: 0, text: "// Keine Tracker, kein SDK", color: "#6B7280" },
+            {
+              indent: 0,
+              text: t("Onboarding_code_comment_no_trackers"),
+              color: "#6B7280",
+            },
             { indent: 0, text: "const privacy = true;", color: "#60A5FA" },
             { indent: 0, text: "const openSource = true;", color: "#60A5FA" },
             { indent: 0, text: "", color: "#fff" },
             {
               indent: 0,
-              text: "// 100% offen. Geprüft von jedem",
+              text: t("Onboarding_code_comment_audited"),
               color: "#6B7280",
             },
             {
@@ -306,6 +314,17 @@ function VisualPlaceholder({
 
 export default function OnboardingScreen() {
   const params = useLocalSearchParams<{ showConsent?: string }>();
+  const { t } = useTranslation();
+  const slides = useMemo(
+    () =>
+      SLIDE_BASE.map((b) => ({
+        ...b,
+        tag: t(`Onboarding_slide_${b.id}_tag`),
+        headline: t(`Onboarding_slide_${b.id}_headline`),
+        sub: t(`Onboarding_slide_${b.id}_sub`),
+      })),
+    [t],
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [showConsent, setShowConsent] = useState(params.showConsent === "true");
@@ -323,13 +342,18 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
 
-  const slide = SLIDES[currentIndex];
-  const isLast = currentIndex === SLIDES.length - 1;
+  const slide = slides[currentIndex];
+  const isLast = currentIndex === slides.length - 1;
 
   const handleNext = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (isLast) {
       setShowConsent(true);
+      posthog.capture("onboarding_completed", {
+        analytics_choice: analyticsChoice,
+        accepted_terms: acceptedTerms,
+        accepted_privacy: acceptedPrivacy,
+      });
     } else {
       setDirection("forward");
       setCurrentIndex((i) => i + 1);
@@ -361,7 +385,14 @@ export default function OnboardingScreen() {
       setOnboardingCompleted(true);
       router.replace("/auth");
     }
-  }, [acceptedTerms, acceptedPrivacy]);
+  }, [
+    acceptedTerms,
+    acceptedPrivacy,
+    analyticsChoice,
+    router,
+    setOnboardingCompleted,
+    updateSettings,
+  ]);
 
   useEffect(() => {
     setShowConsent(params.showConsent === "true");
@@ -404,15 +435,12 @@ export default function OnboardingScreen() {
               </View>
             </View>
 
-            <Text style={s.consentHeadline}>Fast geschafft.</Text>
-            <Text style={s.consentSub}>
-              Bevor du startest, bestätige bitte dass du unsere
-              Nutzungsbedingungen und Datenschutzerklärung gelesen und
-              akzeptiert hast.
+            <Text style={s.consentHeadline}>
+              {t("Onboarding_consent_headline")}
             </Text>
+            <Text style={s.consentSub}>{t("Onboarding_consent_sub")}</Text>
             <Text style={s.consentLegal}>
-              Deine Zustimmung wird lokal mit Zeitstempel gespeichert und nach
-              der Anmeldung deinem Konto zugeordnet – gemäß DSGVO Art. 7.
+              {t("Onboarding_consent_legal_note")}
             </Text>
 
             <View style={s.checkboxArea}>
@@ -434,7 +462,7 @@ export default function OnboardingScreen() {
                   )}
                 </View>
                 <Text style={s.checkboxText}>
-                  Ich akzeptiere die{" "}
+                  {t("Onboarding_accept_terms_prefix")}{" "}
                   <Text
                     style={s.checkboxLink}
                     onPress={() =>
@@ -444,7 +472,7 @@ export default function OnboardingScreen() {
                       })
                     }
                   >
-                    Nutzungsbedingungen
+                    {t("Onboarding_terms_link")}
                   </Text>
                 </Text>
               </TouchableOpacity>
@@ -469,7 +497,7 @@ export default function OnboardingScreen() {
                   )}
                 </View>
                 <Text style={s.checkboxText}>
-                  Ich habe die{" "}
+                  {t("Onboarding_accept_privacy_prefix")}{" "}
                   <Text
                     style={s.checkboxLink}
                     onPress={() =>
@@ -479,17 +507,18 @@ export default function OnboardingScreen() {
                       })
                     }
                   >
-                    Datenschutzerklärung
+                    {t("Onboarding_privacy_link")}
                   </Text>{" "}
-                  gelesen und stimme zu
+                  {t("Onboarding_accept_privacy_suffix")}
                 </Text>
               </TouchableOpacity>
             </View>
 
             <View style={s.analyticsSection}>
-              <Text style={s.sectionLabel}>Analyse & Verbesserung</Text>
+              <Text style={s.sectionLabel}>
+                {t("Onboarding_analytics_section")}
+              </Text>
 
-              {/* Kompakte Chip-Reihe */}
               <View style={s.analyticsChipRow}>
                 {(["none", "anonymous", "full"] as AnalyticsChoice[]).map(
                   (choice) => (
@@ -511,35 +540,34 @@ export default function OnboardingScreen() {
                             s.analyticsChipTextActive,
                         ]}
                       >
-                        {choice === "none" && "Keine"}
-                        {choice === "anonymous" && "Anonym ✓"}
-                        {choice === "full" && "Vollständig"}
+                        {choice === "none" && t("Onboarding_analytics_none")}
+                        {choice === "anonymous" &&
+                          t("Onboarding_analytics_anonymous")}
+                        {choice === "full" && t("Onboarding_analytics_full")}
                       </Text>
                     </TouchableOpacity>
                   ),
                 )}
               </View>
 
-              {/* Kurze Beschreibung nur der gewählten Option */}
               <Text style={s.analyticsHint}>
-                {analyticsChoice === "none" && "Keine Daten werden gesendet."}
+                {analyticsChoice === "none" &&
+                  t("Onboarding_analytics_hint_none")}
                 {analyticsChoice === "anonymous" &&
-                  "Nur anonyme Nutzungsdaten, kein Account-Bezug."}
+                  t("Onboarding_analytics_hint_anonymous")}
                 {analyticsChoice === "full" &&
-                  "Nutzungsverhalten wird mit deinem Account verknüpft."}
+                  t("Onboarding_analytics_hint_full")}
               </Text>
             </View>
 
             {consentError && (
               <Animated.View entering={FadeIn.duration(200)} style={s.errorBox}>
-                <Text style={s.errorText}>
-                  Bitte akzeptiere beide Dokumente um fortzufahren.
-                </Text>
+                <Text style={s.errorText}>{t("Onboarding_consent_error")}</Text>
               </Animated.View>
             )}
 
             <Text style={s.versionNote}>
-              AGB & Datenschutz Version {CONSENT_VERSION} · Atlasys v1.5
+              {t("Onboarding_version_note", { version: CONSENT_VERSION })}
             </Text>
 
             <TouchableOpacity
@@ -567,7 +595,7 @@ export default function OnboardingScreen() {
                   },
                 ]}
               >
-                Akzeptieren & Starten
+                {t("Onboarding_accept_start")}
               </Text>
               <ArrowRight
                 size={18}
@@ -583,7 +611,7 @@ export default function OnboardingScreen() {
               onPress={() => setShowConsent(false)}
               style={{ alignItems: "center", paddingVertical: 12 }}
             >
-              <Text style={s.skipText}>← Zurück</Text>
+              <Text style={s.skipText}>{t("Onboarding_back")}</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -615,7 +643,7 @@ export default function OnboardingScreen() {
             onPress={handleSkip}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={s.skipText}>Überspringen</Text>
+            <Text style={s.skipText}>{t("Onboarding_skip")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -651,7 +679,7 @@ export default function OnboardingScreen() {
 
         <View style={s.footer}>
           <View style={s.dots}>
-            {SLIDES.map((_, i) => (
+            {slides.map((_, i) => (
               <TouchableOpacity
                 key={i}
                 onPress={() => handleDotPress(i)}
@@ -678,20 +706,20 @@ export default function OnboardingScreen() {
           >
             {isLast ? (
               <>
-                <Text style={s.nextBtnText}>Jetzt starten</Text>
+                <Text style={s.nextBtnText}>{t("Onboarding_start_now")}</Text>
                 <ArrowRight size={18} color="#fff" />
               </>
             ) : (
               <>
-                <Text style={s.nextBtnText}>Weiter</Text>
+                <Text style={s.nextBtnText}>{t("Onboarding_next")}</Text>
                 <ChevronRight size={18} color="#fff" />
               </>
             )}
           </TouchableOpacity>
 
-          {currentIndex === SLIDES.length - 1 && (
+          {currentIndex === slides.length - 1 && (
             <Animated.Text entering={FadeIn.delay(200)} style={s.footNote}>
-              Account erforderlich · Jederzeit abmeldbar
+              {t("Onboarding_footnote")}
             </Animated.Text>
           )}
         </View>

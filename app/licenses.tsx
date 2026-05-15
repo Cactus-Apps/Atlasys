@@ -254,7 +254,7 @@ export default function Licenses() {
         >
           <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t("licenses")}</Text>
+        <Text style={styles.headerTitle}>{t("Licenses_screen_title")}</Text>
         <View style={{ width: 44 }} />
       </View>
 

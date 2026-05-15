@@ -26,6 +26,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { posthog } from "@/lib/config/posthog";
 
 export default function SavedScreen() {
   const { t } = useTranslation();
@@ -126,7 +127,13 @@ export default function SavedScreen() {
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.actionBtnPrimary}
-            onPress={() => handleNavigate(item)}
+            onPress={() => {
+              handleNavigate(item);
+              posthog.capture("saved_place_opened", {
+                country: item.country,
+                has_thumbnail: !!item.thumbnail,
+              });
+            }}
           >
             <ExternalLinkIcon size={20} color={theme.white} />
             <Text style={styles.badgeText}>Open Map</Text>
