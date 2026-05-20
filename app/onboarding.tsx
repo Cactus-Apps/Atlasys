@@ -418,7 +418,7 @@ export default function OnboardingScreen() {
 
   if (showConsent) {
     return (
-      <ScrollView style={s.root}>
+      <View style={s.root}>
         <StatusBar style="auto" />
         <LinearGradient
           colors={["#0A0F1E", "#101828", "#0A0F1E"]}
@@ -615,7 +615,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
           </Animated.View>
         </View>
-      </ScrollView>
+      </View>
     );
   }
 
@@ -740,10 +740,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     danger,
     dangerLight,
     primaryLight,
-    sub3,
-    sub5,
-    sub6,
-    sub1,
   } = theme;
 
   return StyleSheet.create({
@@ -1257,7 +1253,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 14,
       borderRadius: 14,
       borderWidth: 1.5,
-      borderColor: sub1,
+      borderColor: "rgba(255,255,255,0.1)",
       backgroundColor: "rgba(255,255,255,0.04)",
       marginBottom: 8,
     },
@@ -1273,7 +1269,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     analyticsOptionSub: {
       fontSize: 12,
-      color: sub5,
+      color: "rgba(255,255,255,0.5)",
       lineHeight: 16,
     },
     radioOuter: {
@@ -1281,7 +1277,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       height: 20,
       borderRadius: 10,
       borderWidth: 2,
-      borderColor: sub3,
+      borderColor: "rgba(255,255,255,0.3)",
       justifyContent: "center",
       alignItems: "center",
       marginTop: 1,
@@ -1296,7 +1292,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     sectionLabel: {
       fontSize: 13,
       fontWeight: "700",
-      color: sub6,
+      color: "rgba(255,255,255,0.6)",
       textTransform: "uppercase",
       letterSpacing: 0.8,
       marginBottom: 8,
@@ -1325,14 +1321,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     analyticsChipText: {
       fontSize: 12,
       fontWeight: "600",
-      color: sub5,
+      color: "rgba(255,255,255,0.5)",
     },
     analyticsChipTextActive: {
       color: "#00C4B4",
     },
     analyticsHint: {
       fontSize: 11,
-      color: sub1,
+      color: "rgba(255,255,255,0.1)",
       textAlign: "center",
     },
   });

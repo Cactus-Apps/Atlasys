@@ -45,14 +45,13 @@ type StoreAuth = {
   setOnboardingCompleted: (val: boolean) => void;
   settings: {
     notifications: boolean;
-    locationSharing: boolean;
     analytics: AnalyticsChoice;
-    /** Sentry: false = keine Crash-Reports senden (fehlt → an) */
+    /** Sentry: false = don't send crash reports (absent → enabled) */
     crashReports?: boolean;
-    /** Expo Updates: Hintergrund-Check (fehlt → an) */
+    /** Expo Updates: background check (absent → enabled) */
     autoUpdateCheck?: boolean;
-    theme: AppTheme; // ← ersetzt beide alten Felder
-    /** Feinsteuerung; fehlt bei alten Saves → Fallback auf `notifications` */
+    theme: AppTheme; // ← replaces both old fields
+    /** Fine control; missing in old saves → fallback to `notifications` */
     notificationTopics?: {
       userAccount: boolean;
       coolPlaces: boolean;
@@ -74,6 +73,10 @@ type StoreAuth = {
   removeFromSearchHistory: (item: string) => void;
   clearSearchHistory: () => void;
 
+  // Map Position (in-memory only, resets on app close)
+  mapPosition: { latitude: number; longitude: number; zoom: number } | null;
+  setMapPosition: (pos: { latitude: number; longitude: number; zoom: number } | null) => void;
+
   // Session Management
   userId: string | null;
   setUserId: (id: string | null) => void;
@@ -87,7 +90,6 @@ const initialState = {
   isOnboardingCompleted: false,
   settings: {
     notifications: false,
-    locationSharing: true,
     analytics: "none" as AnalyticsChoice,
     crashReports: true,
     autoUpdateCheck: true,
@@ -101,6 +103,7 @@ const initialState = {
     },
   },
   currentRoute: null,
+  mapPosition: null,
   searchHistory: [],
   userId: null,
   searchCount: 0,
@@ -133,7 +136,6 @@ export const useAuthStore = create<StoreAuth>()(
       setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
       settings: {
         notifications: false,
-        locationSharing: false,
         analytics: "none",
         crashReports: true,
         autoUpdateCheck: true,
@@ -153,6 +155,9 @@ export const useAuthStore = create<StoreAuth>()(
 
       currentRoute: null,
       setCurrentRoute: (route) => set({ currentRoute: route }),
+
+      mapPosition: null,
+      setMapPosition: (pos) => set({ mapPosition: pos }),
 
       searchHistory: [],
       setSearchHistory: (history) => set({ searchHistory: history }),

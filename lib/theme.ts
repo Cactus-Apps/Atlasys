@@ -1,8 +1,6 @@
 import { useColorScheme } from "react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
 
-// ── Theme-Definitionen ────────────────────────────────────────────────────────
-
 type ThemeTokens = {
   isDark: boolean;
   isModern: boolean;
@@ -15,13 +13,15 @@ type ThemeTokens = {
   iconBg: string;
   inputBg: string;
   accentColor: string;
+  startbg: string;
+  startPrimary: string;
 };
 
 export type AppTheme =
   | "light"
   | "dark"
   | "modern"
-  | "claude"
+  | "chill"
   | "midnight"
   | "ocean"
   | "forest";
@@ -39,6 +39,8 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(0, 196, 180, 0.12)",
     inputBg: "#FFFFFF",
     accentColor: "#2563EB",
+    startbg: "#DDDDDD",
+    startPrimary: "#333333",
   },
 
   dark: {
@@ -53,6 +55,8 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(45, 74, 107, 0.28)",
     inputBg: "#24262E",
     accentColor: "#2563EB",
+    startbg: "#333333",
+    startPrimary: "#DDDDDD",
   },
 
   modern: {
@@ -67,9 +71,11 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(0,0,0,0.05)",
     inputBg: "#F4F4F5",
     accentColor: "#007AFF",
+    startbg: "#DDDDDD",
+    startPrimary: "#333333",
   },
 
-  claude: {
+  chill: {
     isDark: true,
     isModern: true,
     bg: "#1C1C1C",
@@ -81,6 +87,8 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(207, 160, 107, 0.15)",
     inputBg: "#2A2A2A",
     accentColor: "#CFA06B",
+    startbg: "#333333",
+    startPrimary: "#DDDDDD",
   },
 
   midnight: {
@@ -95,6 +103,8 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(255,255,255,0.06)",
     inputBg: "#111111",
     accentColor: "#6C63FF",
+    startbg: "#333333",
+    startPrimary: "#DDDDDD",
   },
 
   ocean: {
@@ -109,6 +119,8 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(0, 180, 216, 0.2)",
     inputBg: "#0F2040",
     accentColor: "#00B4D8",
+    startbg: "#333333",
+    startPrimary: "#DDDDDD",
   },
 
   forest: {
@@ -123,6 +135,8 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     iconBg: "rgba(34, 139, 34, 0.1)",
     inputBg: "#F0F7EE",
     accentColor: "#2E7D32",
+    startbg: "#DDDDDD",
+    startPrimary: "#333333",
   },
 };
 
@@ -143,14 +157,6 @@ const SEMANTIC = {
   tabIndicator: "#007AFF",
   primary: "#2563EB",
   primaryDark: "#1D4ED8",
-  sub1: "rgba(255,255,255,0.1)",
-  sub2: "rgba(255,255,255,0.2)",
-  sub3: "rgba(255,255,255,0.3)",
-  sub4: "rgba(255,255,255,0.4)",
-  sub5: "rgba(255,255,255,0.5)",
-  sub6: "rgba(255,255,255,0.6)",
-  sub7: "rgba(255,255,255,0.7)",
-  sub8: "rgba(255,255,255,0.8)",
 };
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -158,7 +164,6 @@ export function useAppTheme() {
   const systemScheme = useColorScheme();
   const theme = useAuthStore((s) => s.settings.theme) ?? "light";
 
-  // "system" Fallback: System-Scheme auf light/dark mappen
   const resolvedTheme: AppTheme =
     theme === ("system" as any)
       ? systemScheme === "dark"
@@ -169,7 +174,6 @@ export function useAppTheme() {
   const tokens = THEMES[resolvedTheme] ?? THEMES.light;
   const { isDark } = tokens;
 
-  // Dynamische Semantic-Farben (light/dark Varianten)
   const primaryLight = isDark ? "rgba(37, 99, 235, 0.2)" : "#EFF6FF";
   const dangerLight = isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2";
   const successLight = isDark ? "rgba(34, 197, 94, 0.1)" : "#F0FDF4";
@@ -179,13 +183,10 @@ export function useAppTheme() {
   const chevronColor = isDark ? "#4b5563" : "#94a3b8";
 
   return {
-    // Theme-Metadaten
     theme: resolvedTheme,
 
-    // Tokens
     ...tokens,
 
-    // Semantic
     ...SEMANTIC,
     primaryLight,
     dangerLight,

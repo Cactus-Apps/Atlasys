@@ -1,18 +1,21 @@
 import * as Sentry from "@sentry/react-native";
+import { useTranslation } from "react-i18next";
 
 export async function reverseGeocode(
   lat: number,
   lng: number,
   fallback?: string,
 ): Promise<string> {
+  const { t, i18n } = useTranslation();
+
   const defaultFallback = fallback ?? `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
       {
         headers: {
-          "Accept-Language": "de",
-          "User-Agent": "GPS/1.0 (cactus_apps@proton.me)",
+          "Accept-Language": i18n.language || "en",
+          "User-Agent": `GPS/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
         },
       },
     );

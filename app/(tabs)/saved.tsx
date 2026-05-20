@@ -1,4 +1,3 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import React from "react";
 import {
   FlatList,
@@ -14,11 +13,9 @@ import { Image } from "expo-image";
 import * as Sentry from "@sentry/react-native";
 import {
   MapPin,
-  Navigation,
   Share2,
   Trash2,
   Bookmark,
-  Lock,
   ExternalLinkIcon,
 } from "lucide-react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
@@ -29,10 +26,9 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { posthog } from "@/lib/config/posthog";
 
 export default function SavedScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const theme = useAppTheme();
-  const isDark = theme.isDark;
   const styles = getStyles(theme);
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
@@ -55,27 +51,15 @@ export default function SavedScreen() {
     });
   };
 
-  const handleRoute = (place: any) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push({
-      pathname: "/(tabs)/mapscreen",
-      params: {
-        destLat: place.latitude,
-        destLon: place.longitude,
-        destName: place.name,
-        autoRoute: "true",
-      },
-    });
-  };
-
   const handleShare = async (item: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const url = `https://de.wikipedia.org/wiki/${encodeURIComponent(
+      const wikiLang = (i18n.language || "en").split("-")[0];
+      const url = `https://${wikiLang}.wikipedia.org/wiki/${encodeURIComponent(
         item.name.replace(/ /g, "_"),
       )}`;
       await Share.share({
-        message: `Schau dir diesen Ort an: ${item.name}\n${url}`,
+        message: t("Share_place_message", { name: item.name, url }),
         url: url,
       });
     } catch (err) {
@@ -201,9 +185,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     borderColor,
     isModern,
     primary,
-    primaryLight,
     white,
-    chevronColor,
   } = theme;
 
   return StyleSheet.create({

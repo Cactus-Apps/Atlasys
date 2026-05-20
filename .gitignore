@@ -10,6 +10,7 @@ expo-env.d.ts
 # Native
 .kotlin/
 .android/
+android
 .ios/
 *.orig.*
 *.jks

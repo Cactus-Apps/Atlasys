@@ -108,5 +108,16 @@ export const updateManager = new UpdateManager();
 
 /** Checks for and downloads OTA updates in the background (applied on next app launch). */
 export async function runExpoUpdateCheck(): Promise<void> {
-  await updateManager.checkForUpdate();
+  if (__DEV__ || !Updates.isEnabled) return;
+
+  if (!Updates.channel) return;
+
+  try {
+    const result = await Updates.checkForUpdateAsync();
+    if (result.isAvailable) {
+      await Updates.fetchUpdateAsync();
+    }
+  } catch (error) {
+    console.warn("OTA Update check failed:", error);
+  }
 }

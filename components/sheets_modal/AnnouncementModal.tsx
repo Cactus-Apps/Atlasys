@@ -12,7 +12,7 @@ import { Info, Sparkles, AlertTriangle, X } from "lucide-react-native";
 import { Announcement, markAllSeen } from "@/utils/announcements";
 import { useAppTheme } from "@/lib/theme";
 import { posthog } from "@/lib/config/posthog";
-import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   announcements: Announcement[];
@@ -21,6 +21,7 @@ interface Props {
 
 export default function AnnouncementModal({ announcements, onClose }: Props) {
   const theme = useAppTheme();
+  const { t, i18n } = useTranslation();
 
   const typeConfig = useMemo(
     () => ({
@@ -28,19 +29,19 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
         icon: Info,
         color: theme.info,
         bg: theme.infoLight,
-        label: "Info",
+        label: t("Announcement_type_info"),
       },
       update: {
         icon: Sparkles,
         color: theme.purple,
         bg: theme.purpleLight,
-        label: "Was ist neu",
+        label: t("Announcement_type_update"),
       },
       warning: {
         icon: AlertTriangle,
         color: theme.warning,
         bg: theme.warningLight,
-        label: "Wichtig",
+        label: t("Announcement_type_warning"),
       },
     }),
     [
@@ -139,9 +140,9 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
             <Text style={[s.cardTitle, { color: theme.textColor }]}>
               {announcements.length === 1
                 ? announcements[0].type === "update"
-                  ? " Was ist neu"
-                  : "Nachricht"
-                : `${announcements.length} Neuigkeiten`}
+                  ? t("Announcement_type_update")
+                  : t("Announcement_single")
+                : t("Announcement_multiple", { count: announcements.length })}
             </Text>
             <TouchableOpacity onPress={handleClose} style={s.closeBtn}>
               <X size={18} color={theme.subTextColor} />
@@ -181,7 +182,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
                   </Text>
 
                   <Text style={[s.itemDate, { color: theme.subTextColor }]}>
-                    {new Date(a.created_at).toLocaleDateString("de", {
+                    {new Date(a.created_at).toLocaleDateString(i18n.language, {
                       day: "numeric",
                       month: "long",
                       year: "numeric",

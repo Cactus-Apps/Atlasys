@@ -1,8 +1,11 @@
 import * as Sentry from "@sentry/react-native";
+import { useTranslation } from "react-i18next";
 
 export async function fetchCityDetails(cityName: string, countryCode?: string) {
+  const { t, i18n } = useTranslation();
+
   try {
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=de&format=json`;
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=${(i18n.language || "en").split("-")[0]}&format=json`;
     const res = await fetch(url);
 
     if (!res.ok)

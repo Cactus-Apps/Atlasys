@@ -1,4 +1,3 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import { useAuth } from "@/lib/auth/auth-context";
 import { supabase } from "@/lib/auth/supabase";
 import { Avatar } from "@kolking/react-native-avatar";

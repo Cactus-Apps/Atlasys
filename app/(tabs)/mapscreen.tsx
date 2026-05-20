@@ -33,6 +33,10 @@ import {
   Route,
   AlertCircleIcon,
   AlertTriangle,
+  CloudRainIcon,
+  Snowflake,
+  CloudLightningIcon,
+  CloudSunIcon,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -78,6 +82,8 @@ import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
 import NavigationSideBar from "@/components/overlays/NavigationSideBar";
 import PoiSheet from "@/components/sheets_modal/PoiSheet";
 import { posthog } from "@/lib/config/posthog";
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
@@ -146,6 +152,10 @@ export default function MapScreen() {
   const [zoom, setZoom] = useState(12);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
+  const initialCenter = useMemo<[number, number]>(() => {
+    const pos = useAuthStore.getState().mapPosition;
+    return pos ? [pos.longitude, pos.latitude] : [0, 0];
+  }, []);
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
     "driving",
   );
@@ -171,7 +181,6 @@ export default function MapScreen() {
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
-  const locationSharing = useAuthStore((s) => s.settings.locationSharing);
   const searchHistory = useAuthStore((s) => s.searchHistory);
   const addToSearchHistory = useAuthStore((s) => s.addToSearchHistory);
   const removeFromSearchHistory = useAuthStore(
@@ -234,7 +243,7 @@ export default function MapScreen() {
   const [routePickMode, setRoutePickMode] = useState<"start" | "end" | null>(
     null,
   );
-  const initialCenter = useRef<[number, number]>([0, 0]);
+  const setMapPosition = useAuthStore((s) => s.setMapPosition);
   const initialZoom = useRef(5);
   const [mapStyleSheetOpen, setMapStyleSheetOpen] = useState(false);
   const [currentThemeKey, setCurrentThemeKey] = useState("bright");
@@ -273,6 +282,9 @@ export default function MapScreen() {
     setActiveFilter(filterId);
   };
 
+  const StatusBarStyle: "dark" | "light" =
+    currentThemeKey === "dark" ? "light" : "dark";
+
   // Location/GPS Stuff
   // IP-based location as a fallback when GPS is not ready
   const getIPLocation = async (): Promise<[number, number] | null> => {
@@ -289,33 +301,11 @@ export default function MapScreen() {
   };
 
   useEffect(() => {
-    if (!locationSharing) {
-      setSub((current) => {
-        current?.remove();
-        return null;
-      });
-      setLocationReady(true);
-      setError(null);
-      return;
-    }
-
     let cancelled = false;
     let liveSub: Location.LocationSubscription | null = null;
 
     (async () => {
-      // Step 1: load IP-based location as a placeholder
-      if (!hasCenteredOnce.current && mapRef.current) {
-        const ipCoords = await getIPLocation();
-        if (ipCoords && !cancelled && !hasCenteredOnce.current) {
-          mapRef.current.flyTo({
-            center: ipCoords,
-            zoom: 5, // country-level zoom
-            duration: 800,
-          });
-        }
-      }
-
-      // Step 2: request GPS permission
+      // Step 1: request GPS permission
       const { status, canAskAgain } =
         await Location.requestForegroundPermissionsAsync();
 
@@ -323,13 +313,14 @@ export default function MapScreen() {
         if (!canAskAgain) {
           setError(t("Location_denied_permanent"));
         } else {
+          setErrorSheetOpen(true);
           setError(t("Location_authorization_denied"));
         }
-        setLocationReady(true); // Trotzdem UI freigeben
+        setLocationReady(true);
         return;
       }
 
-      // Step 3: one quick position fix
+      // Step 2: one quick position fix
       try {
         const lastKnown = await Location.getLastKnownPositionAsync();
         if (lastKnown && !cancelled && !hasCenteredOnce.current) {
@@ -349,7 +340,7 @@ export default function MapScreen() {
         }
       } catch {}
 
-      // Step 4: live GPS watcher
+      // Step 3: live GPS watcher
       const s = await Location.watchPositionAsync(
         {
           accuracy:
@@ -397,7 +388,7 @@ export default function MapScreen() {
       liveSub?.remove();
       setSub(null);
     };
-  }, [ready, locationSharing, t]);
+  }, []);
 
   // User Auth Stuff
   useEffect(() => {
@@ -409,7 +400,7 @@ export default function MapScreen() {
     fetchUserEmail();
   }, []);
 
-  // Idk
+  // Helper functions
   const clearInput = () => {
     setQuery("");
     setResults([]);
@@ -452,8 +443,9 @@ export default function MapScreen() {
     posthog.capture("pitch_reset");
   };
 
-  const ensureGlobe = () => {
-    mapRef.current?.setProjection({ type: "globe" });
+  const ensureGlobe = async () => {
+    if (!mapRef.current) return;
+    await mapRef.current.setProjection({ type: "globe" });
   };
 
   useEffect(() => {
@@ -491,7 +483,7 @@ export default function MapScreen() {
     try {
       const url = `https://de.wikipedia.org/wiki/${encodeURIComponent(city.name.replace(/ /g, "_"))}`;
       await Share.share({
-        message: `Schau dir diesen Ort an: ${city.name}\n${url}`,
+        message: `Loook at thaaat 🤩: ${city.name}\n${url}`,
         url: url,
       });
     } catch (error) {
@@ -539,7 +531,7 @@ export default function MapScreen() {
   }, []);
 
   const headers = {
-    "User-Agent": "Atlasys/1.0 (cactus_apps@proton.me)",
+    "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
     Accept: "application/json",
   };
 
@@ -555,9 +547,10 @@ export default function MapScreen() {
       setArticle(null);
 
       try {
-        // 1. Suche
+        // 1. Search
+        const wikiLang = (i18n.language || "en").split("-")[0];
         const searchRes = await fetch(
-          `https://de.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(city.name)}&limit=1&format=json&origin=*`,
+          `https://${wikiLang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(city.name)}&limit=1&format=json&origin=*`,
           { headers, signal: controller.signal },
         );
         const searchData = await searchRes.json();
@@ -588,29 +581,55 @@ export default function MapScreen() {
 
         // 2. Extract + Thumbnail
         const extractRes = await fetch(
-          `https://de.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro&explaintext&piprop=thumbnail&pithumbsize=${heroPageImagePx}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
+          `https://${wikiLang}.wikipedia.org/w/api.php?action=query&prop=extracts|pageprops&exintro&explaintext&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
           { headers, signal: controller.signal },
         );
+
         const extractData = await extractRes.json();
         const pages = extractData.query.pages;
         const pageId = Object.keys(pages)[0];
         const extract = pages[pageId].extract;
-        const thumbnail = pages[pageId].thumbnail?.source || null;
 
-        // 3. Bilder
-        const imagesPropRes = await fetch(
-          `https://de.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`,
-          { headers, signal: controller.signal },
-        );
-        const imagesPropData = await imagesPropRes.json();
-        const imageTitles =
-          imagesPropData.query?.pages[pageId]?.images?.map(
-            (img: any) => img.title,
-          ) || [];
+        // 3. Images – try Commons category first
+        let imageTitles: string[] = [];
+        try {
+          const qid = pages[pageId]?.pageprops?.wikibase_item;
+          if (qid) {
+            const wdRes = await fetch(
+              `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
+              { signal: controller.signal },
+            );
+            const wdData = await wdRes.json();
+            const cat = wdData.entities?.[qid]?.sitelinks?.commonswiki?.title;
+            if (cat) {
+              const cmRes = await fetch(
+                `https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(cat)}&cmtype=file&cmlimit=50&format=json&origin=*`,
+                { headers, signal: controller.signal },
+              );
+              const cmData = await cmRes.json();
+              imageTitles =
+                cmData.query?.categorymembers?.map((cm: any) => cm.title) || [];
+            }
+          }
+        } catch {}
+
+        if (!imageTitles.length) {
+          const imagesPropRes = await fetch(
+            `https://${wikiLang}.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`,
+            { headers, signal: controller.signal },
+          );
+          const imagesPropData = await imagesPropRes.json();
+          imageTitles =
+            imagesPropData.query?.pages[pageId]?.images?.map(
+              (img: any) => img.title,
+            ) || [];
+        }
 
         const isJunk = (url: string) => {
           const lower = url.toLowerCase();
           return [
+            // only focused on german words
+            //f eel free to expand this
             "locator_map",
             "location_map",
             "relief_map",
@@ -692,7 +711,7 @@ export default function MapScreen() {
             .map((t: string) => encodeURIComponent(t))
             .join("|");
           const imageInfoUrl = (w: number) =>
-            `https://de.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=${w}&format=json&origin=*`;
+            `https://${wikiLang}.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=${w}&format=json&origin=*`;
 
           const [imagesInfoPreviewRes, imagesInfoFullRes] = await Promise.all([
             fetch(imageInfoUrl(galleryThumbPx), {
@@ -743,11 +762,12 @@ export default function MapScreen() {
           });
         }
 
-        let finalThumbnail = thumbnail;
-        if (finalThumbnail && isJunk(finalThumbnail))
-          finalThumbnail = imageUrls[0]?.previewUrl || null;
-        else if (!finalThumbnail && imageUrls.length > 0)
-          finalThumbnail = imageUrls[0].previewUrl;
+        const cityNameLower = pageTitle.toLowerCase().replace(/\s/g, "_");
+        const preferredImage = imageUrls.find((img) =>
+          img.previewUrl.toLowerCase().includes(cityNameLower),
+        );
+        const finalThumbnail =
+          preferredImage?.previewUrl ?? imageUrls[0]?.previewUrl ?? null;
 
         if (controller.signal.aborted) return;
 
@@ -797,9 +817,13 @@ export default function MapScreen() {
   }, [city?.latitude, city?.longitude]);
 
   const getWeatherIcon = (code: number) => {
-    if (code <= 3) return <Sun size={20} color="#FFD700" />;
+    if (code <= 2) return <Sun size={20} color="#FFD700" />;
+    if (code <= 2) return <CloudSunIcon size={20} color="#948b59" />;
+    if (code <= 63) return <CloudRainIcon size={20} color="#3B82F6" />;
     if (code <= 48) return <Cloud size={20} color="#94A3B8" />;
-    if (code <= 99) return <CloudRain size={20} color="#3B82F6" />;
+    if (code <= 77) return <Snowflake size={20} color="#3e6095" />;
+    if (code <= 82) return <CloudRainIcon size={20} color="#3B82F6" />;
+    if (code <= 99) return <CloudLightningIcon size={20} color="94A3B8" />;
     return <Cloud size={20} color="#94A3B8" />;
   };
 
@@ -808,7 +832,7 @@ export default function MapScreen() {
     try {
       const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
         q,
-      )}&count=8&language=de&format=json`;
+      )}&count=8&language=${(i18n.language || "en").split("-")[0]}&format=json`;
       const resp = await fetch(url);
       if (!resp.ok) {
         setResults([]);
@@ -904,8 +928,7 @@ export default function MapScreen() {
   };
 
   const handleSelectTheme = (theme: MapTheme) => {
-    const currentCenter = mapCenterRef.current;
-    const currentBearing = lastBearingRef.current;
+    const pos = useAuthStore.getState().mapPosition;
 
     setCurrentThemeKey(theme.key);
     setMapStyle(theme.url);
@@ -916,13 +939,13 @@ export default function MapScreen() {
     setMapStyleSheetOpen(false);
 
     setTimeout(() => {
-      if (currentCenter && mapRef.current) {
+      if (pos && mapRef.current) {
         mapRef.current.jumpTo({
-          center: currentCenter,
-          bearing: currentBearing,
+          center: [pos.longitude, pos.latitude],
+          zoom: pos.zoom,
         });
       }
-    }, 150);
+    }, 800);
   };
 
   useEffect(() => {
@@ -966,32 +989,23 @@ export default function MapScreen() {
     if (routePickModeRef.current) return;
 
     const allFeatures = await mapRef.current.queryRenderedFeatures(undefined);
+
+    // ← NUR poi_ Features
     const poiFeatures = allFeatures.filter((f: any) =>
       f.layer?.id?.startsWith("poi_"),
     );
-    if (!poiFeatures?.length) return;
+    if (!poiFeatures.length) return;
 
-    const debugFeatures = await mapRef.current.queryRenderedFeatures(undefined);
-    const poiLayers = [
-      ...new Set(
-        debugFeatures
-          .filter((f: any) => f.layer?.id?.toLowerCase().includes("poi"))
-          .map((f: any) => f.layer?.id),
-      ),
-    ];
-
-    if (!allFeatures?.length) return;
-
-    // Apply active POI filter
+    // Apply filter to poiFeatures, not allFeatures
     const activeSubclasses = activeFilterRef.current
       ? (filters.find((f) => f.id === activeFilterRef.current)?.subclass ?? [])
       : null;
 
     const filtered = activeSubclasses
-      ? allFeatures.filter((f: any) =>
+      ? poiFeatures.filter((f: any) =>
           activeSubclasses.includes(f.properties?.subclass ?? ""),
         )
-      : allFeatures;
+      : poiFeatures;
 
     if (!filtered.length) return;
 
@@ -1009,22 +1023,18 @@ export default function MapScreen() {
     }
 
     if (!closest || minDist > 0.001) return;
-    if (closest.geometry.type !== "Point") return;
 
     const [lon, lat2] = (closest.geometry as any).coordinates;
     let osm_id = Number(closest.properties?.osm_id) || 0;
     if (osm_id === 0) {
-      // Try to get osm_id from Nominatim
       const nominatimResult = await getOsmIdFromNominatim(
         closest.properties?.name ?? "",
         lat2,
         lon,
       );
-      if (nominatimResult) {
-        osm_id = nominatimResult.osm_id;
-        // If way, make negative for consistency, but since we use abs, no need
-      }
+      if (nominatimResult) osm_id = nominatimResult.osm_id;
     }
+
     const data = {
       name: closest.properties?.name ?? t("Unknown_poi"),
       type: closest.properties?.class ?? "",
@@ -1034,13 +1044,9 @@ export default function MapScreen() {
       lon,
     };
 
-    if (closest) {
-      posthog.capture("poi_tapped", {
-        type: closest.properties?.subclass || closest.properties?.class,
-        has_name: !!closest.properties?.name,
-        layer: closest.layer?.id,
-      });
-    }
+    posthog.capture("poi_tapped", {
+      type: data.subclass || data.type,
+    });
 
     setSelectedPoi(data);
     sheetPoiRef.current?.snapToIndex(0);
@@ -1101,7 +1107,9 @@ export default function MapScreen() {
           activeOpacity={0.8}
         >
           <AlertCircleIcon color={theme.danger} />
-          <Text style={{ color: theme.white, fontSize: 13, fontWeight: "500" }}>
+          <Text
+            style={{ color: theme.textColor, fontSize: 13, fontWeight: "500" }}
+          >
             {error}
           </Text>
         </TouchableOpacity>
@@ -1132,230 +1140,249 @@ export default function MapScreen() {
             <ActivityIndicator size="small" color={theme.tabIndicator} />
           )}
           {showError && <AlertTriangle color={theme.danger} />}
-          <Text style={{ color: theme.white, fontSize: 13, fontWeight: "500" }}>
+          <Text
+            style={{ color: theme.textColor, fontSize: 13, fontWeight: "500" }}
+          >
             {showError
               ? t("Location_could_not_resolve")
               : t("Location_resolving")}
           </Text>
         </TouchableOpacity>
       )}
-      <MapProvider>
-        {routePickMode && (
-          <>
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: theme.isDark ? "#1a1a2e" : "#1a1a2e",
-                paddingTop: Platform.OS === "ios" ? 54 : 36,
-                paddingBottom: 16,
-                paddingHorizontal: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                zIndex: 200,
-                gap: 16,
-              }}
-            >
-              <TouchableOpacity onPress={() => setPickMode(null)}>
-                <X size={24} color={theme.white} />
-              </TouchableOpacity>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: theme.white,
-                    fontSize: 18,
-                    fontWeight: "700",
-                  }}
-                >
-                  {routePickMode === "start"
-                    ? t("Route_pick_start_title")
-                    : t("Route_pick_end_title")}
-                </Text>
-                <Text
-                  style={{
-                    color: theme.subTextColor,
-                    fontSize: 13,
-                    marginTop: 2,
-                  }}
-                >
-                  {t("Route_pick_map_hint")}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={async () => {
-                  const center = await mapRef.current?.getCenter();
-                  if (!center) return;
-                  const [lng, lat] = [center.lng, center.lat];
-
-                  let label = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                  try {
-                    const res = await fetch(
-                      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-                      {
-                        headers: {
-                          "Accept-Language": i18n.language || "en",
-                          "User-Agent": "Atlasys/1.0 (cactus_apps@proton.me)",
-                        },
-                      },
-                    );
-                    const text = await res.text();
-                    const data = JSON.parse(text);
-                    label =
-                      data.display_name?.split(",").slice(0, 2).join(", ") ??
-                      label;
-                  } catch (error) {
-                    Sentry.captureException(error);
-                  }
-
-                  const point: RoutePoint = { label, coordinate: [lng, lat] };
-                  if (routePickMode === "start") setRouteStart(point);
-                  else setRouteEnd(point);
-                  setPickMode(null);
-                }}
-                style={{
-                  backgroundColor: theme.primary,
-                  paddingHorizontal: 20,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                }}
-              >
-                <Text
-                  style={{
-                    color: theme.white,
-                    fontWeight: "700",
-                    fontSize: 16,
-                  }}
-                >
-                  Ok
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                marginLeft: -20,
-                marginTop: -56,
-                zIndex: 199,
-                alignItems: "center",
-              }}
-            >
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  shadowColor: theme.black,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.35,
-                  shadowRadius: 8,
-                  elevation: 10,
-                }}
-              >
-                <Svg width={40} height={40} viewBox="0 0 40 40">
-                  <Defs>
-                    <RadialGradient
-                      id={
-                        routePickMode === "start"
-                          ? "pickGradStart"
-                          : "pickGradEnd"
-                      }
-                      cx="50%"
-                      cy="35%"
-                      r="60%"
-                    >
-                      <Stop
-                        offset="0%"
-                        stopColor={
-                          routePickMode === "start"
-                            ? theme.success
-                            : theme.danger
-                        }
-                      />
-                      <Stop
-                        offset="100%"
-                        stopColor={
-                          routePickMode === "start"
-                            ? theme.successDark
-                            : theme.dangerDark
-                        }
-                      />
-                    </RadialGradient>
-                  </Defs>
-                  <Circle
-                    cx="20"
-                    cy="20"
-                    r="20"
-                    fill={`url(#${routePickMode === "start" ? "pickGradStart" : "pickGradEnd"})`}
-                  />
-                  <Circle cx="20" cy="20" r="5" fill="white" opacity="0.9" />
-                </Svg>
-              </View>
-              <View
-                style={{
-                  width: 3,
-                  height: 14,
-                  backgroundColor:
-                    routePickMode === "start"
-                      ? theme.successDark
-                      : theme.dangerDark,
-                  borderBottomLeftRadius: 2,
-                  borderBottomRightRadius: 2,
-                }}
-              />
-              <View
-                style={{
-                  width: 12,
-                  height: 5,
-                  backgroundColor: "rgba(0,0,0,0.25)",
-                  borderRadius: 6,
-                  marginTop: 1,
-                }}
-              />
-            </View>
-          </>
-        )}
-        <Map
-          ref={mapRef}
-          options={{
-            style: MapStyle,
-            center: initialCenter.current,
-            zoom: initialZoom.current,
-          }}
-          listeners={{
-            click: {
-              objectListener: onMapClick,
-            },
-            mount: {
-              rnListener: () => {
-                ensureGlobe();
-              },
-            },
-            rotate: { objectListener: updateBearing },
-            rotateend: { objectListener: updateBearing },
-            move: {
-              objectListener: (e: any) => {
-                if (e?.target?.getCenter) {
-                  const c = e.target.getCenter();
-                  mapCenterRef.current = [c.lng, c.lat];
-                }
-              },
-            },
-          }}
+      <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={
+            theme.isDark
+              ? ["#0b0b19", "#1a1a3e", "#0d1b4b"]
+              : ["#87ceeb", "#b8d4f0", "#dceefa"]
+          }
+          style={StyleSheet.absoluteFillObject}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
         />
-        {!routeSheetOpen && (
-          <Marker
-            ref={markerRef}
+        <MapProvider>
+          {routePickMode && (
+            <>
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  backgroundColor: theme.isDark ? "#1a1a2e" : "#1a1a2e",
+                  paddingTop: Platform.OS === "ios" ? 54 : 36,
+                  paddingBottom: 16,
+                  paddingHorizontal: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  zIndex: 200,
+                  gap: 16,
+                }}
+              >
+                <TouchableOpacity onPress={() => setPickMode(null)}>
+                  <X size={24} color={theme.white} />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: theme.white,
+                      fontSize: 18,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {routePickMode === "start"
+                      ? t("Route_pick_start_title")
+                      : t("Route_pick_end_title")}
+                  </Text>
+                  <Text
+                    style={{
+                      color: theme.subTextColor,
+                      fontSize: 13,
+                      marginTop: 2,
+                    }}
+                  >
+                    {t("Route_pick_map_hint")}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={async () => {
+                    const center = await mapRef.current?.getCenter();
+                    if (!center) return;
+                    const [lng, lat] = [center.lng, center.lat];
+
+                    let label = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    try {
+                      const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+                        {
+                          headers: {
+                            "Accept-Language": i18n.language || "en",
+                            "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+                          },
+                        },
+                      );
+                      const text = await res.text();
+                      const data = JSON.parse(text);
+                      label =
+                        data.display_name?.split(",").slice(0, 2).join(", ") ??
+                        label;
+                    } catch (error) {
+                      Sentry.captureException(error);
+                    }
+
+                    const point: RoutePoint = { label, coordinate: [lng, lat] };
+                    if (routePickMode === "start") setRouteStart(point);
+                    else setRouteEnd(point);
+                    setPickMode(null);
+                  }}
+                  style={{
+                    backgroundColor: theme.primary,
+                    paddingHorizontal: 20,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: theme.white,
+                      fontWeight: "700",
+                      fontSize: 16,
+                    }}
+                  >
+                    Ok
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  marginLeft: -20,
+                  marginTop: -56,
+                  zIndex: 199,
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    shadowColor: theme.black,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.35,
+                    shadowRadius: 8,
+                    elevation: 10,
+                  }}
+                >
+                  <Svg width={40} height={40} viewBox="0 0 40 40">
+                    <Defs>
+                      <RadialGradient
+                        id={
+                          routePickMode === "start"
+                            ? "pickGradStart"
+                            : "pickGradEnd"
+                        }
+                        cx="50%"
+                        cy="35%"
+                        r="60%"
+                      >
+                        <Stop
+                          offset="0%"
+                          stopColor={
+                            routePickMode === "start"
+                              ? theme.success
+                              : theme.danger
+                          }
+                        />
+                        <Stop
+                          offset="100%"
+                          stopColor={
+                            routePickMode === "start"
+                              ? theme.successDark
+                              : theme.dangerDark
+                          }
+                        />
+                      </RadialGradient>
+                    </Defs>
+                    <Circle
+                      cx="20"
+                      cy="20"
+                      r="20"
+                      fill={`url(#${routePickMode === "start" ? "pickGradStart" : "pickGradEnd"})`}
+                    />
+                    <Circle cx="20" cy="20" r="5" fill="white" opacity="0.9" />
+                  </Svg>
+                </View>
+                <View
+                  style={{
+                    width: 3,
+                    height: 14,
+                    backgroundColor:
+                      routePickMode === "start"
+                        ? theme.successDark
+                        : theme.dangerDark,
+                    borderBottomLeftRadius: 2,
+                    borderBottomRightRadius: 2,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 12,
+                    height: 5,
+                    backgroundColor: "rgba(0,0,0,0.25)",
+                    borderRadius: 6,
+                    marginTop: 1,
+                  }}
+                />
+              </View>
+            </>
+          )}
+          <Map
+            ref={mapRef}
             options={{
-              coordinate: markerPos,
-              draggable: false,
-              element: {
-                innerHTML: `
+              style: MapStyle,
+              center: initialCenter,
+              zoom: initialZoom.current,
+            }}
+            listeners={{
+              click: {
+                objectListener: onMapClick,
+              },
+              mount: {
+                rnListener: () => {
+                  ensureGlobe();
+                },
+              },
+              rotate: { objectListener: updateBearing },
+              rotateend: { objectListener: updateBearing },
+              move: {
+                objectListener: async (e: any) => {
+                  if (e?.target?.getCenter) {
+                    const c = await e.target.getCenter();
+                    const z = await e.target.getZoom();
+                    mapCenterRef.current = [c.lng, c.lat];
+                    setMapPosition({
+                      latitude: c.lat,
+                      longitude: c.lng,
+                      zoom: z,
+                    });
+                  }
+                },
+              },
+            }}
+          />
+          {!routeSheetOpen && (
+            <Marker
+              ref={markerRef}
+              options={{
+                coordinate: markerPos,
+                draggable: false,
+                element: {
+                  innerHTML: `
               <style>
                 .pin {
                   display: flex;
@@ -1387,30 +1414,30 @@ export default function MapScreen() {
               <div class="pin" title="Location">
               </div>
             `,
-              },
-            }}
-            listeners={{
-              click: {
-                elementListener: async (_: MouseEvent) => {
-                  mapRef.current?.flyTo({
-                    center: markerPos,
-                    zoom: 14,
-                    speed: 0.3,
-                    curve: 1,
-                    duration: 1000,
-                    pitch: 0,
-                  });
                 },
-              },
-            }}
-          />
-        )}
-        {routeStart && (
-          <Marker
-            options={{
-              coordinate: routeStart.coordinate,
-              element: {
-                innerHTML: `
+              }}
+              listeners={{
+                click: {
+                  elementListener: async (_: MouseEvent) => {
+                    mapRef.current?.flyTo({
+                      center: markerPos,
+                      zoom: 14,
+                      speed: 0.3,
+                      curve: 1,
+                      duration: 1000,
+                      pitch: 0,
+                    });
+                  },
+                },
+              }}
+            />
+          )}
+          {routeStart && (
+            <Marker
+              options={{
+                coordinate: routeStart.coordinate,
+                element: {
+                  innerHTML: `
           <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="
               width:40px; height:40px;
@@ -1429,17 +1456,17 @@ export default function MapScreen() {
             </div>
           </div>
         `,
-              },
-            }}
-          />
-        )}
+                },
+              }}
+            />
+          )}
 
-        {routeEnd && (
-          <Marker
-            options={{
-              coordinate: routeEnd.coordinate,
-              element: {
-                innerHTML: `
+          {routeEnd && (
+            <Marker
+              options={{
+                coordinate: routeEnd.coordinate,
+                element: {
+                  innerHTML: `
           <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="
               width:40px; height:40px;
@@ -1458,693 +1485,710 @@ export default function MapScreen() {
             </div>
           </div>
         `,
-              },
-            }}
-          />
-        )}
-        {route &&
-          route.map((r: any, i: number) => (
-            <GeoJSONSource
-              key={`r${i}`}
-              id={`route-${i}`}
-              source={{ type: "geojson", data: r.geometry }}
-              layers={[
-                {
-                  layer: {
-                    id: `route-line-${i}`,
-                    type: "line",
-                    paint: {
-                      "line-width": i === 0 ? 6 : 3,
-                      "line-color":
-                        i === 0 ? theme.primaryDark : theme.subTextColor,
+                },
+              }}
+            />
+          )}
+          {route &&
+            route.map((r: any, i: number) => (
+              <GeoJSONSource
+                key={`r${i}`}
+                id={`route-${i}`}
+                source={{ type: "geojson", data: r.geometry }}
+                layers={[
+                  {
+                    layer: {
+                      id: `route-line-${i}`,
+                      type: "line",
+                      paint: {
+                        "line-width": i === 0 ? 6 : 3,
+                        "line-color":
+                          i === 0 ? theme.primaryDark : theme.subTextColor,
+                      },
                     },
                   },
-                },
-              ]}
-            />
-          ))}
-        <VectorTileSource
-          id="cities-source"
-          source={{
-            type: "vector",
-            tiles: ["https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf"],
-          }}
-          layers={[
-            {
-              layer: {
-                id: "cities-layer",
-                type: "symbol",
-                "source-layer": "place",
-                minzoom: 5,
-                filter: ["in", ["get", "class"], ["literal", ["city", "town"]]],
-                layout: {
-                  "text-field": ["get", "name"],
-                  "text-size": 12,
-                },
-              },
-              listeners: {
-                click: async (e: any) => {
-                  if (routePickModeRef.current) return;
-                  if (!mapRef.current) return;
-
-                  const features = await mapRef.current.queryRenderedFeatures(
-                    e.point,
-                    {
-                      layers: ["cities-layer"],
-                    },
-                  );
-
-                  if (!features.length) return;
-
-                  const closest = features.reduce((best: any, curr: any) => {
-                    const [lon, lat] = curr.geometry.coordinates;
-                    const d =
-                      Math.abs(lon - e.lngLat.lng) +
-                      Math.abs(lat - e.lngLat.lat);
-
-                    if (!best) return { f: curr, d };
-                    return d < best.d ? { f: curr, d } : best;
-                  }, null).f;
-
-                  const [lon, lat] = closest.geometry.coordinates;
-
-                  setBottomSheetIndex(2);
-                  sheetRef.current?.snapToIndex(2);
-                  selectCity({
-                    name: closest.properties?.name ?? t("Unknown_poi"),
-                    latitude: lat,
-                    longitude: lon,
-                  });
-                  posthog.capture("city_tapped");
-                },
-              },
-            },
-          ]}
-        />
-
-        {searchBarVisible && (
-          <View style={styles.searchWrapper}>
-            <View style={styles.searchContainer}>
-              <Search size={25} color={theme.subTextColor} />
-              <TextInput
-                placeholder={t("Search")}
-                placeholderTextColor={theme.subTextColor}
-                style={styles.input}
-                value={query}
-                onChangeText={(value) => setQuery(value)}
-                onBlur={onBlur}
-                onFocus={() => setIsSearching(true)}
+                ]}
               />
-              {!loadingSearch && query.length > 0 && (
-                <TouchableOpacity onPress={clearInput}>
-                  <X size={18} color={theme.subTextColor} />
-                </TouchableOpacity>
-              )}
-              {loadingSearch && <ActivityIndicator size="small" />}
+            ))}
+          <VectorTileSource
+            id="cities-source"
+            source={{
+              type: "vector",
+              tiles: [
+                "https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf",
+              ],
+            }}
+            layers={[
+              {
+                layer: {
+                  id: "cities-layer",
+                  type: "symbol",
+                  "source-layer": "place",
+                  minzoom: 5,
+                  filter: [
+                    "in",
+                    ["get", "class"],
+                    ["literal", ["city", "town"]],
+                  ],
+                  layout: {
+                    "text-field": ["get", "name"],
+                    "text-size": 12,
+                  },
+                },
+                listeners: {
+                  click: async (e: any) => {
+                    if (routePickModeRef.current) return;
+                    if (!mapRef.current) return;
 
-              <View style={styles.avatarView}>
-                <Avatar
-                  size={34}
-                  name={email ?? undefined}
-                  email={email ?? undefined}
-                  colorize={true}
-                  radius={100}
-                  badgeColor="#146275ff"
-                  defaultSource={require("@/assets/images/icon.png")}
+                    const features = await mapRef.current.queryRenderedFeatures(
+                      e.point,
+                      {
+                        layers: ["cities-layer"],
+                      },
+                    );
+
+                    if (!features.length) return;
+
+                    const closest = features.reduce((best: any, curr: any) => {
+                      const [lon, lat] = curr.geometry.coordinates;
+                      const d =
+                        Math.abs(lon - e.lngLat.lng) +
+                        Math.abs(lat - e.lngLat.lat);
+
+                      if (!best) return { f: curr, d };
+                      return d < best.d ? { f: curr, d } : best;
+                    }, null).f;
+
+                    const [lon, lat] = closest.geometry.coordinates;
+
+                    setBottomSheetIndex(2);
+                    sheetRef.current?.snapToIndex(2);
+                    selectCity({
+                      name: closest.properties?.name ?? t("Unknown_poi"),
+                      latitude: lat,
+                      longitude: lon,
+                    });
+                    posthog.capture("city_tapped");
+                  },
+                },
+              },
+            ]}
+          />
+
+          {searchBarVisible && (
+            <View style={styles.searchWrapper}>
+              <View style={styles.searchContainer}>
+                <Search size={25} color={theme.subTextColor} />
+                <TextInput
+                  placeholder={t("Search")}
+                  placeholderTextColor={theme.subTextColor}
+                  style={styles.input}
+                  value={query}
+                  onChangeText={(value) => setQuery(value)}
+                  onBlur={onBlur}
+                  onFocus={() => setIsSearching(true)}
                 />
-              </View>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterRow}
-            >
-              {filters.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.filterChip,
-                    activeFilter === item.id && styles.filterChipActive,
-                  ]}
-                  onPress={() =>
-                    handleSetFilter(activeFilter === item.id ? null : item.id)
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.filterText,
-                      activeFilter === item.id && styles.filterTextActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                {!loadingSearch && query.length > 0 && (
+                  <TouchableOpacity onPress={clearInput}>
+                    <X size={18} color={theme.subTextColor} />
+                  </TouchableOpacity>
+                )}
+                {loadingSearch && <ActivityIndicator size="small" />}
 
-            {query.length === 0 &&
-              searchHistory.length > 0 &&
-              !city &&
-              isSearching && (
-                <Animated.View
-                  entering={FadeInDown}
-                  style={styles.suggestionBox}
-                >
-                  <View style={styles.historyHeader}>
-                    <History size={16} color={theme.subTextColor} />
-                    <Text style={styles.historyHeaderText}>
-                      {t("Recently_searched")}
-                    </Text>
-                    <TouchableOpacity onPress={() => clearSearchHistory()}>
-                      <X size={16} color={theme.subTextColor} />
-                    </TouchableOpacity>
-                  </View>
-                  {searchHistory.map((item, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={styles.suggestionItem2}
-                      onPress={() => setQuery(item)}
+                <View style={styles.avatarView}>
+                  <Avatar
+                    size={34}
+                    name={email ?? undefined}
+                    email={email ?? undefined}
+                    colorize={true}
+                    radius={100}
+                    badgeColor="#146275ff"
+                    defaultSource={require("@/assets/images/icons/adaptive-icon.png")}
+                  />
+                </View>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+              >
+                {filters.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.filterChip,
+                      activeFilter === item.id && styles.filterChipActive,
+                    ]}
+                    onPress={() =>
+                      handleSetFilter(activeFilter === item.id ? null : item.id)
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.filterText,
+                        activeFilter === item.id && styles.filterTextActive,
+                      ]}
                     >
-                      <Text style={styles.suggTitle}>{item}</Text>
-                      <TouchableOpacity
-                        onPress={() => removeFromSearchHistory(item)}
-                        style={{
-                          marginLeft: "auto",
-                          padding: 4,
-                          borderRadius: 4,
-                          backgroundColor: "rgba(0,0,0,0.1)",
-                        }}
-                      >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {query.length === 0 &&
+                searchHistory.length > 0 &&
+                !city &&
+                isSearching && (
+                  <Animated.View
+                    entering={FadeInDown}
+                    style={styles.suggestionBox}
+                  >
+                    <View style={styles.historyHeader}>
+                      <History size={16} color={theme.subTextColor} />
+                      <Text style={styles.historyHeaderText}>
+                        {t("Recently_searched")}
+                      </Text>
+                      <TouchableOpacity onPress={() => clearSearchHistory()}>
                         <X size={16} color={theme.subTextColor} />
                       </TouchableOpacity>
-                    </TouchableOpacity>
-                  ))}
-                </Animated.View>
-              )}
-
-            {results.length > 0 && query.length > 0 && !city && (
-              <View style={styles.suggestionBox}>
-                <FlatList
-                  data={results}
-                  keyExtractor={(item) => String(item.id)}
-                  keyboardShouldPersistTaps="handled"
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.suggestionItem}
-                      onPress={() => {
-                        setResults([]);
-                        onSelectCity(item);
-                      }}
-                    >
-                      <Text style={styles.suggTitle}>
-                        {item.name ?? item.city}
-                      </Text>
-                      <Text style={styles.suggSub}>
-                        {item.region ? item.region + ", " : ""}
-                        {item.country}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-            )}
-          </View>
-        )}
-
-        {drawMode && (
-          <DrawBoundsOverlay
-            mapRef={mapRef}
-            onCancel={() => setDrawMode(false)}
-            onConfirm={(bounds) => {
-              setDrawBounds({
-                nw: [bounds[0], bounds[3]],
-                ne: [bounds[2], bounds[3]],
-                se: [bounds[2], bounds[1]],
-                sw: [bounds[0], bounds[1]],
-              });
-              setDrawMode(false);
-              setDownloadSheetOpen(true);
-            }}
-          />
-        )}
-
-        {/*Kompass*/}
-        {!isSearching && (
-          <>
-            <TouchableOpacity
-              onPress={resetToNorth}
-              style={{
-                position: "absolute",
-                top: Platform.OS === "ios" ? 110 : 150,
-                right: 16,
-                width: 48,
-                height: 48,
-                zIndex: 100,
-              }}
-            >
-              <Svg width={48} height={48} viewBox="0 0 48 48">
-                <Circle cx="24" cy="24" r="23" fill="#1C1C1E" opacity="0.92" />
-
-                <Circle
-                  cx="24"
-                  cy="24"
-                  r="23"
-                  fill="none"
-                  stroke="#3A3A3C"
-                  strokeWidth="1"
-                />
-                {Array.from({ length: 12 }, (_, i) => {
-                  const angle = (i * 30 * Math.PI) / 180;
-                  const isMajor = i % 3 === 0;
-                  const inner = isMajor ? 16 : 17.5;
-                  const outer = 21;
-                  const x1 = 24 + inner * Math.sin(angle);
-                  const y1 = 24 - inner * Math.cos(angle);
-                  const x2 = 24 + outer * Math.sin(angle);
-                  const y2 = 24 - outer * Math.cos(angle);
-                  return (
-                    <Line
-                      key={i}
-                      x1={x1}
-                      y1={y1}
-                      x2={x2}
-                      y2={y2}
-                      stroke={isMajor ? "#FFFFFF" : "#555"}
-                      strokeWidth={isMajor ? 1.5 : 1}
-                      strokeLinecap="round"
-                    />
-                  );
-                })}
-
-                <G rotation={-bearing} origin="24, 24">
-                  <Polygon points="24,8 26.5,22 24,20 21.5,22" fill="#EF4444" />
-                  <Polygon
-                    points="24,40 26.5,26 24,28 21.5,26"
-                    fill="#8E8E93"
-                  />
-
-                  <G rotation={bearing} origin="24, 24">
-                    <SvgText
-                      x="24"
-                      y="29"
-                      textAnchor="middle"
-                      fill="white"
-                      fontSize="11"
-                      fontWeight="700"
-                    >
-                      N
-                    </SvgText>
-                  </G>
-                </G>
-              </Svg>
-            </TouchableOpacity>
-          </>
-        )}
-        <NavigationSideBar
-          markerPos={markerPos}
-          resetPitch={resetPitch}
-          setRoute={setRoute}
-          setDistanceInfo={setDistanceInfo}
-          setRouteEnd={setRouteEnd}
-          setRouteStart={setRouteStart}
-          setRouteSheetOpen={setRouteSheetOpen}
-          setMapStyleSheetOpen={setMapStyleSheetOpen}
-          setDrawMode={setDrawMode}
-        />
-
-        <PoiSheet
-          sheetRef={sheetPoiRef}
-          selectedPoi={selectedPoi}
-          snapPoints={SNAP_POINTS}
-          markerPos={markerPos}
-          onClose={() => {
-            setSelectedPoi(null);
-            setBottomSheetIndex2(-1);
-          }}
-          onRouteStart={(start, end) => {
-            setRoute(null);
-            setDistanceInfo(null);
-            setRouteStart(start);
-            setRouteEnd(end);
-            setRouteSheetOpen(true);
-          }}
-        />
-
-        {city && (
-          <BottomSheet
-            ref={sheetRef}
-            index={BottomSheetIndex}
-            snapPoints={SNAP_POINTS}
-            enablePanDownToClose={true}
-            backgroundStyle={{
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              backgroundColor: theme.bg,
-            }}
-            onChange={(i) => {
-              setBottomSheetIndex;
-              setBottomSheetIndex(i);
-              if (i === -1) setSelectedPoi(null);
-            }}
-          >
-            {loading && <LoadingOverlay />}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 20,
-              }}
-            >
-              <View>
-                {!city ? (
-                  <Text>Loading</Text>
-                ) : (
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.articleHeader}>
-                      <Text
-                        style={{
-                          fontSize: 23,
-                          fontWeight: "600",
-                          marginLeft: 20,
-                          color: theme.textColor,
-                        }}
-                      >
-                        {city.name}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={closeModal}
-                        style={{
-                          position: "absolute",
-                          right: 10,
-                          alignSelf: "flex-end",
-                        }}
-                      >
-                        <X strokeWidth={3} color={theme.textColor} />
-                      </TouchableOpacity>
-                      {weather && (
-                        <View style={styles.weatherBadge}>
-                          {getWeatherIcon(weather.code)}
-                          <Text style={styles.weatherText}>
-                            {weather.temp}°C
-                          </Text>
-                        </View>
-                      )}
                     </View>
-                    <View style={styles.headerActions}>
+                    {searchHistory.map((item, idx) => (
                       <TouchableOpacity
-                        onPress={() => {
-                          setRouteStart(
-                            markerPos
-                              ? {
-                                  label: t("Poi_my_location"),
-                                  coordinate: markerPos,
-                                }
-                              : null,
-                          );
-                          setRouteEnd({
-                            label: city.name,
-                            coordinate: [city.longitude, city.latitude],
-                          });
-                          setRouteSheetOpen(true);
-                          sheetRef.current?.close();
-                        }}
-                        style={{
-                          backgroundColor: theme.primary,
-                          width: 220,
-                          height: 50,
-                          borderRadius: 12,
-                          flexDirection: "row",
-                          paddingHorizontal: 10,
-                          paddingVertical: 5,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginLeft: 20,
-                        }}
+                        key={idx}
+                        style={styles.suggestionItem2}
+                        onPress={() => setQuery(item)}
                       >
-                        <Route color={theme.white} size={24} />
-                        <Text
+                        <Text style={styles.suggTitle}>{item}</Text>
+                        <TouchableOpacity
+                          onPress={() => removeFromSearchHistory(item)}
                           style={{
-                            fontWeight: "500",
-                            fontSize: 18,
-                            color: theme.white,
-                            paddingHorizontal: 10,
+                            marginLeft: "auto",
+                            padding: 4,
+                            borderRadius: 4,
+                            backgroundColor: "rgba(0,0,0,0.1)",
                           }}
                         >
-                          Route starten
-                        </Text>
+                          <X size={16} color={theme.subTextColor} />
+                        </TouchableOpacity>
                       </TouchableOpacity>
+                    ))}
+                  </Animated.View>
+                )}
+
+              {results.length > 0 && query.length > 0 && !city && (
+                <View style={styles.suggestionBox}>
+                  <FlatList
+                    data={results}
+                    keyExtractor={(item) => String(item.id)}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
                       <TouchableOpacity
-                        onPress={toggleFavorite}
-                        style={{
-                          backgroundColor: theme.cardBgSecondary,
-                          width: 50,
-                          height: 50,
-                          borderRadius: 12,
-                          flexDirection: "row",
-                          paddingHorizontal: 10,
-                          paddingVertical: 5,
-                          alignItems: "center",
+                        style={styles.suggestionItem}
+                        onPress={() => {
+                          setResults([]);
+                          onSelectCity(item);
                         }}
                       >
-                        <LottieView
-                          source={require("@/assets/animations/heart-animation.json")}
+                        <Text style={styles.suggTitle}>
+                          {item.name ?? item.city}
+                        </Text>
+                        <Text style={styles.suggSub}>
+                          {item.region ? item.region + ", " : ""}
+                          {item.country}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+
+          {drawMode && (
+            <DrawBoundsOverlay
+              mapRef={mapRef}
+              onCancel={() => setDrawMode(false)}
+              onConfirm={(bounds) => {
+                setDrawBounds({
+                  nw: [bounds[0], bounds[3]],
+                  ne: [bounds[2], bounds[3]],
+                  se: [bounds[2], bounds[1]],
+                  sw: [bounds[0], bounds[1]],
+                });
+                setDrawMode(false);
+                setDownloadSheetOpen(true);
+              }}
+            />
+          )}
+
+          {!isSearching && (
+            <>
+              <TouchableOpacity
+                onPress={resetToNorth}
+                style={{
+                  position: "absolute",
+                  top: Platform.OS === "ios" ? 110 : 150,
+                  right: 16,
+                  width: 48,
+                  height: 48,
+                  zIndex: 100,
+                }}
+              >
+                <Svg width={48} height={48} viewBox="0 0 48 48">
+                  <Circle
+                    cx="24"
+                    cy="24"
+                    r="23"
+                    fill="#1C1C1E"
+                    opacity="0.92"
+                  />
+
+                  <Circle
+                    cx="24"
+                    cy="24"
+                    r="23"
+                    fill="none"
+                    stroke="#3A3A3C"
+                    strokeWidth="1"
+                  />
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const angle = (i * 30 * Math.PI) / 180;
+                    const isMajor = i % 3 === 0;
+                    const inner = isMajor ? 16 : 17.5;
+                    const outer = 21;
+                    const x1 = 24 + inner * Math.sin(angle);
+                    const y1 = 24 - inner * Math.cos(angle);
+                    const x2 = 24 + outer * Math.sin(angle);
+                    const y2 = 24 - outer * Math.cos(angle);
+                    return (
+                      <Line
+                        key={i}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={isMajor ? "#FFFFFF" : "#555"}
+                        strokeWidth={isMajor ? 1.5 : 1}
+                        strokeLinecap="round"
+                      />
+                    );
+                  })}
+
+                  <G rotation={-bearing} origin="24, 24">
+                    <Polygon
+                      points="24,8 26.5,22 24,20 21.5,22"
+                      fill="#EF4444"
+                    />
+                    <Polygon
+                      points="24,40 26.5,26 24,28 21.5,26"
+                      fill="#8E8E93"
+                    />
+
+                    <G rotation={bearing} origin="24, 24">
+                      <SvgText
+                        x="24"
+                        y="29"
+                        textAnchor="middle"
+                        fill="white"
+                        fontSize="11"
+                        fontWeight="700"
+                      >
+                        N
+                      </SvgText>
+                    </G>
+                  </G>
+                </Svg>
+              </TouchableOpacity>
+            </>
+          )}
+          <NavigationSideBar
+            markerPos={markerPos}
+            resetPitch={resetPitch}
+            setRoute={setRoute}
+            setDistanceInfo={setDistanceInfo}
+            setRouteEnd={setRouteEnd}
+            setRouteStart={setRouteStart}
+            setRouteSheetOpen={setRouteSheetOpen}
+            setMapStyleSheetOpen={setMapStyleSheetOpen}
+            setDrawMode={setDrawMode}
+          />
+
+          <PoiSheet
+            sheetRef={sheetPoiRef}
+            selectedPoi={selectedPoi}
+            snapPoints={SNAP_POINTS}
+            markerPos={markerPos}
+            onClose={() => {
+              setSelectedPoi(null);
+              setBottomSheetIndex2(-1);
+            }}
+            onRouteStart={(start, end) => {
+              setRoute(null);
+              setDistanceInfo(null);
+              setRouteStart(start);
+              setRouteEnd(end);
+              setRouteSheetOpen(true);
+            }}
+          />
+
+          {city && (
+            <BottomSheet
+              ref={sheetRef}
+              index={BottomSheetIndex}
+              snapPoints={SNAP_POINTS}
+              enablePanDownToClose={true}
+              backgroundStyle={{
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                backgroundColor: theme.bg,
+              }}
+              onChange={(i) => {
+                setBottomSheetIndex;
+                setBottomSheetIndex(i);
+                if (i === -1) setSelectedPoi(null);
+              }}
+            >
+              {loading && <LoadingOverlay />}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <View>
+                  {!city ? (
+                    <Text>Loading</Text>
+                  ) : (
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.articleHeader}>
+                        <Text
                           style={{
+                            fontSize: 23,
+                            fontWeight: "600",
+                            marginLeft: 20,
+                            color: theme.textColor,
+                          }}
+                        >
+                          {city.name}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={closeModal}
+                          style={{
+                            position: "absolute",
+                            right: 10,
+                            alignSelf: "flex-end",
+                          }}
+                        >
+                          <X strokeWidth={3} color={theme.textColor} />
+                        </TouchableOpacity>
+                        {weather && (
+                          <View style={styles.weatherBadge}>
+                            {getWeatherIcon(weather.code)}
+                            <Text style={styles.weatherText}>
+                              {weather.temp}°C
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.headerActions}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setRouteStart(
+                              markerPos
+                                ? {
+                                    label: t("Poi_my_location"),
+                                    coordinate: markerPos,
+                                  }
+                                : null,
+                            );
+                            setRouteEnd({
+                              label: city.name,
+                              coordinate: [city.longitude, city.latitude],
+                            });
+                            setRouteSheetOpen(true);
+                            sheetRef.current?.close();
+                          }}
+                          style={{
+                            backgroundColor: theme.primary,
+                            width: 220,
+                            height: 50,
+                            borderRadius: 12,
+                            flexDirection: "row",
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginLeft: 20,
+                          }}
+                        >
+                          <Route color={theme.white} size={24} />
+                          <Text
+                            style={{
+                              fontWeight: "500",
+                              fontSize: 18,
+                              color: theme.white,
+                              paddingHorizontal: 10,
+                            }}
+                          >
+                            Route starten
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={toggleFavorite}
+                          style={{
+                            backgroundColor: theme.cardBgSecondary,
                             width: 50,
                             height: 50,
-                            position: "absolute",
-                            opacity: isPlayingAnimation ? 1 : 0,
+                            borderRadius: 12,
+                            flexDirection: "row",
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            alignItems: "center",
                           }}
-                          loop={false}
-                          ref={ref}
-                          autoPlay={false}
-                          onAnimationFinish={() => setIsPlayingAnimation(false)}
-                        />
-                        {!isPlayingAnimation && (
-                          <Heart
-                            color={
-                              localSaved ? theme.danger : theme.subTextColor
+                        >
+                          <LottieView
+                            source={require("@/assets/animations/heart-animation.json")}
+                            style={{
+                              width: 50,
+                              height: 50,
+                              position: "absolute",
+                              opacity: isPlayingAnimation ? 1 : 0,
+                            }}
+                            loop={false}
+                            ref={ref}
+                            autoPlay={false}
+                            onAnimationFinish={() =>
+                              setIsPlayingAnimation(false)
                             }
-                            fill={localSaved ? theme.danger : "transparent"}
-                            size={24}
                           />
-                        )}
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={shareCity}
-                        style={{
-                          backgroundColor: theme.cardBgSecondary,
-                          width: 50,
-                          height: 50,
-                          borderRadius: 12,
-                          padding: 10,
-                          alignSelf: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Share2 color={theme.primary} size={24} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {!loading && article && (
-              <BottomSheetScrollView contentContainerStyle={{ padding: 0 }}>
-                {article?.thumbnail && (
-                  <View style={styles.heroImageContainer}>
-                    <Image
-                      source={{ uri: article.thumbnail }}
-                      style={styles.heroImage}
-                      contentFit="cover"
-                      transition={500}
-                    />
-                  </View>
-                )}
-
-                <View style={{ padding: 20 }}>
-                  {article.images.length > 0 && (
-                    <View style={styles.imageSection}>
-                      <View style={styles.sectionHeader}>
-                        <ImageIcon color={theme.primary} size={20} />
-                        <Text style={styles.sectionTitle}>
-                          Bilder ({article.images.length})
-                        </Text>
-                      </View>
-                      <GHFlatList
-                        horizontal
-                        data={article.images}
-                        showsHorizontalScrollIndicator={false}
-                        nestedScrollEnabled
-                        keyExtractor={(item: WikiArticleImage, index: number) =>
-                          `${item.previewUrl}-${index}`
-                        }
-                        renderItem={({ item, index }: any) => (
-                          <TouchableOpacity
-                            style={styles.imageWrapper}
-                            onPress={() => setSelectedImageIndex(index)}
-                            activeOpacity={0.8}
-                          >
-                            <Image
-                              source={{ uri: item.previewUrl }}
-                              style={styles.image}
-                              contentFit="cover"
-                              transition={300}
+                          {!isPlayingAnimation && (
+                            <Heart
+                              color={
+                                localSaved ? theme.danger : theme.subTextColor
+                              }
+                              fill={localSaved ? theme.danger : "transparent"}
+                              size={24}
                             />
-                          </TouchableOpacity>
-                        )}
-                        contentContainerStyle={styles.imageList}
+                          )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={shareCity}
+                          style={{
+                            backgroundColor: theme.cardBgSecondary,
+                            width: 50,
+                            height: 50,
+                            borderRadius: 12,
+                            padding: 10,
+                            alignSelf: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Share2 color={theme.primary} size={24} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {!loading && article && (
+                <BottomSheetScrollView contentContainerStyle={{ padding: 0 }}>
+                  {article?.thumbnail && (
+                    <View style={styles.heroImageContainer}>
+                      <Image
+                        source={{ uri: article.thumbnail }}
+                        style={styles.heroImage}
+                        contentFit="cover"
+                        transition={500}
                       />
                     </View>
                   )}
-                  {city && <View style={{ paddingBottom: 16 }}></View>}
-                  <Text style={styles.extractText}>
-                    {article?.extract}
-                    {CityInfo}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={openURL}
-                    style={styles.readMoreButton}
-                  >
-                    <Text style={styles.readMoreText}>
-                      Auf Wikipedia weiterlesen
+
+                  <View style={{ padding: 20 }}>
+                    {article.images.length > 0 && (
+                      <View style={styles.imageSection}>
+                        <View style={styles.sectionHeader}>
+                          <ImageIcon color={theme.primary} size={20} />
+                          <Text style={styles.sectionTitle}>
+                            Bilder ({article.images.length})
+                          </Text>
+                        </View>
+                        <GHFlatList
+                          horizontal
+                          data={article.images}
+                          showsHorizontalScrollIndicator={false}
+                          nestedScrollEnabled
+                          keyExtractor={(
+                            item: WikiArticleImage,
+                            index: number,
+                          ) => `${item.previewUrl}-${index}`}
+                          renderItem={({ item, index }: any) => (
+                            <TouchableOpacity
+                              style={styles.imageWrapper}
+                              onPress={() => setSelectedImageIndex(index)}
+                              activeOpacity={0.8}
+                            >
+                              <Image
+                                source={{ uri: item.previewUrl }}
+                                style={styles.image}
+                                contentFit="cover"
+                                transition={300}
+                              />
+                            </TouchableOpacity>
+                          )}
+                          contentContainerStyle={styles.imageList}
+                        />
+                      </View>
+                    )}
+                    {city && <View style={{ paddingBottom: 16 }}></View>}
+                    <Text style={styles.extractText}>
+                      {article?.extract}
+                      {CityInfo}
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              </BottomSheetScrollView>
-            )}
-          </BottomSheet>
-        )}
-        <Modal
-          visible={selectedImageIndex !== null}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setSelectedImageIndex(null)}
-        >
-          <View style={styles.modalBackground}>
-            <Pressable
-              style={styles.modalOverlay}
-              onPress={() => setSelectedImageIndex(null)}
-            />
-            <View style={styles.modalContent}>
-              <FlatList
-                horizontal
-                pagingEnabled
-                data={article?.images || []}
-                initialScrollIndex={selectedImageIndex || 0}
-                getItemLayout={(_, index) => ({
-                  length: width,
-                  offset: width * index,
-                  index,
-                })}
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item: WikiArticleImage) =>
-                  `full-${item.fullUrl}`
-                }
-                renderItem={({ item }) => (
-                  <View style={styles.fullscreenImageWrapper}>
-                    <Image
-                      source={{ uri: item.fullUrl }}
-                      style={styles.fullscreenImage}
-                      contentFit="contain"
-                      transition={300}
-                    />
+                    <TouchableOpacity
+                      onPress={openURL}
+                      style={styles.readMoreButton}
+                    >
+                      <Text style={styles.readMoreText}>Wikipedia</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-              />
-              <TouchableOpacity
-                style={styles.closeButton}
+                </BottomSheetScrollView>
+              )}
+            </BottomSheet>
+          )}
+          <Modal
+            visible={selectedImageIndex !== null}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setSelectedImageIndex(null)}
+          >
+            <View style={styles.modalBackground}>
+              <Pressable
+                style={styles.modalOverlay}
                 onPress={() => setSelectedImageIndex(null)}
-              >
-                <X color={theme.white} size={28} />
-              </TouchableOpacity>
+              />
+              <View style={styles.modalContent}>
+                <FlatList
+                  horizontal
+                  pagingEnabled
+                  data={article?.images || []}
+                  initialScrollIndex={selectedImageIndex || 0}
+                  getItemLayout={(_, index) => ({
+                    length: width,
+                    offset: width * index,
+                    index,
+                  })}
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item: WikiArticleImage) =>
+                    `full-${item.fullUrl}`
+                  }
+                  renderItem={({ item }) => (
+                    <View style={styles.fullscreenImageWrapper}>
+                      <Image
+                        source={{ uri: item.fullUrl }}
+                        style={styles.fullscreenImage}
+                        contentFit="contain"
+                        transition={300}
+                      />
+                    </View>
+                  )}
+                />
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setSelectedImageIndex(null)}
+                >
+                  <X color={theme.white} size={28} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
 
-        <RouteSheet
-          open={routeSheetOpen}
-          start={routeStart}
-          end={routeEnd}
-          pickMode={routePickMode}
-          onClose={() => {
-            setRouteSheetOpen(false);
-            setPickMode(null);
-            setRouteStart(null);
-            setRouteEnd(null);
-            setRoute(null);
-            setDistanceInfo(null);
-          }}
-          onPickStart={() => setPickMode("start")}
-          onPickEnd={() => setPickMode("end")}
-          onSwap={() => {
-            const tmp = routeStart;
-            setRouteStart(routeEnd);
-            setRouteEnd(tmp);
-            posthog.capture("route_start_end_swapped");
-          }}
-          onSetStart={(point) => setRouteStart(point)}
-          onSetEnd={(point) => setRouteEnd(point)}
-          onRouteReady={(routes) => {
-            setRoute(routes);
-            setDistanceInfo({
-              distance: routes[0].distance,
-              duration: routes[0].duration,
-            });
+          <RouteSheet
+            open={routeSheetOpen}
+            start={routeStart}
+            end={routeEnd}
+            pickMode={routePickMode}
+            onClose={() => {
+              setRouteSheetOpen(false);
+              setPickMode(null);
+              setRouteStart(null);
+              setRouteEnd(null);
+              setRoute(null);
+              setDistanceInfo(null);
+            }}
+            onPickStart={() => setPickMode("start")}
+            onPickEnd={() => setPickMode("end")}
+            onSwap={() => {
+              const tmp = routeStart;
+              setRouteStart(routeEnd);
+              setRouteEnd(tmp);
+              posthog.capture("route_start_end_swapped");
+            }}
+            onSetStart={(point) => setRouteStart(point)}
+            onSetEnd={(point) => setRouteEnd(point)}
+            onRouteReady={(routes) => {
+              setRoute(routes);
+              setDistanceInfo({
+                distance: routes[0].distance,
+                duration: routes[0].duration,
+              });
 
-            // Fit map to route bounds
-            if (!mapRef.current || !routes[0].geometry) return;
-            const coords: [number, number][] = routes[0].geometry.coordinates;
-            if (!coords.length) return;
+              // Fit map to route bounds
+              if (!mapRef.current || !routes[0].geometry) return;
+              const coords: [number, number][] = routes[0].geometry.coordinates;
+              if (!coords.length) return;
 
-            const lons = coords.map(([lon]) => lon);
-            const lats = coords.map(([, lat]) => lat);
-            const bounds: [number, number, number, number] = [
-              Math.min(...lons),
-              Math.min(...lats),
-              Math.max(...lons),
-              Math.max(...lats),
-            ];
-            mapRef.current.fitBounds(bounds, { padding: 80, duration: 800 });
-          }}
-        />
-        <DownloadSheet
-          open={downloadSheetOpen}
-          bounds={
-            drawBounds
-              ? [
-                  drawBounds.sw[0],
-                  drawBounds.sw[1],
-                  drawBounds.ne[0],
-                  drawBounds.ne[1],
-                ]
-              : null
-          }
-          onClose={() => setDownloadSheetOpen(false)}
-          onDownloadComplete={() => {
-            setDownloadSheetOpen(false);
-          }}
-        />
-        <ErrorSheet
-          open={errorSheetOpen}
-          onClose={() => setErrorSheetOpen(false)}
-          errorTitle={error ? t("Error_generic") : t("Error_location")}
-          error={error ?? t("Location_load_failed_message")}
-          errorCode={error ? "MAPSCREEN_ERROR" : "LOCATION_NOT_READY"}
-          stillAvailable={[
-            t("Still_available_offline_maps"),
-            t("Still_available_saved_places"),
-            t("Still_available_routes"),
-          ]}
-          githubRepo="cactus-apps/atlasys"
-        />
-      </MapProvider>
+              const lons = coords.map(([lon]) => lon);
+              const lats = coords.map(([, lat]) => lat);
+              const bounds: [number, number, number, number] = [
+                Math.min(...lons),
+                Math.min(...lats),
+                Math.max(...lons),
+                Math.max(...lats),
+              ];
+              mapRef.current.fitBounds(bounds, { padding: 80, duration: 800 });
+            }}
+          />
+          <DownloadSheet
+            open={downloadSheetOpen}
+            bounds={
+              drawBounds
+                ? [
+                    drawBounds.sw[0],
+                    drawBounds.sw[1],
+                    drawBounds.ne[0],
+                    drawBounds.ne[1],
+                  ]
+                : null
+            }
+            onClose={() => setDownloadSheetOpen(false)}
+            onDownloadComplete={() => {
+              setDownloadSheetOpen(false);
+            }}
+          />
+          <ErrorSheet
+            open={errorSheetOpen}
+            onClose={() => setErrorSheetOpen(false)}
+            errorTitle={error ? t("Error_generic") : t("Error_location")}
+            error={error ?? t("Location_load_failed_message")}
+            errorCode={error ? "MAPSCREEN_ERROR" : "LOCATION_NOT_READY"}
+            stillAvailable={[
+              t("Still_available_offline_maps"),
+              t("Still_available_saved_places"),
+              t("Still_available_routes"),
+            ]}
+            githubRepo="cactus-apps/atlasys"
+          />
+        </MapProvider>
+      </View>
       <MapStyleSheet
         open={mapStyleSheetOpen}
         currentTheme={currentThemeKey}
         onSelect={handleSelectTheme}
         onClose={() => setMapStyleSheetOpen(false)}
       />
+      <StatusBar style={StatusBarStyle} />
     </GestureHandlerRootView>
   );
 }

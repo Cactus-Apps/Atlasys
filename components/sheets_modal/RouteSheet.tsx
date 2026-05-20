@@ -87,7 +87,7 @@ export default function RouteSheet({
   const theme = useAppTheme();
   const s = getStyles(theme);
 
-  // Suchfelder
+  // Search fields
   const [startQuery, setStartQuery] = useState("");
   const [endQuery, setEndQuery] = useState("");
   const [startResults, setStartResults] = useState<SearchResult[]>([]);
@@ -100,7 +100,7 @@ export default function RouteSheet({
 
   useEffect(() => {
     if (open) {
-      // Kleiner Delay damit der Sheet gemountet ist
+      // Small delay so the sheet is mounted
       const timer = setTimeout(() => {
         sheetRef.current?.snapToIndex(1);
       }, 50);
@@ -110,7 +110,7 @@ export default function RouteSheet({
     }
   }, [open]);
 
-  // Sync Labels in Felder wenn extern gesetzt (z.B. per Karten-Tap)
+  // Sync labels in fields when set externally (e.g. via map tap)
   useEffect(() => {
     if (start) setStartQuery(start.label);
   }, [start]);
@@ -118,12 +118,16 @@ export default function RouteSheet({
     if (end) setEndQuery(end.label);
   }, [end]);
 
-  // Nominatim Suche
+  // Nominatim search
   const searchNominatim = async (query: string): Promise<SearchResult[]> => {
     if (query.length < 2) return [];
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=${encodeURIComponent(i18n.language || "en")}`,
-      { headers: { "User-Agent": "GPS/1.0 (cactus_apps@proton.me)" } },
+      {
+        headers: {
+          "User-Agent": `GPS/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})"`,
+        },
+      },
     );
     const text = await res.text();
     try {
@@ -164,7 +168,6 @@ export default function RouteSheet({
     return () => clearTimeout(timer);
   }, [endQuery, focusedField]);
 
-  // Route berechnen
   useEffect(() => {
     if (!start || !end) {
       setRouteInfo(null);
@@ -269,7 +272,6 @@ export default function RouteSheet({
           </TouchableOpacity>
         </View>
 
-        {/* Transport-Modi */}
         <View style={s.modeRow}>
           {profiles.map(({ key, label, Icon }) => (
             <TouchableOpacity
@@ -291,9 +293,7 @@ export default function RouteSheet({
           ))}
         </View>
 
-        {/* Felder */}
         <View style={s.fields}>
-          {/* Start-Feld */}
           <View
             style={[
               s.fieldWrapper,
@@ -363,7 +363,6 @@ export default function RouteSheet({
             </TouchableOpacity>
           </View>
 
-          {/* End-Feld */}
           <View
             style={[
               s.fieldWrapper,
@@ -426,7 +425,6 @@ export default function RouteSheet({
           )}
         </View>
 
-        {/* Pick-Modus Hinweis */}
         {pickMode && (
           <View style={s.pickHint}>
             <Navigation size={16} color={theme.primary} />
@@ -438,7 +436,6 @@ export default function RouteSheet({
           </View>
         )}
 
-        {/* Route-Ergebnis */}
         {loading && (
           <View style={s.infoBox}>
             <ActivityIndicator color={theme.primary} />

@@ -139,7 +139,7 @@ export async function downloadRegion(
     let failed = 0;
     let processed = 0;
 
-    // Tiles in Batches verarbeiten
+    // Process tiles in batches
     for (let i = 0; i < tiles.length; i += CONCURRENT_DOWNLOADS) {
       if (cancelRef.cancelled) {
         await db.closeAsync();
@@ -156,7 +156,7 @@ export async function downloadRegion(
 
       const batch = tiles.slice(i, i + CONCURRENT_DOWNLOADS);
 
-      // Parallel downloaden
+      // Download in parallel
       const results = await Promise.all(
         batch.map(async ({ z, x, y }) => {
           const base64 = await downloadSingleTile(z, x, y);
@@ -164,7 +164,7 @@ export async function downloadRegion(
         }),
       );
 
-      // Sequenziell in DB schreiben (verhindert DB-Lock)
+      // Write sequentially to DB (prevents DB lock)
       for (const { z, x, y, base64 } of results) {
         if (cancelRef.cancelled) break;
 

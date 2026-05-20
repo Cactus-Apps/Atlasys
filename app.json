@@ -2,17 +2,11 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.5.4",
+    "version": "1.5.6",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "backgroundColor": "#DDDDDD",
-      "dark": {
-        "backgroundColor": "#2c2a2aff"
-      }
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cactus-apps.Atlasys",
@@ -25,7 +19,7 @@
         "backgroundColor": "#DDDDDD"
       },
       "package": "com.cactus_apps.Atlasys",
-      "versionCode": 10,
+      "versionCode": 14,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
@@ -66,19 +60,6 @@
           "android": {}
         }
       ],
-      [
-        "expo-splash-screen",
-        {
-          "image": "assets/images/icons/Vector-dark.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#DDDDDD",
-          "dark": {
-            "image": "assets/images/icons/Vector-light.png",
-            "ackgroundColor": "#333333"
-          }
-        }
-      ],
       "expo-secure-store",
       "expo-web-browser",
       "expo-asset",
@@ -102,6 +83,6 @@
     "updates": {
       "url": "https://u.expo.dev/753eb474-331e-49f0-a5a9-fa0d2431fe5e"
     },
-    "owner": "helloworld127"
+    "owner": "atlasys127"
   }
 }

@@ -15,11 +15,118 @@ import { useRouter } from "expo-router";
 
 const UpdateLog = () => {
   const theme = useAppTheme();
-  const isDark = theme.isDark;
   const router = useRouter();
   const styles = getStyles(theme);
 
   const logs = [
+    {
+      version: "1.5.4",
+      date: "2026-05-15",
+      text: "Improved i18n localization, updated legal pages, design polish, and new app icon assets.",
+      type: "feature",
+    },
+    {
+      version: "1.5.3",
+      date: "2026-05-12",
+      text: "Major code cleanup: removed test files and paywall, overhauled licenses screen, settings improvements, and restructured utility libraries.",
+      type: "improvement",
+    },
+    {
+      version: "1.5.2",
+      date: "2026-05-10",
+      text: "New POI sheet, update banner, Overpass API integration, analytics, update context, and enhanced onboarding flow.",
+      type: "feature",
+    },
+    {
+      version: "1.5.1",
+      date: "2026-05-06",
+      text: "Complete onboarding redesign, new legal pages (privacy & terms) and map logger.",
+      type: "feature",
+    },
+    {
+      version: "1.5.0",
+      date: "2026-04-26",
+      text: "OAuth provider support, Supabase auth refactor, improved account screen, and map screen enhancements.",
+      type: "feature",
+    },
+    {
+      version: "1.4.9",
+      date: "2026-04-12",
+      text: "New navigation sidebar, expo update check, redesigned notifications screen, and settings improvements.",
+      type: "feature",
+    },
+    {
+      version: "1.4.8",
+      date: "2026-04-10",
+      text: "Feature request screen, major settings overhaul, theme system update, and announcement modal improvements.",
+      type: "feature",
+    },
+    {
+      version: "1.4.7",
+      date: "2026-04-05",
+      text: "Authentication refactor, weather component updates, i18n improvements, and storage optimizations.",
+      type: "improvement",
+    },
+    {
+      version: "1.4.6",
+      date: "2026-04-04",
+      text: "Re-added iOS native support, component restructuring with sheets_modal system, new ErrorSheet and MapStyleSheet.",
+      type: "feature",
+    },
+    {
+      version: "1.4.5",
+      date: "2026-04-02",
+      text: "Major refactor: theme system overhaul, new announcement system, geocoding integration, and removed unused assets.",
+      type: "improvement",
+    },
+    {
+      version: "1.4.4",
+      date: "2026-03-07",
+      text: "Initial iOS native support, offline maps tab, download tile system, draggable FAB, and draw bounds overlay.",
+      type: "feature",
+    },
+    {
+      version: "1.4.3",
+      date: "2026-03-06",
+      text: "New route sheet component and major map screen refactor with improved navigation.",
+      type: "feature",
+    },
+    {
+      version: "1.4.2",
+      date: "2026-03-02",
+      text: "Small map screen fixes and app entry point improvements.",
+      type: "improvement",
+    },
+    {
+      version: "1.4.1",
+      date: "2026-03-02",
+      text: "Bug fixes and minor map screen adjustments.",
+      type: "improvement",
+    },
+    {
+      version: "1.4.0",
+      date: "2026-02-02",
+      text: "Loading overlay component, massive map and profile screen refactoring, and Appwrite auth cleanup.",
+      type: "feature",
+    },
+    {
+      version: "1.3.9",
+      date: "2026-01-29",
+      text: "Massive map screen overhaul, new paywall system, auth paywall gate, and weather component updates.",
+      type: "feature",
+    },
+    {
+      version: "1.3.8",
+      date: "2026-01-16",
+      text: "Onboarding screen, new TabBarStyle, SkeletonView, and Zustand storage integration.",
+      type: "feature",
+    },
+    {
+      version: "1.3.7",
+      date: "2026-01-09",
+      text: "Map and profile screen redesign, tabs restructuring, and city details utility.",
+      type: "improvement",
+    },
     {
       version: "1.3.6",
       date: "2025-02-09",

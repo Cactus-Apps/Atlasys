@@ -1,4 +1,3 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,12 +22,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
+import Icon from "react-native-vector-icons/AntDesign";
 
 export default function Info() {
   const router = useRouter();
   const { t } = useTranslation();
   const theme = useAppTheme();
-  const isDark = theme.isDark;
   const styles = getStyles(theme);
 
   const textColor = theme.textColor;
@@ -64,15 +63,21 @@ export default function Info() {
                 Linking.openURL("https://github.com/Cactus-Apps/Atlasys")
               }
             >
-              <Github size={20} color={textColor} />
+              <Icon name="github" size={20} color={textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Linking.openURL("https://atlasys.vercel.app/")}
+            >
+              <Globe size={20} color={textColor} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
               onPress={() =>
-                Linking.openURL("https://github.com/Cactus-Apps/Atlasys")
+                Linking.openURL("https://www.instagram.com/atlasys.app")
               }
             >
-              <Globe size={20} color={textColor} />
+              <Icon name="instagram" size={20} color={textColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -103,7 +108,9 @@ export default function Info() {
               >
                 <ShieldIcon size={20} color={"#00C4B4"} />
               </View>
-              <Text style={styles.menuLabel}>{t("Info_menu_privacy_policy")}</Text>
+              <Text style={styles.menuLabel}>
+                {t("Info_menu_privacy_policy")}
+              </Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
 
@@ -121,7 +128,9 @@ export default function Info() {
               >
                 <ScaleIcon size={20} color={"#3B82F6"} />
               </View>
-              <Text style={styles.menuLabel}>{t("Info_menu_terms_of_use")}</Text>
+              <Text style={styles.menuLabel}>
+                {t("Info_menu_terms_of_use")}
+              </Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
@@ -184,11 +193,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     borderColor,
     iconBg,
     isModern,
-    purple,
-    purpleLight,
-    success,
-    successLight,
-    chevronColor,
   } = theme;
 
   return StyleSheet.create({

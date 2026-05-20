@@ -1,4 +1,3 @@
-// Privacy Policy — Atlasys © Cactus Apps 2026
 import { useAppTheme } from "@/lib/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Shield } from "lucide-react-native";
@@ -68,6 +67,7 @@ export default function Privacy_Policy() {
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>{t("Privacy_intro_title")}</Text>
             <Text style={styles.introSub}>{t("Privacy_intro_sub")}</Text>
+            <Text style={styles.introSub}>{t("PP_0_heading")}</Text>
           </View>
         </View>
 

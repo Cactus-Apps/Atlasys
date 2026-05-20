@@ -2,17 +2,19 @@ import { FeedbackWidget } from "@sentry/react-native";
 import { router } from "expo-router";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 
 export default function FeatureRequest() {
   const theme = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <FeedbackWidget
-      submitButtonLabel="Send"
-      formTitle="Give Feedback"
+      submitButtonLabel={t("Feedback_submit")}
+      formTitle={t("Feedback_title")}
       isEmailRequired={true}
       shouldValidateEmail={true}
-      messagePlaceholder="Describe the requested feature"
+      messagePlaceholder={t("Feedback_placeholder")}
       onFormClose={() => router.push("/help_feedback")}
       onFormSubmitted={() => router.push("/help_feedback")}
       onSubmitError={(error: any) =>

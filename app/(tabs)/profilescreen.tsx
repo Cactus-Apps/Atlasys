@@ -1,4 +1,3 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import { Avatar } from "@kolking/react-native-avatar";
 import { useRouter } from "expo-router";
 import {
@@ -23,7 +22,7 @@ import {
 } from "react-native-gesture-handler";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
-import { UpdateBanner } from "@/components/UpdateBanner";
+import { UpdateBanner } from "@/components/overlays/UpdateBanner";
 
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -62,92 +61,92 @@ export function ProfileScreen() {
     }[];
   }[] = useMemo(
     () => [
-    {
-      group: t("Profile_group_Account_Settings"),
-      items: [
-        {
-          label: t("Profile_edit_profile"),
-          sub: t("Profile_edit_profile_sub"),
-          icon: UserRound,
-          color: theme.primary,
-          bg: theme.primaryLight,
-          route: "/account",
-        },
-        {
-          label: t("Profile_privacy_settings"),
-          sub: t("Profile_privacy_settings_sub"),
-          icon: SettingsIcon,
-          color: theme.purple,
-          bg: theme.purpleLight,
-          route: "/settings",
-        },
-        {
-          label: t("Profile_notifications"),
-          sub: t("Profile_notifications_sub"),
-          icon: Bell,
-          color: theme.success,
-          bg: theme.successLight,
-          route: "/notifications",
-        },
-      ],
-    },
-    {
-      group: t("Profile_group_Offline_Maps"),
-      items: [
-        {
-          label: t("Profile_offline_maps"),
-          sub: t("Profile_offline_maps_sub"),
-          icon: Download,
-          color: theme.info,
-          bg: theme.infoLight,
-          route: "/OfflineMapsTab",
-        },
-      ],
-    },
-    {
-      group: t("Profile_group_Tools"),
-      items: [
-        {
-          label: t("Profile_just_map"),
-          sub: t("Profile_just_map_sub"),
-          icon: MapIcon,
-          color: theme.success,
-          bg: theme.successLight,
-          route: "/just_map",
-        },
-      ],
-    },
-    {
-      group: t("Profile_group_App_Info"),
-      items: [
-        {
-          label: t("Help_and_Feedback"),
-          sub: t("Profile_help_sub"),
-          icon: MessageCircleQuestionMark,
-          color: theme.warningDark,
-          bg: theme.warningLight,
-          route: "/help_feedback",
-        },
-        {
-          label: t("Info"),
-          sub: t("Profile_info_sub"),
-          icon: Info,
-          color: theme.info,
-          bg: theme.infoLight,
-          route: "/info",
-        },
-        {
-          label: t("Admin_Panel"),
-          sub: t("Profile_admin_sub"),
+      {
+        group: t("Profile_group_Account_Settings"),
+        items: [
+          {
+            label: t("Profile_edit_profile"),
+            sub: t("Profile_edit_profile_sub"),
+            icon: UserRound,
+            color: theme.primary,
+            bg: theme.primaryLight,
+            route: "/account",
+          },
+          {
+            label: t("Profile_privacy_settings"),
+            sub: t("Profile_privacy_settings_sub"),
+            icon: SettingsIcon,
+            color: theme.purple,
+            bg: theme.purpleLight,
+            route: "/settings",
+          },
+          {
+            label: t("Profile_notifications"),
+            sub: t("Profile_notifications_sub"),
+            icon: Bell,
+            color: theme.success,
+            bg: theme.successLight,
+            route: "/notifications",
+          },
+        ],
+      },
+      {
+        group: t("Profile_group_Offline_Maps"),
+        items: [
+          {
+            label: t("Profile_offline_maps"),
+            sub: t("Profile_offline_maps_sub"),
+            icon: Download,
+            color: theme.info,
+            bg: theme.infoLight,
+            route: "/OfflineMapsTab",
+          },
+        ],
+      },
+      {
+        group: t("Profile_group_Tools"),
+        items: [
+          {
+            label: t("Profile_just_map"),
+            sub: t("Profile_just_map_sub"),
+            icon: MapIcon,
+            color: theme.success,
+            bg: theme.successLight,
+            route: "/just_map",
+          },
+        ],
+      },
+      {
+        group: t("Profile_group_App_Info"),
+        items: [
+          {
+            label: t("Help_and_Feedback"),
+            sub: t("Profile_help_sub"),
+            icon: MessageCircleQuestionMark,
+            color: theme.warningDark,
+            bg: theme.warningLight,
+            route: "/help_feedback",
+          },
+          {
+            label: t("Info"),
+            sub: t("Profile_info_sub"),
+            icon: Info,
+            color: theme.info,
+            bg: theme.infoLight,
+            route: "/info",
+          },
+          {
+            label: t("Admin_Panel"),
+            sub: t("Profile_admin_sub"),
 
-          icon: ShieldUser,
-          color: theme.danger,
-          bg: theme.dangerLight,
-          route: "/AdminPanel",
-        },
-      ],
-    },
-  ],
+            icon: ShieldUser,
+            color: theme.danger,
+            bg: theme.dangerLight,
+            route: "/AdminPanel",
+          },
+        ],
+      },
+    ],
     [t, theme],
   );
 
@@ -174,7 +173,9 @@ export function ProfileScreen() {
               <Text style={styles.profileEmail}>{email}</Text>
               <TouchableOpacity style={styles.badge} activeOpacity={0.8}>
                 <UserIcon size={12} color={theme.white} fill={theme.white} />
-                <Text style={styles.badgeText}>{t("Profile_badge_normal_user")}</Text>
+                <Text style={styles.badgeText}>
+                  {t("Profile_badge_normal_user")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -233,7 +234,10 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity activeOpacity={0.8}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.navigate("/test")}
+          >
             <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>
         </View>

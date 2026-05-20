@@ -1,4 +1,3 @@
-// components/sheets_modal/PoiSheet.tsx — Atlasys © Cactus Apps 2026
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -56,8 +55,6 @@ interface Props {
   onRouteStart: (start: RoutePoint | null, end: RoutePoint) => void;
 }
 
-// ─── Info-Zeile ───────────────────────────────────────────────────────────────
-
 function InfoRow({
   icon,
   label,
@@ -99,8 +96,6 @@ function InfoRow({
     </TouchableOpacity>
   );
 }
-
-// ─── Main component ─────────────────────────────────────────────────────────
 
 export default function PoiSheet({
   sheetRef,
@@ -200,7 +195,6 @@ export default function PoiSheet({
               )}
             </View>
 
-            {/* Beschreibung */}
             {details?.description && (
               <Text style={[s.description, { color: theme.subTextColor }]}>
                 {details.description}
@@ -216,7 +210,7 @@ export default function PoiSheet({
           </TouchableOpacity>
         </View>
 
-        {/* ── Action Buttons ── */}
+        {/*Action Buttons*/}
         <View style={s.actions}>
           <TouchableOpacity
             onPress={() => {
@@ -278,7 +272,6 @@ export default function PoiSheet({
 
         <View style={[s.divider, { backgroundColor: theme.borderColor }]} />
 
-        {/* ── Details laden ── */}
         {loading && (
           <View style={s.loadingRow}>
             <ActivityIndicator color={theme.primary} size="small" />
@@ -288,7 +281,6 @@ export default function PoiSheet({
           </View>
         )}
 
-        {/* ── Info-Zeilen ── */}
         {!loading && details && (
           <View style={s.infoSection}>
             {/* Full opening hours string */}
@@ -301,7 +293,6 @@ export default function PoiSheet({
               />
             )}
 
-            {/* Adresse */}
             {address ? (
               <InfoRow
                 icon={<MapPin size={16} color={theme.primary} />}
@@ -315,7 +306,6 @@ export default function PoiSheet({
               />
             ) : null}
 
-            {/* Telefon */}
             {details.phone && (
               <InfoRow
                 icon={<Phone size={16} color={theme.success} />}
@@ -326,7 +316,6 @@ export default function PoiSheet({
               />
             )}
 
-            {/* Website */}
             {details.website && (
               <InfoRow
                 icon={<Globe size={16} color={theme.info} />}
@@ -354,7 +343,6 @@ export default function PoiSheet({
               />
             )}
 
-            {/* Cuisine (restaurants) */}
             {details.cuisine && (
               <InfoRow
                 icon={<ChefHat size={16} color={theme.warning} />}
@@ -363,7 +351,6 @@ export default function PoiSheet({
               />
             )}
 
-            {/* Sterne (Hotels) */}
             {details.stars && (
               <InfoRow
                 icon={<Star size={16} color={theme.warning} />}
@@ -375,7 +362,6 @@ export default function PoiSheet({
               />
             )}
 
-            {/* Rollstuhlzugang */}
             {details.wheelchair && (
               <InfoRow
                 icon={<Accessibility size={16} color={theme.info} />}
@@ -397,14 +383,12 @@ export default function PoiSheet({
               />
             )}
 
-            {/* Koordinaten */}
             <InfoRow
               icon={<MapPin size={16} color={theme.subTextColor} />}
               label={t("Poi_label_coordinates")}
               value={`${selectedPoi.lat.toFixed(5)}, ${selectedPoi.lon.toFixed(5)}`}
             />
 
-            {/* OSM Link */}
             <InfoRow
               icon={<Info size={16} color={theme.subTextColor} />}
               label={t("Poi_label_source")}
@@ -430,8 +414,6 @@ export default function PoiSheet({
     </BottomSheet>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
   header: {

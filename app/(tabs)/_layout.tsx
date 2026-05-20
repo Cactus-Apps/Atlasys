@@ -1,4 +1,3 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import { CustomTabBar1 } from "@/components/TabBarStyle";
 import { Tabs } from "expo-router";
 import { useTabStore } from "@/lib/storage/zustand";
@@ -7,8 +6,10 @@ import React, { useEffect, useState } from "react";
 import { fetchUnseen, Announcement } from "@/utils/announcements";
 import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const TabBar = useTabStore((s) => s.NewTabBar);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -32,9 +33,12 @@ export default function TabsLayout() {
             />
           )}
         >
-          <Tabs.Screen name="mapscreen" options={{ title: "map" }} />
-          <Tabs.Screen name="saved" options={{ title: "Saved" }} />
-          <Tabs.Screen name="profilescreen" options={{ title: "profile" }} />
+          <Tabs.Screen name="mapscreen" options={{ title: t("Tab_map") }} />
+          <Tabs.Screen name="saved" options={{ title: t("Tab_saved") }} />
+          <Tabs.Screen
+            name="profilescreen"
+            options={{ title: t("Tab_profile") }}
+          />
         </Tabs>
       ) : (
         <Tabs
@@ -71,9 +75,12 @@ export default function TabsLayout() {
             },
           })}
         >
-          <Tabs.Screen name="mapscreen" options={{ title: "Map" }} />
-          <Tabs.Screen name="saved" options={{ title: "Saved" }} />
-          <Tabs.Screen name="profilescreen" options={{ title: "Profile" }} />
+          <Tabs.Screen name="mapscreen" options={{ title: t("Tab_map") }} />
+          <Tabs.Screen name="saved" options={{ title: t("Tab_saved") }} />
+          <Tabs.Screen
+            name="profilescreen"
+            options={{ title: t("Tab_profile") }}
+          />
         </Tabs>
       )}
       <AnnouncementModal

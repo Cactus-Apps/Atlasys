@@ -4,7 +4,6 @@ import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Download, X, AlertTriangle } from "lucide-react-native";
 import { tilesForBounds, estimateSizeMB } from "@/lib/storage/mbtiles";
 import { downloadRegion } from "@/lib/storage/downloadTiles";
-import { CircularWavyProgressIndicator, Host } from "@expo/ui/jetpack-compose";
 import { useAppTheme } from "@/lib/theme";
 import { reverseGeocode } from "@/lib/geocoding/geocoding";
 import { useTranslation } from "react-i18next";
@@ -376,7 +375,6 @@ export default function DownloadSheet({
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
-    bg,
     cardBg,
     cardBgSecondary,
     textColor,
@@ -385,7 +383,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     isModern,
     iconBg,
     warning,
-    warningLight,
     danger,
     success,
     successLight,

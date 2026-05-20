@@ -5,8 +5,7 @@ import { useAuthStore } from "@/lib/storage/zustand";
 import { runExpoUpdateCheck } from "@/lib/update/expoUpdateCheck";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import * as SplashScreen from "expo-splash-screen";
-import AnimatedSplash from "@/components/SplashScreen";
+import AnimatedSplash from "@/components/overlays/SplashScreen";
 import * as Sentry from "@sentry/react-native";
 import type { ErrorEvent, EventHint } from "@sentry/core";
 import * as ImagePicker from "expo-image-picker";
@@ -30,6 +29,20 @@ function sentryBeforeSend(
   } catch (err) {
     Sentry.captureException(err);
   }
+  const message = event.exception?.values?.[0]?.value ?? "";
+  const ignoredNetworkErrors = [
+    "tiles.openfreemap.org",
+    "overpass-api.de",
+    "nominatim.openstreetmap.org",
+    "routing.openstreetmap.de",
+    "Failed to check for update",
+    "doesn't exist or isn't a directory",
+  ];
+
+  if (ignoredNetworkErrors.some((e) => message.includes(e))) {
+    return null;
+  }
+
   return event;
 }
 
@@ -83,8 +96,6 @@ Sentry.init({
 
 setupMapLibreLogger("error");
 
-SplashScreen.preventAutoHideAsync();
-
 function TelemetrySync() {
   const autoUpdateCheck = useAuthStore(
     (s) => s.settings.autoUpdateCheck !== false,
@@ -122,14 +133,6 @@ function AppBootstrap() {
   const systemScheme = useColorScheme();
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const currentTheme = useAuthStore((s) => s.settings.theme);
-
-  useEffect(() => {
-    if (splashHiddenRef.current) return;
-    if (!isLoadingUser && animationDone) {
-      splashHiddenRef.current = true;
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [isLoadingUser, animationDone]);
 
   useEffect(() => {
     if (animationDone) return;
@@ -203,7 +206,7 @@ function AppBootstrap() {
   const isReady = storeReady && !isLoadingUser && i18nGate;
 
   if (!isReady) {
-    return <View style={{ flex: 1, backgroundColor: "#0A1628" }} />;
+    return <AnimatedSplash onFinish={() => setAnimationDone(true)} />;
   }
 
   return (
@@ -217,6 +220,12 @@ function AppBootstrap() {
 }
 
 export default Sentry.wrap(function RooLayout() {
+  const themeZustand = useAuthStore((s) => s.settings.theme);
+  const isDarkTheme = ["chill", "dark", "midnight", "ocean"].includes(
+    themeZustand,
+  );
+  const theme = isDarkTheme ? "light" : "dark";
+
   return (
     <PostHogProvider
       client={posthog}
@@ -229,7 +238,7 @@ export default Sentry.wrap(function RooLayout() {
       <UpdateProvider>
         <AuthProvider>
           <TelemetrySync />
-          <StatusBar style="dark" />
+          <StatusBar style={theme} />
           <AppBootstrap />
         </AuthProvider>
       </UpdateProvider>

@@ -1,4 +1,3 @@
-// Terms of Service — Atlasys © Cactus Apps 2026
 import { useAppTheme } from "@/lib/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Scale } from "lucide-react-native";
@@ -14,7 +13,7 @@ import {
   StatusBar,
 } from "react-native";
 
-const TERMS_SECTION_COUNT = 19;
+const TERMS_SECTION_COUNT = 18;
 
 export default function Terms_of_Use() {
   const { t } = useTranslation();
@@ -88,14 +87,7 @@ export default function Terms_of_Use() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const {
-    bg,
-    cardBg,
-    textColor,
-    subTextColor,
-    borderColor,
-    isModern,
-  } = theme;
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     root: {

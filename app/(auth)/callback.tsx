@@ -3,8 +3,10 @@ import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/auth/supabase";
 import { GoogleLogo } from "@/components/auth/OAuthProviderButtons";
+import { useTranslation } from "react-i18next";
 
 export default function AuthCallback() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function AuthCallback() {
     >
       <GoogleLogo size={40} />
       <Text style={{ fontSize: 26, color: "#fff", gap: 16 }}>
-        Signing in with Google
+        {t("Auth_callback_signing_in")}
       </Text>
     </View>
   );

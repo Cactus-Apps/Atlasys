@@ -7,8 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Text,
 } from "react-native";
-import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import ConfirmHcaptcha from "@hcaptcha/react-native-hcaptcha";
@@ -26,8 +26,6 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons";
-
-const sitekey = process.env.EXPO_PUBLIC_HCAPTCHA_SITEKEY!;
 
 export default function AuthScreen() {
   const { t } = useTranslation();
@@ -148,7 +146,7 @@ export default function AuthScreen() {
           <Animated.View entering={FadeInDown.delay(200)} style={styles.header}>
             <View style={styles.logoOuter}>
               <Image
-                source={require("../assets/images/logo2.png")}
+                source={require("../assets/images/icons/adaptive-icon.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -157,9 +155,7 @@ export default function AuthScreen() {
               {isSignUp ? t("Sign_up_to_GPS") : t("Sign_in_to_GPS")}
             </Text>
             <Text style={[styles.subtitle, { color: theme.subTextColor }]}>
-              {isSignUp
-                ? t("Auth_subtitle_signup")
-                : t("Auth_subtitle_signin")}
+              {isSignUp ? t("Auth_subtitle_signup") : t("Auth_subtitle_signin")}
             </Text>
           </Animated.View>
 
@@ -246,7 +242,11 @@ export default function AuthScreen() {
               disabled={loading || oauthLoading}
             >
               <Text style={styles.mainBtnText}>
-                {loading ? t("Auth_loading_ellipsis") : isSignUp ? t("Sign_up") : t("Login")}
+                {loading
+                  ? t("Auth_loading_ellipsis")
+                  : isSignUp
+                    ? t("Sign_up")
+                    : t("Login")}
               </Text>
               {!loading && (
                 <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 120,
+    height: 120,
   },
   title: {
     fontSize: 28,

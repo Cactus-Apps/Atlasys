@@ -1,4 +1,4 @@
-// components/DrawBoundsOverlay.tsx
+// not used yet
 import React, { useRef, useState } from "react";
 import {
   View,

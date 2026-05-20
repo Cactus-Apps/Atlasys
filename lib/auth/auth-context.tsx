@@ -77,12 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const syncStateFromMetadata = async (targetUser: User) => {
     try {
-      const {
-        setOnboardingCompleted,
-        updateSettings,
-        setUserId,
-        settings,
-      } = useAuthStore.getState();
+      const { setOnboardingCompleted, updateSettings, setUserId, settings } =
+        useAuthStore.getState();
       const metadata = targetUser.user_metadata || {};
 
       setUserId(targetUser.id);
@@ -94,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateSettings({
           ...metadata.settings,
           // Never overwrite device-specific settings from server metadata
-          locationSharing: settings.locationSharing,
           analytics: settings.analytics,
         });
       }

@@ -9,8 +9,10 @@ import Animated, {
   withSequence,
 } from "react-native-reanimated";
 import { useAppTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 
 export function LoadingOverlay() {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const scale = useSharedValue(1);
   const styles = getStyles(theme);
@@ -35,7 +37,7 @@ export function LoadingOverlay() {
       <Animated.View style={[styles.loadingLogo, animatedStyle]}>
         <BookOpen color="#007AFF" size={48} />
       </Animated.View>
-      <Text style={styles.statusText}>Wird gesucht...</Text>
+      <Text style={styles.statusText}>{t("Loading_searching")}</Text>
     </View>
   );
 }

@@ -129,9 +129,7 @@ export default function NotificationsScreen() {
               <Text style={styles.introTitle}>
                 {t("Notifications_beta_title")}
               </Text>
-              <Text style={styles.introSub}>
-                {t("Notifications_beta_sub")}
-              </Text>
+              <Text style={styles.introSub}>{t("Notifications_beta_sub")}</Text>
             </View>
           </View>
         </View>
@@ -159,9 +157,7 @@ export default function NotificationsScreen() {
                         />
                       </View>
                       <View style={styles.menuTextContainer}>
-                        <Text style={styles.menuLabel}>
-                          {t(row.labelKey)}
-                        </Text>
+                        <Text style={styles.menuLabel}>{t(row.labelKey)}</Text>
                         <Text style={styles.menuValue}>
                           {t(row.descriptionKey)}
                         </Text>
@@ -213,7 +209,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     subTextColor,
     borderColor,
     isModern,
-    danger,
     dangerDark,
     dangerLight,
   } = theme;

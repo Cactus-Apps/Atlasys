@@ -199,7 +199,6 @@ export default function ErrorSheet({
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
-    bg,
     cardBg,
     textColor,
     subTextColor,
@@ -208,8 +207,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     iconBg,
     danger,
     dangerLight,
-    dangerDark,
-    success,
     successLight,
     white,
   } = theme;

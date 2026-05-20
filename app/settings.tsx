@@ -1,14 +1,11 @@
-// Version 1.3.6 - © Cactus Apps 2026
 import { useRouter } from "expo-router";
 import {
-  BarChart2,
   Bug,
   Check,
   ChevronLeft,
   ChevronRight,
   DockIcon,
   LanguagesIcon,
-  MapPin,
   RefreshCw,
 } from "lucide-react-native";
 import * as React from "react";
@@ -16,6 +13,7 @@ import * as Application from "expo-application";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -27,12 +25,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-
 import { useAuthStore, useTabStore } from "@/lib/storage/zustand";
 import { AppTheme } from "@/lib/theme";
-import { Lock } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
-import { AnalyticsChoice } from "@/lib/auth/analytics";
+import { AnalyticsChoice, applyAnalyticsChoice } from "@/lib/auth/analytics";
 import { posthog } from "@/lib/config/posthog";
 
 export default function Settings() {
@@ -45,6 +41,7 @@ export default function Settings() {
   const appSettings = useAuthStore((s) => s.settings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
   const NewTabBar = useTabStore((s) => s.NewTabBar);
+  const userId = useAuthStore((s) => s.userId);
   const setTabBar = useTabStore((s) => s.setNewTabBar);
   const theme = useAppTheme();
   const styles = getStyles(theme);
@@ -54,16 +51,7 @@ export default function Settings() {
   const languages = [
     { code: "en", label: "English" },
     { code: "de", label: "Deutsch" },
-    { code: "ar", label: "العربية" },
     { code: "es", label: "Spanish" },
-    { code: "fr", label: "French" },
-    { code: "hi", label: "हिन्दी" },
-    { code: "it", label: "Italiano" },
-    { code: "ja", label: "日本語" },
-    { code: "ko", label: "한국어" },
-    { code: "pt", label: "Português" },
-    { code: "ru", label: "Русский" },
-    { code: "zh", label: "中文" },
   ];
 
   const handleLanguagePress = (langCode: string) => {
@@ -80,7 +68,7 @@ export default function Settings() {
   const autoUpdateOn = appSettings.autoUpdateCheck !== false;
 
   const togglePrivacy = (
-    key: "locationSharing" | "analytics" | "crashReports" | "autoUpdateCheck",
+    key: "crashReports" | "autoUpdateCheck",
     value: boolean,
   ) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -93,6 +81,12 @@ export default function Settings() {
       return;
     }
     updateSettings({ [key]: value });
+  };
+
+  const setAnalytics = (choice: AnalyticsChoice) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateSettings({ analytics: choice });
+    applyAnalyticsChoice(choice, userId ?? undefined);
   };
 
   const THEME_OPTIONS: {
@@ -132,7 +126,7 @@ export default function Settings() {
       previewSub: "#CCCCCC",
     },
     {
-      value: "claude",
+      value: "chill",
       labelKey: "Theme_label_chill",
       previewBg: "#1C1C1C",
       previewCard: "#2A2A2A",
@@ -434,40 +428,17 @@ export default function Settings() {
             {t("Settings_section_Location_privacy")}
           </Text>
           <View style={styles.card}>
-            <View style={styles.toggleRow}>
-              <View style={styles.menuIconContainer}>
-                <MapPin
-                  size={22}
-                  color={
-                    appSettings.locationSharing
-                      ? theme.primary
-                      : theme.subTextColor
-                  }
-                />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>
-                  {t("Settings_location_label")}
-                </Text>
-                <Text style={styles.menuValue}>
-                  {t("Settings_location_sub")}
-                </Text>
-              </View>
-              <Switch
-                value={appSettings.locationSharing}
-                onValueChange={(v) => togglePrivacy("locationSharing", v)}
-                trackColor={{
-                  false: theme.cardBgSecondary,
-                  true: theme.primaryLight,
-                }}
-                thumbColor={
-                  appSettings.locationSharing ? theme.primary : theme.white
-                }
-                ios_backgroundColor={
-                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
-                }
-              />
-            </View>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => Linking.openSettings()}
+            >
+              <Text style={styles.menuLabel}>Location-Settings</Text>
+              <Text style={styles.menuLabel}>Edit in system-settings</Text>
+              <ChevronRight size={18} color={theme.chevronColor} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.card}>
             <View style={styles.separator} />
             <View style={styles.toggleRow}>
               <View style={styles.menuIconContainer}>

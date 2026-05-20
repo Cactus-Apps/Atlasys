@@ -6,6 +6,7 @@ import {
   readAsStringAsync,
   deleteAsync,
 } from "expo-file-system/legacy";
+import * as Sentry from "@sentry/react-native";
 
 export const MBTILES_DIR = documentDirectory + "mbtiles/";
 
@@ -31,14 +32,23 @@ export async function ensureDir() {
 // Load all stored MBTiles metadata from disk
 export async function listMBTiles(): Promise<MBTilesInfo[]> {
   await ensureDir();
-  const files = await readDirectoryAsync(MBTILES_DIR);
-  const results: MBTilesInfo[] = [];
-  for (const file of files) {
-    if (!file.endsWith(".json")) continue;
-    const raw = await readAsStringAsync(MBTILES_DIR + file);
-    results.push(JSON.parse(raw));
+
+  try {
+    const files = await readDirectoryAsync(MBTILES_DIR);
+    const results: MBTilesInfo[] = [];
+    for (const file of files) {
+      if (!file.endsWith(".json")) continue;
+      try {
+        const raw = await readAsStringAsync(MBTILES_DIR + file);
+        results.push(JSON.parse(raw));
+      } catch {}
+    }
+    return results.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error: any) {
+    if (error?.message?.includes("doesn't exist")) return [];
+    Sentry.captureException(error);
+    return [];
   }
-  return results.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 // Delete MBTiles files for an offline region id
