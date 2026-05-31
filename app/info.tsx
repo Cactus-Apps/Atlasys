@@ -52,7 +52,7 @@ export default function Info() {
         <View style={styles.brandingSection}>
           <View style={styles.logoWrapper}>
             <Image
-              source={require("../assets/images/cactus_apps-logo.png")}
+              source={require("../assets/images/icons/cactus_apps-logo.png")}
               style={styles.logo}
             />
           </View>
