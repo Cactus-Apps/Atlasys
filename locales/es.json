@@ -346,7 +346,7 @@
   "Onboarding_analytics_hint_anonymous": "Solo uso anónimo, no vinculado a tu cuenta.",
   "Onboarding_analytics_hint_full": "El uso está vinculado a tu cuenta.",
   "Onboarding_consent_error": "Acepta ambos documentos para continuar.",
-  "Onboarding_version_note": "Términos y privacidad versión {{version}} · Atlasys v1.5",
+  "Onboarding_version_note": "Términos y privacidad versión {{version}} · Atlasys {{version2}}",
   "Onboarding_accept_start": "Aceptar y empezar",
   "Onboarding_back": "← Atrás",
   "Onboarding_skip": "Saltar",

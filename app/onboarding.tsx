@@ -7,7 +7,6 @@ import {
   Dimensions,
   Platform,
   Image,
-  ScrollView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -33,12 +32,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
+import * as Application from "expo-application";
 import { posthog } from "@/lib/config/posthog";
 import { applyAnalyticsChoice } from "@/lib/auth/analytics";
 import { useTranslation } from "react-i18next";
 
 const CONSENT_VERSION = "1.0";
 const CONSENT_KEY = "atlasys_consent_v" + CONSENT_VERSION;
+const APP_VERSION = Application.nativeApplicationVersion ?? "dev";
 
 async function saveConsentLocally(): Promise<void> {
   await AsyncStorage.setItem(
@@ -567,7 +568,10 @@ export default function OnboardingScreen() {
             )}
 
             <Text style={s.versionNote}>
-              {t("Onboarding_version_note", { version: CONSENT_VERSION })}
+              {t("Onboarding_version_note", {
+                version: CONSENT_VERSION,
+                version2: APP_VERSION,
+              })}
             </Text>
 
             <TouchableOpacity
