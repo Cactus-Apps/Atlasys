@@ -20,6 +20,7 @@ import {
   View,
   ScrollView,
 } from "react-native";
+import * as Application from "expo-application";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
 import Icon from "react-native-vector-icons/AntDesign";
@@ -29,6 +30,8 @@ export default function Info() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const styles = getStyles(theme);
+
+  const version = Application.nativeApplicationVersion ?? "dev";
 
   const textColor = theme.textColor;
 
@@ -176,7 +179,7 @@ export default function Info() {
         </View>
 
         <Text style={styles.versionText}>
-          {t("Info_version_footer", { version: "1.4.5", year: 2026 })}
+          {t("Info_version_footer", { version, year: 2026 })}
         </Text>
       </ScrollView>
     </SafeAreaView>

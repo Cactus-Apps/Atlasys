@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/images/image-1.png" width="100" height="100" style="border-radius: 22px" />
+<img src="assets/images/image-1.png" width="100" height="100" style="border-radius: 22px" />
 
 # Atlasys
 
@@ -29,11 +29,9 @@ Map data comes from [OpenStreetMap](https://openstreetmap.org) under the ODbL li
 
 ## Screenshots
 
-<!-- Add your screenshots here -->
-
-| Map                                                        | 3D View                                                       | Routing                                                          | Globe                                                            |
-| ---------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| <img src="./assets/images/atlasys-demo.jpg" width="180" /> | <img src="./assets/images/atlasys-demo-3d.jpg" width="180" /> | <img src="./assets/images/atlasys-demo-route.jpg" width="180" /> | <img src="./assets/images/atlasys-demo-globe.jpg" width="180" /> |
+| Map                                                      | 3D View                                                     | Routing                                                        | Globe                                                          |
+| -------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
+| <img src="assets/images/atlasys-demo.jpg" width="180" /> | <img src="assets/images/atlasys-demo-3d.jpg" width="180" /> | <img src="assets/images/atlasys-demo-route.jpg" width="180" /> | <img src="assets/images/atlasys-demo-globe.jpg" width="180" /> |
 
 ---
 
@@ -133,13 +131,13 @@ Atlasys collects as little data as possible. Your GPS location stays on your dev
 
 ---
 
-### License
+## License
 
 This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
 
 Everyone is free to use, modify, and distribute the code — but any derivative work must also be released under GPLv3.
 
-## See [LICENSE.md](LICENSE.md) for the full license text.
+See [LICENSE.md](LICENSE.md) for the full license text.
 
 <div align="center">
   <sub>Made with ❤️ by <a href="https://github.com/Cactus-Apps">Cactus Apps</a></sub>

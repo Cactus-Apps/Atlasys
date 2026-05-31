@@ -1593,17 +1593,15 @@ export default function MapScreen() {
                     <X size={18} color={theme.subTextColor} />
                   </TouchableOpacity>
                 )}
-                {loadingSearch && <ActivityIndicator size="small" />}
-
+                {loadingSearch && (
+                  <ActivityIndicator size="small" color={theme.primary} />
+                )}
                 <View style={styles.avatarView}>
-                  <Avatar
-                    size={34}
-                    name={email ?? undefined}
-                    email={email ?? undefined}
-                    colorize={true}
-                    radius={100}
-                    badgeColor="#146275ff"
-                    defaultSource={require("@/assets/images/icons/adaptive-icon.png")}
+                  <Image
+                    source={require("@/assets/images/icons/Vector-light.png")}
+                    style={{ height: 20, width: 20, alignSelf: "flex-start" }}
+                    contentFit="scale-down"
+                    transition={20}
                   />
                 </View>
               </View>
@@ -2232,10 +2230,25 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 10,
       marginLeft: 10,
     },
+    searchWrapper: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 50 : 45,
+      left: 12,
+      right: 12,
+      zIndex: 50,
+    },
+    input: {
+      flex: 1,
+      height: 44,
+      marginHorizontal: 10,
+      fontSize: 16,
+      color: textColor,
+      alignSelf: "center",
+    },
     searchContainer: {
       borderRadius: 12,
       paddingHorizontal: 12,
-      paddingBottom: 8,
+      paddingVertical: 6,
       justifyContent: "center",
       flexDirection: "row",
       alignItems: "center",
@@ -2380,13 +2393,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignSelf: "center",
       marginLeft: 10,
     },
-    searchWrapper: {
-      position: "absolute",
-      top: Platform.OS === "ios" ? 50 : 45,
-      left: 12,
-      right: 12,
-      zIndex: 50,
-    },
     suggestionBox: {
       marginTop: 0,
       maxHeight: 220,
@@ -2409,15 +2415,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderBottomColor: borderColor,
       alignItems: "center",
       flexDirection: "row",
-    },
-    input: {
-      flex: 1,
-      height: 44,
-      paddingHorizontal: 12,
-      marginRight: 13,
-      marginHorizontal: 10,
-      fontSize: 16,
-      color: textColor,
     },
     suggTitle: {
       fontSize: 16,

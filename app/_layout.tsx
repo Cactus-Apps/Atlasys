@@ -37,6 +37,9 @@ function sentryBeforeSend(
     "routing.openstreetmap.de",
     "Failed to check for update",
     "doesn't exist or isn't a directory",
+    "Location request failed due to unsatisfied device settings",
+    "Network request failed",
+    "expo-updates: Network request failed",
   ];
 
   if (ignoredNetworkErrors.some((e) => message.includes(e))) {

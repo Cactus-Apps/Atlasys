@@ -135,15 +135,6 @@ export function ProfileScreen() {
             bg: theme.infoLight,
             route: "/info",
           },
-          {
-            label: t("Admin_Panel"),
-            sub: t("Profile_admin_sub"),
-
-            icon: ShieldUser,
-            color: theme.danger,
-            bg: theme.dangerLight,
-            route: "/AdminPanel",
-          },
         ],
       },
     ],
@@ -236,7 +227,7 @@ export function ProfileScreen() {
         <View style={styles.footer}>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => router.navigate("/test")}
+            onPress={() => router.navigate("/settings")}
           >
             <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>
