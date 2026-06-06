@@ -391,40 +391,43 @@ export default function AccountScreen() {
       Alert.alert(t("Limit_reached"), t("only_one_deletion"));
       return;
     }
-    const array = new Uint8Array(6);
-    crypto.getRandomValues(array);
-    const verification_code = Array.from(array, (byte) =>
-      byte.toString(36).toUpperCase(),
-    )
-      .join("")
-      .substring(0, 8);
+    const verification_code = Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase();
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const { data, error } = await supabase
-      .from("delete_requests")
-      .insert([
-        {
-          user_id: userId,
-          email,
-          verification_code,
-          status: "pending",
-          push_token: "",
-        },
-      ])
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from("delete_requests")
+        .insert([
+          {
+            user_id: userId,
+            email,
+            verification_code,
+            status: "pending",
+            push_token: "",
+          },
+        ])
+        .select()
+        .single();
 
-    if (error) {
-      Sentry.captureException(error);
+      if (error) {
+        Sentry.captureException(error);
+        Alert.alert(t("Error"), t("Request_could_not_be_sent"));
+      } else {
+        posthog.capture("user_delete-account");
+        Alert.alert(t("Success"), t("deletion_request_created"));
+        setRequest(data);
+        updateProgress("pending");
+      }
+    } catch (err) {
+      Sentry.captureException(err);
       Alert.alert(t("Error"), t("Request_could_not_be_sent"));
-    } else {
-      posthog.capture("user_delete-account");
-      Alert.alert(t("Success"), t("deletion_request_created"));
-      setRequest(data);
-      updateProgress("pending");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
