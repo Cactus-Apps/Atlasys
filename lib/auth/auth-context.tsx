@@ -10,6 +10,7 @@ import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 import { posthog } from "../config/posthog";
 import { applyAnalyticsChoice } from "./analytics";
+import { generateRandomAvatarConfig } from "@/lib/avatar/avatar-utils";
 import i18n from "@/app/i18n";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -50,7 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (sessionUser) {
           await syncStateFromMetadata(sessionUser);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (
+          err?.message?.includes("Invalid Refresh Token") ||
+          err?.code === "refresh_token_not_found"
+        ) {
+          await supabase.auth.signOut();
+        }
         Sentry.captureException(err);
       } finally {
         clearTimeout(timeout);
@@ -65,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { clearStore } = useAuthStore.getState();
         if (currentUser) {
           await syncStateFromMetadata(currentUser);
+          useAuthStore.getState().seedDefaultPlace();
         } else {
           clearStore({ preserveOnboarding: true });
         }
@@ -98,7 +106,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         useAuthStore.setState({ savedPlaces: metadata.saved_places });
       }
 
-      // Apply analytics mode after settings sync so the latest value is used
+      if (!useAuthStore.getState().avatarConfig) {
+        const avatarConfig = generateRandomAvatarConfig();
+        useAuthStore.setState({ avatarConfig });
+      } else {
+        const current = useAuthStore.getState().avatarConfig;
+        if (current && (!current.accessories || !current.hats)) {
+          useAuthStore.setState({
+            avatarConfig: { ...current, accessories: "none", hats: "none" },
+          });
+        }
+      }
+
       const analyticsChoice =
         useAuthStore.getState().settings.analytics ?? "none";
       applyAnalyticsChoice(analyticsChoice, targetUser.id);

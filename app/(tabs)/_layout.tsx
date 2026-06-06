@@ -1,91 +1,112 @@
-import { CustomTabBar1 } from "@/components/TabBarStyle";
+import { TabBars } from "@/components/tab-bars";
+import { TabBarNative } from "@/components/tab-bars/TabBarNative";
 import { Tabs } from "expo-router";
-import { useTabStore } from "@/lib/storage/zustand";
-import { Bookmark, HelpCircle, MapIcon, User } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { fetchUnseen, Announcement } from "@/utils/announcements";
+import { useAuthStore } from "@/lib/storage/zustand";
+import React, { useEffect, useRef, useState } from "react";
+import { fetchUnseen, Announcement } from "@/lib/hooks/announcements";
 import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
+import DeleteRequestModal from "@/components/sheets_modal/DeleteRequestModal";
+import { supabase } from "@/lib/auth/supabase";
+import { useAuth } from "@/lib/auth/auth-context";
+import {
+  checkDeleteStatus,
+  clearAllUserData,
+  revokeGoogleToken,
+  DeleteRequest,
+} from "@/lib/hooks/deleteAccount";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 
 export default function TabsLayout() {
   const { t } = useTranslation();
   const theme = useAppTheme();
-  const TabBar = useTabStore((s) => s.NewTabBar);
+  const tabTheme = useAuthStore((s) => s.settings.tabTheme) ?? "modern";
+  const { signOut, user } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [deleteReq, setDeleteReq] = useState<DeleteRequest | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const deletingRef = useRef(false);
 
   useEffect(() => {
     fetchUnseen().then(setAnnouncements);
   }, []);
 
-  const themeKey = `${theme.bg}|${theme.accentColor}|${theme.subTextColor}|${theme.borderColor}|${theme.theme}`;
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const check = async () => {
+      const req = await checkDeleteStatus(user.id);
+      if (req) {
+        setDeleteReq(req);
+        setShowDeleteModal(true);
+      }
+    };
+
+    check();
+    const interval = setInterval(check, 60000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`delete-requests-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*" as const,
+          schema: "public",
+          table: "delete_requests",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const data = payload.new as DeleteRequest;
+          if (data.status && ["completed", "deleted"].includes(data.status)) {
+            setDeleteReq(data);
+            setShowDeleteModal(true);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  const themeKey = `${theme.bg}|${theme.accentColor}|${theme.subTextColor}|${theme.borderColor}|${theme.theme}|${tabTheme}`;
+
+  const handleDeleteClose = async () => {
+    if (deletingRef.current) return;
+    deletingRef.current = true;
+    setShowDeleteModal(false);
+    await revokeGoogleToken();
+    await clearAllUserData(signOut);
+  };
 
   return (
     <>
-      {TabBar ? (
-        <Tabs
-          screenOptions={{ headerShown: false }}
-          tabBar={(props) => (
-            <CustomTabBar1
-              key={`tabbar-${themeKey}`}
-              colorScheme={null}
-              {...props}
-            />
-          )}
-        >
-          <Tabs.Screen name="mapscreen" options={{ title: t("Tab_map") }} />
-          <Tabs.Screen name="saved" options={{ title: t("Tab_saved") }} />
-          <Tabs.Screen
-            name="profilescreen"
-            options={{ title: t("Tab_profile") }}
-          />
-        </Tabs>
+      {tabTheme === "native" ? (
+        <TabBarNative theme={theme} />
       ) : (
-        <Tabs
-          key={`tabs-${themeKey}`}
-          screenOptions={({ route }) => ({
-            animation: "fade",
-            contentStyle: {
-              backgroundColor: theme.bg,
-            },
-            tabBarStyle: {
-              backgroundColor: theme.bg,
-            },
-            headerShown: false,
-            tabBarActiveTintColor: theme.accentColor,
-            tabBarIcon: ({ color, size }) => {
-              let IconComponent;
-              switch (route.name) {
-                case "mapscreen":
-                  IconComponent = MapIcon;
-                  break;
-                case "saved":
-                  IconComponent = Bookmark;
-                  break;
-                case "profilescreen":
-                  IconComponent = User;
-                  break;
-                default:
-                  IconComponent = HelpCircle;
-                  break;
-              }
-              return (
-                <IconComponent width={size} height={size} stroke={color} />
-              );
-            },
-          })}
-        >
+        <TabBars key={themeKey} tabTheme={tabTheme} theme={theme}>
           <Tabs.Screen name="mapscreen" options={{ title: t("Tab_map") }} />
           <Tabs.Screen name="saved" options={{ title: t("Tab_saved") }} />
           <Tabs.Screen
             name="profilescreen"
             options={{ title: t("Tab_profile") }}
           />
-        </Tabs>
+        </TabBars>
       )}
       <AnnouncementModal
         announcements={announcements}
         onClose={() => setAnnouncements([])}
+      />
+      <DeleteRequestModal
+        visible={showDeleteModal}
+        status={deleteReq?.status ?? null}
+        onClose={handleDeleteClose}
       />
     </>
   );

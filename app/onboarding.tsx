@@ -423,7 +423,7 @@ export default function OnboardingScreen() {
         <StatusBar style="auto" />
         <LinearGradient
           colors={["#0A0F1E", "#101828", "#0A0F1E"]}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
         />
         <View style={s.safe}>
           <Animated.View
@@ -629,7 +629,7 @@ export default function OnboardingScreen() {
 
       <LinearGradient
         colors={slide.gradientColors}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
 
       <View style={s.gridOverlay} pointerEvents="none" />
@@ -752,7 +752,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       backgroundColor: bg,
     },
     gridOverlay: {
-      ...StyleSheet.absoluteFillObject,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
       opacity: 0.04,
     },
     safe: {

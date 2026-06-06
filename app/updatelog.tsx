@@ -1,6 +1,5 @@
 import { t } from "i18next";
 import { History, Zap, Sparkles, ChevronLeft } from "lucide-react-native";
-import * as React from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -19,6 +18,12 @@ const UpdateLog = () => {
   const styles = getStyles(theme);
 
   const logs = [
+    {
+      version: "1.6.0",
+      date: "2026-06-06",
+      text: "Update announcement system with Orion Store deep link, new avatar system, tab bar redesign, improved account deletion, full i18n coverage, and new open source licenses.",
+      type: "feature",
+    },
     {
       version: "1.5.4",
       date: "2026-05-15",

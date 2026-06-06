@@ -5,15 +5,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  Clipboard,
   Linking,
   Alert,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { X, AlertCircle, Copy, Github, Check } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
+import * as Sentry from "@sentry/react-native";
 
 interface Props {
   open: boolean;
@@ -78,10 +79,16 @@ export default function ErrorSheet({
     .filter(Boolean)
     .join("\n");
 
-  const handleCopy = () => {
-    Clipboard.setString(errorDetails);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await Clipboard.setStringAsync(errorDetails);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      Sentry.captureException(err);
+
+      console.warn("Failed to copy to clipboard:", err);
+    }
   };
 
   const handleGithubIssue = () => {

@@ -23,6 +23,7 @@ class UpdateManager extends EventEmitter {
   };
 
   private checkInterval: ReturnType<typeof setInterval> | null = null;
+  private progressInterval: ReturnType<typeof setInterval> | null = null;
 
   getState(): UpdateState {
     return { ...this.state };
@@ -59,7 +60,7 @@ class UpdateManager extends EventEmitter {
       this.setState({ status: "downloading", progress: 10 });
 
       // Simulate progress (Update.fetchUpdateAsync doesn't provide real progress)
-      const progressInterval = setInterval(() => {
+      this.progressInterval = setInterval(() => {
         const currentProgress = this.state.progress;
         const newProgress = Math.min(currentProgress + Math.random() * 30, 90);
         this.setState({ progress: newProgress });
@@ -67,7 +68,10 @@ class UpdateManager extends EventEmitter {
 
       await Updates.fetchUpdateAsync();
 
-      clearInterval(progressInterval);
+      if (this.progressInterval) {
+        clearInterval(this.progressInterval);
+        this.progressInterval = null;
+      }
       this.setState({ status: "ready", progress: 100 });
     } catch (error) {
       const errorMsg =
@@ -100,6 +104,10 @@ class UpdateManager extends EventEmitter {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+    }
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+      this.progressInterval = null;
     }
   }
 }

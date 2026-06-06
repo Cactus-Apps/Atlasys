@@ -9,7 +9,7 @@ import {
 import { X, Download, RotateCcw } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
-import { useUpdate } from "@/lib/update/update-context";
+import { useUpdate } from "@/lib/hooks/update-context";
 import { posthog } from "@/lib/config/posthog";
 
 export function UpdateBanner() {

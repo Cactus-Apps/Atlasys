@@ -481,7 +481,22 @@
   "Announcement_type_warning": "Wichtig",
   "Announcement_single": "Nachricht",
   "Announcement_multiple": "{{count}} Neuigkeiten",
+  "Announcement_orion_store": "Im Orion Store öffnen",
+  "Announcement_release_page": "Auf GitHub ansehen",
   "Tab_map": "Karte",
   "Tab_saved": "Gespeichert",
-  "Tab_profile": "Profil"
+  "Tab_profile": "Profil",
+  "DeleteRequest_account_deleted_message": "Dein Account wurde gelöscht. Alle deine Daten wurden dauerhaft von unseren Systemen entfernt. Du wirst jetzt abgemeldet.",
+  "DeleteRequest_account_completed_message": "Deine Löschanfrage wurde bestätigt. Dein Account und alle zugehörigen Daten werden vollständig entfernt. Du wirst jetzt abgemeldet.",
+  "DeleteRequest_understood": "Verstanden",
+  "Avatar_colors": "Avatar-Farben",
+  "Avatar_hairColor": "Haarfarbe",
+  "Avatar_bodyColor": "Kleidungsfarbe",
+  "Avatar_headColor": "Hautfarbe",
+  "Avatar_backgroundColor": "Hintergrund",
+  "TabBar Style": "TabBar-Stil",
+  "TabTheme_label_modern": "Modern",
+  "TabTheme_label_new": "Neu",
+  "TabTheme_label_native": "Native",
+  "Spanish": "Spanisch"
 }

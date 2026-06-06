@@ -1,10 +1,11 @@
-import React, { useEffect } from "react";
+import { Tabs } from "expo-router";
+import React, { ReactNode, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import Animated, {
@@ -16,21 +17,15 @@ import Animated, {
 import { Home, User, HelpCircle, MapIcon, Bookmark } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 
-const { width } = Dimensions.get("window");
-
 type Props = {
   state: any;
   descriptors: any;
   navigation: any;
-  colorScheme: "light" | "dark" | null;
+  colorScheme?: "light" | "dark" | null;
 };
 
-export function CustomTabBar1({
-  state,
-  descriptors,
-  navigation,
-  colorScheme,
-}: Props) {
+function TabBarNewInner({ state, descriptors, navigation }: Props) {
+  const { width } = useWindowDimensions();
   const TAB_COUNT = state.routes.length;
   const TAB_WIDTH = width / TAB_COUNT;
   const INDICATOR_WIDTH = 46;
@@ -39,7 +34,7 @@ export function CustomTabBar1({
   const tint = theme.isDark ? "dark" : "light";
 
   const translateX = useSharedValue(
-    state.index * TAB_WIDTH + (TAB_WIDTH - INDICATOR_WIDTH) / 2
+    state.index * TAB_WIDTH + (TAB_WIDTH - INDICATOR_WIDTH) / 2,
   );
 
   useEffect(() => {
@@ -48,7 +43,7 @@ export function CustomTabBar1({
       {
         duration: 220,
         easing: Easing.out(Easing.cubic),
-      }
+      },
     );
   }, [state.index, TAB_WIDTH]);
 
@@ -77,37 +72,55 @@ export function CustomTabBar1({
       tint={tint}
       style={[styles.tabBarContainer, { borderTopColor: theme.borderColor }]}
     >
-        <View style={styles.indicatorMask}>
-          <Animated.View
-            style={[
-              { width: INDICATOR_WIDTH, height: 4, backgroundColor: theme.accentColor, borderRadius: 2 },
-              indicatorStyle,
-            ]}
-          />
-          </View>
+      <View style={styles.indicatorMask}>
+        <Animated.View
+          style={[
+            {
+              width: INDICATOR_WIDTH,
+              height: 4,
+              backgroundColor: theme.accentColor,
+              borderRadius: 2,
+            },
+            indicatorStyle,
+          ]}
+        />
+      </View>
 
-        {state.routes.map((route: any, index: number) => {
-          const isFocused = state.index === index;
-          const { options } = descriptors[route.key];
-          const label = options.title ?? route.name;
+      {state.routes.map((route: any, index: number) => {
+        const isFocused = state.index === index;
+        const { options } = descriptors[route.key];
+        const label = options.title ?? route.name;
 
-          const color = isFocused
-            ? theme.accentColor
-            : theme.subTextColor;
+        const color = isFocused ? theme.accentColor : theme.subTextColor;
 
-          return (
-            <TouchableOpacity
-              key={route.key}
-              style={styles.tab}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate(route.name)}
-            >
-              {getIcon(route.name, color, 25)}
-              <Text style={[styles.label, { color }]}>{label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.tab}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate(route.name)}
+          >
+            {getIcon(route.name, color, 25)}
+            <Text style={[styles.label, { color }]}>{label}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </BlurView>
+  );
+}
+
+type WrapperProps = {
+  children: ReactNode;
+};
+
+export function TabBarNew({ children }: WrapperProps) {
+  return (
+    <Tabs
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <TabBarNewInner {...props} />}
+    >
+      {children}
+    </Tabs>
   );
 }
 

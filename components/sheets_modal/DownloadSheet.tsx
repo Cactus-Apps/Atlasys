@@ -154,7 +154,7 @@ export default function DownloadSheet({
   onClose,
   onDownloadComplete,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useAppTheme();
   const s = getStyles(theme);
 
@@ -225,7 +225,7 @@ export default function DownloadSheet({
 
     let regionName = name.trim();
     if (!regionName) {
-      const label = await reverseGeocode(centerLat, centerLng);
+      const label = await reverseGeocode(centerLat, centerLng, undefined, i18n.language);
       regionName =
         label.split(",")[0].trim() ||
         `Region ${new Date().toLocaleDateString()}`;

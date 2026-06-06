@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   StyleSheet,
   Text,
@@ -215,6 +214,14 @@ const LICENSE_DATA: { title: string; content: string }[] = [
   {
     title: "@kolking/react-native-avatar",
     content: mit("Copyright (c) kolking"),
+  },
+  {
+    title: "@avatune/react-native & @avatune/nevmstas-theme",
+    content: mit("Copyright (c) avatune"),
+  },
+  {
+    title: "react-native-vector-icons",
+    content: mit("Copyright (c) 2016 Joel Arvidsson"),
   },
   {
     title: "@hcaptcha/react-native-hcaptcha",

@@ -1,8 +1,8 @@
 import { ensureTranslationsLoaded } from "./i18n";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
-import { UpdateProvider } from "@/lib/update/update-context";
+import { UpdateProvider } from "@/lib/hooks/update-context";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { runExpoUpdateCheck } from "@/lib/update/expoUpdateCheck";
+import { runExpoUpdateCheck } from "@/lib/hooks/expoUpdateCheck";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import AnimatedSplash from "@/components/overlays/SplashScreen";
@@ -40,6 +40,9 @@ function sentryBeforeSend(
     "Location request failed due to unsatisfied device settings",
     "Network request failed",
     "expo-updates: Network request failed",
+    "LocationModule",
+    "RuntimeScheduler_Modern",
+    "SIGSEGV",
   ];
 
   if (ignoredNetworkErrors.some((e) => message.includes(e))) {
@@ -177,7 +180,7 @@ function AppBootstrap() {
   }, [storeReady, currentTheme, systemScheme, updateSettings]);
 
   useEffect(() => {
-    if (!storeReady || isLoadingUser) return;
+    if (!storeReady || isLoadingUser || !i18nGate) return;
 
     const inAuthGroup = segments[0] === "auth" || segments[0] === "(auth)";
     const inOnboarding = segments[0] === "onboarding";

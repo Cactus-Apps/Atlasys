@@ -1,4 +1,5 @@
-import { Avatar } from "@kolking/react-native-avatar";
+import { Avatar } from "@avatune/react-native";
+import nevmstasTheme from "@avatune/nevmstas-theme/react-native";
 import { useRouter } from "expo-router";
 import {
   Bell,
@@ -23,6 +24,7 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
 import { UpdateBanner } from "@/components/overlays/UpdateBanner";
+import { useAuthStore } from "@/lib/storage/zustand";
 
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -31,6 +33,7 @@ export function ProfileScreen() {
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const version = Application.nativeApplicationVersion;
+  const avatarConfig = useAuthStore((s) => s.avatarConfig);
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -151,12 +154,18 @@ export function ProfileScreen() {
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <Avatar
+                theme={nevmstasTheme}
+                seed={email ?? undefined}
                 size={90}
-                name={email ?? "U"}
-                email={email ?? undefined}
-                colorize={true}
-                radius={45}
-                badgeColor={theme.primary}
+                accessories="none"
+                hats="none"
+                {...(avatarConfig
+                  ? Object.fromEntries(
+                      Object.entries(avatarConfig).filter(
+                        ([k]) => k !== "seed",
+                      ),
+                    )
+                  : {})}
               />
             </View>
             <View style={styles.profileInfo}>

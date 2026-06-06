@@ -24,12 +24,14 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { posthog } from "@/lib/config/posthog";
+import { StatusBar } from "expo-status-bar";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const theme = useAppTheme();
   const styles = getStyles(theme);
+  const statusBarTheme = theme.isDark ? "light" : "dark";
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
@@ -75,7 +77,10 @@ export default function SavedScreen() {
       <View style={styles.imageContainer}>
         {item.thumbnail ? (
           <Image
-            source={{ uri: item.thumbnail }}
+            source={{
+              uri: item.thumbnail,
+              headers: { Referer: "https://en.wikipedia.org/" },
+            }}
             style={styles.image}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -138,6 +143,7 @@ export default function SavedScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style={statusBarTheme} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t("Saved_Places")}</Text>
         <View style={styles.badge}>

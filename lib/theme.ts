@@ -26,6 +26,8 @@ export type AppTheme =
   | "ocean"
   | "forest";
 
+export type TabTheme = "modern" | "new" | "native";
+
 const THEMES: Record<AppTheme, ThemeTokens> = {
   light: {
     isDark: false,
@@ -157,6 +159,7 @@ const SEMANTIC = {
   tabIndicator: "#007AFF",
   primary: "#2563EB",
   primaryDark: "#1D4ED8",
+  orionStore: "#6B6FE3",
 };
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -198,4 +201,11 @@ export function useAppTheme() {
   };
 }
 
+// ── Tab Theme Hook ────────────────────────────────────────────────────────────
+export function useTabTheme() {
+  const tabTheme = useAuthStore((s) => s.settings.tabTheme) ?? "modern";
+  return { tabTheme };
+}
+
 export type AppThemeReturn = ReturnType<typeof useAppTheme>;
+export type TabThemeReturn = ReturnType<typeof useTabTheme>;

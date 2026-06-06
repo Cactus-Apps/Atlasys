@@ -62,7 +62,6 @@ import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
-import { Avatar } from "@kolking/react-native-avatar";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -86,6 +85,14 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
+
+const darken = (hex: string, amount: number) => {
+  const c = hex.replace("#", "");
+  const r = Math.max(0, parseInt(c.substring(0, 2), 16) * (1 - amount));
+  const g = Math.max(0, parseInt(c.substring(2, 4), 16) * (1 - amount));
+  const b = Math.max(0, parseInt(c.substring(4, 6), 16) * (1 - amount));
+  return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+};
 
 type CityResult = {
   id: number | string;
@@ -305,83 +312,84 @@ export default function MapScreen() {
     let liveSub: Location.LocationSubscription | null = null;
 
     (async () => {
-      // Step 1: request GPS permission
-      const { status, canAskAgain } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (status !== "granted") {
-        if (!canAskAgain) {
-          setError(t("Location_denied_permanent"));
-        } else {
-          setErrorSheetOpen(true);
-          setError(t("Location_authorization_denied"));
-        }
-        setLocationReady(true);
-        return;
-      }
-
-      // Step 2: one quick position fix
       try {
-        const lastKnown = await Location.getLastKnownPositionAsync();
-        if (lastKnown && !cancelled && !hasCenteredOnce.current) {
-          const { latitude, longitude } = lastKnown.coords;
-          setMarkerPos([longitude, latitude]);
+        // Step 1: request GPS permission
+        const { status, canAskAgain } =
+          await Location.requestForegroundPermissionsAsync();
+
+        if (status !== "granted") {
+          if (!canAskAgain) {
+            setError(t("Location_denied_permanent"));
+          } else {
+            setErrorSheetOpen(true);
+            setError(t("Location_authorization_denied"));
+          }
           setLocationReady(true);
-          if (mapRef.current) {
-            hasCenteredOnce.current = true;
-            mapRef.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 14,
-              speed: 0.8,
-              duration: 600,
-            });
-            ensureGlobe();
-          }
+          return;
         }
-      } catch {}
 
-      // Step 3: live GPS watcher
-      const s = await Location.watchPositionAsync(
-        {
-          accuracy:
-            Platform.OS === "android"
-              ? Location.Accuracy.Balanced
-              : Location.Accuracy.High,
-          timeInterval: 2000,
-          distanceInterval: 1,
-        },
-        (loc) => {
-          if (cancelled) return;
-          lastLocRef.current = loc;
-          const { latitude, longitude } = loc.coords;
-          setMarkerPos([longitude, latitude]);
-
-          if (!locationReady) setLocationReady(true);
-
-          if (!hasCenteredOnce.current && mapRef.current) {
-            hasCenteredOnce.current = true;
-            mapRef.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 14,
-              speed: 0.3,
-              curve: 1,
-              duration: 100,
-              pitch: 0,
-            });
-            ensureGlobe();
+        // Step 2: one quick position fix
+        try {
+          const lastKnown = await Location.getLastKnownPositionAsync();
+          if (lastKnown && !cancelled && !hasCenteredOnce.current) {
+            const { latitude, longitude } = lastKnown.coords;
+            setMarkerPos([longitude, latitude]);
+            setLocationReady(true);
+            if (mapRef.current) {
+              hasCenteredOnce.current = true;
+              mapRef.current.flyTo({
+                center: [longitude, latitude],
+                zoom: 14,
+                speed: 0.8,
+                duration: 600,
+              });
+              ensureGlobe();
+            }
           }
-        },
-      );
+        } catch (e) {
+          Sentry.captureException(e);
+        }
 
-      liveSub = s;
-      if (!cancelled) setSub(s);
-    })().catch((error: unknown) =>
-      Sentry.captureException(
-        error instanceof Error
-          ? error
-          : new Error("Failed to initialize location watcher"),
-      ),
-    );
+        // Step 3: live GPS watcher
+        const s = await Location.watchPositionAsync(
+          {
+            accuracy:
+              Platform.OS === "android"
+                ? Location.Accuracy.Balanced
+                : Location.Accuracy.High,
+            timeInterval: 2000,
+            distanceInterval: 1,
+          },
+          (loc) => {
+            if (cancelled) return;
+            lastLocRef.current = loc;
+            const { latitude, longitude } = loc.coords;
+            setMarkerPos([longitude, latitude]);
+
+            if (!locationReady) setLocationReady(true);
+
+            if (!hasCenteredOnce.current && mapRef.current) {
+              hasCenteredOnce.current = true;
+              mapRef.current.flyTo({
+                center: [longitude, latitude],
+                zoom: 14,
+                speed: 0.3,
+                curve: 1,
+                duration: 100,
+                pitch: 0,
+              });
+              ensureGlobe();
+            }
+          },
+        );
+
+        liveSub = s;
+        if (!cancelled) setSub(s);
+      } catch (e) {
+        Sentry.captureException(e);
+        setLocationReady(true);
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -611,7 +619,9 @@ export default function MapScreen() {
                 cmData.query?.categorymembers?.map((cm: any) => cm.title) || [];
             }
           }
-        } catch {}
+        } catch (error) {
+          Sentry.captureException(error);
+        }
 
         if (!imageTitles.length) {
           const imagesPropRes = await fetch(
@@ -1156,7 +1166,7 @@ export default function MapScreen() {
               ? ["#0b0b19", "#1a1a3e", "#0d1b4b"]
               : ["#87ceeb", "#b8d4f0", "#dceefa"]
           }
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
         />
@@ -1390,8 +1400,8 @@ export default function MapScreen() {
                   justify-content: center;
                   width: 40px;
                   height: 40px;
-                  background: radial-gradient(circle at 50% 50%, #007AFF, #004A99);
-                  border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+                   background: radial-gradient(circle at 50% 50%, ${theme.accentColor}, ${darken(theme.accentColor, 0.4)});
+                   border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
                   box-shadow:
                     0 4px 8px rgba(0, 0, 0, 0.3),
                     inset 0 2px 4px rgba(255, 255, 255, 0.6);
@@ -1582,6 +1592,7 @@ export default function MapScreen() {
                 <TextInput
                   placeholder={t("Search")}
                   placeholderTextColor={theme.subTextColor}
+                  cursorColor={theme.accentColor}
                   style={styles.input}
                   value={query}
                   onChangeText={(value) => setQuery(value)}
@@ -2433,7 +2444,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
     },
     modalOverlay: {
-      ...StyleSheet.absoluteFillObject,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
     },
     modalContent: {
       width: "100%",

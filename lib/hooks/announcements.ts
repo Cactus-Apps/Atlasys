@@ -9,12 +9,18 @@ export type Announcement = {
   type: "info" | "update" | "warning";
   min_app_version: string | null;
   created_at: string;
+  is_update?: boolean;
+  is_store_update?: boolean;
+  media_url?: string | null;
 };
 
 const SEEN_KEY = "seen_announcements";
 
 function parseVersion(v: string): number[] {
-  return v.split(".").map(Number);
+  return v.split(".").map((part) => {
+    const num = parseInt(part, 10);
+    return isNaN(num) ? 0 : num;
+  });
 }
 
 function meetsMinVersion(appVersion: string, minVersion: string): boolean {
@@ -46,7 +52,15 @@ export async function fetchUnseen(): Promise<Announcement[]> {
   });
 
   const raw = await AsyncStorage.getItem(SEEN_KEY);
-  const seen: string[] = raw ? JSON.parse(raw) : [];
+  let seen: string[] = [];
+  if (raw) {
+    try {
+      seen = JSON.parse(raw);
+    } catch (error) {
+      console.warn("Failed to parse seen announcements, resetting:", error);
+      await AsyncStorage.removeItem(SEEN_KEY);
+    }
+  }
 
   return versionFiltered.filter((a) => !seen.includes(a.id));
 }
@@ -60,4 +74,6 @@ export async function markAllSeen(ids: string[]) {
 
 export async function fetchAll() {
   const { data, error } = await supabase.from("announcements").select("*");
+  if (error) throw error;
+  return data;
 }

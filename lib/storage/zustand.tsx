@@ -1,18 +1,33 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AppTheme } from "../theme";
+import { AppTheme, TabTheme } from "../theme";
 import { AnalyticsChoice } from "@/lib/auth/analytics";
 
-type StoreTabs = {
-  NewTabBar: boolean;
-  setNewTabBar: (tab: boolean) => void;
+type AvatarConfig = {
+  seed?: string;
+  hair?: string;
+  body?: string;
+  eyebrows?: string;
+  eyes?: string;
+  mouth?: string;
+  nose?: string;
+  accessories?: string;
+  hats?: string;
+  faceHair?: string;
+  hairColor?: string;
+  bodyColor?: string;
+  headColor?: string;
+  earsColor?: string;
+  eyebrowsColor?: string;
+  eyesColor?: string;
+  mouthColor?: string;
+  noseColor?: string;
+  accessoriesColor?: string;
+  hatsColor?: string;
+  faceHairColor?: string;
+  backgroundColor?: string;
 };
-
-export const useTabStore = create<StoreTabs>((set) => ({
-  NewTabBar: false,
-  setNewTabBar: (tab) => set({ NewTabBar: tab }),
-}));
 
 type SavedPlace = {
   name: string;
@@ -39,6 +54,8 @@ type StoreAuth = {
   addPlace: (place: Omit<SavedPlace, "addedAt">) => void;
   removePlace: (name: string) => void;
   isPlaceSaved: (name: string) => boolean;
+  _seededForUserId: string | null;
+  seedDefaultPlace: () => void;
 
   // Onboarding & Settings & Theme
   isOnboardingCompleted: boolean;
@@ -52,6 +69,7 @@ type StoreAuth = {
     autoUpdateCheck?: boolean;
     theme: AppTheme; // ← replaces both old fields
     /** Fine control; missing in old saves → fallback to `notifications` */
+    tabTheme: TabTheme;
     notificationTopics?: {
       userAccount: boolean;
       coolPlaces: boolean;
@@ -75,7 +93,13 @@ type StoreAuth = {
 
   // Map Position (in-memory only, resets on app close)
   mapPosition: { latitude: number; longitude: number; zoom: number } | null;
-  setMapPosition: (pos: { latitude: number; longitude: number; zoom: number } | null) => void;
+  setMapPosition: (
+    pos: { latitude: number; longitude: number; zoom: number } | null,
+  ) => void;
+
+  // Avatar
+  avatarConfig: AvatarConfig | null;
+  setAvatarConfig: (config: AvatarConfig | null) => void;
 
   // Session Management
   userId: string | null;
@@ -87,6 +111,7 @@ type StoreAuth = {
 
 const initialState = {
   savedPlaces: [],
+  _seededForUserId: null,
   isOnboardingCompleted: false,
   settings: {
     notifications: false,
@@ -94,6 +119,7 @@ const initialState = {
     crashReports: true,
     autoUpdateCheck: true,
     theme: "light" as AppTheme,
+    tabTheme: "modern" as TabTheme,
     notificationTopics: {
       userAccount: false,
       coolPlaces: false,
@@ -102,6 +128,7 @@ const initialState = {
       updates: false,
     },
   },
+  avatarConfig: null,
   currentRoute: null,
   mapPosition: null,
   searchHistory: [],
@@ -131,6 +158,28 @@ export const useAuthStore = create<StoreAuth>()(
       isPlaceSaved: (name) => {
         return get().savedPlaces.some((p) => p.name === name);
       },
+      _seededForUserId: null,
+      seedDefaultPlace: () => {
+        const state = get();
+        if (state.savedPlaces.length > 0) return;
+        if (state._seededForUserId === state.userId && state.userId !== null)
+          return;
+        set({
+          savedPlaces: [
+            {
+              name: "Paris",
+              latitude: 48.8566,
+              longitude: 2.3522,
+              region: "Île-de-France",
+              country: "France",
+              thumbnail:
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg/500px-La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg",
+              addedAt: new Date().toISOString(),
+            },
+          ],
+          _seededForUserId: state.userId,
+        });
+      },
 
       isOnboardingCompleted: false,
       setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
@@ -140,6 +189,7 @@ export const useAuthStore = create<StoreAuth>()(
         crashReports: true,
         autoUpdateCheck: true,
         theme: "light" as AppTheme,
+        tabTheme: "modern" as TabTheme,
         notificationTopics: {
           userAccount: false,
           coolPlaces: false,
@@ -174,6 +224,7 @@ export const useAuthStore = create<StoreAuth>()(
         })),
       clearSearchHistory: () => set({ searchHistory: [] }),
 
+      setAvatarConfig: (config) => set({ avatarConfig: config }),
       setUserId: (id) => set({ userId: id }),
       searchCount: 0,
       incrementSearchCount: () =>
@@ -210,7 +261,14 @@ export const useAuthStore = create<StoreAuth>()(
         userId: state.userId,
         savedPlaces: state.savedPlaces,
         searchHistory: state.searchHistory,
+        avatarConfig: state.avatarConfig,
+        _seededForUserId: state._seededForUserId,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.seedDefaultPlace();
+        }
+      },
     },
   ),
 );

@@ -7,9 +7,10 @@ import {
   DockIcon,
   LanguagesIcon,
   RefreshCw,
+  SettingsIcon,
 } from "lucide-react-native";
-import * as React from "react";
 import * as Application from "expo-application";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,11 +24,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useAuthStore, useTabStore } from "@/lib/storage/zustand";
-import { AppTheme } from "@/lib/theme";
+import { useAuthStore } from "@/lib/storage/zustand";
+import { AppTheme, TabTheme } from "@/lib/theme";
 import { useAppTheme } from "@/lib/theme";
+import { TabBarPreview } from "@/components/tab-bars/TabBarPreview";
 import { AnalyticsChoice, applyAnalyticsChoice } from "@/lib/auth/analytics";
 import { posthog } from "@/lib/config/posthog";
 
@@ -40,18 +41,16 @@ export default function Settings() {
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const appSettings = useAuthStore((s) => s.settings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
-  const NewTabBar = useTabStore((s) => s.NewTabBar);
   const userId = useAuthStore((s) => s.userId);
-  const setTabBar = useTabStore((s) => s.setNewTabBar);
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const buildNumber = Application.nativeBuildVersion;
   const version = Application.nativeApplicationVersion;
 
   const languages = [
-    { code: "en", label: "English" },
-    { code: "de", label: "Deutsch" },
-    { code: "es", label: "Spanish" },
+    { code: "en", label: t("English") },
+    { code: "de", label: t("German") },
+    { code: "es", label: t("Spanish") },
   ];
 
   const handleLanguagePress = (langCode: string) => {
@@ -160,6 +159,48 @@ export default function Settings() {
       previewAccent: "#2E7D32",
       previewText: "#1B3A2D",
       previewSub: "#C8E6C9",
+    },
+  ];
+
+  const TAB_THEME_OPTIONS: {
+    value: TabTheme;
+    labelKey: string;
+    previewBg: string;
+    previewCard: string;
+    previewAccent: string;
+    previewText: string;
+    previewSub: string;
+    beta: boolean;
+  }[] = [
+    {
+      value: "modern",
+      labelKey: "TabTheme_label_modern",
+      previewBg: theme.bg,
+      previewCard: theme.cardBg,
+      previewAccent: theme.accentColor,
+      previewText: theme.textColor,
+      previewSub: theme.subTextColor,
+      beta: false,
+    },
+    {
+      value: "new",
+      labelKey: "TabTheme_label_new",
+      previewBg: theme.bg,
+      previewCard: theme.cardBg,
+      previewAccent: theme.accentColor,
+      previewText: theme.textColor,
+      previewSub: theme.subTextColor,
+      beta: false,
+    },
+    {
+      value: "native",
+      labelKey: "TabTheme_label_native",
+      previewBg: theme.bg,
+      previewCard: theme.cardBg,
+      previewAccent: theme.accentColor,
+      previewText: theme.textColor,
+      previewSub: theme.subTextColor,
+      beta: true,
     },
   ];
 
@@ -329,7 +370,7 @@ export default function Settings() {
                       marginTop: 8,
                       fontSize: 13,
                       fontWeight: isActive ? "700" : "500",
-                      color: isActive ? theme.primary : theme.subTextColor,
+                      color: isActive ? theme.accentColor : theme.subTextColor,
                     }}
                   >
                     {t(opt.labelKey)}
@@ -341,43 +382,122 @@ export default function Settings() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.card}>
-            <View style={styles.toggleRow}>
-              <View style={styles.menuIconContainer}>
-                <DockIcon
-                  size={22}
-                  color={NewTabBar ? theme.primary : theme.subTextColor}
-                />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>
-                  {t("Settings_tab_bar_new_label")}
-                </Text>
-                <Text style={styles.menuValue}>
-                  {t("Settings_tab_bar_new_sub")}
-                </Text>
-              </View>
-              <Switch
-                value={NewTabBar}
-                onValueChange={(v) => setTabBar(v)}
-                trackColor={{
-                  false: theme.cardBgSecondary,
-                  true: theme.primaryLight,
-                }}
-                thumbColor={NewTabBar ? theme.primary : theme.white}
-                ios_backgroundColor={
-                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
-                }
-              />
-            </View>
-          </View>
+          <Text style={styles.sectionTitle}>{t("TabBar Style")}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              gap: 12,
+              paddingBottom: 8,
+            }}
+          >
+            {TAB_THEME_OPTIONS.map((opt) => {
+              const isActive = appSettings.tabTheme === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    updateSettings({ tabTheme: opt.value });
+                    posthog.capture("tab_theme_changed", {
+                      tabTheme: opt.value,
+                    });
+                  }}
+                  activeOpacity={0.8}
+                  style={{ alignItems: "center", width: 110 }}
+                >
+                  <View
+                    style={[
+                      {
+                        width: 110,
+                        height: 55,
+                        borderRadius: 16,
+                        backgroundColor: opt.previewBg,
+                        borderWidth: isActive ? 2.5 : 1,
+                        borderColor: isActive
+                          ? opt.previewAccent
+                          : "rgba(128,128,128,0.2)",
+                        overflow: "hidden",
+                        position: "relative",
+                      },
+                    ]}
+                  >
+                    <TabBarPreview
+                      type={opt.value}
+                      isActive={isActive}
+                      bg={opt.previewBg}
+                      card={opt.previewCard}
+                      accent={opt.previewAccent}
+                      text={opt.previewText}
+                      sub={opt.previewSub}
+                    />
+
+                    {opt.beta && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          backgroundColor: opt.previewAccent,
+                          paddingHorizontal: 5,
+                          paddingVertical: 1.5,
+                          borderRadius: 4,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 8,
+                            fontWeight: "900",
+                            color: "#fff",
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          BETA !
+                        </Text>
+                      </View>
+                    )}
+
+                    {isActive && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          bottom: 4,
+                          right: 4,
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          backgroundColor: opt.previewAccent,
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Check size={12} color="#fff" strokeWidth={3} />
+                      </View>
+                    )}
+                  </View>
+
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      fontSize: 13,
+                      fontWeight: isActive ? "700" : "500",
+                      color: isActive ? theme.accentColor : theme.subTextColor,
+                    }}
+                  >
+                    {t(opt.labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionLabel}>
+            {t("Settings_section_Analytics")}
+          </Text>
           <View style={styles.card}>
-            <Text style={styles.sectionLabel}>
-              {t("Settings_section_Analytics")}
-            </Text>
             {(["full", "anonymous", "none"] as AnalyticsChoice[]).map(
               (choice) => (
                 <TouchableOpacity
@@ -428,17 +548,22 @@ export default function Settings() {
             {t("Settings_section_Location_privacy")}
           </Text>
           <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => Linking.openSettings()}
-            >
-              <Text style={styles.menuLabel}>Location-Settings</Text>
-              <Text style={styles.menuLabel}>Edit in system-settings</Text>
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <SettingsIcon
+                  size={22}
+                  color={crashReportsOn ? theme.primary : theme.subTextColor}
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <TouchableOpacity onPress={() => Linking.openSettings()}>
+                  <Text style={styles.menuLabel}>Location-Settings</Text>
+                  <Text style={styles.menuValue}>Edit in system-settings</Text>
+                </TouchableOpacity>
+              </View>
               <ChevronRight size={18} color={theme.chevronColor} />
-            </TouchableOpacity>
-          </View>
+            </View>
 
-          <View style={styles.card}>
             <View style={styles.separator} />
             <View style={styles.toggleRow}>
               <View style={styles.menuIconContainer}>

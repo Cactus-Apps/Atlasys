@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { updateManager, UpdateState } from "@/lib/update/expoUpdateCheck";
+import { updateManager, UpdateState } from "@/lib/hooks/expoUpdateCheck";
 
 interface UpdateContextType {
   state: UpdateState;

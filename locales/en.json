@@ -481,7 +481,22 @@
   "Announcement_type_warning": "Important",
   "Announcement_single": "Message",
   "Announcement_multiple": "{{count}} News",
+  "Announcement_orion_store": "Open in Orion Store",
+  "Announcement_release_page": "View on GitHub",
   "Tab_map": "Map",
   "Tab_saved": "Saved",
-  "Tab_profile": "Profile"
+  "Tab_profile": "Profile",
+  "DeleteRequest_account_deleted_message": "Your account has been deleted. All your data has been permanently removed from our systems. You will be signed out now.",
+  "DeleteRequest_account_completed_message": "Your deletion request has been approved. Your account and all associated data will be completely removed. You will be signed out now.",
+  "DeleteRequest_understood": "Understood",
+  "Avatar_colors": "Avatar Colors",
+  "Avatar_hairColor": "Hair Color",
+  "Avatar_bodyColor": "Clothing Color",
+  "Avatar_headColor": "Skin Color",
+  "Avatar_backgroundColor": "Background",
+  "TabBar Style": "TabBar Style",
+  "TabTheme_label_modern": "Modern",
+  "TabTheme_label_new": "New",
+  "TabTheme_label_native": "Native",
+  "Spanish": "Spanish"
 }

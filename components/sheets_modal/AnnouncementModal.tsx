@@ -1,18 +1,26 @@
-import React, { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   Modal,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Platform,
   StyleSheet,
+  Linking,
 } from "react-native";
 import { Info, Sparkles, AlertTriangle, X } from "lucide-react-native";
-import { Announcement, markAllSeen } from "@/utils/announcements";
+import { Announcement, markAllSeen } from "@/lib/hooks/announcements";
 import { useAppTheme } from "@/lib/theme";
 import { posthog } from "@/lib/config/posthog";
 import { useTranslation } from "react-i18next";
+import Icon from "react-native-vector-icons/AntDesign";
+import { Image } from "expo-image";
+import * as Sentry from "@sentry/react-native";
+
+const ORION_STORE_URL = "com.orion.store://";
+const ORION_STORE_FALLBACK =
+  "https://github.com/RookieEnough/Orion-Store/releases";
+const RELEASE_PAGE_URL = "https://github.com/Cactus-Apps/Atlasys/releases";
 
 interface Props {
   announcements: Announcement[];
@@ -22,6 +30,11 @@ interface Props {
 export default function AnnouncementModal({ announcements, onClose }: Props) {
   const theme = useAppTheme();
   const { t, i18n } = useTranslation();
+
+  const storeUpdate = useMemo(
+    () => announcements.find((a) => a.is_store_update),
+    [announcements],
+  );
 
   const typeConfig = useMemo(
     () => ({
@@ -51,6 +64,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
       theme.purpleLight,
       theme.warning,
       theme.warningLight,
+      t,
     ],
   );
 
@@ -109,22 +123,160 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
           borderRadius: 16,
           paddingVertical: 14,
           alignItems: "center",
+          flexDirection: "row",
+          gap: 12,
+          justifyContent: "center",
         },
         okText: { fontWeight: "700", fontSize: 16 },
+        storeBody: {
+          alignItems: "center",
+          paddingVertical: 8,
+        },
+        storeIcon: { marginBottom: 12 },
+        storeTitle: {
+          fontSize: 18,
+          fontWeight: "700",
+          textAlign: "center",
+          marginBottom: 8,
+        },
+        storeMsg: {
+          fontSize: 14,
+          lineHeight: 21,
+          textAlign: "center",
+          marginBottom: 16,
+        },
+        storeLink: {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: 4,
+          borderRadius: 12,
+          gap: 6,
+        },
+        storeLinkText: { fontWeight: "600", fontSize: 15 },
+        cancelBtn: {
+          paddingVertical: 12,
+          alignItems: "center",
+          marginTop: 8,
+        },
+        cancelText: { fontWeight: "500", fontSize: 14 },
       }),
     [theme],
   );
 
-  const handleClose = async () => {
+  const handleClose = useCallback(async () => {
     await markAllSeen(announcements.map((a) => a.id));
     onClose();
     posthog.capture("announcement_viewed", {
       count: announcements.length,
       type: announcements[0]?.type,
     });
-  };
+  }, [announcements, onClose]);
+
+  const handleOrionStore = useCallback(async () => {
+    try {
+      const supported = await Linking.canOpenURL(ORION_STORE_URL);
+      if (supported) {
+        await Linking.openURL(ORION_STORE_URL);
+      } else {
+        await Linking.openURL(ORION_STORE_FALLBACK);
+      }
+    } catch (error) {
+      Sentry.captureException(error);
+    }
+  }, []);
+
+  const handleReleasePage = useCallback(async () => {
+    try {
+      await Linking.openURL(RELEASE_PAGE_URL);
+    } catch (error) {
+      Sentry.captureException(error);
+    }
+  }, []);
 
   if (!announcements.length) return null;
+
+  // Store-Update Modal
+  if (storeUpdate) {
+    return (
+      <Modal
+        visible={true}
+        transparent
+        animationType="fade"
+        onRequestClose={handleClose}
+      >
+        <View style={s.overlay}>
+          <View style={[s.card, { backgroundColor: theme.cardBg }]}>
+            <View style={s.cardHeader}>
+              <Text style={[s.cardTitle, { color: theme.textColor }]}>
+                {storeUpdate.title}
+              </Text>
+              <TouchableOpacity onPress={handleClose} style={s.closeBtn}>
+                <X size={18} color={theme.subTextColor} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={s.storeBody}>
+              <Sparkles size={48} color={theme.purple} style={s.storeIcon} />
+              <Text style={[s.storeTitle, { color: theme.textColor }]}>
+                {storeUpdate.title}
+              </Text>
+              <Text style={[s.storeMsg, { color: theme.subTextColor }]}>
+                {storeUpdate.message}
+              </Text>
+              {storeUpdate.media_url && (
+                <Image
+                  source={{ uri: storeUpdate.media_url }}
+                  style={{
+                    width: "100%",
+                    height: 200,
+                    borderRadius: 12,
+                    marginBottom: 16,
+                  }}
+                  contentFit="contain"
+                />
+              )}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleOrionStore}
+              style={[s.storeLink, { backgroundColor: theme.orionStore }]}
+            >
+              <Image
+                source={require("../../assets/images/icon-foreground.png")}
+                style={{ height: 43, width: 43 }}
+              />
+              <Text style={[s.storeLinkText, { color: theme.white }]}>
+                {t("Announcement_orion_store")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.okBtn, { backgroundColor: theme.white }]}
+              onPress={handleReleasePage}
+            >
+              <Icon name="github" size={20} color={theme.black} />
+
+              <Text style={[s.okText, { color: theme.black }]}>
+                {t("Announcement_release_page")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.cancelBtn} onPress={handleClose}>
+              <Text style={[s.cancelText, { color: theme.subTextColor }]}>
+                {t("Got it")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  const title =
+    announcements.length === 1
+      ? announcements[0].title
+      : t("Announcement_multiple", { count: announcements.length });
 
   return (
     <Modal
@@ -138,11 +290,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
           {/* Header */}
           <View style={s.cardHeader}>
             <Text style={[s.cardTitle, { color: theme.textColor }]}>
-              {announcements.length === 1
-                ? announcements[0].type === "update"
-                  ? t("Announcement_type_update")
-                  : t("Announcement_single")
-                : t("Announcement_multiple", { count: announcements.length })}
+              {title}
             </Text>
             <TouchableOpacity onPress={handleClose} style={s.closeBtn}>
               <X size={18} color={theme.subTextColor} />
@@ -166,17 +314,20 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
                     idx < announcements.length - 1 && s.itemBorder,
                   ]}
                 >
-                  {/* Type Badge */}
-                  <View style={[s.badge, { backgroundColor: cfg.bg }]}>
-                    <Icon size={14} color={cfg.color} />
-                    <Text style={[s.badgeText, { color: cfg.color }]}>
-                      {cfg.label}
-                    </Text>
-                  </View>
+                  {a.media_url && (
+                    <Image
+                      source={{ uri: a.media_url }}
+                      style={{
+                        width: "100%",
+                        height: 200,
+                        borderRadius: 12,
+                        marginTop: 8,
+                        marginBottom: 8,
+                      }}
+                      contentFit="contain"
+                    />
+                  )}
 
-                  <Text style={[s.itemTitle, { color: theme.textColor }]}>
-                    {a.title}
-                  </Text>
                   <Text style={[s.itemMsg, { color: theme.subTextColor }]}>
                     {a.message}
                   </Text>
