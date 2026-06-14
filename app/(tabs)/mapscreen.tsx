@@ -1,3 +1,4 @@
+import type { StyleSpecification } from "maplibre-gl";
 import {
   MapProvider,
   Map,
@@ -7,7 +8,7 @@ import {
   GeoJSONSource,
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sentry from "@sentry/react-native";
 import Svg, {
   Circle,
@@ -31,6 +32,7 @@ import {
   Heart,
   Share2,
   Route,
+  Building2,
   AlertCircleIcon,
   AlertTriangle,
   CloudRainIcon,
@@ -60,7 +62,7 @@ import {
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
-import { Image } from "expo-image";
+import { Image as ExpoImage } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -172,7 +174,7 @@ export default function MapScreen() {
     duration: number;
   } | null>();
   const [CityInfo, setCityInfo] = useState("");
-  const [MapStyle, setMapStyle] = useState(
+  const [MapStyle, setMapStyle] = useState<string | StyleSpecification>(
     "https://tiles.openfreemap.org/styles/bright",
   );
   const [ready, setReady] = useState(true);
@@ -221,6 +223,7 @@ export default function MapScreen() {
   );
   const [isSearching, setIsSearching] = useState(false);
   const theme = useAppTheme();
+  const router = useRouter();
   const styles = useMemo(
     () => getStyles(theme),
     [theme.isDark, theme.isModern],
@@ -254,6 +257,8 @@ export default function MapScreen() {
   const initialZoom = useRef(5);
   const [mapStyleSheetOpen, setMapStyleSheetOpen] = useState(false);
   const [currentThemeKey, setCurrentThemeKey] = useState("bright");
+  const currentThemeKeyRef = useRef(currentThemeKey);
+  const iconsAddedForTheme = useRef<string | null>(null);
   const [errorSheetOpen, setErrorSheetOpen] = useState(false);
   const [showError, setShowError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -497,6 +502,19 @@ export default function MapScreen() {
     } catch (error) {
       Sentry.captureException(error);
     }
+  };
+
+  const openCityMap = () => {
+    if (!city) return;
+    const cityId = city.name.toLowerCase().replace(/\s+/g, "-");
+    const q =
+      `name=${encodeURIComponent(city.name)}&latitude=${city.latitude}&longitude=${city.longitude}` +
+      (city.region ? `&region=${encodeURIComponent(city.region)}` : "") +
+      (city.country ? `&country=${encodeURIComponent(city.country)}` : "") +
+      (article?.thumbnail
+        ? `&thumbnail=${encodeURIComponent(article.thumbnail)}`
+        : "");
+    router.push(`/city/${cityId}?${q}` as any);
   };
 
   useEffect(() => {
@@ -941,6 +959,7 @@ export default function MapScreen() {
     const pos = useAuthStore.getState().mapPosition;
 
     setCurrentThemeKey(theme.key);
+    currentThemeKeyRef.current = theme.key;
     setMapStyle(theme.url);
     posthog.capture("map_style_changed", {
       style: currentThemeKey,
@@ -1367,7 +1386,9 @@ export default function MapScreen() {
                   ensureGlobe();
                 },
               },
-              rotate: { objectListener: updateBearing },
+              rotate: {
+                objectListener: updateBearing,
+              },
               rotateend: { objectListener: updateBearing },
               move: {
                 objectListener: async (e: any) => {
@@ -1608,7 +1629,7 @@ export default function MapScreen() {
                   <ActivityIndicator size="small" color={theme.primary} />
                 )}
                 <View style={styles.avatarView}>
-                  <Image
+                  <ExpoImage
                     source={require("@/assets/images/icons/Vector-light.png")}
                     style={{ height: 20, width: 20, alignSelf: "flex-start" }}
                     contentFit="scale-down"
@@ -1944,6 +1965,30 @@ export default function MapScreen() {
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
+                          onPress={openCityMap}
+                          style={{
+                            backgroundColor: theme.primary,
+                            height: 50,
+                            borderRadius: 12,
+                            paddingHorizontal: 14,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexDirection: "row",
+                            gap: 6,
+                          }}
+                        >
+                          <Building2 size={20} color={theme.white} />
+                          <Text
+                            style={{
+                              color: theme.white,
+                              fontWeight: "700",
+                              fontSize: 14,
+                            }}
+                          >
+                            {t("City_Map")}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
                           onPress={toggleFavorite}
                           style={{
                             backgroundColor: theme.cardBgSecondary,
@@ -2005,7 +2050,7 @@ export default function MapScreen() {
                 <BottomSheetScrollView contentContainerStyle={{ padding: 0 }}>
                   {article?.thumbnail && (
                     <View style={styles.heroImageContainer}>
-                      <Image
+                      <ExpoImage
                         source={{ uri: article.thumbnail }}
                         style={styles.heroImage}
                         contentFit="cover"
@@ -2038,7 +2083,7 @@ export default function MapScreen() {
                               onPress={() => setSelectedImageIndex(index)}
                               activeOpacity={0.8}
                             >
-                              <Image
+                              <ExpoImage
                                 source={{ uri: item.previewUrl }}
                                 style={styles.image}
                                 contentFit="cover"
@@ -2094,7 +2139,7 @@ export default function MapScreen() {
                   }
                   renderItem={({ item }) => (
                     <View style={styles.fullscreenImageWrapper}>
-                      <Image
+                      <ExpoImage
                         source={{ uri: item.fullUrl }}
                         style={styles.fullscreenImage}
                         contentFit="contain"

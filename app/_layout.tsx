@@ -33,6 +33,7 @@ function sentryBeforeSend(
   const ignoredNetworkErrors = [
     "tiles.openfreemap.org",
     "overpass-api.de",
+    "kumi.systems",
     "nominatim.openstreetmap.org",
     "routing.openstreetmap.de",
     "Failed to check for update",

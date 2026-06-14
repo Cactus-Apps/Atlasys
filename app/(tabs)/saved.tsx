@@ -17,6 +17,7 @@ import {
   Trash2,
   Bookmark,
   ExternalLinkIcon,
+  Building2,
 } from "lucide-react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useRouter } from "expo-router";
@@ -51,6 +52,19 @@ export default function SavedScreen() {
         destName: place.name,
       },
     });
+  };
+
+  const handleCityMap = (place: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const cityId = place.name.toLowerCase().replace(/\s+/g, "-");
+    const q =
+      `name=${encodeURIComponent(place.name)}&latitude=${place.latitude}&longitude=${place.longitude}` +
+      (place.region ? `&region=${encodeURIComponent(place.region)}` : "") +
+      (place.country ? `&country=${encodeURIComponent(place.country)}` : "") +
+      (place.thumbnail
+        ? `&thumbnail=${encodeURIComponent(place.thumbnail)}`
+        : "");
+    router.push(`/city/${cityId}?${q}` as any);
   };
 
   const handleShare = async (item: any) => {
@@ -126,6 +140,15 @@ export default function SavedScreen() {
           >
             <ExternalLinkIcon size={20} color={theme.white} />
             <Text style={styles.badgeText}>Open Map</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => {
+              handleCityMap(item);
+              posthog.capture("saved_place_citymap");
+            }}
+          >
+            <Building2 size={20} color={theme.primary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionBtn}

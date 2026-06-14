@@ -406,6 +406,7 @@
   "Map_theme_bright": "Estándar",
   "Map_theme_dark": "Oscuro",
   "Map_theme_liberty": "Terreno",
+  "Map_theme_city": "Ciudad",
   "Progress_loading": "Cargando…",
   "Progress_done": "✓ Hecho",
   "Location_denied_permanent": "El acceso a la ubicación está denegado permanentemente. Puedes activarlo en los ajustes del dispositivo.",

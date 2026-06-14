@@ -13,11 +13,14 @@ import {
 import { X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
+import cityStyle from "@/assets/map/city-style.json";
+import googlestyle from "@/assets/map/google-style.json"
+import type { StyleSpecification } from "maplibre-gl";
 
 export type MapTheme = {
   key: string;
   labelKey: string;
-  url: string;
+  url: string | StyleSpecification;
   colors: string[]; // preview swatches instead of bitmap thumbnails
 };
 
@@ -39,6 +42,18 @@ export const MAP_THEMES: MapTheme[] = [
     labelKey: "Map_theme_liberty",
     url: "https://tiles.openfreemap.org/styles/liberty",
     colors: ["#c8d8a8", "#e8d5b0", "#b8c8d8"],
+  },
+  {
+    key: "city",
+    labelKey: "Map_theme_city",
+    url: cityStyle as StyleSpecification,
+    colors: ["#e8e0d4", "#f2efe9", "#a8d4e6"],
+  },
+  {
+    key: "google",
+    labelKey: "Goggle Maps",
+    url: googlestyle as StyleSpecification,
+    colors: ["#e8e0d4", "#f2efe9", "#a8d4e6"],
   },
 ];
 
@@ -225,9 +240,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: Platform.OS === "ios" ? 40 : 24,
     paddingTop: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
+    boxShadow: "0 0 20px rgba(0,0,0,0.2)",
     elevation: 20,
   },
   handle: {
