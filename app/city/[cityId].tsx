@@ -68,8 +68,11 @@ import * as Haptics from "expo-haptics";
 import {
   fetchCityPOIs,
   fetchTransitRoutes,
+  fetchTransitRouteDetails,
+  enrichPOIsWithImages,
   type CityPOI,
   type TransitRoute,
+  type CityTransitStop,
 } from "@/lib/geocoding/cityoverpass";
 import {
   fetchPOIDetails,
@@ -154,6 +157,7 @@ export default function CityScreen() {
   const [errorTransit, setErrorTransit] = useState<string | null>(null);
   const [selectedPOI, setSelectedPOI] = useState<CityPOI | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<TransitRoute | null>(null);
+  const [loadingRouteDetails, setLoadingRouteDetails] = useState(false);
   const [localSaved, setLocalSaved] = useState(false);
 
   // POI detail state
@@ -180,9 +184,17 @@ export default function CityScreen() {
     setLoadingPOI(true);
     setErrorPOI(null);
     fetchCityPOIs(lat, lon)
-      .then((data: CityPOI[]) => {
+      .then(async (data: CityPOI[]) => {
+        if (cancelled) return;
+        const enriched = await enrichPOIsWithImages(data);
+        const allPois = data.map((poi) => ({
+          ...poi,
+          image:
+            poi.image || enriched.find((e) => e.osmId === poi.osmId)?.image,
+        }));
+        const ranked = rankPOIs(allPois).slice(0, 20);
         if (!cancelled) {
-          setPois(data);
+          setPois(ranked);
           setLoadingPOI(false);
         }
       })
@@ -329,7 +341,7 @@ export default function CityScreen() {
       setSelectedPOI(null);
       return;
     }
-    router.back();
+    router.navigate("/(tabs)/mapscreen");
   };
 
   const toggleFavorite = () => {
@@ -415,33 +427,66 @@ export default function CityScreen() {
     }
   }, []);
 
-  const handleRouteTap = (route: TransitRoute) => {
+  const handleRouteTap = async (route: TransitRoute) => {
     if (selectedRoute?.id === route.id) {
       setSelectedRoute(null);
       return;
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedRoute(route);
     setSelectedPOI(null);
 
-    if (mapRef.current && route.geometry) {
-      const coords =
-        route.geometry.type === "LineString"
-          ? route.geometry.coordinates
-          : route.geometry.coordinates.flat();
-      if (coords.length > 0) {
-        const lons = coords.map((c: any) => c[0]);
-        const lats = coords.map((c: any) => c[1]);
-        mapRef.current.fitBounds(
-          [
-            Math.min(...lons),
-            Math.min(...lats),
-            Math.max(...lons),
-            Math.max(...lats),
-          ],
-          { padding: 60, duration: 600 },
-        );
+    const osmId = parseInt(route.id.replace("r-", ""), 10);
+    if (!isNaN(osmId)) {
+      setLoadingRouteDetails(true);
+      const details = await fetchTransitRouteDetails(osmId);
+      setLoadingRouteDetails(false);
+
+      if (!details) return;
+
+      setSelectedRoute((prev) =>
+        prev?.id === route.id
+          ? { ...prev, geometry: details.geometry, stops: details.stops }
+          : prev,
+      );
+
+      if (mapRef.current) {
+        const allCoords =
+          (details.geometry?.coordinates.flat() as number[][]) || [];
+        if (allCoords.length > 0) {
+          const lons = allCoords.map((c) => c[0]);
+          const lats = allCoords.map((c) => c[1]);
+          mapRef.current.fitBounds(
+            [
+              Math.min(...lons),
+              Math.min(...lats),
+              Math.max(...lons),
+              Math.max(...lats),
+            ],
+            { padding: 60, duration: 600 },
+          );
+        }
       }
     }
+  };
+
+  const rankPOIs = (pois: CityPOI[]): CityPOI[] => {
+    return pois
+      .map((poi) => {
+        let score = 0;
+        if (poi.image) score += 50;
+        if (poi.stars && poi.stars >= 4) score += 40;
+        if (poi.stars === 5) score += 60;
+        if (poi.description) score += 20;
+        if (poi.website) score += 15;
+        if (poi.phone) score += 10;
+        if (poi.openingHours) score += 10;
+        if (poi.wikidata || poi.wikipedia) score += 15;
+        if (poi.cuisine) score += 5;
+        return { poi, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ poi }) => poi);
   };
 
   const getPOIIcon = (type: string) => {
@@ -493,7 +538,7 @@ export default function CityScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Image */}
-        {(selectedPOI.image) && (
+        {selectedPOI.image && (
           <ExpoImage
             source={{ uri: selectedPOI.image }}
             style={styles.poiHero}
@@ -839,7 +884,6 @@ export default function CityScreen() {
                         </Text>
                       </View>
                     ) : null}
-
                   </View>
                   <Text style={styles.poiCardName} numberOfLines={1}>
                     {item.name}
@@ -913,6 +957,153 @@ export default function CityScreen() {
       )}
     </View>
   );
+
+  const renderTransitDetail = () => {
+    if (!selectedRoute) return null;
+    return (
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 48 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.poiDetailHeader}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.poiDetailBadgeRow}>
+              <View
+                style={[
+                  styles.poiDetailBadge,
+                  { backgroundColor: selectedRoute.colour + "30" },
+                ]}
+              >
+                <Route size={14} color={selectedRoute.colour} />
+                <Text
+                  style={[
+                    styles.poiDetailBadgeText,
+                    { color: selectedRoute.colour },
+                  ]}
+                >
+                  {selectedRoute.routeType}
+                </Text>
+              </View>
+              {selectedRoute.ref && (
+                <View
+                  style={[
+                    styles.poiDetailBadge,
+                    { backgroundColor: theme.primaryLight },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.poiDetailBadgeText,
+                      { color: theme.primary },
+                    ]}
+                  >
+                    {t("Line")} {selectedRoute.ref}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.poiDetailName}>
+              {selectedRoute.name || selectedRoute.ref}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setSelectedRoute(null)}
+            style={[
+              styles.poiDetailClose,
+              { backgroundColor: theme.cardBgSecondary },
+            ]}
+          >
+            <X size={18} color={theme.subTextColor} strokeWidth={2.5} />
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={[styles.poiDivider, { backgroundColor: theme.borderColor }]}
+        />
+
+        {/* Route details */}
+        <View style={styles.poiSection}>
+          <View
+            style={[
+              styles.routeColorBar,
+              { backgroundColor: selectedRoute.colour },
+            ]}
+          />
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[styles.poiSectionTitleText, { color: theme.textColor }]}
+            >
+              {t("Route_info")}
+            </Text>
+            <Text
+              style={[
+                styles.poiCardHours,
+                { color: theme.subTextColor, marginTop: 4 },
+              ]}
+            >
+              {selectedRoute.name}
+            </Text>
+          </View>
+        </View>
+
+        {loadingRouteDetails && (
+          <View style={styles.poiLoading}>
+            <ActivityIndicator color={theme.primary} size="small" />
+            <Text
+              style={[styles.poiLoadingText, { color: theme.subTextColor }]}
+            >
+              {t("Poi_loading_details")}
+            </Text>
+          </View>
+        )}
+
+        {!loadingRouteDetails &&
+          selectedRoute.stops &&
+          selectedRoute.stops.length > 0 && (
+            <View style={styles.poiSection}>
+              <Text
+                style={[
+                  styles.poiSectionTitleText,
+                  { color: theme.textColor, marginBottom: 10 },
+                ]}
+              >
+                {t("Stations").replace(
+                  "{count}",
+                  String(selectedRoute.stops.length),
+                )}{" "}
+                ({selectedRoute.stops.length})
+              </Text>
+              {selectedRoute.stops.map((stop, i, arr) => (
+                <View key={stop.osmId} style={styles.stopRow}>
+                  <View style={styles.stopRowLine}>
+                    <View
+                      style={[
+                        styles.stopDot,
+                        { backgroundColor: selectedRoute.colour },
+                      ]}
+                    />
+                    {i < arr.length - 1 && (
+                      <View
+                        style={[
+                          styles.stopConnector,
+                          { backgroundColor: selectedRoute.colour + "60" },
+                        ]}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    style={[styles.stopName, { color: theme.textColor }]}
+                    numberOfLines={1}
+                  >
+                    {stop.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+      </ScrollView>
+    );
+  };
 
   const renderInfoTab = () => (
     <View style={{ flex: 1 }}>
@@ -1034,6 +1225,28 @@ export default function CityScreen() {
                 ]}
               />
             )}
+            {selectedRoute?.stops?.map((stop) => (
+              <Marker
+                key={`stop-${stop.osmId}`}
+                options={{
+                  coordinate: [stop.lon, stop.lat],
+                  element: {
+                    innerHTML: `
+                      <div style="
+                        width: 20px; height: 20px;
+                        background: ${selectedRoute.colour};
+                        border-radius: 50%;
+                        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+                        border: 2px solid white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "></div>
+                    `,
+                  },
+                }}
+              />
+            ))}
             {selectedPOI && (
               <Marker
                 options={{
@@ -1057,7 +1270,7 @@ export default function CityScreen() {
 
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.headerBtn}>
-            {selectedPOI ? (
+            {selectedPOI || selectedRoute ? (
               <ChevronLeft size={24} color={theme.textColor} />
             ) : (
               <ArrowLeft size={24} color={theme.textColor} />
@@ -1065,7 +1278,11 @@ export default function CityScreen() {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {selectedPOI ? selectedPOI.name : cityName}
+              {selectedPOI
+                ? selectedPOI.name
+                : selectedRoute
+                  ? selectedRoute.ref || selectedRoute.name
+                  : cityName}
             </Text>
             {selectedPOI ? (
               <Text style={styles.headerSub}>{selectedPOI.subtype}</Text>
@@ -1084,7 +1301,7 @@ export default function CityScreen() {
 
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.headerBtn}>
-            {selectedPOI ? (
+            {selectedPOI || selectedRoute ? (
               <ChevronLeft size={24} color={theme.textColor} />
             ) : (
               <ArrowLeft size={24} color={theme.textColor} />
@@ -1092,10 +1309,16 @@ export default function CityScreen() {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {selectedPOI ? selectedPOI.name : cityName}
+              {selectedPOI
+                ? selectedPOI.name
+                : selectedRoute
+                  ? selectedRoute.ref || selectedRoute.name
+                  : cityName}
             </Text>
             {selectedPOI ? (
               <Text style={styles.headerSub}>{selectedPOI.subtype}</Text>
+            ) : selectedRoute ? (
+              <Text style={styles.headerSub}>{selectedRoute.routeType}</Text>
             ) : country ? (
               <Text style={styles.headerSub}>{country}</Text>
             ) : null}
@@ -1114,6 +1337,8 @@ export default function CityScreen() {
       <BottomPanel splitPosition={splitPosition}>
         {selectedPOI ? (
           renderPOIDetail()
+        ) : selectedRoute ? (
+          renderTransitDetail()
         ) : (
           <>
             <View
@@ -1560,6 +1785,43 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       textAlign: "center",
       fontSize: 14,
       paddingVertical: 24,
+    },
+
+    // Transit Detail
+    routeColorBar: {
+      width: 4,
+      borderRadius: 2,
+      marginRight: 12,
+    },
+    stopRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      paddingVertical: 2,
+    },
+    stopRowLine: {
+      width: 24,
+      alignItems: "center",
+      flexShrink: 0,
+      paddingTop: 4,
+    },
+    stopDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      borderWidth: 2,
+      borderColor: white,
+    },
+    stopConnector: {
+      width: 2,
+      flex: 1,
+      minHeight: 20,
+    },
+    stopName: {
+      fontSize: 14,
+      fontWeight: "500",
+      paddingLeft: 8,
+      paddingVertical: 6,
+      flex: 1,
     },
 
     // Shared

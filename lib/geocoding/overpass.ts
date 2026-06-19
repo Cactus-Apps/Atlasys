@@ -74,7 +74,13 @@ export async function fetchPOIDetails(
     });
 
     if (!res.ok) return null;
-    const json = await res.json();
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return null;
+    }
     const element = json.elements?.[0];
     if (!element?.tags) return null;
 

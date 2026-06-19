@@ -44,6 +44,7 @@ function sentryBeforeSend(
     "LocationModule",
     "RuntimeScheduler_Modern",
     "SIGSEGV",
+    "timeout",
   ];
 
   if (ignoredNetworkErrors.some((e) => message.includes(e))) {

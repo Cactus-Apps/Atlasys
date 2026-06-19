@@ -14,6 +14,7 @@ export type CityPOI = {
   phone?: string;
   openingHours?: string;
   cuisine?: string;
+  stars?: number;
 };
 
 export type CityTransitStop = {
@@ -37,6 +38,7 @@ export type TransitRoute = {
     type: "LineString" | "MultiLineString";
     coordinates: number[][] | number[][][];
   };
+  stops?: CityTransitStop[];
 };
 
 export type TransitRouteGeometry = {
@@ -59,21 +61,80 @@ export type CityOSMData = {
   };
 };
 
-const OVERPASS_URL = "https://overpass.private.coffee/api/interpreter";
-
 const HEADERS = {
   "Content-Type": "application/x-www-form-urlencoded",
   "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
 };
 
-async function overpassQuery(query: string): Promise<any> {
-  const res = await fetch(OVERPASS_URL, {
-    method: "POST",
-    headers: HEADERS,
-    body: `data=${encodeURIComponent(query)}`,
-  });
-  if (!res.ok) return null;
-  return res.json();
+const PROXY_URL = process.env.EXPO_PUBLIC_OVERPASS_PROXY_URL;
+const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+
+async function overpassQuery(
+  query: string,
+  options?: {
+    ttl?: number;
+    cityName?: string;
+    lat?: number;
+    lon?: number;
+    radius?: number;
+  },
+): Promise<any> {
+  const DIRECT_URL = "https://overpass-api.de/api/interpreter";
+
+  let finalQuery = query;
+  if (options?.lat != null && options?.lon != null && options?.radius) {
+    const bbox = buildBbox(options.lat, options.lon, options.radius / 1000);
+    finalQuery = query.replace(/{bbox}/g, bbox);
+  }
+
+  if (PROXY_URL) {
+    try {
+      console.log("use vercel server");
+      const res = await fetch(PROXY_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+          query: finalQuery,
+          ttl: options?.ttl ?? 86400,
+          city_name: options?.cityName,
+          lat: options?.lat,
+          lon: options?.lon,
+        }),
+      });
+      if (res.ok) {
+        const proxyText = await res.text();
+        try {
+          return JSON.parse(proxyText);
+        } catch {
+          console.warn("Proxy JSON parse error, response starts with:", proxyText.slice(0, 100));
+        }
+      }
+    } catch {}
+  }
+
+  console.log("use Overpass Api");
+  try {
+    const res = await fetch(DIRECT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
+      },
+      body: `data=${encodeURIComponent(finalQuery)}`,
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
 }
 
 function buildBbox(lat: number, lon: number, radiusKm: number): string {
@@ -132,86 +193,62 @@ export async function fetchCityPOIs(
   const bbox = buildBbox(lat, lon, radiusKm);
 
   const query = `
-    [out:json][timeout:30];
-    (
-      node
-        ["tourism"~"attraction|museum|viewpoint|gallery|monument|artwork"]
-        (${bbox});
-      node
-        ["historic"~"memorial|monument|castle|ruins|church|building|tower|fort"]
-        (${bbox});
-      node
-        ["leisure"~"park|garden|playground"]
-        (${bbox});
-      node
-        ["amenity"~"theatre|cinema|library|townhall"]
-        (${bbox});
-      way
-        ["tourism"~"attraction|museum|viewpoint|gallery|monument|artwork"]
-        (${bbox});
-      way
-        ["historic"~"memorial|monument|castle|ruins|church|building|tower|fort"]
-        (${bbox});
-      way
-        ["leisure"~"park|garden"]
-        (${bbox});
-      way
-        ["amenity"~"theatre|cinema|library|townhall"]
-        (${bbox});
-    );
-    out center tags;
-  `;
+  [out:json][timeout:25][maxsize:67108864];
+  (
+    node["tourism"~"attraction|museum|viewpoint|gallery|monument"]
+      (${bbox});
+    way["tourism"~"attraction|museum|viewpoint|gallery|monument"]
+      (${bbox});
+    node["historic"~"memorial|monument|castle|ruins"]
+      (${bbox});
+  );
+  out center tags 50;
+`;
 
-  try {
-    const data = await overpassQuery(query);
-    if (!data?.elements) return [];
-
-    const pois: CityPOI[] = [];
-
-    for (const el of data.elements) {
-      const t = el.tags || {};
-      const name = t.name || t.name_en || t["name:en"] || t.short_name || "";
-      if (!name) continue;
-
-      const poiLat = el.lat ?? el.center?.lat ?? lat;
-      const poiLon = el.lon ?? el.center?.lon ?? lon;
-
-      const tourism = t.tourism || "";
-      const historic = t.historic || "";
-      const leisure = t.leisure || "";
-      const amenity = t.amenity || "";
-
-      const category =
-        tourism ||
-        historic ||
-        leisure ||
-        amenity ||
-        "attraction";
-      const subtype = tourism || historic || leisure || amenity || "attraction";
-
-      pois.push({
-        osmId: Math.abs(el.id),
-        osmType: el.type,
-        name,
-        lat: poiLat,
-        lon: poiLon,
-        category,
-        subtype,
-        image: t.image,
-        wikidata: t.wikidata,
-        wikipedia: t.wikipedia,
-        description: t.description || t["description:en"],
-        website: t.website || t["contact:website"],
-        phone: t.phone || t["contact:phone"],
-        openingHours: t.opening_hours,
-        cuisine: t.cuisine?.replace(/;/g, ", "),
-      });
-    }
-
-    return pois;
-  } catch {
-    return [];
+  const data = await overpassQuery(query);
+  if (!data?.elements) {
+    throw new Error("No response from Overpass API");
   }
+
+  const pois: CityPOI[] = [];
+
+  for (const el of data.elements) {
+    const t = el.tags || {};
+    const name = t.name || t.name_en || t["name:en"] || t.short_name || "";
+    if (!name) continue;
+
+    const poiLat = el.lat ?? el.center?.lat ?? lat;
+    const poiLon = el.lon ?? el.center?.lon ?? lon;
+
+    const tourism = t.tourism || "";
+    const historic = t.historic || "";
+    const leisure = t.leisure || "";
+    const amenity = t.amenity || "";
+
+    const category = tourism || historic || leisure || amenity || "attraction";
+    const subtype = tourism || historic || leisure || amenity || "attraction";
+
+    pois.push({
+      osmId: Math.abs(el.id),
+      osmType: el.type,
+      name,
+      lat: poiLat,
+      lon: poiLon,
+      category,
+      subtype,
+      image: t.image,
+      wikidata: t.wikidata,
+      wikipedia: t.wikipedia,
+      description: t.description || t["description:en"],
+      website: t.website || t["contact:website"],
+      phone: t.phone || t["contact:phone"],
+      openingHours: t.opening_hours,
+      cuisine: t.cuisine?.replace(/;/g, ", "),
+      stars: t.stars ? parseInt(t.stars, 10) : undefined,
+    });
+  }
+
+  return pois;
 }
 
 export async function fetchCityTransit(
@@ -260,7 +297,10 @@ export async function fetchCityTransit(
 
       const linesRaw = t.lines || t.route_ref || "";
       const lines = linesRaw
-        ? linesRaw.split(";").map((l: string) => l.trim()).filter(Boolean)
+        ? linesRaw
+            .split(";")
+            .map((l: string) => l.trim())
+            .filter(Boolean)
         : undefined;
 
       stops.push({
@@ -285,31 +325,102 @@ export async function fetchTransitRoutes(
   lat: number,
   lon: number,
 ): Promise<TransitRoute[]> {
-  const bbox = buildBbox(lat, lon, 2);
   const query = `
-    [out:json][timeout:25];
-    (
-      relation["route"~"train|subway|tram|bus|ferry|light_rail"](around:2000, ${lat}, ${lon});
-    );
+    [out:json][timeout:30];
+    relation["route"~"train|subway|tram|bus|ferry|light_rail"]({bbox});
     out center tags;
   `;
+  const data = await overpassQuery(query, { lat, lon, radius: 3000 });
+  if (!data?.elements) {
+    throw new Error("No response from Overpass API");
+  }
+  return data.elements
+    .filter((el: any) => el.tags?.name || el.tags?.ref)
+    .map((el: any) => {
+      const t = el.tags || {};
+      return {
+        id: `r-${Math.abs(el.id)}`,
+        ref: t.ref || t.name || "",
+        name: t.name || t.ref || "",
+        routeType: t.route || t.railway || "unknown",
+        colour: t.colour || t.color || "#3B82F6",
+      };
+    });
+}
+
+export async function fetchTransitRouteDetails(osmId: number): Promise<{
+  geometry: TransitRoute["geometry"];
+  stops: CityTransitStop[];
+} | null> {
+  const query = `
+    [out:json][timeout:30];
+    (
+      relation(${osmId});
+      >>;
+    );
+    out geom tags;
+  `;
+
   try {
     const data = await overpassQuery(query);
-    if (!data?.elements) return [];
-    return data.elements
-      .filter((el: any) => el.tags?.name || el.tags?.ref)
-      .map((el: any) => {
-        const t = el.tags || {};
-        return {
-          id: `r-${Math.abs(el.id)}`,
-          ref: t.ref || t.name || "",
-          name: t.name || t.ref || "",
-          routeType: t.route || t.railway || "unknown",
-          colour: t.colour || t.color || "#3B82F6",
-        };
+    if (!data?.elements?.length) return null;
+
+    const relation = data.elements.find((el: any) => el.type === "relation");
+    if (!relation) return null;
+
+    let geometry: TransitRoute["geometry"] | undefined;
+    const allCoords: number[][] = [];
+
+    const ways = data.elements.filter((el: any) => el.type === "way");
+
+    for (const way of ways) {
+      if (way.geometry) {
+        for (const pt of way.geometry) {
+          allCoords.push([pt.lon, pt.lat]);
+        }
+      }
+    }
+
+    if (allCoords.length > 0) {
+      geometry = {
+        type: "LineString",
+        coordinates: allCoords,
+      };
+    }
+
+    const stops: CityTransitStop[] = [];
+    const stopNodes = data.elements.filter(
+      (el: any) =>
+        el.type === "node" &&
+        el.tags?.name &&
+        (el.tags?.railway === "station" ||
+          el.tags?.railway === "stop" ||
+          el.tags?.railway === "tram_stop" ||
+          el.tags?.railway === "halt" ||
+          el.tags?.railway === "light_rail" ||
+          el.tags?.public_transport === "stop_position" ||
+          el.tags?.amenity === "bus_station" ||
+          el.tags?.amenity === "ferry_terminal"),
+    );
+
+    for (const node of stopNodes) {
+      stops.push({
+        osmId: Math.abs(node.id),
+        osmType: node.type,
+        name: node.tags.name,
+        lat: node.lat,
+        lon: node.lon,
+        type: node.tags.railway || node.tags.amenity || "stop",
+        colour: node.tags.colour || node.tags.color,
       });
+    }
+
+    return {
+      geometry: geometry || { type: "LineString", coordinates: [] },
+      stops,
+    };
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -368,19 +479,23 @@ export async function fetchPOIWikiImage(
   }
 }
 
-export async function enrichPOIsWithImages(pois: CityPOI[]): Promise<CityPOI[]> {
-  const enriched = await Promise.all(
-    pois.map(async (poi) => {
-      if (!poi.image && (poi.wikidata || poi.wikipedia)) {
-        const imageUrl = await fetchPOIWikiImage(poi.wikidata, poi.wikipedia);
-        if (imageUrl) {
-          return { ...poi, image: imageUrl };
-        }
-      }
-      return poi;
-    }),
-  );
-  return enriched.filter((p) => p.image);
+export async function enrichPOIsWithImages(
+  pois: CityPOI[],
+): Promise<CityPOI[]> {
+  const results: CityPOI[] = [];
+  const toEnrich = pois.slice(0, 10);
+  const rest = pois.slice(10);
+
+  for (const poi of toEnrich) {
+    if (poi.image || (!poi.wikidata && !poi.wikipedia)) {
+      results.push(poi);
+      continue;
+    }
+    const imageUrl = await fetchPOIWikiImage(poi.wikidata, poi.wikipedia);
+    results.push(imageUrl ? { ...poi, image: imageUrl } : poi);
+  }
+
+  return [...results, ...rest];
 }
 
 export async function fetchWikipediaArticle(
@@ -451,10 +566,24 @@ export async function fetchWikipediaArticle(
     const isJunk = (url: string) => {
       const lower = url.toLowerCase();
       return [
-        "locator_map", "location_map", "relief_map", "topographic",
-        "_map.", "karte.", "flag_of", "flagge_", "coat_of_arms",
-        "wappen_", "klimadiagramm", "icon", "logo", ".svg",
-        "blank_", "placeholder", "no_image", "transparent",
+        "locator_map",
+        "location_map",
+        "relief_map",
+        "topographic",
+        "_map.",
+        "karte.",
+        "flag_of",
+        "flagge_",
+        "coat_of_arms",
+        "wappen_",
+        "klimadiagramm",
+        "icon",
+        "logo",
+        ".svg",
+        "blank_",
+        "placeholder",
+        "no_image",
+        "transparent",
       ].some((w) => lower.includes(w));
     };
 

@@ -195,6 +195,7 @@ export default function RouteSheet({
         `${end.coordinate[0]},${end.coordinate[1]}` +
         `?overview=full&alternatives=true&geometries=geojson`;
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`Route request failed: ${res.status}`);
       const json = await res.json();
       if (!json.routes?.length) {
         setRouteError(t("Route_not_found"));

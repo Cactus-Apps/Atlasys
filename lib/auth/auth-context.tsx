@@ -37,6 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true);
+  const isSigningInRef = React.useRef(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -244,6 +245,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async (): Promise<string | null> => {
+    if (isSigningInRef.current) return null;
+    isSigningInRef.current = true;
     try {
       const redirectTo =
         Platform.OS === "web"
@@ -334,6 +337,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       Sentry.captureException(err);
       return err.message ?? i18n.t("Auth_google_signin_failed");
+    } finally {
+      isSigningInRef.current = false;
     }
   };
 

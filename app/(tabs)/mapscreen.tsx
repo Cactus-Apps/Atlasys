@@ -302,6 +302,7 @@ export default function MapScreen() {
   const getIPLocation = async (): Promise<[number, number] | null> => {
     try {
       const res = await fetch("https://ipapi.co/json/");
+      if (!res.ok) return null;
       const data = await res.json();
       if (data.latitude && data.longitude) {
         return [data.longitude, data.latitude];
@@ -829,6 +830,7 @@ export default function MapScreen() {
         const res = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current_weather=true`,
         );
+        if (!res.ok) return;
         const data = await res.json();
         if (data.current_weather) {
           setWeather({
@@ -987,6 +989,7 @@ export default function MapScreen() {
         `?overview=full&alternatives=true&geometries=geojson`;
 
       const res = await fetch(url);
+      if (!res.ok) return;
       const json = await res.json();
 
       if (!json.routes?.length) return;
