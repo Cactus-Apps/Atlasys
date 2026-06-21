@@ -520,9 +520,11 @@
   "route_type_ferry": "Fähren",
 
   "route_type_other": "Sonstige",
+  "Route_info": "Linieninformationen",
   "Stops": "Haltestellen",
   "Route_from": "Von",
   "Route_to": "Endstation",
+  "Stations": "Stationen",
   "Profile_group_Cached_Places": "GECACHETE ORTE",
   "Profile_cached_cities": "Cities",
   "Profile_cached_cities_sub": "Gespeicherte Städte mit Offlinedaten",

@@ -131,6 +131,17 @@ export default function SavedScreen() {
           <TouchableOpacity
             style={styles.actionBtnPrimary}
             onPress={() => {
+              handleCityMap(item);
+              posthog.capture("saved_place_citymap");
+            }}
+          >
+            <Building2 size={20} color={theme.white} />
+
+            <Text style={styles.badgeText}>Open City Map</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => {
               handleNavigate(item);
               posthog.capture("saved_place_opened", {
                 country: item.country,
@@ -138,17 +149,7 @@ export default function SavedScreen() {
               });
             }}
           >
-            <ExternalLinkIcon size={20} color={theme.white} />
-            <Text style={styles.badgeText}>Open Map</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => {
-              handleCityMap(item);
-              posthog.capture("saved_place_citymap");
-            }}
-          >
-            <Building2 size={20} color={theme.primary} />
+            <ExternalLinkIcon size={20} color={theme.primary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionBtn}

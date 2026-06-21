@@ -208,6 +208,7 @@ export default function MapScreen() {
     type: string;
     subclass: string;
     osm_id: number;
+    osm_type: string;
     lat: number;
     lon: number;
   } | null>(null);
@@ -1124,6 +1125,7 @@ export default function MapScreen() {
       type: closest.properties?.class ?? "",
       subclass: closest.properties?.subclass ?? "",
       osm_id,
+      osm_type: closest.properties?.osm_type ?? "node",
       lat: lat2,
       lon,
     };

@@ -25,7 +25,7 @@ export type CityTransitStop = {
   lon: number;
   type: string;
   lines?: string[];
-  colour?: string;
+  color?: string;
 };
 
 export type TransitRoute = {
@@ -61,6 +61,13 @@ export type CityOSMData = {
   };
 };
 
+import i18n from "@/app/i18n";
+
+function l10n(t: Record<string, any>, key: string): string | undefined {
+  const lang = i18n.language?.split("-")[0] || "en";
+  return t[`${key}:${lang}`] ?? t[key];
+}
+
 const HEADERS = {
   "Content-Type": "application/x-www-form-urlencoded",
   "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
@@ -89,7 +96,6 @@ async function overpassQuery(
 
   if (PROXY_URL) {
     try {
-      console.log("use vercel server");
       const res = await fetch(PROXY_URL, {
         method: "POST",
         headers: {
@@ -109,13 +115,15 @@ async function overpassQuery(
         try {
           return JSON.parse(proxyText);
         } catch {
-          console.warn("Proxy JSON parse error, response starts with:", proxyText.slice(0, 100));
+          console.warn(
+            "Proxy JSON parse error, response starts with:",
+            proxyText.slice(0, 100),
+          );
         }
       }
     } catch {}
   }
 
-  console.log("use Overpass Api");
   try {
     const res = await fetch(DIRECT_URL, {
       method: "POST",
@@ -199,7 +207,7 @@ export async function fetchCityPOIs(
       (${bbox});
     way["tourism"~"attraction|museum|viewpoint|gallery|monument"]
       (${bbox});
-    node["historic"~"memorial|monument|castle|ruins"]
+    node["historic"~"monument|castle|ruins"]
       (${bbox});
   );
   out center tags 50;
@@ -214,7 +222,7 @@ export async function fetchCityPOIs(
 
   for (const el of data.elements) {
     const t = el.tags || {};
-    const name = t.name || t.name_en || t["name:en"] || t.short_name || "";
+    const name = l10n(t, "name") || t.short_name || "";
     if (!name) continue;
 
     const poiLat = el.lat ?? el.center?.lat ?? lat;
@@ -225,8 +233,10 @@ export async function fetchCityPOIs(
     const leisure = t.leisure || "";
     const amenity = t.amenity || "";
 
-    const category = tourism || historic || leisure || amenity || "attraction";
     const subtype = tourism || historic || leisure || amenity || "attraction";
+    if (subtype === "memorial" || subtype === "artwork") continue;
+
+    const category = tourism || historic || leisure || amenity || "attraction";
 
     pois.push({
       osmId: Math.abs(el.id),
@@ -239,7 +249,7 @@ export async function fetchCityPOIs(
       image: t.image,
       wikidata: t.wikidata,
       wikipedia: t.wikipedia,
-      description: t.description || t["description:en"],
+      description: l10n(t, "description"),
       website: t.website || t["contact:website"],
       phone: t.phone || t["contact:phone"],
       openingHours: t.opening_hours,
@@ -285,7 +295,7 @@ export async function fetchCityTransit(
 
     for (const el of data.elements) {
       const t = el.tags || {};
-      const name = t.name || "";
+      const name = l10n(t, "name") || "";
       if (!name) continue;
 
       const stopLat = el.lat ?? el.center?.lat ?? lat;
@@ -311,7 +321,7 @@ export async function fetchCityTransit(
         lon: stopLon,
         type: transitType,
         lines,
-        colour: t.colour || t.color,
+        color: t.colour || t.color,
       });
     }
 
@@ -340,8 +350,8 @@ export async function fetchTransitRoutes(
       const t = el.tags || {};
       return {
         id: `r-${Math.abs(el.id)}`,
-        ref: t.ref || t.name || "",
-        name: t.name || t.ref || "",
+        ref: t.ref || l10n(t, "name") || "",
+        name: l10n(t, "name") || t.ref || "",
         routeType: t.route || t.railway || "unknown",
         colour: t.colour || t.color || "#3B82F6",
       };
@@ -360,7 +370,6 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
     );
     out geom tags;
   `;
-
   try {
     const data = await overpassQuery(query);
     if (!data?.elements?.length) return null;
@@ -368,24 +377,60 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
     const relation = data.elements.find((el: any) => el.type === "relation");
     if (!relation) return null;
 
-    let geometry: TransitRoute["geometry"] | undefined;
-    const allCoords: number[][] = [];
+    const elementsIndex = new Map(
+      data.elements.map((el: any) => [Math.abs(el.id), el]),
+    );
 
-    const ways = data.elements.filter((el: any) => el.type === "way");
+    const waySegments: number[][][] = [];
+    const visited = new Set<number>();
 
-    for (const way of ways) {
-      if (way.geometry) {
-        for (const pt of way.geometry) {
-          allCoords.push([pt.lon, pt.lat]);
+    function traverseMember(member: any): void {
+      const el = elementsIndex.get(Math.abs(member.ref)) as any;
+      if (!el || visited.has(el.id)) return;
+      visited.add(el.id);
+
+      if (el.type === "way" && el.geometry) {
+        const pts = el.geometry.map((pt: any) => [pt.lon, pt.lat]);
+        if (member.role === "backward") pts.reverse();
+        waySegments.push(pts);
+        return;
+      }
+
+      if (el.type === "relation" && el.members) {
+        for (const sub of el.members) {
+          traverseMember(sub);
         }
       }
     }
 
-    if (allCoords.length > 0) {
-      geometry = {
-        type: "LineString",
-        coordinates: allCoords,
-      };
+    for (const member of relation.members || []) {
+      traverseMember(member);
+    }
+
+    const orderedCoords: number[][] = [];
+    if (waySegments.length > 0) {
+      orderedCoords.push(...waySegments[0]);
+
+      for (let i = 1; i < waySegments.length; i++) {
+        const prev = orderedCoords[orderedCoords.length - 1];
+        const seg = waySegments[i];
+        const first = seg[0];
+        const last = seg[seg.length - 1];
+
+        const distToFirst = Math.hypot(prev[0] - first[0], prev[1] - first[1]);
+        const distToLast = Math.hypot(prev[0] - last[0], prev[1] - last[1]);
+
+        if (distToFirst <= distToLast) {
+          orderedCoords.push(...seg.slice(1));
+        } else {
+          orderedCoords.push(...[...seg].reverse().slice(1));
+        }
+      }
+    }
+
+    let geometry: TransitRoute["geometry"] | undefined;
+    if (orderedCoords.length > 0) {
+      geometry = { type: "LineString", coordinates: orderedCoords };
     }
 
     const stops: CityTransitStop[] = [];
@@ -411,8 +456,27 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
         lat: node.lat,
         lon: node.lon,
         type: node.tags.railway || node.tags.amenity || "stop",
-        colour: node.tags.colour || node.tags.color,
+        color: node.tags.colour || node.tags.color,
       });
+    }
+
+    if (orderedCoords.length > 0 && stops.length > 1) {
+      const mapped = stops.map((s) => {
+        let minDist = Infinity;
+        let bestIdx = 0;
+        for (let i = 0; i < orderedCoords.length; i++) {
+          const dx = s.lon - orderedCoords[i][0];
+          const dy = s.lat - orderedCoords[i][1];
+          const dist = dx * dx + dy * dy;
+          if (dist < minDist) {
+            minDist = dist;
+            bestIdx = i;
+          }
+        }
+        return { stop: s, idx: bestIdx };
+      });
+      mapped.sort((a, b) => a.idx - b.idx);
+      stops.splice(0, stops.length, ...mapped.map((p) => p.stop));
     }
 
     return {
@@ -463,14 +527,15 @@ export async function fetchPOIWikiImage(
 
     const imageName = imageClaim.replace(/ /g, "_");
     const infoRes = await fetch(
-      `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(imageName)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`,
+      `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(imageName)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=50&format=json&origin=*`,
       { headers: { "User-Agent": HEADERS["User-Agent"] } },
     );
     const infoData = await infoRes.json();
     const pages = infoData.query?.pages;
     if (pages) {
       const pageId = Object.keys(pages)[0];
-      return pages[pageId]?.imageinfo?.[0]?.thumburl || null;
+      const info = pages[pageId]?.imageinfo?.[0];
+      return info?.thumburl || info?.url || null;
     }
 
     return null;
@@ -483,11 +548,11 @@ export async function enrichPOIsWithImages(
   pois: CityPOI[],
 ): Promise<CityPOI[]> {
   const results: CityPOI[] = [];
-  const toEnrich = pois.slice(0, 10);
-  const rest = pois.slice(10);
+  const toEnrich = pois.slice(0, 20);
+  const rest = pois.slice(20);
 
   for (const poi of toEnrich) {
-    if (poi.image || (!poi.wikidata && !poi.wikipedia)) {
+    if (!poi.wikidata && !poi.wikipedia) {
       results.push(poi);
       continue;
     }
@@ -496,6 +561,33 @@ export async function enrichPOIsWithImages(
   }
 
   return [...results, ...rest];
+}
+
+export async function fetchLocalizedName(
+  wikipedia: string | undefined,
+): Promise<string | null> {
+  const lang = i18n.language?.split("-")[0] || "en";
+  if (!wikipedia) return null;
+
+  const [wikiLang, title] = wikipedia.split(":", 2);
+  if (!title || wikiLang === lang) return null;
+
+  try {
+    const res = await fetch(
+      `https://${wikiLang}.wikipedia.org/w/api.php?action=query&prop=langlinks&titles=${encodeURIComponent(title)}&lllang=${lang}&format=json&origin=*`,
+      { headers: HEADERS },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const pages = data.query?.pages;
+    if (pages) {
+      const pageId = Object.keys(pages)[0];
+      const langlinks = pages[pageId]?.langlinks;
+      if (langlinks?.[0]) return langlinks[0]["*"] as string;
+    }
+  } catch {}
+
+  return null;
 }
 
 export async function fetchWikipediaArticle(

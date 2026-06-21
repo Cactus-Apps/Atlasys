@@ -53,61 +53,67 @@ export async function getOsmIdFromNominatim(
 export async function fetchPOIDetails(
   osmId: number,
   osmType?: string,
+  retries = 2,
 ): Promise<OverpassPOIDetails | null> {
   if (!osmId) return null;
 
   const absId = Math.abs(osmId);
-  const elementType = osmType === "way" ? "way" : "node";
+  const validTypes = ["node", "way", "relation"];
+  const elementType = validTypes.includes(osmType || "") ? osmType : "node";
+  const query = `[out:json][timeout:10];${elementType}(${absId});out body;`;
 
-  const query = `
-    [out:json][timeout:25];
-    ${elementType}(${absId});
-    out tags;
-  `;
+  const UA = `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`;
+  const url = "https://overpass-api.de/api/interpreter";
+  const body = `data=${encodeURIComponent(query)}`;
 
-  try {
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `data=${encodeURIComponent(query)}`,
-    });
-
-    if (!res.ok) return null;
-    const text = await res.text();
-    let json;
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      json = JSON.parse(text);
-    } catch {
-      return null;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": UA,
+        },
+        body,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) continue;
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch { continue; }
+      const element = json.elements?.[0];
+      if (!element?.tags) continue;
+
+      const t = element.tags;
+      return {
+        name: t.name,
+        phone: t.phone ?? t["contact:phone"],
+        website: t.website ?? t["contact:website"] ?? t.url,
+        email: t.email ?? t["contact:email"],
+        openingHours: t.opening_hours,
+        street: t["addr:street"],
+        housenumber: t["addr:housenumber"],
+        city: t["addr:city"],
+        postcode: t["addr:postcode"],
+        wheelchair: t.wheelchair,
+        cuisine: t.cuisine?.replace(/;/g, ", "),
+        takeaway: t.takeaway,
+        delivery: t.delivery,
+        stars: t.stars ?? t["tourism:stars"],
+        fee: t.fee,
+        wikidata: t.wikidata,
+        wikipedia: t.wikipedia,
+        description: t.description,
+      };
+    } catch (e) {
+      if (attempt === retries) return null;
     }
-    const element = json.elements?.[0];
-    if (!element?.tags) return null;
-
-    const t = element.tags;
-
-    return {
-      name: t.name,
-      phone: t.phone ?? t["contact:phone"],
-      website: t.website ?? t["contact:website"] ?? t.url,
-      email: t.email ?? t["contact:email"],
-      openingHours: t.opening_hours,
-      street: t["addr:street"],
-      housenumber: t["addr:housenumber"],
-      city: t["addr:city"],
-      postcode: t["addr:postcode"],
-      wheelchair: t.wheelchair,
-      cuisine: t.cuisine?.replace(/;/g, ", "),
-      takeaway: t.takeaway,
-      delivery: t.delivery,
-      stars: t.stars ?? t["tourism:stars"],
-      fee: t.fee,
-      wikidata: t.wikidata,
-      wikipedia: t.wikipedia,
-      description: t.description,
-    };
-  } catch {
-    return null;
   }
+  return null;
 }
 
 export function parseOpeningHours(raw: string): OpenStatus {
@@ -215,4 +221,61 @@ export function parseOpeningHours(raw: string): OpenStatus {
   } catch {
     return { isOpen: false, label: raw, color: "#94A3B8" };
   }
+}
+
+export type DayHours = {
+  day: string;
+  hours: string;
+};
+
+export function parseOpeningHoursTable(raw: string): DayHours[] {
+  if (!raw) return [];
+  if (raw.toLowerCase() === "24/7") {
+    return [
+      { day: "Mo", hours: "00:00-24:00" },
+      { day: "Tu", hours: "00:00-24:00" },
+      { day: "We", hours: "00:00-24:00" },
+      { day: "Th", hours: "00:00-24:00" },
+      { day: "Fr", hours: "00:00-24:00" },
+      { day: "Sa", hours: "00:00-24:00" },
+      { day: "Su", hours: "00:00-24:00" },
+    ];
+  }
+
+  const DAY: Record<string, string> = {
+    Mo: "Mo", Tu: "Tu", We: "We", Th: "Th", Fr: "Fr", Sa: "Sa", Su: "Su",
+  };
+  const DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+  const result: DayHours[] = DAYS.map((d) => ({ day: d, hours: "Closed" }));
+
+  const parts = raw.split(";").map((s) => s.trim()).filter(Boolean);
+  for (const part of parts) {
+    const m = part.match(/^([A-Za-z,\-\s]+)\s+(.+)$/);
+    if (!m) continue;
+    const daysPart = m[1].trim();
+    const hoursPart = m[2].trim().replace(/,/g, ", ");
+    const display = hoursPart.toLowerCase() === "off" || hoursPart.toLowerCase() === "closed" ? "Closed" : hoursPart;
+
+    for (const group of daysPart.split(",").map((s) => s.trim())) {
+      if (group.includes("-")) {
+        const [start, end] = group.split("-").map((s) => s.trim());
+        const si = DAYS.indexOf(start);
+        const ei = DAYS.indexOf(end);
+        if (si !== -1 && ei !== -1) {
+          if (si <= ei) {
+            for (let i = si; i <= ei; i++) result[i].hours = display;
+          } else {
+            for (let i = si; i < 7; i++) result[i].hours = display;
+            for (let i = 0; i <= ei; i++) result[i].hours = display;
+          }
+        }
+      } else {
+        const idx = DAYS.indexOf(group);
+        if (idx !== -1) result[idx].hours = display;
+      }
+    }
+  }
+
+  return result;
 }

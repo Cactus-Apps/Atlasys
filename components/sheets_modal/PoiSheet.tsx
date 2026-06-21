@@ -37,6 +37,7 @@ type SelectedPoi = {
   type: string;
   subclass: string;
   osm_id: number;
+  osm_type: string;
   lat: number;
   lon: number;
 };
@@ -119,7 +120,7 @@ export default function PoiSheet({
     setDetails(null);
     setLoading(true);
 
-    fetchPOIDetails(selectedPoi.osm_id).then((data) => {
+    fetchPOIDetails(selectedPoi.osm_id, selectedPoi.osm_type).then((data) => {
       setDetails(data);
       setLoading(false);
     });

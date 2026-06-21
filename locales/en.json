@@ -520,9 +520,11 @@
   "route_type_ferry": "Ferries",
 
   "route_type_other": "Other",
+  "Route_info": "Route Information",
   "Stops": "Stops",
   "Route_from": "From",
   "Route_to": "Terminus",
+  "Stations": "Stations",
   "Profile_group_Cached_Places": "CACHED PLACES",
   "Profile_cached_cities": "Cached Cities",
   "Profile_cached_cities_sub": "Saved cities with offline data",

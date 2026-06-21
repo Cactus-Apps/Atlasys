@@ -24,6 +24,7 @@ import {
   Clock,
   Phone,
   Globe,
+  ChevronDown,
   ChevronLeft,
   X,
   Route,
@@ -35,6 +36,7 @@ import {
   TramFront,
   TrainFront,
   Ship,
+  ArrowRight,
 } from "lucide-react-native";
 import React, {
   useEffect,
@@ -74,6 +76,7 @@ import {
   fetchTransitRoutes,
   fetchTransitRouteDetails,
   enrichPOIsWithImages,
+  fetchLocalizedName,
   type CityPOI,
   type TransitRoute,
   type CityTransitStop,
@@ -81,8 +84,10 @@ import {
 import {
   fetchPOIDetails,
   parseOpeningHours,
+  parseOpeningHoursTable,
   type OverpassPOIDetails,
   type OpenStatus,
+  type DayHours,
 } from "@/lib/geocoding/overpass";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import BottomPanel, {
@@ -168,6 +173,7 @@ export default function CityScreen() {
   // POI detail state
   const [poiDetails, setPoiDetails] = useState<OverpassPOIDetails | null>(null);
   const [loadingPoiDetails, setLoadingPoiDetails] = useState(false);
+  const [hoursExpanded, setHoursExpanded] = useState(false);
 
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const addPlace = useAuthStore((s) => s.addPlace);
@@ -192,12 +198,7 @@ export default function CityScreen() {
       .then(async (data: CityPOI[]) => {
         if (cancelled) return;
         const enriched = await enrichPOIsWithImages(data);
-        const allPois = data.map((poi) => ({
-          ...poi,
-          image:
-            poi.image || enriched.find((e) => e.osmId === poi.osmId)?.image,
-        }));
-        const ranked = rankPOIs(allPois).slice(0, 20);
+        const ranked = rankPOIs(enriched).slice(0, 20);
         if (!cancelled) {
           setPois(ranked);
           setLoadingPOI(false);
@@ -424,6 +425,12 @@ export default function CityScreen() {
         setLoadingPoiDetails(false);
       });
 
+    fetchLocalizedName(poi.wikipedia).then((localName) => {
+      if (localName) {
+        setSelectedPOI((prev) => (prev ? { ...prev, name: localName } : prev));
+      }
+    });
+
     if (mapRef.current) {
       mapRef.current.flyTo({
         center: [poi.lon, poi.lat],
@@ -446,32 +453,34 @@ export default function CityScreen() {
     if (!isNaN(osmId)) {
       setLoadingRouteDetails(true);
       const details = await fetchTransitRouteDetails(osmId);
-      setLoadingRouteDetails(false);
 
-      if (!details) return;
+      if (!details) {
+        setLoadingRouteDetails(false);
+        return;
+      }
 
       setSelectedRoute((prev) =>
         prev?.id === route.id
           ? { ...prev, geometry: details.geometry, stops: details.stops }
           : prev,
       );
+      setLoadingRouteDetails(false);
 
-      if (mapRef.current) {
-        const allCoords =
-          (details.geometry?.coordinates.flat() as number[][]) || [];
-        if (allCoords.length > 0) {
-          const lons = allCoords.map((c) => c[0]);
-          const lats = allCoords.map((c) => c[1]);
-          mapRef.current.fitBounds(
-            [
-              Math.min(...lons),
-              Math.min(...lats),
-              Math.max(...lons),
-              Math.max(...lats),
-            ],
-            { padding: 60, duration: 600 },
-          );
-        }
+      // Fit map to route bounds
+      const coords = details.geometry?.coordinates;
+      if (mapRef.current && coords && (coords as number[][]).length > 0) {
+        const allCoords = coords as number[][];
+        const lons = allCoords.map((c) => c[0]);
+        const lats = allCoords.map((c) => c[1]);
+        mapRef.current.fitBounds(
+          [
+            Math.min(...lons),
+            Math.min(...lats),
+            Math.max(...lons),
+            Math.max(...lats),
+          ],
+          { padding: 60, duration: 600 },
+        );
       }
     }
   };
@@ -502,6 +511,17 @@ export default function CityScreen() {
       .map(({ poi }) => poi);
   };
 
+  function parseRouteStations(
+    name: string,
+  ): { from: string; to: string } | null {
+    const withoutPrefix = name.replace(/^[^:]+:\s*/, "");
+    const parts = withoutPrefix.split(/\s*(?:=>|→|➔|->)\s*/);
+    if (parts.length >= 2) {
+      return { from: parts[0].trim(), to: parts[parts.length - 1].trim() };
+    }
+    return null;
+  }
+
   const ROUTE_TYPE_ORDER: Record<string, number> = {
     subway: 0,
     light_rail: 0,
@@ -520,13 +540,38 @@ export default function CityScreen() {
     ferry: t("route_type_ferry"),
   };
 
-  const TRANSIT_TABS: { key: string; label: string; icon: any; color: string }[] = [
+  const TRANSIT_TABS: {
+    key: string;
+    label: string;
+    icon: any;
+    color: string;
+  }[] = [
     { key: "all", label: t("All"), icon: Route, color: theme.primary },
-    { key: "subway", label: t("route_type_subway"), icon: RailSymbol, color: "#3B82F6" },
-    { key: "tram", label: t("route_type_tram"), icon: TramFront, color: "#10B981" },
-    { key: "train", label: t("route_type_train"), icon: TrainFront, color: "#F59E0B" },
+    {
+      key: "subway",
+      label: t("route_type_subway"),
+      icon: RailSymbol,
+      color: "#3B82F6",
+    },
+    {
+      key: "tram",
+      label: t("route_type_tram"),
+      icon: TramFront,
+      color: "#10B981",
+    },
+    {
+      key: "train",
+      label: t("route_type_train"),
+      icon: TrainFront,
+      color: "#F59E0B",
+    },
     { key: "bus", label: t("route_type_bus"), icon: Bus, color: "#EF4444" },
-    { key: "ferry", label: t("route_type_ferry"), icon: Ship, color: "#06B6D4" },
+    {
+      key: "ferry",
+      label: t("route_type_ferry"),
+      icon: Ship,
+      color: "#06B6D4",
+    },
   ];
 
   const sortTransitRoutes = (routes: TransitRoute[]): TransitRoute[] => {
@@ -563,9 +608,16 @@ export default function CityScreen() {
     }
   };
 
-  const openStatus: OpenStatus | null = poiDetails?.openingHours
-    ? parseOpeningHours(poiDetails.openingHours)
-    : null;
+  const DAYS_ABBR = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const TODAY_ABBR =
+    DAYS_ABBR[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+
+  const openStatus: OpenStatus | null =
+    poiDetails?.openingHours || selectedPOI?.openingHours
+      ? parseOpeningHours(
+          poiDetails?.openingHours || selectedPOI?.openingHours || "",
+        )
+      : null;
 
   const address = [
     poiDetails?.street && poiDetails?.housenumber
@@ -637,8 +689,10 @@ export default function CityScreen() {
               )}
             </View>
             <Text style={styles.poiDetailName}>{selectedPOI.name}</Text>
-            {poiDetails?.description && (
-              <Text style={styles.poiDetailDesc}>{poiDetails.description}</Text>
+            {(selectedPOI.description || poiDetails?.description) && (
+              <Text style={styles.poiDetailDesc}>
+                {poiDetails?.description || selectedPOI.description}
+              </Text>
             )}
           </View>
           <TouchableOpacity
@@ -672,9 +726,11 @@ export default function CityScreen() {
             <Navigation color="#fff" size={18} />
             <Text style={styles.poiPrimaryBtnText}>{t("Show_on_map")}</Text>
           </TouchableOpacity>
-          {poiDetails?.phone && (
+          {(selectedPOI.phone || poiDetails?.phone) && (
             <TouchableOpacity
-              onPress={() => Linking.openURL(`tel:${poiDetails.phone}`)}
+              onPress={() =>
+                Linking.openURL(`tel:${poiDetails?.phone || selectedPOI.phone}`)
+              }
               style={[
                 styles.poiIconBtn,
                 { backgroundColor: theme.successLight },
@@ -683,15 +739,14 @@ export default function CityScreen() {
               <Phone color={theme.success} size={20} />
             </TouchableOpacity>
           )}
-          {poiDetails?.website && (
+          {(selectedPOI.website || poiDetails?.website) && (
             <TouchableOpacity
-              onPress={() =>
+              onPress={() => {
+                const url = poiDetails?.website || selectedPOI.website || "";
                 Linking.openURL(
-                  poiDetails.website!.startsWith("http")
-                    ? poiDetails.website!
-                    : `https://${poiDetails.website}`,
-                )
-              }
+                  url.startsWith("http") ? url : `https://${url}`,
+                );
+              }}
               style={[styles.poiIconBtn, { backgroundColor: theme.infoLight }]}
             >
               <Globe color={theme.info} size={20} />
@@ -716,6 +771,181 @@ export default function CityScreen() {
           style={[styles.poiDivider, { backgroundColor: theme.borderColor }]}
         />
 
+        {/* Opening Hours — collapsible table/grid */}
+        {(poiDetails?.openingHours || selectedPOI?.openingHours) && (
+          <View style={styles.poiSection}>
+            <TouchableOpacity
+              style={styles.poiSectionTitle}
+              onPress={() => setHoursExpanded((v) => !v)}
+              activeOpacity={0.6}
+            >
+              <Clock size={16} color={theme.primary} />
+              <Text
+                style={[
+                  styles.poiSectionTitleText,
+                  { color: theme.textColor, flex: 1 },
+                ]}
+              >
+                {t("Poi_label_opening_hours")}
+              </Text>
+              <ChevronDown
+                size={18}
+                color={theme.subTextColor}
+                style={{
+                  transform: [{ rotate: hoursExpanded ? "180deg" : "0deg" }],
+                }}
+              />
+            </TouchableOpacity>
+
+            {parseOpeningHoursTable(
+              poiDetails?.openingHours || selectedPOI?.openingHours || "",
+            )
+              .filter((row) => hoursExpanded || row.day === TODAY_ABBR)
+              .map((row) => (
+                <View
+                  key={row.day}
+                  style={[
+                    styles.poiDayRow,
+                    { backgroundColor: theme.cardBgSecondary },
+                  ]}
+                >
+                  <Text style={[styles.poiDayName, { color: theme.textColor }]}>
+                    {row.day}
+                  </Text>
+                  <View style={styles.poiDayHours}>
+                    <Text
+                      style={[
+                        row.hours === "Closed"
+                          ? styles.poiDayClosed
+                          : styles.poiDayHoursText,
+                        {
+                          color:
+                            row.hours === "Closed"
+                              ? theme.subTextColor
+                              : theme.textColor,
+                        },
+                      ]}
+                    >
+                      {row.hours}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            {openStatus && (
+              <View style={[styles.poiDayStatus, { marginTop: 8 }]}>
+                <Text
+                  style={[styles.poiDayStatusText, { color: openStatus.color }]}
+                >
+                  {openStatus.label}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Info Section — merge poiDetails on top of selectedPOI data */}
+        <View style={styles.poiInfoGrid}>
+          {address ? (
+            <PoiInfoRow
+              icon={<MapPin size={16} color={theme.primary} />}
+              label={t("Poi_label_address")}
+              value={address}
+              onPress={() =>
+                Linking.openURL(
+                  `https://www.openstreetmap.org/?mlat=${selectedPOI.lat}&mlon=${selectedPOI.lon}`,
+                )
+              }
+            />
+          ) : null}
+          {poiDetails?.cuisine || selectedPOI.cuisine ? (
+            <PoiInfoRow
+              icon={<ChefHat size={16} color={theme.warning} />}
+              label={t("Poi_label_cuisine")}
+              value={poiDetails?.cuisine || selectedPOI.cuisine || ""}
+            />
+          ) : null}
+          {poiDetails?.stars || selectedPOI.stars ? (
+            <PoiInfoRow
+              icon={<Star size={16} color={theme.warning} />}
+              label={t("Poi_label_category")}
+              value={
+                "★".repeat(
+                  parseInt(poiDetails?.stars || String(selectedPOI.stars)),
+                ) + ` (${poiDetails?.stars || selectedPOI.stars})`
+              }
+            />
+          ) : null}
+          {poiDetails?.wheelchair && (
+            <PoiInfoRow
+              icon={<Accessibility size={16} color={theme.info} />}
+              label={t("Poi_label_accessibility")}
+              value={
+                poiDetails.wheelchair === "yes"
+                  ? t("Poi_wheelchair_yes")
+                  : poiDetails.wheelchair === "limited"
+                    ? t("Poi_wheelchair_limited")
+                    : t("Poi_wheelchair_no")
+              }
+              valueColor={
+                poiDetails.wheelchair === "yes"
+                  ? theme.success
+                  : poiDetails.wheelchair === "limited"
+                    ? theme.warning
+                    : theme.danger
+              }
+            />
+          )}
+          {poiDetails?.email && (
+            <PoiInfoRow
+              icon={<Mail size={16} color={theme.purple} />}
+              label={t("Poi_label_email")}
+              value={poiDetails.email}
+              onPress={() => Linking.openURL(`mailto:${poiDetails.email}`)}
+            />
+          )}
+          {(selectedPOI.phone || poiDetails?.phone) && (
+            <PoiInfoRow
+              icon={<Phone size={16} color={theme.success} />}
+              label={t("Poi_label_phone")}
+              value={poiDetails?.phone || selectedPOI.phone || ""}
+              onPress={() =>
+                Linking.openURL(`tel:${poiDetails?.phone || selectedPOI.phone}`)
+              }
+            />
+          )}
+          {(selectedPOI.website || poiDetails?.website) && (
+            <PoiInfoRow
+              icon={<Globe size={16} color={theme.info} />}
+              label={t("Poi_label_website")}
+              value={poiDetails?.website || selectedPOI.website || ""}
+              onPress={() =>
+                Linking.openURL(
+                  (poiDetails?.website || selectedPOI.website || "").startsWith(
+                    "http",
+                  )
+                    ? poiDetails?.website || selectedPOI.website || ""
+                    : `https://${poiDetails?.website || selectedPOI.website}`,
+                )
+              }
+            />
+          )}
+          <PoiInfoRow
+            icon={<MapPin size={16} color={theme.subTextColor} />}
+            label={t("Poi_label_coordinates")}
+            value={`${selectedPOI.lat.toFixed(5)}, ${selectedPOI.lon.toFixed(5)}`}
+          />
+          <PoiInfoRow
+            icon={<Info size={16} color={theme.subTextColor} />}
+            label={t("Poi_label_source")}
+            value={t("Poi_osm_edit_hint")}
+            onPress={() => {
+              Linking.openURL(
+                `https://www.openstreetmap.org/${selectedPOI.osmType}/${selectedPOI.osmId}`,
+              );
+            }}
+          />
+        </View>
+
         {loadingPoiDetails && (
           <View style={styles.poiLoading}>
             <ActivityIndicator color={theme.primary} size="small" />
@@ -725,118 +955,6 @@ export default function CityScreen() {
               {t("Poi_loading_details")}
             </Text>
           </View>
-        )}
-
-        {!loadingPoiDetails && poiDetails && (
-          <>
-            {/* Opening Hours */}
-            {selectedPOI.openingHours && (
-              <View style={styles.poiSection}>
-                <View style={styles.poiSectionTitle}>
-                  <Clock size={16} color={theme.primary} />
-                  <Text
-                    style={[
-                      styles.poiSectionTitleText,
-                      { color: theme.textColor },
-                    ]}
-                  >
-                    {t("Poi_label_opening_hours")}
-                  </Text>
-                </View>
-                <Text style={[styles.poiHoursRaw, { color: theme.textColor }]}>
-                  {selectedPOI.openingHours}
-                </Text>
-                {openStatus && (
-                  <View style={styles.poiDayStatus}>
-                    <Text
-                      style={[
-                        styles.poiDayStatusText,
-                        { color: openStatus.color },
-                      ]}
-                    >
-                      {openStatus.label}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Info Section */}
-            <View style={styles.poiInfoGrid}>
-              {address ? (
-                <PoiInfoRow
-                  icon={<MapPin size={16} color={theme.primary} />}
-                  label={t("Poi_label_address")}
-                  value={address}
-                  onPress={() =>
-                    Linking.openURL(
-                      `https://www.openstreetmap.org/?mlat=${selectedPOI.lat}&mlon=${selectedPOI.lon}`,
-                    )
-                  }
-                />
-              ) : null}
-              {poiDetails.cuisine && (
-                <PoiInfoRow
-                  icon={<ChefHat size={16} color={theme.warning} />}
-                  label={t("Poi_label_cuisine")}
-                  value={poiDetails.cuisine}
-                />
-              )}
-              {poiDetails.stars && (
-                <PoiInfoRow
-                  icon={<Star size={16} color={theme.warning} />}
-                  label={t("Poi_label_category")}
-                  value={
-                    "★".repeat(parseInt(poiDetails.stars)) +
-                    ` (${poiDetails.stars})`
-                  }
-                />
-              )}
-              {poiDetails.wheelchair && (
-                <PoiInfoRow
-                  icon={<Accessibility size={16} color={theme.info} />}
-                  label={t("Poi_label_accessibility")}
-                  value={
-                    poiDetails.wheelchair === "yes"
-                      ? t("Poi_wheelchair_yes")
-                      : poiDetails.wheelchair === "limited"
-                        ? t("Poi_wheelchair_limited")
-                        : t("Poi_wheelchair_no")
-                  }
-                  valueColor={
-                    poiDetails.wheelchair === "yes"
-                      ? theme.success
-                      : poiDetails.wheelchair === "limited"
-                        ? theme.warning
-                        : theme.danger
-                  }
-                />
-              )}
-              {poiDetails.email && (
-                <PoiInfoRow
-                  icon={<Mail size={16} color={theme.purple} />}
-                  label={t("Poi_label_email")}
-                  value={poiDetails.email}
-                  onPress={() => Linking.openURL(`mailto:${poiDetails.email}`)}
-                />
-              )}
-              <PoiInfoRow
-                icon={<MapPin size={16} color={theme.subTextColor} />}
-                label={t("Poi_label_coordinates")}
-                value={`${selectedPOI.lat.toFixed(5)}, ${selectedPOI.lon.toFixed(5)}`}
-              />
-              <PoiInfoRow
-                icon={<Info size={16} color={theme.subTextColor} />}
-                label={t("Poi_label_source")}
-                value={t("Poi_osm_edit_hint")}
-                onPress={() => {
-                  Linking.openURL(
-                    `https://www.openstreetmap.org/${selectedPOI.osmType}/${selectedPOI.osmId}`,
-                  );
-                }}
-              />
-            </View>
-          </>
         )}
 
         {!loadingPoiDetails && !poiDetails && (
@@ -976,20 +1094,24 @@ export default function CityScreen() {
           showsVerticalScrollIndicator={false}
         >
           {(() => {
-            const filtered = activeTransitType === "all"
-              ? transitRoutes
-              : transitRoutes.filter((r) =>
-                  activeTransitType === "subway"
-                    ? r.routeType === "subway" || r.routeType === "light_rail"
-                    : r.routeType === activeTransitType
-                );
+            const filtered =
+              activeTransitType === "all"
+                ? transitRoutes
+                : transitRoutes.filter((r) =>
+                    activeTransitType === "subway"
+                      ? r.routeType === "subway" || r.routeType === "light_rail"
+                      : r.routeType === activeTransitType,
+                  );
             if (filtered.length === 0) {
-              return <Text style={styles.emptyText}>{t("No_transit_found")}</Text>;
+              return (
+                <Text style={styles.emptyText}>{t("No_transit_found")}</Text>
+              );
             }
             const tab = TRANSIT_TABS.find((t) => t.key === activeTransitType);
-            const title = activeTransitType === "all"
-              ? `${t("Routes")} (${filtered.length})`
-              : `${tab?.label || ""} (${filtered.length})`;
+            const title =
+              activeTransitType === "all"
+                ? `${t("Routes")} (${filtered.length})`
+                : `${tab?.label || ""} (${filtered.length})`;
             return (
               <>
                 <Text style={styles.tabTitle}>{title}</Text>
@@ -1034,43 +1156,69 @@ export default function CityScreen() {
         <View style={styles.poiDetailHeader}>
           <View style={{ flex: 1 }}>
             <View style={styles.poiDetailBadgeRow}>
-              <View
-                style={[
-                  styles.poiDetailBadge,
-                  { backgroundColor: selectedRoute.colour + "30" },
-                ]}
-              >
-                <Route size={14} color={selectedRoute.colour} />
-                <Text
-                  style={[
-                    styles.poiDetailBadgeText,
-                    { color: selectedRoute.colour },
-                  ]}
-                >
-                  {selectedRoute.routeType}
-                </Text>
-              </View>
               {selectedRoute.ref && (
                 <View
-                  style={[
-                    styles.poiDetailBadge,
-                    { backgroundColor: theme.primaryLight },
-                  ]}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                    backgroundColor: selectedRoute.colour,
+                    alignSelf: "flex-start",
+                  }}
                 >
                   <Text
-                    style={[
-                      styles.poiDetailBadgeText,
-                      { color: theme.primary },
-                    ]}
+                    style={{
+                      color: "#fff",
+                      fontWeight: "700",
+                      fontSize: 16,
+                    }}
                   >
-                    {t("Line")} {selectedRoute.ref}
+                    {selectedRoute.ref}
                   </Text>
                 </View>
               )}
             </View>
-            <Text style={styles.poiDetailName}>
-              {selectedRoute.name || selectedRoute.ref}
-            </Text>
+            {(() => {
+              const name = selectedRoute.name || "";
+              const stations = parseRouteStations(name);
+              if (stations) {
+                return (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginTop: 4,
+                    }}
+                  >
+                    <Text
+                      style={[styles.poiDetailName, { flex: 1 }]}
+                      numberOfLines={1}
+                    >
+                      {stations.from}
+                    </Text>
+                    <ArrowRight
+                      size={16}
+                      color={theme.subTextColor}
+                      style={{ marginHorizontal: 6 }}
+                    />
+                    <Text
+                      style={[
+                        styles.poiDetailName,
+                        { flex: 1, textAlign: "right" },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {stations.to}
+                    </Text>
+                  </View>
+                );
+              }
+              return (
+                <Text style={[styles.poiDetailName, { marginTop: 4 }]}>
+                  {name || selectedRoute.ref}
+                </Text>
+              );
+            })()}
           </View>
           <TouchableOpacity
             onPress={() => setSelectedRoute(null)}
@@ -1299,14 +1447,11 @@ export default function CityScreen() {
                   element: {
                     innerHTML: `
                       <div style="
-                        width: 20px; height: 20px;
+                        width: 12px; height: 12px;
                         background: ${selectedRoute.colour};
                         border-radius: 50%;
-                        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
                         border: 2px solid white;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
                       "></div>
                     `,
                   },
@@ -1458,9 +1603,15 @@ export default function CityScreen() {
                   {TRANSIT_TABS.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTransitType === tab.key;
-                    const hasRoutes = tab.key === "all" || transitRoutes.some(
-                      (r) => r.routeType === tab.key || (tab.key === "subway" && (r.routeType === "subway" || r.routeType === "light_rail"))
-                    );
+                    const hasRoutes =
+                      tab.key === "all" ||
+                      transitRoutes.some(
+                        (r) =>
+                          r.routeType === tab.key ||
+                          (tab.key === "subway" &&
+                            (r.routeType === "subway" ||
+                              r.routeType === "light_rail")),
+                      );
                     if (!hasRoutes) return null;
                     return (
                       <TouchableOpacity
