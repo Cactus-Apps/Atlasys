@@ -8,12 +8,12 @@ import {
   StyleSheet,
   Linking,
 } from "react-native";
-import { Info, Sparkles, AlertTriangle, X } from "lucide-react-native";
+import { Info, Sparkles, AlertTriangle, X, Github } from "lucide-react-native";
 import { Announcement, markAllSeen } from "@/lib/hooks/announcements";
 import { useAppTheme } from "@/lib/theme";
 import { posthog } from "@/lib/config/posthog";
 import { useTranslation } from "react-i18next";
-import Icon from "react-native-vector-icons/AntDesign";
+
 import { Image } from "expo-image";
 import * as Sentry from "@sentry/react-native";
 
@@ -255,7 +255,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
               style={[s.okBtn, { backgroundColor: theme.white }]}
               onPress={handleReleasePage}
             >
-              <Icon name="github" size={20} color={theme.black} />
+              <Github size={20} color={theme.black} />
 
               <Text style={[s.okText, { color: theme.black }]}>
                 {t("Announcement_release_page")}

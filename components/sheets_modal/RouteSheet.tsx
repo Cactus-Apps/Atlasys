@@ -214,7 +214,7 @@ export default function RouteSheet({
     }
     const timer = setTimeout(() => fetchRoute(), 100);
     return () => clearTimeout(timer);
-  }, [start, end]);
+  }, [start, end, profile]);
 
   const selectResult = (result: SearchResult, field: "start" | "end") => {
     const point: RoutePoint = {
@@ -467,7 +467,7 @@ export default function RouteSheet({
             onPress={onStartNavigation}
             style={{
               marginTop: 12,
-              backgroundColor: "#10B981",
+              backgroundColor: theme.success,
               borderRadius: 14,
               paddingVertical: 16,
               flexDirection: "row",
@@ -476,15 +476,15 @@ export default function RouteSheet({
               gap: 10,
             }}
           >
-            <Navigation size={20} color="#fff" />
+            <Navigation size={20} color={theme.white} />
             <Text
               style={{
-                color: "#fff",
+                color: theme.white,
                 fontWeight: "700",
                 fontSize: 16,
               }}
             >
-              Route starten
+              {t("Poi_start_route")}
             </Text>
           </TouchableOpacity>
         )}

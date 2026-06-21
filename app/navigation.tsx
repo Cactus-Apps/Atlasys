@@ -3,7 +3,13 @@ import { MapProvider, Map, Marker, MapRef } from "react-native-maplibre-gl-js";
 import type { StyleSpecification } from "maplibre-gl";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
@@ -15,6 +21,7 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { posthog } from "@/lib/config/posthog";
+import { useTranslation } from "react-i18next";
 import {
   Navigation,
   X,
@@ -98,59 +105,53 @@ function formatDistance(meters: number): string {
   return `${Math.round(meters)} m`;
 }
 
-function getInstructionText(step: any): string {
+function getInstructionText(step: any, t: (key: string, opts?: any) => string): string {
   if (!step) return "";
   const type = step.maneuver?.type || "";
   const modifier = step.maneuver?.modifier || "";
   const name = step.name || "";
 
   if (type === "depart")
-    return name ? `Fahren Sie in Richtung ${name}` : "Losfahren";
-  if (type === "arrive") return "Sie haben Ihr Ziel erreicht";
+    return name ? t("Nav_instruction_depart_with_name", { name }) : t("Nav_instruction_depart");
+  if (type === "arrive") return t("Nav_instruction_arrive");
   if (type === "roundabout" || type === "rotary") {
     const exit = step.maneuver?.exit || 1;
-    return `${exit}. Ausfahrt nehmen`;
+    return t("Nav_instruction_roundabout", { exit });
   }
   if (type === "fork") {
-    if (modifier === "left") return "Links halten";
-    if (modifier === "right") return "Rechts halten";
-    return "Der Gabelung folgen";
+    if (modifier === "left") return t("Nav_instruction_fork_left");
+    if (modifier === "right") return t("Nav_instruction_fork_right");
+    return t("Nav_instruction_fork");
   }
-  if (type === "merge") return "Einfädeln";
-  if (type === "on ramp" || type === "off ramp") {
-    return name ? `Auffahrt ${name} nehmen` : "Auffahrt nehmen";
+  if (type === "merge") return t("Nav_instruction_merge");
+  if (type === "on ramp") {
+    return name ? t("Nav_instruction_on_ramp_with_name", { name }) : t("Nav_instruction_on_ramp");
+  }
+  if (type === "off ramp") {
+    return name ? t("Nav_instruction_off_ramp_with_name", { name }) : t("Nav_instruction_off_ramp");
   }
   if (type === "motorway_junction") {
-    return name ? `Ausfahrt ${name} nehmen` : "Ausfahrt nehmen";
+    return name ? t("Nav_instruction_motorway_junction_with_name", { name }) : t("Nav_instruction_motorway_junction");
   }
   if (type === "end of road") {
-    if (modifier === "left") return "Am Ende der Straße links abbiegen";
-    if (modifier === "right") return "Am Ende der Straße rechts abbiegen";
-    return "Am Ende der Straße geradeaus";
+    if (modifier === "left") return t("Nav_instruction_end_of_road_left");
+    if (modifier === "right") return t("Nav_instruction_end_of_road_right");
+    return t("Nav_instruction_end_of_road_straight");
   }
   if (type === "turn" || type === "new name") {
-    const dir: Record<string, string> = {
-      left: "Links abbiegen",
-      right: "Rechts abbiegen",
-      straight: "Geradeaus",
-      slight_left: "Leicht links",
-      slight_right: "Leicht rechts",
-      sharp_left: "Scharf links",
-      sharp_right: "Scharf rechts",
-      uturn: "Wenden",
-    };
-    const dirText = dir[modifier] || modifier;
-    if (name) return `${dirText} in ${name}`;
+    const dirText = t(`Nav_instruction_turn_${modifier}`, { defaultValue: modifier });
+    if (name) return t("Nav_instruction_turn_with_name", { dirText, name });
     return dirText;
   }
   if (type === "notification") {
-    return name ? `Weiter auf ${name}` : "Weiterfahren";
+    return name ? t("Nav_instruction_notification_with_name", { name }) : t("Nav_instruction_notification");
   }
-  return name || "Weiterfahren";
+  return name || t("Nav_instruction_continue");
 }
 
 export default function NavigationScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const navRoute = useAuthStore((s) => s.navRoute);
   const [location, setLocation] = useState<[number, number] | null>(null);
@@ -167,7 +168,10 @@ export default function NavigationScreen() {
   const subRef = useRef<Location.LocationSubscription | null>(null);
   const [stopped, setStopped] = useState(false);
 
-  const coords = useMemo(() => navRoute?.geometry?.coordinates || [], [navRoute?.geometry?.coordinates]);
+  const coords = useMemo(
+    () => navRoute?.geometry?.coordinates || [],
+    [navRoute?.geometry?.coordinates],
+  );
   const steps = useMemo(() => navRoute?.steps || [], [navRoute?.steps]);
   const currentStep = steps[currentStepIdx];
   const nextStep = steps[currentStepIdx + 1];
@@ -256,12 +260,12 @@ export default function NavigationScreen() {
         setBearing((prev) => prev * 0.3 + brng * 0.7);
       }
 
-      let stepDistSum = 0;
+      const traveled = navRoute.distance - totalRemaining;
+      let cumulative = 0;
       for (let i = 0; i < steps.length; i++) {
-        const stepDist = steps[i].distance || 0;
-        stepDistSum += stepDist;
-        if (totalRemaining <= navRoute.distance - stepDistSum + stepDist) {
-          setCurrentStepIdx(Math.max(0, i));
+        cumulative += steps[i].distance || 0;
+        if (traveled < cumulative) {
+          setCurrentStepIdx(i);
           break;
         }
       }
@@ -352,14 +356,14 @@ export default function NavigationScreen() {
         <View style={s.errorContainer}>
           <AlertTriangle size={48} color={theme.danger || "#EF4444"} />
           <Text style={[s.errorText, { color: theme.textColor }]}>
-            Keine Route ausgewählt
+            {t("Nav_no_route_selected")}
           </Text>
           <TouchableOpacity
             style={[s.backBtn, { backgroundColor: theme.primary || "#2563EB" }]}
             onPress={() => router.back()}
           >
             <Text style={{ color: theme.white || "#fff", fontWeight: "600" }}>
-              Zurück zur Karte
+              {t("Nav_back_to_map")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -470,7 +474,7 @@ export default function NavigationScreen() {
               style={[s.instructionText, { color: theme.textColor || "#111" }]}
               numberOfLines={2}
             >
-              {getInstructionText(currentStep)}
+              {getInstructionText(currentStep, t)}
             </Text>
           </View>
         </View>
@@ -480,7 +484,7 @@ export default function NavigationScreen() {
         <View style={s.etaRow}>
           <View style={s.etaItem}>
             <Text style={[s.etaLabel, { color: theme.subTextColor || "#888" }]}>
-              Ankunft
+              {t("Nav_arrival")}
             </Text>
             <Text style={[s.etaValue, { color: theme.textColor || "#111" }]}>
               {formatTime(remainingTime)}
@@ -494,7 +498,7 @@ export default function NavigationScreen() {
           />
           <View style={s.etaItem}>
             <Text style={[s.etaLabel, { color: theme.subTextColor || "#888" }]}>
-              Entfernung
+              {t("Nav_distance")}
             </Text>
             <Text style={[s.etaValue, { color: theme.textColor || "#111" }]}>
               {formatDistance(remainingDist)}
@@ -508,7 +512,7 @@ export default function NavigationScreen() {
           />
           <View style={s.etaItem}>
             <Text style={[s.etaLabel, { color: theme.subTextColor || "#888" }]}>
-              Geschw.
+              {t("Nav_speed")}
             </Text>
             <Text style={[s.etaValue, { color: theme.textColor || "#111" }]}>
               {(speed * 3.6).toFixed(0)} km/h
@@ -539,7 +543,7 @@ export default function NavigationScreen() {
           activeOpacity={0.8}
         >
           <X size={18} color="#fff" />
-          <Text style={s.stopBtnText}>Navigation beenden</Text>
+          <Text style={s.stopBtnText}>{t("Nav_stop_navigation")}</Text>
         </TouchableOpacity>
       </View>
 

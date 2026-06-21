@@ -106,7 +106,7 @@ export default function AuthScreen() {
       pendingAuthRef.current = false;
       handleAuth();
     }
-  }, [captchaToken]);
+  }, [captchaToken, handleAuth]);
 
   const toggleMode = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

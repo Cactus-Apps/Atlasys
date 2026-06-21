@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ScaleIcon,
   ShieldIcon,
+  Instagram,
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -23,7 +24,6 @@ import {
 import * as Application from "expo-application";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
-import Icon from "react-native-vector-icons/AntDesign";
 
 export default function Info() {
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function Info() {
                 Linking.openURL("https://github.com/Cactus-Apps/Atlasys")
               }
             >
-              <Icon name="github" size={20} color={textColor} />
+              <Github size={20} color={textColor} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
@@ -80,7 +80,7 @@ export default function Info() {
                 Linking.openURL("https://www.instagram.com/atlasys.app")
               }
             >
-              <Icon name="instagram" size={20} color={textColor} />
+              <Instagram size={20} color={textColor} />
             </TouchableOpacity>
           </View>
         </View>

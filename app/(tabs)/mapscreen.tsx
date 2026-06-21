@@ -38,7 +38,13 @@ import {
   CloudSunIcon,
   ChevronRight,
 } from "lucide-react-native";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -64,7 +70,10 @@ import { Image as ExpoImage } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { GestureHandlerRootView, FlatList as GHFlatList } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  FlatList as GHFlatList,
+} from "react-native-gesture-handler";
 import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
 import MapStyleSheet, {
   buildSatelliteStyle,
@@ -225,10 +234,7 @@ export default function MapScreen() {
   const [tileError, setTileError] = useState(false);
   const theme = useAppTheme();
   const router = useRouter();
-  const styles = useMemo(
-    () => getStyles(theme),
-    [theme],
-  );
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
   const filters = useMemo(
     () =>
@@ -481,7 +487,10 @@ export default function MapScreen() {
 
   const openCityMap = () => {
     if (!city) return;
-    const cityId = city.name.toLowerCase().replace(/\s+/g, "-");
+    const cityId = city.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
     const q =
       `name=${encodeURIComponent(city.name)}&latitude=${city.latitude}&longitude=${city.longitude}` +
       (city.region ? `&region=${encodeURIComponent(city.region)}` : "") +
@@ -788,7 +797,14 @@ export default function MapScreen() {
     fetchWikipediaData();
 
     return () => controller.abort();
-  }, [city?.name, city?.latitude, city?.longitude, i18n.language, lastFetchTime, t]);
+  }, [
+    city?.name,
+    city?.latitude,
+    city?.longitude,
+    i18n.language,
+    lastFetchTime,
+    t,
+  ]);
 
   // Weather logic
   useEffect(() => {
@@ -870,37 +886,40 @@ export default function MapScreen() {
     return <Cloud size={20} color="#94A3B8" />;
   };
 
-  const searchCities = useCallback(async (q: string) => {
-    setLoadingSearch(true);
-    try {
-      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-        q,
-      )}&count=8&language=${(i18n.language || "en").split("-")[0]}&format=json`;
-      const resp = await fetch(url);
-      if (!resp.ok) {
+  const searchCities = useCallback(
+    async (q: string) => {
+      setLoadingSearch(true);
+      try {
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+          q,
+        )}&count=8&language=${(i18n.language || "en").split("-")[0]}&format=json`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          setResults([]);
+          setLoadingSearch(false);
+          return;
+        }
+        const json = await resp.json();
+        const arr = (json.results || []).map((it: any) => ({
+          id: it.id ?? `${it.latitude}-${it.longitude}`,
+          city: it.name,
+          name: it.name,
+          country: it.country,
+          region: it.admin1,
+          latitude: it.latitude,
+          longitude: it.longitude,
+          population: it.population,
+        }));
+        setResults(arr);
+      } catch (error) {
+        Sentry.captureException(error);
         setResults([]);
+      } finally {
         setLoadingSearch(false);
-        return;
       }
-      const json = await resp.json();
-      const arr = (json.results || []).map((it: any) => ({
-        id: it.id ?? `${it.latitude}-${it.longitude}`,
-        city: it.name,
-        name: it.name,
-        country: it.country,
-        region: it.admin1,
-        latitude: it.latitude,
-        longitude: it.longitude,
-        population: it.population,
-      }));
-      setResults(arr);
-    } catch (error) {
-      Sentry.captureException(error);
-      setResults([]);
-    } finally {
-      setLoadingSearch(false);
-    }
-  }, [i18n.language]);
+    },
+    [i18n.language],
+  );
 
   useEffect(() => {
     if (!query || query.length < 2) {
@@ -982,6 +1001,7 @@ export default function MapScreen() {
 
       if (route?.length) {
         route.forEach((r: any, i: number) => {
+          if (!r.geometry) return;
           const sid = `route-${i}`;
           style.sources[sid] = { type: "geojson", data: r.geometry };
           style.layers.push({
@@ -2002,7 +2022,7 @@ export default function MapScreen() {
                               paddingHorizontal: 10,
                             }}
                           >
-                            Route starten
+                            {t("Poi_start_route")}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity

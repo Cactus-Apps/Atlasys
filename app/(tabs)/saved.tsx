@@ -56,7 +56,7 @@ export default function SavedScreen() {
 
   const handleCityMap = (place: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const cityId = place.name.toLowerCase().replace(/\s+/g, "-");
+    const cityId = place.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     const q =
       `name=${encodeURIComponent(place.name)}&latitude=${place.latitude}&longitude=${place.longitude}` +
       (place.region ? `&region=${encodeURIComponent(place.region)}` : "") +
@@ -137,7 +137,7 @@ export default function SavedScreen() {
           >
             <Building2 size={20} color={theme.white} />
 
-            <Text style={styles.badgeText}>Open City Map</Text>
+            <Text style={styles.badgeText}>{t("Saved_open_city_map")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionBtn}

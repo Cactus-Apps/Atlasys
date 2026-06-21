@@ -1,5 +1,6 @@
 import { createClient, type SupportedStorage } from "@supabase/supabase-js";
 import { Platform } from "react-native";
+import * as Sentry from "@sentry/react-native";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANNON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
@@ -24,10 +25,12 @@ function createSupabaseStorage(): SupportedStorage {
   if (Platform.OS !== "web") {
     try {
       require("react-native-url-polyfill/auto");
-      const AsyncStorage = require("@react-native-async-storage/async-storage")
-        .default;
+      const AsyncStorage =
+        require("@react-native-async-storage/async-storage").default;
       return AsyncStorage;
-    } catch {}
+    } catch (err) {
+      Sentry.captureException(err);
+    }
   }
 
   return {

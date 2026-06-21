@@ -15,7 +15,9 @@
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "android.enableMinifyInReleaseBuilds": true,
+        "android.enableShrinkResourcesInReleaseBuilds": true
       },
       "channel": "production"
     }

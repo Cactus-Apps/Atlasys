@@ -50,11 +50,34 @@ export default function DrawBoundsOverlay({
   const [swHandlers, setSwHandlers] = useState<Record<string, any>>({});
 
   useEffect(() => {
+    let moveStart: typeof box = boxRef.current;
+    let cornerStart: typeof box = boxRef.current;
+
+    setMoveHandlers(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          moveStart = { ...boxRef.current };
+        },
+        onPanResponderMove: (_, g) => {
+          setBox({
+            left: moveStart.left + g.dx,
+            top: moveStart.top + g.dy,
+            right: moveStart.right + g.dx,
+            bottom: moveStart.bottom + g.dy,
+          });
+        },
+      }).panHandlers,
+    );
+
     const makeHandle = (corner: "nw" | "ne" | "se" | "sw") =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          cornerStart = { ...boxRef.current };
+        },
         onPanResponderMove: (_, g) => {
-          const b = { ...boxRef.current };
+          const b = { ...cornerStart };
           if (corner === "nw") {
             b.left = Math.min(b.right - 60, b.left + g.dx);
             b.top = Math.min(b.bottom - 60, b.top + g.dy);
@@ -74,21 +97,6 @@ export default function DrawBoundsOverlay({
           setBox({ ...b });
         },
       });
-
-    setMoveHandlers(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onPanResponderMove: (_, g) => {
-          const b = boxRef.current;
-          setBox({
-            left: b.left + g.dx,
-            top: b.top + g.dy,
-            right: b.right + g.dx,
-            bottom: b.bottom + g.dy,
-          });
-        },
-      }).panHandlers,
-    );
 
     setNwHandlers(makeHandle("nw").panHandlers);
     setNeHandlers(makeHandle("ne").panHandlers);

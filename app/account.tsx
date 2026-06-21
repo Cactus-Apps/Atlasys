@@ -240,7 +240,7 @@ export default function AccountScreen() {
         setColorKey(null);
       });
     }
-  }, [isEditing]);
+  }, [isEditing, avatarConfig]);
 
   const randomize = useCallback(() => {
     setEditConfig(generateRandomAvatarConfig());

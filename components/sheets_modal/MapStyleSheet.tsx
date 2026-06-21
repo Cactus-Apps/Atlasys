@@ -15,7 +15,7 @@ import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import cityStyle from "@/assets/map/city-style.json";
 import googlestyle from "@/assets/map/google-style.json";
-import sateliteStyle from "@/assets/map/satelite-style.json";
+import sateliteStyle from "@/assets/map/satellite-style.json";
 import appleStyle from "@/assets/map/apple-style.json";
 import type { StyleSpecification } from "maplibre-gl";
 
@@ -242,6 +242,9 @@ export default function MapStyleSheet({
 
 export async function buildSatelliteStyle(): Promise<StyleSpecification> {
   const response = await fetch("https://tiles.openfreemap.org/styles/bright");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch satellite style: ${response.status}`);
+  }
   const style = await response.json();
 
   style.sources["satellite"] = {
@@ -311,7 +314,13 @@ const s = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: "700" },
   closeBtn: { borderRadius: 20, padding: 6 },
-  previewRow: { flexDirection: "row", flexWrap: "wrap", gap: 16, paddingBottom: 8, justifyContent: "flex-start" },
+  previewRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    paddingBottom: 8,
+    justifyContent: "flex-start",
+  },
   previewItem: { alignItems: "center", width: 100 },
   previewImageWrapper: {
     width: 100,

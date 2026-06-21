@@ -12,8 +12,10 @@ type Props = {
 export function TabBarModern({ theme, children }: Props) {
   return (
     <Tabs
+      detachInactiveScreens={false}
       screenOptions={({ route }) => ({
         animation: "fade",
+        lazy: false,
         contentStyle: {
           backgroundColor: theme.bg,
         },

@@ -19,6 +19,24 @@ const UpdateLog = () => {
 
   const logs = [
     {
+      version: "1.6.8",
+      date: "2026-06-21",
+      text: "New navigation sidebar with turn-by-turn directions, improved route planning, enhanced geocoding, circular progress indicator, and Zustand storage refactor.",
+      type: "feature",
+    },
+    {
+      version: "1.6.7",
+      date: "2026-06-21",
+      text: "Major city screen refactor with offline data caching, improved POI details, and geocoding/reverse geocoding enhancements.",
+      type: "feature",
+    },
+    {
+      version: "1.6.6",
+      date: "2026-06-21",
+      text: "New Apple-style and Satellite map styles, enhanced city detail screen with transit and sights browsing, and overpass API improvements.",
+      type: "feature",
+    },
+    {
       version: "1.6.0",
       date: "2026-06-06",
       text: "Update announcement system with Orion Store deep link, new avatar system, tab bar redesign, improved account deletion, full i18n coverage, and new open source licenses.",
