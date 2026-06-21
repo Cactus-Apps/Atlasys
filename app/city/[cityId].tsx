@@ -168,14 +168,13 @@ export default function CityScreen() {
   const [selectedPOI, setSelectedPOI] = useState<CityPOI | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<TransitRoute | null>(null);
   const [loadingRouteDetails, setLoadingRouteDetails] = useState(false);
-  const [localSaved, setLocalSaved] = useState(false);
+  const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
+  const [localSaved, setLocalSaved] = useState(() => isPlaceSaved(cityName));
 
   // POI detail state
   const [poiDetails, setPoiDetails] = useState<OverpassPOIDetails | null>(null);
   const [loadingPoiDetails, setLoadingPoiDetails] = useState(false);
   const [hoursExpanded, setHoursExpanded] = useState(false);
-
-  const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const addPlace = useAuthStore((s) => s.addPlace);
   const removePlace = useAuthStore((s) => s.removePlace);
 
@@ -185,18 +184,58 @@ export default function CityScreen() {
     bottom: (1 - splitPosition.value) * SCREEN_HEIGHT,
   }));
 
-  useEffect(() => {
-    setLocalSaved(isPlaceSaved(cityName));
-  }, [cityName]);
+  const rankPOIs = (pois: CityPOI[]): CityPOI[] => {
+    return pois
+      .map((poi) => {
+        let score = 0;
+        if (poi.image) score += 100000;
+        if (poi.stars === 5) score += 80000;
+        if (poi.stars && poi.stars >= 4) score += 70000;
+        const cat = (poi.category || "").toLowerCase();
+        const sub = (poi.subtype || "").toLowerCase();
+        if (cat === "museum" || sub === "museum") score += 60000;
+        if (cat === "attraction" || sub === "attraction") score += 60000;
+        if (poi.cuisine || cat === "food" || sub === "restaurant")
+          score += 40000;
+        if (cat === "monument" || sub === "monument") score += 20000;
+        if (cat === "artwork" || sub === "artwork") score += 10000;
+        if (poi.description) score += 2000;
+        if (poi.website) score += 1500;
+        if (poi.wikidata || poi.wikipedia) score += 1500;
+        if (poi.phone) score += 1000;
+        if (poi.openingHours) score += 1000;
+        return { poi, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ poi }) => poi);
+  };
+
+  const ROUTE_TYPE_ORDER: Record<string, number> = {
+    subway: 0,
+    light_rail: 0,
+    tram: 1,
+    train: 2,
+    bus: 3,
+    ferry: 4,
+  };
+
+  const sortTransitRoutes = (routes: TransitRoute[]): TransitRoute[] => {
+    return [...routes].sort((a, b) => {
+      const pa = ROUTE_TYPE_ORDER[a.routeType] ?? 99;
+      const pb = ROUTE_TYPE_ORDER[b.routeType] ?? 99;
+      if (pa !== pb) return pa - pb;
+      return (a.ref || a.name).localeCompare(b.ref || b.name);
+    });
+  };
 
   useEffect(() => {
     if (!lat || !lon) return;
     let cancelled = false;
-    setLoadingPOI(true);
-    setErrorPOI(null);
     fetchCityPOIs(lat, lon)
       .then(async (data: CityPOI[]) => {
         if (cancelled) return;
+        setLoadingPOI(true);
+        setErrorPOI(null);
         const enriched = await enrichPOIsWithImages(data);
         const ranked = rankPOIs(enriched).slice(0, 20);
         if (!cancelled) {
@@ -220,11 +259,11 @@ export default function CityScreen() {
   useEffect(() => {
     if (!lat || !lon) return;
     let cancelled = false;
-    setLoadingTransit(true);
-    setErrorTransit(null);
     fetchTransitRoutes(lat, lon)
       .then((routes: TransitRoute[]) => {
         if (!cancelled) {
+          setLoadingTransit(true);
+          setErrorTransit(null);
           const sorted = sortTransitRoutes(routes);
           setTransitRoutes(sorted);
           setLoadingTransit(false);
@@ -400,6 +439,20 @@ export default function CityScreen() {
       });
   }, [lat, lon]);
 
+  const handleShowOnMap = useCallback(() => {
+    if (mapRef.current && selectedPOI) {
+      mapRef.current.flyTo({
+        center: [selectedPOI.lon, selectedPOI.lat],
+        zoom: 17,
+        duration: 600,
+      });
+    }
+  }, [selectedPOI?.lon, selectedPOI?.lat]);
+
+  const handleRouteItemPress = (route: TransitRoute) => () => {
+    handleRouteTap(route);
+  };
+
   const handlePOITap = useCallback((poi: CityPOI) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedPOI(poi);
@@ -485,32 +538,6 @@ export default function CityScreen() {
     }
   };
 
-  const rankPOIs = (pois: CityPOI[]): CityPOI[] => {
-    return pois
-      .map((poi) => {
-        let score = 0;
-        if (poi.image) score += 100000;
-        if (poi.stars === 5) score += 80000;
-        if (poi.stars && poi.stars >= 4) score += 70000;
-        const cat = (poi.category || "").toLowerCase();
-        const sub = (poi.subtype || "").toLowerCase();
-        if (cat === "museum" || sub === "museum") score += 60000;
-        if (cat === "attraction" || sub === "attraction") score += 60000;
-        if (poi.cuisine || cat === "food" || sub === "restaurant")
-          score += 40000;
-        if (cat === "monument" || sub === "monument") score += 20000;
-        if (cat === "artwork" || sub === "artwork") score += 10000;
-        if (poi.description) score += 2000;
-        if (poi.website) score += 1500;
-        if (poi.wikidata || poi.wikipedia) score += 1500;
-        if (poi.phone) score += 1000;
-        if (poi.openingHours) score += 1000;
-        return { poi, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .map(({ poi }) => poi);
-  };
-
   function parseRouteStations(
     name: string,
   ): { from: string; to: string } | null {
@@ -521,15 +548,6 @@ export default function CityScreen() {
     }
     return null;
   }
-
-  const ROUTE_TYPE_ORDER: Record<string, number> = {
-    subway: 0,
-    light_rail: 0,
-    tram: 1,
-    train: 2,
-    bus: 3,
-    ferry: 4,
-  };
 
   const ROUTE_TYPE_LABELS: Record<string, string> = {
     subway: t("route_type_subway"),
@@ -573,15 +591,6 @@ export default function CityScreen() {
       color: "#06B6D4",
     },
   ];
-
-  const sortTransitRoutes = (routes: TransitRoute[]): TransitRoute[] => {
-    return [...routes].sort((a, b) => {
-      const pa = ROUTE_TYPE_ORDER[a.routeType] ?? 99;
-      const pb = ROUTE_TYPE_ORDER[b.routeType] ?? 99;
-      if (pa !== pb) return pa - pb;
-      return (a.ref || a.name).localeCompare(b.ref || b.name);
-    });
-  };
 
   const getPOIIcon = (type: string) => {
     switch (type) {
@@ -712,15 +721,7 @@ export default function CityScreen() {
         {/* Actions */}
         <View style={styles.poiActions}>
           <TouchableOpacity
-            onPress={() => {
-              if (mapRef.current) {
-                mapRef.current.flyTo({
-                  center: [selectedPOI.lon, selectedPOI.lat],
-                  zoom: 17,
-                  duration: 600,
-                });
-              }
-            }}
+            onPress={handleShowOnMap}
             style={[styles.poiPrimaryBtn, { backgroundColor: theme.primary }]}
           >
             <Navigation color="#fff" size={18} />
@@ -1122,7 +1123,7 @@ export default function CityScreen() {
                       styles.listItem,
                       selectedRoute?.id === item.id && styles.listItemActive,
                     ]}
-                    onPress={() => handleRouteTap(item)}
+                    onPress={handleRouteItemPress(item)}
                   >
                     <View
                       style={[

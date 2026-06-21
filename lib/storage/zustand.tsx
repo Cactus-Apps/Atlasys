@@ -49,6 +49,19 @@ type RouteData = {
   timestamp: string;
 };
 
+type NavRouteData = {
+  id: string;
+  destinationName: string;
+  startName: string;
+  startCoords: [number, number];
+  destinationCoords: [number, number];
+  geometry: { type: "LineString"; coordinates: [number, number][] };
+  steps: any[];
+  distance: number;
+  duration: number;
+  profile: "driving" | "cycling" | "walking";
+};
+
 type StoreAuth = {
   savedPlaces: SavedPlace[];
   addPlace: (place: Omit<SavedPlace, "addedAt">) => void;
@@ -83,6 +96,10 @@ type StoreAuth = {
   // Routing
   currentRoute: RouteData | null;
   setCurrentRoute: (route: RouteData | null) => void;
+
+  // Navigation (in-memory, non-persisted)
+  navRoute: NavRouteData | null;
+  setNavRoute: (route: NavRouteData | null) => void;
 
   // Search History
   searchHistory: string[];
@@ -130,6 +147,7 @@ const initialState = {
   },
   avatarConfig: null,
   currentRoute: null,
+  navRoute: null,
   mapPosition: null,
   searchHistory: [],
   userId: null,
@@ -205,6 +223,8 @@ export const useAuthStore = create<StoreAuth>()(
 
       currentRoute: null,
       setCurrentRoute: (route) => set({ currentRoute: route }),
+      navRoute: null,
+      setNavRoute: (route) => set({ navRoute: route }),
 
       mapPosition: null,
       setMapPosition: (pos) => set({ mapPosition: pos }),

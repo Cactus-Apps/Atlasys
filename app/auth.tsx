@@ -65,13 +65,6 @@ export default function AuthScreen() {
     }
   };
 
-  useEffect(() => {
-    if (captchaToken && pendingAuthRef.current) {
-      pendingAuthRef.current = false;
-      handleAuth();
-    }
-  }, [captchaToken]);
-
   const handleAuth = async () => {
     if (!email || !password) {
       setError(t("Please_fill_in_all_fields"));
@@ -107,6 +100,13 @@ export default function AuthScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (captchaToken && pendingAuthRef.current) {
+      pendingAuthRef.current = false;
+      handleAuth();
+    }
+  }, [captchaToken]);
 
   const toggleMode = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

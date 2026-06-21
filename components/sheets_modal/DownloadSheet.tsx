@@ -173,8 +173,10 @@ export default function DownloadSheet({
 
   useEffect(() => {
     if (open) {
-      setProgress(0);
-      setStatus("idle");
+      Promise.resolve().then(() => {
+        setProgress(0);
+        setStatus("idle");
+      });
       cancelRef.current = { cancelled: false };
     }
   }, [open]);
@@ -218,7 +220,7 @@ export default function DownloadSheet({
     setStatus("downloading");
     cancelRef.current = { cancelled: false };
 
-    const id = `region_${Date.now()}`;
+    const id = `region_${new Date().getTime()}`;
 
     const centerLat = (bounds[1] + bounds[3]) / 2;
     const centerLng = (bounds[0] + bounds[2]) / 2;

@@ -196,7 +196,7 @@ const UpdateLog = () => {
         <View style={styles.introSection}>
           <History size={40} color="#2563EB" strokeWidth={2.5} />
           <Text style={styles.introTitle}>Version History</Text>
-          <Text style={styles.introSub}>See what's new in Atlasys.</Text>
+          <Text style={styles.introSub}>See what&apos;s new in Atlasys.</Text>
         </View>
 
         <View style={styles.timeline}>

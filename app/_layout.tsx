@@ -153,11 +153,11 @@ function AppBootstrap() {
 
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
-      setStoreReady(true);
+      Promise.resolve().then(() => setStoreReady(true));
       return;
     }
     const unsub = useAuthStore.persist.onFinishHydration(() => {
-      setStoreReady(true);
+      Promise.resolve().then(() => setStoreReady(true));
     });
     return unsub;
   }, []);

@@ -235,8 +235,10 @@ export default function AccountScreen() {
 
   useEffect(() => {
     if (isEditing) {
-      setEditConfig(avatarConfig ? { ...avatarConfig } : {});
-      setColorKey(null);
+      Promise.resolve().then(() => {
+        setEditConfig(avatarConfig ? { ...avatarConfig } : {});
+        setColorKey(null);
+      });
     }
   }, [isEditing]);
 
@@ -348,7 +350,7 @@ export default function AccountScreen() {
   useEffect(() => {
     if (daysLeft !== null) {
       const prog = Math.max(0, Math.min(1, (10 - daysLeft) / 10));
-      setProgress(prog);
+      Promise.resolve().then(() => setProgress(prog));
     }
   }, [daysLeft]);
 

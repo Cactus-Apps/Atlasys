@@ -1,3 +1,5 @@
+import i18n from "@/app/i18n";
+
 export type CityPOI = {
   osmId: number;
   osmType: string;
@@ -60,8 +62,6 @@ export type CityOSMData = {
     maxLon: number;
   };
 };
-
-import i18n from "@/app/i18n";
 
 function l10n(t: Record<string, any>, key: string): string | undefined {
   const lang = i18n.language?.split("-")[0] || "en";

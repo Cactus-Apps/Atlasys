@@ -109,7 +109,7 @@ export async function fetchPOIDetails(
         wikipedia: t.wikipedia,
         description: t.description,
       };
-    } catch (e) {
+    } catch {
       if (attempt === retries) return null;
     }
   }
@@ -242,9 +242,6 @@ export function parseOpeningHoursTable(raw: string): DayHours[] {
     ];
   }
 
-  const DAY: Record<string, string> = {
-    Mo: "Mo", Tu: "Tu", We: "We", Th: "Th", Fr: "Fr", Sa: "Sa", Su: "Su",
-  };
   const DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
   const result: DayHours[] = DAYS.map((d) => ({ day: d, hours: "Closed" }));

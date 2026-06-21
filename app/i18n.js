@@ -13,6 +13,7 @@ const LANGUAGE_KEY = "userLanguage";
  * Gate the root UI on this so the first paint does not show raw translation keys.
  */
 export const i18nReady = i18n
+  // eslint-disable-next-line import/no-named-as-default-member
   .use(initReactI18next)
   .init({
     resources: {
@@ -48,6 +49,7 @@ const loadLanguage = async () => {
   try {
     const lng = await AsyncStorage.getItem(LANGUAGE_KEY);
     if (lng) {
+      // eslint-disable-next-line import/no-named-as-default-member
       await i18n.changeLanguage(lng);
     }
   } catch (err) {
@@ -56,6 +58,7 @@ const loadLanguage = async () => {
 };
 
 const changeLanguage = async (lng) => {
+  // eslint-disable-next-line import/no-named-as-default-member
   await i18n.changeLanguage(lng);
   await storeLanguage(lng);
 };

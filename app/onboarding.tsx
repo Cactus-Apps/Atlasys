@@ -396,7 +396,7 @@ export default function OnboardingScreen() {
   ]);
 
   useEffect(() => {
-    setShowConsent(params.showConsent === "true");
+    Promise.resolve().then(() => setShowConsent(params.showConsent === "true"));
   }, [params.showConsent]);
 
   const handleDotPress = useCallback(

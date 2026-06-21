@@ -39,6 +39,7 @@ interface Props {
   pickMode: "start" | "end" | null;
   onSetStart: (point: RoutePoint) => void;
   onSetEnd: (point: RoutePoint) => void;
+  onStartNavigation: () => void;
 }
 
 const PROFILE_DEFS: {
@@ -65,6 +66,7 @@ export default function RouteSheet({
   pickMode,
   onSetStart,
   onSetEnd,
+  onStartNavigation,
 }: Props) {
   const sheetRef = useRef<BottomSheet>(null);
   const { t, i18n } = useTranslation();
@@ -112,10 +114,10 @@ export default function RouteSheet({
 
   // Sync labels in fields when set externally (e.g. via map tap)
   useEffect(() => {
-    if (start) setStartQuery(start.label);
+    if (start) Promise.resolve().then(() => setStartQuery(start.label));
   }, [start]);
   useEffect(() => {
-    if (end) setEndQuery(end.label);
+    if (end) Promise.resolve().then(() => setEndQuery(end.label));
   }, [end]);
 
   // Nominatim search
@@ -141,8 +143,8 @@ export default function RouteSheet({
   useEffect(() => {
     if (focusedField !== "start") return;
     if (!startQuery || startQuery.length < 2) {
-      setStartResults([]);
-      return;
+      const timer = setTimeout(() => setStartResults([]));
+      return () => clearTimeout(timer);
     }
     const timer = setTimeout(async () => {
       setSearchingStart(true);
@@ -156,8 +158,8 @@ export default function RouteSheet({
   useEffect(() => {
     if (focusedField !== "end") return;
     if (!endQuery || endQuery.length < 2) {
-      setEndResults([]);
-      return;
+      const timer = setTimeout(() => setEndResults([]));
+      return () => clearTimeout(timer);
     }
     const timer = setTimeout(async () => {
       setSearchingEnd(true);
@@ -168,22 +170,13 @@ export default function RouteSheet({
     return () => clearTimeout(timer);
   }, [endQuery, focusedField]);
 
-  useEffect(() => {
-    if (!start || !end) {
-      setRouteInfo(null);
-      return;
-    }
-    const timer = setTimeout(() => fetchRoute(), 100);
-    return () => clearTimeout(timer);
-  }, [start, end]);
-
   const OSRM_ENDPOINTS: Record<Profile, string> = {
     driving: "https://routing.openstreetmap.de/routed-car",
     cycling: "https://routing.openstreetmap.de/routed-bike",
     walking: "https://routing.openstreetmap.de/routed-foot",
   };
 
-  const fetchRoute = async () => {
+  async function fetchRoute() {
     if (!start || !end) return;
     setLoading(true);
     setRouteError(null);
@@ -212,7 +205,16 @@ export default function RouteSheet({
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!start || !end) {
+      const timer = setTimeout(() => setRouteInfo(null));
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(() => fetchRoute(), 100);
+    return () => clearTimeout(timer);
+  }, [start, end]);
 
   const selectResult = (result: SearchResult, field: "start" | "end") => {
     const point: RoutePoint = {
@@ -459,6 +461,32 @@ export default function RouteSheet({
               <Text style={s.resultLabel}>{t("Route_distance_label")}</Text>
             </View>
           </View>
+        )}
+        {!loading && routeInfo && start && end && (
+          <TouchableOpacity
+            onPress={onStartNavigation}
+            style={{
+              marginTop: 12,
+              backgroundColor: "#10B981",
+              borderRadius: 14,
+              paddingVertical: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+            }}
+          >
+            <Navigation size={20} color="#fff" />
+            <Text
+              style={{
+                color: "#fff",
+                fontWeight: "700",
+                fontSize: 16,
+              }}
+            >
+              Route starten
+            </Text>
+          </TouchableOpacity>
         )}
         {!loading && routeError && (
           <View style={s.errorBox}>

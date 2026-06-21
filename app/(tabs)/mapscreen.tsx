@@ -5,7 +5,6 @@ import {
   Marker,
   MapRef,
   MarkerRef,
-  GeoJSONSource,
   VectorTileSource,
 } from "react-native-maplibre-gl-js";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,7 +22,6 @@ import Svg, {
 import * as Location from "expo-location";
 import {
   Cloud,
-  CloudRain,
   ImageIcon,
   Search,
   Sun,
@@ -32,7 +30,6 @@ import {
   Heart,
   Share2,
   Route,
-  Building2,
   AlertCircleIcon,
   AlertTriangle,
   CloudRainIcon,
@@ -41,7 +38,7 @@ import {
   CloudSunIcon,
   ChevronRight,
 } from "lucide-react-native";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -67,15 +64,15 @@ import { Image as ExpoImage } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { GestureHandlerRootView, FlatList as GHFlatList } from "react-native-gesture-handler";
 import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
 import MapStyleSheet, {
   buildSatelliteStyle,
+  MAP_THEMES,
   MapTheme,
 } from "@/components/sheets_modal/MapStyleSheet";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { FlatList as GHFlatList } from "react-native-gesture-handler";
 import RouteSheet from "@/components/sheets_modal/RouteSheet";
 import DownloadSheet from "@/components/sheets_modal/DownloadSheet";
 import { useAuthStore } from "@/lib/storage/zustand";
@@ -90,7 +87,7 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
-const darken = (hex: string, amount: number) => {
+export const darken = (hex: string, amount: number) => {
   const c = hex.replace("#", "");
   const r = Math.max(0, parseInt(c.substring(0, 2), 16) * (1 - amount));
   const g = Math.max(0, parseInt(c.substring(2, 4), 16) * (1 - amount));
@@ -160,7 +157,7 @@ export default function MapScreen() {
   const mapCenterRef = useRef<[number, number] | null>(null);
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
-  const [zoom, setZoom] = useState(12);
+  const [, setZoom] = useState(12);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
   const initialCenter = useMemo<[number, number]>(() => {
@@ -170,24 +167,23 @@ export default function MapScreen() {
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
     "driving",
   );
-  const [images, setImages] = useState<string[]>([]);
-  const [DistanceInfo, setDistanceInfo] = useState<{
+  const [, setImages] = useState<string[]>([]);
+  const [, setDistanceInfo] = useState<{
     distance: number;
     duration: number;
   } | null>();
-  const [CityInfo, setCityInfo] = useState("");
+  const [CityInfo] = useState("");
   const [MapStyle, setMapStyle] = useState<string | StyleSpecification>(
     "https://tiles.openfreemap.org/styles/bright",
   );
-  const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
+  const [, setSub] = useState<Location.LocationSubscription | null>(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [selected, setSelected] = useState<CityResult | null>(null);
-  const [start, setStart] = useState<[number, number] | null>();
-  const [end, setEnd] = useState<[number, number] | null>();
+  const [, setSelected] = useState<CityResult | null>(null);
+  const [start] = useState<[number, number] | null>();
+  const [end] = useState<[number, number] | null>();
   const [lastFetchTime, setLastFetchTime] = useState(0);
-  const [savedLocations, setSavedLocations] = useState<SelectedCity[]>([]);
   const [query, setQuery] = useState("");
-  const [email, setEmail] = useState<string | null>();
+  const [, setEmail] = useState<string | null>();
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
@@ -216,7 +212,7 @@ export default function MapScreen() {
   const [article, setArticle] = useState<ArticleData | null>(null);
   const [loading, setLoading] = useState(false);
   const [BottomSheetIndex, setBottomSheetIndex] = useState<number>(2);
-  const [BottomSheetIndex2, setBottomSheetIndex2] = useState<number>(2);
+  const [, setBottomSheetIndex2] = useState<number>(2);
   const [results, setResults] = useState<CityResult[]>([]);
   const mapRef = useRef<MapRef | null>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -231,7 +227,7 @@ export default function MapScreen() {
   const router = useRouter();
   const styles = useMemo(
     () => getStyles(theme),
-    [theme.isDark, theme.isModern],
+    [theme],
   );
   const { t, i18n } = useTranslation();
   const filters = useMemo(
@@ -263,17 +259,12 @@ export default function MapScreen() {
   const [mapStyleSheetOpen, setMapStyleSheetOpen] = useState(false);
   const [currentThemeKey, setCurrentThemeKey] = useState("bright");
   const currentThemeKeyRef = useRef(currentThemeKey);
-  const iconsAddedForTheme = useRef<string | null>(null);
   const [errorSheetOpen, setErrorSheetOpen] = useState(false);
   const [showError, setShowError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drawMode, setDrawMode] = useState(false);
   const lastBearingRef = useRef(0);
-  const isSaved = useMemo(
-    () => savedLocations.some((l) => l.name === city?.name),
-    [savedLocations, city?.name],
-  );
-  const [localSaved, setLocalSaved] = useState(isSaved);
+  const localSaved = isPlaceSaved(city?.name ?? "");
   const didHandleParams = useRef(false);
 
   const [drawBounds, setDrawBounds] = useState<{
@@ -303,20 +294,6 @@ export default function MapScreen() {
     currentThemeKey === "dark" ? "light" : "dark";
 
   // Location/GPS Stuff
-  // IP-based location as a fallback when GPS is not ready
-  const getIPLocation = async (): Promise<[number, number] | null> => {
-    try {
-      const res = await fetch("https://ipapi.co/json/");
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.latitude && data.longitude) {
-        return [data.longitude, data.latitude];
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -407,7 +384,7 @@ export default function MapScreen() {
       liveSub?.remove();
       setSub(null);
     };
-  }, []);
+  }, [locationReady, t]);
 
   // User Auth Stuff
   useEffect(() => {
@@ -467,17 +444,10 @@ export default function MapScreen() {
     await mapRef.current.setProjection({ type: "globe" });
   };
 
-  useEffect(() => {
-    setLocalSaved(isPlaceSaved(city?.name ?? ""));
-  }, [city?.name]);
-
   const toggleFavorite = () => {
     if (!city) return;
-    const saved = localSaved;
-    if (saved) setLocalSaved(true);
 
-    if (!saved) {
-      setLocalSaved(true);
+    if (!localSaved) {
       setIsPlayingAnimation(true);
       ref.current?.play();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -490,7 +460,6 @@ export default function MapScreen() {
         thumbnail: article?.thumbnail,
       });
     } else {
-      setLocalSaved(false);
       removePlace(city.name);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -562,14 +531,14 @@ export default function MapScreen() {
     };
   }, []);
 
-  const headers = {
-    "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
-    Accept: "application/json",
-  };
-
   // Wikipedia logic
   useEffect(() => {
     if (!city?.name) return;
+
+    const headers = {
+      "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+      Accept: "application/json",
+    };
 
     const controller = new AbortController();
 
@@ -606,11 +575,6 @@ export default function MapScreen() {
             Math.ceil(Math.max(win.width, win.height) * dpr),
           ),
         );
-        const heroPageImagePx = Math.min(
-          880,
-          Math.max(520, Math.ceil(Math.max(win.width, 280) * dpr)),
-        );
-
         // 2. Extract + Thumbnail
         const extractRes = await fetch(
           `https://${wikiLang}.wikipedia.org/w/api.php?action=query&prop=extracts|pageprops&exintro&explaintext&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
@@ -820,11 +784,11 @@ export default function MapScreen() {
 
     const now = Date.now();
     if (now - lastFetchTime < 3000) return;
-    setLastFetchTime(now);
+    Promise.resolve().then(() => setLastFetchTime(now));
     fetchWikipediaData();
 
     return () => controller.abort();
-  }, [city?.name, city?.latitude, city?.longitude]);
+  }, [city?.name, city?.latitude, city?.longitude, i18n.language, lastFetchTime, t]);
 
   // Weather logic
   useEffect(() => {
@@ -853,7 +817,7 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (!city?.latitude || !city?.longitude) {
-      setTileDataUri(null);
+      Promise.resolve().then(() => setTileDataUri(null));
       return;
     }
     const zoom = 13;
@@ -865,8 +829,10 @@ export default function MapScreen() {
         2,
     );
     const url = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x}/${y}.png`;
-    setTileLoading(true);
-    setTileError(false);
+    Promise.resolve().then(() => {
+      setTileLoading(true);
+      setTileError(false);
+    });
 
     fetch(url, {
       headers: {
@@ -904,7 +870,7 @@ export default function MapScreen() {
     return <Cloud size={20} color="#94A3B8" />;
   };
 
-  async function searchCities(q: string) {
+  const searchCities = useCallback(async (q: string) => {
     setLoadingSearch(true);
     try {
       const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
@@ -934,16 +900,16 @@ export default function MapScreen() {
     } finally {
       setLoadingSearch(false);
     }
-  }
+  }, [i18n.language]);
 
   useEffect(() => {
     if (!query || query.length < 2) {
-      setResults([]);
+      Promise.resolve().then(() => setResults([]));
       return;
     }
     const t = setTimeout(() => searchCities(query), 350);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, searchCities]);
 
   function onSelectCity(city: CityResult) {
     sheetRef.current?.snapToIndex(2);
@@ -990,7 +956,7 @@ export default function MapScreen() {
   }
 
   // Routing
-  const fitRouteBounds = () => {
+  const fitRouteBounds = useCallback(() => {
     if (!mapRef.current || !start || !end) return;
     const bounds: [number, number, number, number] = [
       Math.min(start[0], end[0]),
@@ -1002,19 +968,51 @@ export default function MapScreen() {
       padding: 60,
       duration: 800,
     });
-  };
+  }, [start, end]);
+
+  const buildStyleWithRoutes = useCallback(
+    async (base: string | StyleSpecification): Promise<StyleSpecification> => {
+      let style: StyleSpecification;
+      if (typeof base === "string") {
+        const res = await fetch(base);
+        style = await res.json();
+      } else {
+        style = JSON.parse(JSON.stringify(base));
+      }
+
+      if (route?.length) {
+        route.forEach((r: any, i: number) => {
+          const sid = `route-${i}`;
+          style.sources[sid] = { type: "geojson", data: r.geometry };
+          style.layers.push({
+            id: `route-line-${i}`,
+            type: "line",
+            source: sid,
+            paint: {
+              "line-width": i === 0 ? 6 : 3,
+              "line-color": i === 0 ? theme.primaryDark : theme.subTextColor,
+            },
+          });
+        });
+      }
+
+      return style;
+    },
+    [route, theme],
+  );
 
   const handleSelectTheme = async (theme: MapTheme) => {
     const pos = useAuthStore.getState().mapPosition;
     setCurrentThemeKey(theme.key);
     currentThemeKeyRef.current = theme.key;
 
-    // Satellite Style dynamisch bauen, alle anderen normal
     if (theme.key === "Satelite") {
       const style = await buildSatelliteStyle();
-      setMapStyle(style);
+      const withRoutes = await buildStyleWithRoutes(style);
+      setMapStyle(withRoutes);
     } else {
-      setMapStyle(theme.url);
+      const withRoutes = await buildStyleWithRoutes(theme.url);
+      setMapStyle(withRoutes);
     }
 
     posthog.capture("map_style_changed", {
@@ -1057,6 +1055,14 @@ export default function MapScreen() {
         duration: json.routes[0].duration,
       });
       fitRouteBounds();
+
+      const theme = MAP_THEMES.find(
+        (t) => t.key === currentThemeKeyRef.current,
+      );
+      if (theme) {
+        const withRoutes = await buildStyleWithRoutes(theme.url);
+        setMapStyle(withRoutes);
+      }
     };
 
     fetchRoute().catch((error: unknown) =>
@@ -1064,7 +1070,7 @@ export default function MapScreen() {
         error instanceof Error ? error : new Error("Failed to fetch route"),
       ),
     );
-  }, [start, end]);
+  }, [start, end, buildStyleWithRoutes, fitRouteBounds, profile]);
 
   const onMapClick = async (event: any) => {
     Keyboard.dismiss();
@@ -1159,7 +1165,7 @@ export default function MapScreen() {
     let timer: any;
 
     if (locationReady) {
-      setShowError(false);
+      Promise.resolve().then(() => setShowError(false));
       timer = setTimeout(() => {
         setShowError(true);
       }, 5000);
@@ -1577,27 +1583,6 @@ export default function MapScreen() {
               }}
             />
           )}
-          {route &&
-            route.map((r: any, i: number) => (
-              <GeoJSONSource
-                key={`r${i}`}
-                id={`route-${i}`}
-                source={{ type: "geojson", data: r.geometry }}
-                layers={[
-                  {
-                    layer: {
-                      id: `route-line-${i}`,
-                      type: "line",
-                      paint: {
-                        "line-width": i === 0 ? 6 : 3,
-                        "line-color":
-                          i === 0 ? theme.primaryDark : theme.subTextColor,
-                      },
-                    },
-                  },
-                ]}
-              />
-            ))}
           <VectorTileSource
             id="cities-source"
             source={{
@@ -1930,7 +1915,6 @@ export default function MapScreen() {
                 backgroundColor: theme.bg,
               }}
               onChange={(i) => {
-                setBottomSheetIndex;
                 setBottomSheetIndex(i);
                 if (i === -1) setSelectedPoi(null);
               }}
@@ -2289,12 +2273,21 @@ export default function MapScreen() {
             }}
             onSetStart={(point) => setRouteStart(point)}
             onSetEnd={(point) => setRouteEnd(point)}
-            onRouteReady={(routes) => {
+            onRouteReady={async (routes, p) => {
               setRoute(routes);
+              setProfile(p);
               setDistanceInfo({
                 distance: routes[0].distance,
                 duration: routes[0].duration,
               });
+
+              const theme = MAP_THEMES.find(
+                (t) => t.key === currentThemeKeyRef.current,
+              );
+              if (theme) {
+                const withRoutes = await buildStyleWithRoutes(theme.url);
+                setMapStyle(withRoutes);
+              }
 
               // Fit map to route bounds
               if (!mapRef.current || !routes[0].geometry) return;
@@ -2310,6 +2303,23 @@ export default function MapScreen() {
                 Math.max(...lats),
               ];
               mapRef.current.fitBounds(bounds, { padding: 80, duration: 800 });
+            }}
+            onStartNavigation={() => {
+              if (!route?.[0] || !routeStart || !routeEnd) return;
+              const r = route[0];
+              useAuthStore.getState().setNavRoute({
+                id: `nav-${Date.now()}`,
+                startName: routeStart.label,
+                startCoords: routeStart.coordinate,
+                destinationName: routeEnd.label,
+                destinationCoords: routeEnd.coordinate,
+                geometry: r.geometry,
+                steps: r.legs?.[0]?.steps || [],
+                distance: r.distance,
+                duration: r.duration,
+                profile: profile,
+              });
+              router.push("/navigation");
             }}
           />
           <DownloadSheet

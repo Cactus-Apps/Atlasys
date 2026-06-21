@@ -239,7 +239,7 @@ export default function OfflineMapsTab() {
   };
 
   useEffect(() => {
-    load();
+    Promise.resolve().then(() => load());
 
     import("expo-file-system/legacy").then(({ readDirectoryAsync }) => {
       const dir =

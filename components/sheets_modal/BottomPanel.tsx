@@ -29,6 +29,7 @@ export default function BottomPanel({ children, splitPosition }: Props) {
 
   const snap = useCallback((toValue: number) => {
     "worklet";
+    // eslint-disable-next-line react-hooks/immutability
     splitPosition.value = withSpring(toValue, {
       damping: 110,
       mass: 4,
@@ -43,6 +44,7 @@ export default function BottomPanel({ children, splitPosition }: Props) {
     })
     .onUpdate((e) => {
       const delta = e.translationY / SCREEN_HEIGHT;
+      // eslint-disable-next-line react-hooks/immutability
       splitPosition.value = Math.max(
         MIN_TOP,
         Math.min(MAX_TOP, offset.value + delta),

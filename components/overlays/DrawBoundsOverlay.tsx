@@ -1,5 +1,5 @@
 // not used yet
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   PanResponder,
@@ -39,46 +39,62 @@ export default function DrawBoundsOverlay({
   });
 
   const boxRef = useRef(box);
-  boxRef.current = box;
+  useEffect(() => {
+    boxRef.current = box;
+  }, [box]);
 
-  const makeHandle = (corner: "nw" | "ne" | "se" | "sw") =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, g) => {
-        const b = { ...boxRef.current };
-        if (corner === "nw") {
-          b.left = Math.min(b.right - 60, b.left + g.dx);
-          b.top = Math.min(b.bottom - 60, b.top + g.dy);
-        }
-        if (corner === "ne") {
-          b.right = Math.max(b.left + 60, b.right + g.dx);
-          b.top = Math.min(b.bottom - 60, b.top + g.dy);
-        }
-        if (corner === "se") {
-          b.right = Math.max(b.left + 60, b.right + g.dx);
-          b.bottom = Math.max(b.top + 60, b.bottom + g.dy);
-        }
-        if (corner === "sw") {
-          b.left = Math.min(b.right - 60, b.left + g.dx);
-          b.bottom = Math.max(b.top + 60, b.bottom + g.dy);
-        }
-        setBox({ ...b });
-      },
-    });
+  const [moveHandlers, setMoveHandlers] = useState<Record<string, any>>({});
+  const [nwHandlers, setNwHandlers] = useState<Record<string, any>>({});
+  const [neHandlers, setNeHandlers] = useState<Record<string, any>>({});
+  const [seHandlers, setSeHandlers] = useState<Record<string, any>>({});
+  const [swHandlers, setSwHandlers] = useState<Record<string, any>>({});
 
-  // Pan responder to drag the whole rectangle
-  const moveResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderMove: (_, g) => {
-      const b = boxRef.current;
-      setBox({
-        left: b.left + g.dx,
-        top: b.top + g.dy,
-        right: b.right + g.dx,
-        bottom: b.bottom + g.dy,
+  useEffect(() => {
+    const makeHandle = (corner: "nw" | "ne" | "se" | "sw") =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderMove: (_, g) => {
+          const b = { ...boxRef.current };
+          if (corner === "nw") {
+            b.left = Math.min(b.right - 60, b.left + g.dx);
+            b.top = Math.min(b.bottom - 60, b.top + g.dy);
+          }
+          if (corner === "ne") {
+            b.right = Math.max(b.left + 60, b.right + g.dx);
+            b.top = Math.min(b.bottom - 60, b.top + g.dy);
+          }
+          if (corner === "se") {
+            b.right = Math.max(b.left + 60, b.right + g.dx);
+            b.bottom = Math.max(b.top + 60, b.bottom + g.dy);
+          }
+          if (corner === "sw") {
+            b.left = Math.min(b.right - 60, b.left + g.dx);
+            b.bottom = Math.max(b.top + 60, b.bottom + g.dy);
+          }
+          setBox({ ...b });
+        },
       });
-    },
-  });
+
+    setMoveHandlers(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderMove: (_, g) => {
+          const b = boxRef.current;
+          setBox({
+            left: b.left + g.dx,
+            top: b.top + g.dy,
+            right: b.right + g.dx,
+            bottom: b.bottom + g.dy,
+          });
+        },
+      }).panHandlers,
+    );
+
+    setNwHandlers(makeHandle("nw").panHandlers);
+    setNeHandlers(makeHandle("ne").panHandlers);
+    setSeHandlers(makeHandle("se").panHandlers);
+    setSwHandlers(makeHandle("sw").panHandlers);
+  }, []);
 
   const handleConfirm = async () => {
     if (!mapRef.current) return;
@@ -87,16 +103,11 @@ export default function DrawBoundsOverlay({
       const nw = await mapRef.current.unproject([box.left, box.top]);
       const se = await mapRef.current.unproject([box.right, box.bottom]);
       onConfirm([nw.lng, se.lat, se.lng, nw.lat]); // west, south, east, north
-    } catch {
-      (err: any) => Sentry.captureException(err);
+    } catch (err) {
+      Sentry.captureException(err);
       onCancel();
     }
   };
-
-  const nwHandle = makeHandle("nw");
-  const neHandle = makeHandle("ne");
-  const seHandle = makeHandle("se");
-  const swHandle = makeHandle("sw");
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -132,7 +143,7 @@ export default function DrawBoundsOverlay({
 
       {/* Rectangle frame (draggable) */}
       <View
-        {...moveResponder.panHandlers}
+        {...moveHandlers}
         style={[
           s.rect,
           {
@@ -159,14 +170,12 @@ export default function DrawBoundsOverlay({
       ).map(([corner, x, y]) => (
         <View
           key={corner}
-          {...(corner === "nw"
-            ? nwHandle
-            : corner === "ne"
-              ? neHandle
-              : corner === "se"
-                ? seHandle
-                : swHandle
-          ).panHandlers}
+          {...{
+            nw: nwHandlers,
+            ne: neHandlers,
+            se: seHandlers,
+            sw: swHandlers,
+          }[corner]}
           style={[s.handle, { left: x - 16, top: y - 16 }]}
         />
       ))}

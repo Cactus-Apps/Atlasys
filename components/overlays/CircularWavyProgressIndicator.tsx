@@ -31,6 +31,7 @@ export default function CircularProgress({
     }).start();
   }, [progress]);
 
+  // eslint-disable-next-line react-hooks/refs
   const strokeDashoffset = animatedProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [circumference, 0],
