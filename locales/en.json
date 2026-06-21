@@ -518,6 +518,8 @@
   "route_type_train": "Trains",
   "route_type_bus": "Buses",
   "route_type_ferry": "Ferries",
+
+  "route_type_other": "Other",
   "Stops": "Stops",
   "Route_from": "From",
   "Route_to": "Terminus",

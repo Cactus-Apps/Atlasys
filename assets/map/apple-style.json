@@ -1,0 +1,570 @@
+{
+  "version": 8,
+  "name": "Apple Style",
+  "sources": {
+    "openmaptiles": {
+      "type": "vector",
+      "url": "https://tiles.openfreemap.org/planet"
+    }
+  },
+  "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#1C1C1E"
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "water",
+      "paint": { "fill-color": "#1E3879" }
+    },
+    {
+      "id": "waterway",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "waterway",
+      "paint": {
+        "line-color": "#1E3879",
+        "line-width": 1
+      }
+    },
+    {
+      "id": "landcover-grass",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "filter": ["==", "class", "grass"],
+      "paint": { "fill-color": "#346D56" }
+    },
+    {
+      "id": "landcover-wood",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landcover",
+      "filter": ["==", "class", "wood"],
+      "paint": { "fill-color": "#00615E" }
+    },
+    {
+      "id": "landuse-park",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landuse",
+      "filter": ["==", "class", "park"],
+      "paint": { "fill-color": "#005E5B" }
+    },
+    {
+      "id": "landuse-residential",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landuse",
+      "filter": ["==", "class", "residential"],
+      "paint": { "fill-color": "#34445B" }
+    },
+    {
+      "id": "landuse-commercial",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landuse",
+      "filter": ["==", "class", "commercial"],
+      "paint": { "fill-color": "#46466F" }
+    },
+    {
+      "id": "landuse-industrial",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "landuse",
+      "filter": ["==", "class", "industrial"],
+      "paint": { "fill-color": "#374D64" }
+    },
+    {
+      "id": "building",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "building",
+      "paint": {
+        "fill-color": "#2C2C2E",
+        "fill-outline-color": "#4E6786"
+      }
+    },
+    {
+      "id": "highway-path",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["==", "class", "path"],
+      "paint": {
+        "line-color": "#2E343F",
+        "line-width": 1,
+        "line-dasharray": [1, 1]
+      }
+    },
+    {
+      "id": "highway-minor",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["in", "class", "minor", "service", "track"],
+      "paint": {
+        "line-color": "#2E343F",
+        "line-width": 2
+      }
+    },
+    {
+      "id": "highway-secondary-tertiary",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["in", "class", "secondary", "tertiary"],
+      "paint": {
+        "line-color": "#2E343F",
+        "line-width": 3
+      }
+    },
+    {
+      "id": "highway-primary",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["==", "class", "primary"],
+      "paint": {
+        "line-color": "#2E343F",
+        "line-width": 4
+      }
+    },
+    {
+      "id": "highway-trunk",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["==", "class", "trunk"],
+      "paint": {
+        "line-color": "#5A4A2A",
+        "line-width": 5
+      }
+    },
+    {
+      "id": "highway-motorway",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["==", "class", "motorway"],
+      "paint": {
+        "line-color": "#6B4E2A",
+        "line-width": 3
+      },
+      "maxzoom": 24,
+      "minzoom": 4
+    },
+    {
+      "id": "railway",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["==", "class", "rail"],
+      "paint": {
+        "line-color": "#0E3F41",
+        "line-width": 2,
+        "line-dasharray": [3, 3]
+      }
+    },
+    {
+      "id": "transit-subway",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "filter": ["==", "class", "transit"],
+      "paint": {
+        "line-color": "#0E3F41",
+        "line-width": 2
+      }
+    },
+    {
+      "id": "boundary",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "boundary",
+      "filter": ["==", "admin_level", 2],
+      "paint": {
+        "line-color": "#48484A",
+        "line-width": 1
+      }
+    },
+    {
+      "id": "poi_transit",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["==", "class", "transit"],
+      "minzoom": 14,
+      "layout": {
+        "icon-image": "poi_transit",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#6EA8D8",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_eating",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "eating", "restaurant", "fast_food", "cafe"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_eating",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#FF6B6B",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_shopping",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "shop", "mall", "supermarket"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_shopping",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#FF9F0A",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_accommodation",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "hotel", "motel", "hostel", "lodging"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_accommodation",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#5E9EFF",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_attractions",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": [
+        "in",
+        "class",
+        "attraction",
+        "museum",
+        "monument",
+        "artwork",
+        "castle"
+      ],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_attractions",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#BF5AF2",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_nightlife",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "bar", "pub", "nightclub"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_nightlife",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#FF375F",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_education",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "school", "university", "college", "library"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_education",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#32D74B",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_medical",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "hospital", "pharmacy", "clinic", "doctor"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_medical",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#FF453A",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_fuel",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["==", "class", "fuel"],
+      "minzoom": 15,
+      "layout": {
+        "icon-image": "poi_fuel",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#30D158",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_parking",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": ["in", "class", "parking"],
+      "minzoom": 16,
+      "layout": {
+        "icon-image": "poi_parking",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#5E9EFF",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi_other",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "filter": [
+        "!in",
+        "class",
+        "transit",
+        "eating",
+        "restaurant",
+        "fast_food",
+        "cafe",
+        "shop",
+        "mall",
+        "supermarket",
+        "hotel",
+        "motel",
+        "hostel",
+        "lodging",
+        "attraction",
+        "museum",
+        "monument",
+        "artwork",
+        "castle",
+        "bar",
+        "pub",
+        "nightclub",
+        "school",
+        "university",
+        "college",
+        "library",
+        "hospital",
+        "pharmacy",
+        "clinic",
+        "doctor",
+        "fuel",
+        "parking"
+      ],
+      "minzoom": 16,
+      "layout": {
+        "icon-image": "poi_other",
+        "icon-size": 0.5,
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-optional": true
+      },
+      "paint": {
+        "text-color": "#8E8E93",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "highway-name-minor",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "transportation_name",
+      "filter": ["in", "class", "minor", "service"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 10,
+        "symbol-placement": "line",
+        "text-max-angle": 30
+      },
+      "paint": {
+        "text-color": "#8E8E93",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "highway-name-major",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "transportation_name",
+      "filter": ["in", "class", "primary", "secondary", "tertiary"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 12,
+        "symbol-placement": "line",
+        "text-max-angle": 30
+      },
+      "paint": {
+        "text-color": "#AEAEB2",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "place-suburb",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "filter": ["==", "class", "suburb"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 11,
+        "text-transform": "uppercase",
+        "text-letter-spacing": 0.1
+      },
+      "paint": {
+        "text-color": "#636366",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "place-town",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "filter": ["in", "class", "town", "village"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 13,
+        "text-font": ["Noto Sans Bold"]
+      },
+      "paint": {
+        "text-color": "#AEAEB2",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 1.5
+      }
+    },
+    {
+      "id": "place-city",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "filter": ["==", "class", "city"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 16,
+        "text-font": ["Noto Sans Bold"]
+      },
+      "paint": {
+        "text-color": "#FFFFFF",
+        "text-halo-color": "#1C1C1E",
+        "text-halo-width": 2
+      }
+    }
+  ],
+  "id": "apple-style"
+}

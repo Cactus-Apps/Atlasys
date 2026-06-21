@@ -144,7 +144,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
 
 // ── Semantic colors (not tied to a single theme) ────────────────────────────────
 const SEMANTIC = {
-  danger: "#EF4444",
+  danger: "#ef4444",
   dangerDark: "#B91C1C",
   success: "#22C55E",
   successDark: "#15803D",

@@ -1,0 +1,54 @@
+{
+  "version": 8,
+  "name": "satelliteStyle",
+  "sources": {
+    "openmaptiles": {
+      "type": "vector",
+      "url": "https://tiles.openfreemap.org/planet"
+    },
+    "satellite": {
+      "type": "raster",
+      "tiles": [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "tileSize": 256,
+      "attribution": "© Esri, Maxar, Earthstar Geographics"
+    }
+  },
+  "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  "id": "satelliteStyle",
+  "layers": [
+    {
+      "id": "satellite-layer",
+      "type": "raster",
+      "source": "satellite"
+    },
+    {
+      "id": "place-all",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "minzoom": 0,
+      "maxzoom": 20,
+      "layout": {
+        "text-field": "{name:latin}",
+        "text-font": ["Noto Sans Bold"],
+        "text-size": {
+          "stops": [
+            [2, 10],
+            [6, 12],
+            [10, 14],
+            [14, 16]
+          ]
+        },
+        "text-anchor": "center",
+        "symbol-sort-key": ["get", "rank"]
+      },
+      "paint": {
+        "text-color": "#ffffff",
+        "text-halo-color": "#000000",
+        "text-halo-width": 1.5
+      }
+    }
+  ]
+}

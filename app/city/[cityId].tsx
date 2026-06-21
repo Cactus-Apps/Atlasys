@@ -31,6 +31,10 @@ import {
   Accessibility,
   ChefHat,
   Mail,
+  RailSymbol,
+  TramFront,
+  TrainFront,
+  Ship,
 } from "lucide-react-native";
 import React, {
   useEffect,
@@ -147,6 +151,7 @@ export default function CityScreen() {
   const region = params.region || "";
 
   const [activeTab, setActiveTab] = useState<TabName>("discover");
+  const [activeTransitType, setActiveTransitType] = useState<string>("all");
   const [pois, setPois] = useState<CityPOI[]>([]);
   const [transitRoutes, setTransitRoutes] = useState<TransitRoute[]>([]);
   const [article, setArticle] = useState<ArticleData | null>(null);
@@ -219,7 +224,8 @@ export default function CityScreen() {
     fetchTransitRoutes(lat, lon)
       .then((routes: TransitRoute[]) => {
         if (!cancelled) {
-          setTransitRoutes(routes);
+          const sorted = sortTransitRoutes(routes);
+          setTransitRoutes(sorted);
           setLoadingTransit(false);
         }
       })
@@ -341,7 +347,7 @@ export default function CityScreen() {
       setSelectedPOI(null);
       return;
     }
-    router.navigate("/(tabs)/mapscreen");
+    router.navigate("/(tabs)/saved");
   };
 
   const toggleFavorite = () => {
@@ -384,7 +390,7 @@ export default function CityScreen() {
     setErrorTransit(null);
     fetchTransitRoutes(lat, lon)
       .then((routes: TransitRoute[]) => {
-        setTransitRoutes(routes);
+        setTransitRoutes(sortTransitRoutes(routes));
         setLoadingTransit(false);
       })
       .catch((err: any) => {
@@ -406,7 +412,7 @@ export default function CityScreen() {
       setLoadingPoiDetails(true);
     }
 
-    fetchPOIDetails(poi.osmId)
+    fetchPOIDetails(poi.osmId, poi.osmType)
       .then((data) => {
         if (data) {
           poiDetailsCache.current[poi.osmId] = data;
@@ -474,19 +480,62 @@ export default function CityScreen() {
     return pois
       .map((poi) => {
         let score = 0;
-        if (poi.image) score += 50;
-        if (poi.stars && poi.stars >= 4) score += 40;
-        if (poi.stars === 5) score += 60;
-        if (poi.description) score += 20;
-        if (poi.website) score += 15;
-        if (poi.phone) score += 10;
-        if (poi.openingHours) score += 10;
-        if (poi.wikidata || poi.wikipedia) score += 15;
-        if (poi.cuisine) score += 5;
+        if (poi.image) score += 100000;
+        if (poi.stars === 5) score += 80000;
+        if (poi.stars && poi.stars >= 4) score += 70000;
+        const cat = (poi.category || "").toLowerCase();
+        const sub = (poi.subtype || "").toLowerCase();
+        if (cat === "museum" || sub === "museum") score += 60000;
+        if (cat === "attraction" || sub === "attraction") score += 60000;
+        if (poi.cuisine || cat === "food" || sub === "restaurant")
+          score += 40000;
+        if (cat === "monument" || sub === "monument") score += 20000;
+        if (cat === "artwork" || sub === "artwork") score += 10000;
+        if (poi.description) score += 2000;
+        if (poi.website) score += 1500;
+        if (poi.wikidata || poi.wikipedia) score += 1500;
+        if (poi.phone) score += 1000;
+        if (poi.openingHours) score += 1000;
         return { poi, score };
       })
       .sort((a, b) => b.score - a.score)
       .map(({ poi }) => poi);
+  };
+
+  const ROUTE_TYPE_ORDER: Record<string, number> = {
+    subway: 0,
+    light_rail: 0,
+    tram: 1,
+    train: 2,
+    bus: 3,
+    ferry: 4,
+  };
+
+  const ROUTE_TYPE_LABELS: Record<string, string> = {
+    subway: t("route_type_subway"),
+    light_rail: t("route_type_light_rail"),
+    tram: t("route_type_tram"),
+    train: t("route_type_train"),
+    bus: t("route_type_bus"),
+    ferry: t("route_type_ferry"),
+  };
+
+  const TRANSIT_TABS: { key: string; label: string; icon: any; color: string }[] = [
+    { key: "all", label: t("All"), icon: Route, color: theme.primary },
+    { key: "subway", label: t("route_type_subway"), icon: RailSymbol, color: "#3B82F6" },
+    { key: "tram", label: t("route_type_tram"), icon: TramFront, color: "#10B981" },
+    { key: "train", label: t("route_type_train"), icon: TrainFront, color: "#F59E0B" },
+    { key: "bus", label: t("route_type_bus"), icon: Bus, color: "#EF4444" },
+    { key: "ferry", label: t("route_type_ferry"), icon: Ship, color: "#06B6D4" },
+  ];
+
+  const sortTransitRoutes = (routes: TransitRoute[]): TransitRoute[] => {
+    return [...routes].sort((a, b) => {
+      const pa = ROUTE_TYPE_ORDER[a.routeType] ?? 99;
+      const pb = ROUTE_TYPE_ORDER[b.routeType] ?? 99;
+      if (pa !== pb) return pa - pb;
+      return (a.ref || a.name).localeCompare(b.ref || b.name);
+    });
   };
 
   const getPOIIcon = (type: string) => {
@@ -921,38 +970,55 @@ export default function CityScreen() {
             <Text style={styles.retryBtnText}>{t("Retry")}</Text>
           </TouchableOpacity>
         </View>
-      ) : transitRoutes.length === 0 ? (
-        <Text style={styles.emptyText}>{t("No_transit_found")}</Text>
       ) : (
         <ScrollView
           contentContainerStyle={{ paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.tabTitle}>
-            {t("Routes")} ({transitRoutes.length})
-          </Text>
-          {transitRoutes.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.listItem,
-                selectedRoute?.id === item.id && styles.listItemActive,
-              ]}
-              onPress={() => handleRouteTap(item)}
-            >
-              <View
-                style={[styles.routeColorDot, { backgroundColor: item.colour }]}
-              />
-              <View style={styles.listItemText}>
-                <Text style={styles.listItemName} numberOfLines={1}>
-                  {item.ref}
-                </Text>
-                <Text style={styles.listItemSub}>
-                  {item.name} · {item.routeType}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {(() => {
+            const filtered = activeTransitType === "all"
+              ? transitRoutes
+              : transitRoutes.filter((r) =>
+                  activeTransitType === "subway"
+                    ? r.routeType === "subway" || r.routeType === "light_rail"
+                    : r.routeType === activeTransitType
+                );
+            if (filtered.length === 0) {
+              return <Text style={styles.emptyText}>{t("No_transit_found")}</Text>;
+            }
+            const tab = TRANSIT_TABS.find((t) => t.key === activeTransitType);
+            const title = activeTransitType === "all"
+              ? `${t("Routes")} (${filtered.length})`
+              : `${tab?.label || ""} (${filtered.length})`;
+            return (
+              <>
+                <Text style={styles.tabTitle}>{title}</Text>
+                {filtered.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.listItem,
+                      selectedRoute?.id === item.id && styles.listItemActive,
+                    ]}
+                    onPress={() => handleRouteTap(item)}
+                  >
+                    <View
+                      style={[
+                        styles.routeColorDot,
+                        { backgroundColor: item.colour },
+                      ]}
+                    />
+                    <View style={styles.listItemText}>
+                      <Text style={styles.listItemName} numberOfLines={1}>
+                        {item.ref}
+                      </Text>
+                      <Text style={styles.listItemSub}>{item.name}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </>
+            );
+          })()}
         </ScrollView>
       )}
     </View>
@@ -1377,6 +1443,57 @@ export default function CityScreen() {
                 );
               })}
             </View>
+            {activeTab === "transit" && (
+              <View
+                style={[
+                  styles.transitTabBar,
+                  { borderBottomColor: theme.borderColor },
+                ]}
+              >
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.transitTabBarContent}
+                >
+                  {TRANSIT_TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTransitType === tab.key;
+                    const hasRoutes = tab.key === "all" || transitRoutes.some(
+                      (r) => r.routeType === tab.key || (tab.key === "subway" && (r.routeType === "subway" || r.routeType === "light_rail"))
+                    );
+                    if (!hasRoutes) return null;
+                    return (
+                      <TouchableOpacity
+                        key={tab.key}
+                        style={[
+                          styles.transitTab,
+                          isActive && {
+                            backgroundColor: tab.color + "20",
+                            borderColor: tab.color,
+                          },
+                        ]}
+                        onPress={() => setActiveTransitType(tab.key)}
+                      >
+                        <Icon
+                          size={14}
+                          color={isActive ? tab.color : theme.subTextColor}
+                        />
+                        <Text
+                          style={[
+                            styles.transitTabLabel,
+                            {
+                              color: isActive ? tab.color : theme.subTextColor,
+                            },
+                          ]}
+                        >
+                          {tab.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
             <View style={styles.sheetContent}>
               {activeTab === "discover" && renderDiscoverTab()}
               {activeTab === "transit" && renderTransitTab()}
@@ -1532,6 +1649,31 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       flex: 1,
       paddingHorizontal: 16,
       paddingTop: 8,
+    },
+
+    // Transit sub-tabs
+    transitTabBar: {
+      borderBottomWidth: 1,
+      paddingLeft: 12,
+    },
+    transitTabBarContent: {
+      gap: 8,
+      paddingVertical: 10,
+      paddingRight: 16,
+    },
+    transitTab: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: "transparent",
+    },
+    transitTabLabel: {
+      fontSize: 12,
+      fontWeight: "600",
     },
 
     // POI Card
@@ -1941,6 +2083,16 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: white,
       fontWeight: "700",
       fontSize: 14,
+    },
+    sectionHeader: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 1,
+      marginTop: 16,
+      marginBottom: 6,
+      paddingHorizontal: 4,
     },
   });
 };

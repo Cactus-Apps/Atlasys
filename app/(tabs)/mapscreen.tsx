@@ -39,6 +39,7 @@ import {
   Snowflake,
   CloudLightningIcon,
   CloudSunIcon,
+  ChevronRight,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -69,6 +70,7 @@ import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
 import MapStyleSheet, {
+  buildSatelliteStyle,
   MapTheme,
 } from "@/components/sheets_modal/MapStyleSheet";
 import * as Haptics from "expo-haptics";
@@ -177,7 +179,6 @@ export default function MapScreen() {
   const [MapStyle, setMapStyle] = useState<string | StyleSpecification>(
     "https://tiles.openfreemap.org/styles/bright",
   );
-  const [ready, setReady] = useState(true);
   const [sub, setSub] = useState<Location.LocationSubscription | null>(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [selected, setSelected] = useState<CityResult | null>(null);
@@ -222,6 +223,9 @@ export default function MapScreen() {
     null,
   );
   const [isSearching, setIsSearching] = useState(false);
+  const [tileDataUri, setTileDataUri] = useState<string | null>(null);
+  const [tileLoading, setTileLoading] = useState(true);
+  const [tileError, setTileError] = useState(false);
   const theme = useAppTheme();
   const router = useRouter();
   const styles = useMemo(
@@ -846,6 +850,48 @@ export default function MapScreen() {
     fetchWeather();
   }, [city?.latitude, city?.longitude]);
 
+  useEffect(() => {
+    if (!city?.latitude || !city?.longitude) {
+      setTileDataUri(null);
+      return;
+    }
+    const zoom = 13;
+    const n = Math.pow(2, zoom);
+    const x = Math.floor(n * ((city.longitude + 180) / 360));
+    const latRad = (city.latitude * Math.PI) / 180;
+    const y = Math.floor(
+      (n * (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI)) /
+        2,
+    );
+    const url = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x}/${y}.png`;
+    setTileLoading(true);
+    setTileError(false);
+
+    fetch(url, {
+      headers: {
+        "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Tile fetch failed");
+        return res.arrayBuffer();
+      })
+      .then((buf) => {
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        setTileDataUri(`data:image/png;base64,${base64}`);
+        setTileLoading(false);
+      })
+      .catch(() => {
+        setTileError(true);
+        setTileLoading(false);
+      });
+  }, [city?.latitude, city?.longitude]);
+
   const getWeatherIcon = (code: number) => {
     if (code <= 2) return <Sun size={20} color="#FFD700" />;
     if (code <= 2) return <CloudSunIcon size={20} color="#948b59" />;
@@ -957,16 +1003,22 @@ export default function MapScreen() {
     });
   };
 
-  const handleSelectTheme = (theme: MapTheme) => {
+  const handleSelectTheme = async (theme: MapTheme) => {
     const pos = useAuthStore.getState().mapPosition;
-
     setCurrentThemeKey(theme.key);
     currentThemeKeyRef.current = theme.key;
-    setMapStyle(theme.url);
+
+    // Satellite Style dynamisch bauen, alle anderen normal
+    if (theme.key === "Satelite") {
+      const style = await buildSatelliteStyle();
+      setMapStyle(style);
+    } else {
+      setMapStyle(theme.url);
+    }
+
     posthog.capture("map_style_changed", {
       style: currentThemeKey,
     });
-
     setMapStyleSheetOpen(false);
 
     setTimeout(() => {
@@ -1968,30 +2020,6 @@ export default function MapScreen() {
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          onPress={openCityMap}
-                          style={{
-                            backgroundColor: theme.primary,
-                            height: 50,
-                            borderRadius: 12,
-                            paddingHorizontal: 14,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexDirection: "row",
-                            gap: 6,
-                          }}
-                        >
-                          <Building2 size={20} color={theme.white} />
-                          <Text
-                            style={{
-                              color: theme.white,
-                              fontWeight: "700",
-                              fontSize: 14,
-                            }}
-                          >
-                            {t("City_Map")}
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
                           onPress={toggleFavorite}
                           style={{
                             backgroundColor: theme.cardBgSecondary,
@@ -2098,6 +2126,81 @@ export default function MapScreen() {
                         />
                       </View>
                     )}
+                    <TouchableOpacity
+                      onPress={openCityMap}
+                      style={styles.cityMapCard}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.cityMapCardPreview}>
+                        {tileDataUri && !tileError ? (
+                          <>
+                            <ExpoImage
+                              source={{ uri: tileDataUri }}
+                              style={{ width: "100%", height: "100%" }}
+                              contentFit="cover"
+                            />
+                          </>
+                        ) : (
+                          <View style={{ flex: 1, backgroundColor: "#e8f5e9" }}>
+                            <View
+                              style={[
+                                styles.cmRoad,
+                                { top: "35%", backgroundColor: "#81c784" },
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cmRoad,
+                                {
+                                  top: "55%",
+                                  backgroundColor: "#a5d6a7",
+                                  height: 2,
+                                },
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cmRoadV,
+                                { left: "25%", backgroundColor: "#81c784" },
+                              ]}
+                            />
+                            <View
+                              style={[
+                                styles.cmRoadV,
+                                {
+                                  left: "55%",
+                                  backgroundColor: "#a5d6a7",
+                                  width: 2,
+                                },
+                              ]}
+                            />
+                            <View style={styles.cmPark} />
+                            <View style={styles.cmWater} />
+                            <View style={styles.cmBuilding} />
+                            <View
+                              style={[
+                                styles.cmBuilding,
+                                {
+                                  top: "25%",
+                                  left: "65%",
+                                  width: 8,
+                                  height: 8,
+                                },
+                              ]}
+                            />
+                          </View>
+                        )}
+                        {tileLoading && (
+                          <View style={styles.cityMapCardLoading}>
+                            <ActivityIndicator size="small" color="#fff" />
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.cityMapCardFooter}>
+                        <Text style={styles.cityMapCardSub}>{city?.name}</Text>
+                        <ChevronRight size={16} color={theme.subTextColor} />
+                      </View>
+                    </TouchableOpacity>
                     {city && <View style={{ paddingBottom: 16 }}></View>}
                     <Text style={styles.extractText}>
                       {article?.extract}
@@ -2524,6 +2627,102 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     heroImage: {
       width: "100%",
       height: "100%",
+    },
+    cityMapCard: {
+      borderRadius: 16,
+      overflow: "hidden",
+      marginTop: 12,
+      marginBottom: 20,
+      backgroundColor: cardBgSecondary,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    cityMapCardPreview: {
+      height: 120,
+      overflow: "hidden",
+      position: "relative",
+    },
+    cmRoad: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      height: 3,
+      opacity: 0.8,
+    },
+    cmRoadV: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      width: 2,
+      opacity: 0.7,
+    },
+    cmPark: {
+      position: "absolute",
+      top: "10%",
+      left: "10%",
+      width: "20%",
+      height: "30%",
+      backgroundColor: "#66bb6a",
+      opacity: 0.5,
+      borderRadius: 4,
+    },
+    cmWater: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: "50%",
+      height: "20%",
+      backgroundColor: "#90caf9",
+      opacity: 0.6,
+      borderTopRightRadius: 12,
+    },
+    cmBuilding: {
+      position: "absolute",
+      top: "15%",
+      left: "40%",
+      width: 12,
+      height: 12,
+      backgroundColor: "#81c784",
+      opacity: 0.5,
+      borderRadius: 2,
+    },
+    cityMapCardOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.25)",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 6,
+    },
+    cityMapCardTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: "#fff",
+    },
+    cityMapCardLoading: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0,0,0,0.3)",
+    },
+    cityMapCardFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    cityMapCardSub: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: textColor,
     },
   });
 };

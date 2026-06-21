@@ -518,6 +518,8 @@
   "route_type_train": "Züge",
   "route_type_bus": "Busse",
   "route_type_ferry": "Fähren",
+
+  "route_type_other": "Sonstige",
   "Stops": "Haltestellen",
   "Route_from": "Von",
   "Route_to": "Endstation",

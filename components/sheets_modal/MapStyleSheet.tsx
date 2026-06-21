@@ -14,7 +14,9 @@ import { X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import cityStyle from "@/assets/map/city-style.json";
-import googlestyle from "@/assets/map/google-style.json"
+import googlestyle from "@/assets/map/google-style.json";
+import sateliteStyle from "@/assets/map/satelite-style.json";
+import appleStyle from "@/assets/map/apple-style.json";
 import type { StyleSpecification } from "maplibre-gl";
 
 export type MapTheme = {
@@ -29,7 +31,7 @@ export const MAP_THEMES: MapTheme[] = [
     key: "bright",
     labelKey: "Map_theme_bright",
     url: "https://tiles.openfreemap.org/styles/bright",
-    colors: ["#a8d5a2", "#f5f0e8", "#c8e6f5"], // green, beige, blue
+    colors: ["#a8d5a2", "#f5f0e8", "#c8e6f5"], // Straße, Hintergrund, Wasser
   },
   {
     key: "dark",
@@ -44,16 +46,28 @@ export const MAP_THEMES: MapTheme[] = [
     colors: ["#c8d8a8", "#e8d5b0", "#b8c8d8"],
   },
   {
+    key: "Satelite",
+    labelKey: "Map_theme_satellite",
+    url: sateliteStyle as StyleSpecification,
+    colors: ["#4a6a3a", "#2d4a2d", "#1a3a5c"],
+  },
+  {
     key: "city",
     labelKey: "Map_theme_city",
     url: cityStyle as StyleSpecification,
-    colors: ["#e8e0d4", "#f2efe9", "#a8d4e6"],
+    colors: ["#c8d8a8", "#f5f0eb", "#b8d8e8"],
   },
   {
     key: "google",
-    labelKey: "Goggle Maps",
+    labelKey: "Map_theme_google",
     url: googlestyle as StyleSpecification,
-    colors: ["#e8e0d4", "#f2efe9", "#a8d4e6"],
+    colors: ["#FFCD5E", "#F1EFE6", "#A2D4E0"],
+  },
+  {
+    key: "apple",
+    labelKey: "Map_theme_apple_dark",
+    url: appleStyle as StyleSpecification,
+    colors: ["#2E343F", "#1C1C1E", "#1E3879"],
   },
 ];
 
@@ -104,8 +118,9 @@ export default function MapStyleSheet({
 
         {/* Theme previews */}
         <ScrollView
-          horizontal
+          horizontal={false}
           showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={s.previewRow}
         >
           {MAP_THEMES.map((mt) => {
@@ -225,6 +240,43 @@ export default function MapStyleSheet({
   );
 }
 
+export async function buildSatelliteStyle(): Promise<StyleSpecification> {
+  const response = await fetch("https://tiles.openfreemap.org/styles/bright");
+  const style = await response.json();
+
+  style.sources["satellite"] = {
+    type: "raster",
+    tiles: [
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    ],
+    tileSize: 256,
+    attribution: "© Esri, Maxar, Earthstar Geographics",
+  };
+
+  const symbolLayers = style.layers
+    .filter((layer: any) => layer.type === "symbol")
+    .map((layer: any) => ({
+      ...layer,
+      paint: {
+        ...layer.paint,
+        "text-color": "#ffffff",
+        "text-halo-color": "#000000",
+        "text-halo-width": 1.5,
+      },
+    }));
+
+  style.layers = [
+    {
+      id: "satellite-layer",
+      type: "raster",
+      source: "satellite",
+    },
+    ...symbolLayers,
+  ];
+
+  return style;
+}
+
 const s = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -259,7 +311,7 @@ const s = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: "700" },
   closeBtn: { borderRadius: 20, padding: 6 },
-  previewRow: { gap: 16, paddingBottom: 8 },
+  previewRow: { flexDirection: "row", flexWrap: "wrap", gap: 16, paddingBottom: 8, justifyContent: "flex-start" },
   previewItem: { alignItems: "center", width: 100 },
   previewImageWrapper: {
     width: 100,

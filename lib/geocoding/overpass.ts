@@ -52,22 +52,21 @@ export async function getOsmIdFromNominatim(
 
 export async function fetchPOIDetails(
   osmId: number,
+  osmType?: string,
 ): Promise<OverpassPOIDetails | null> {
   if (!osmId) return null;
 
   const absId = Math.abs(osmId);
-  const isNode = osmId > 0;
+  const elementType = osmType === "way" ? "way" : "node";
 
   const query = `
     [out:json][timeout:25];
-    (
-      ${isNode ? `node(${absId});` : `way(${absId});`}
-    );
+    ${elementType}(${absId});
     out tags;
   `;
 
   try {
-    const res = await fetch("https://overpass.private.coffee/api/interpreter", {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `data=${encodeURIComponent(query)}`,
