@@ -200,10 +200,9 @@ export default function AccountScreen() {
   const [loading2, setLoading2] = useState(false);
   const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
-  const [ModalVisible, setModalVisible] = useState(false);
   const [ModalVisible2, setModalVisible2] = useState(false);
   const [daysLeft, setdaysLeft] = useState<number | null>(null);
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme), [theme]);
 
   const avatarConfig = useAuthStore((s) => s.avatarConfig);
   const setAvatarConfig = useAuthStore((s) => s.setAvatarConfig);
@@ -285,7 +284,6 @@ export default function AccountScreen() {
           if (error) throw error;
           setEmail(data.user?.email ?? null);
         }
-      } catch (err: any) {
       } finally {
         setLoading(false);
       }
@@ -356,7 +354,7 @@ export default function AccountScreen() {
 
   useEffect(() => {
     const fetchUserIdAndEmail = async () => {
-      const { data, error } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getUser();
       const user = data?.user;
       setUserId(user?.id ?? null);
       setEmail(user?.email ?? null);
@@ -381,7 +379,7 @@ export default function AccountScreen() {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    const { data: existing, error: errorExisting } = await supabase
+    const { data: existing } = await supabase
       .from("delete_requests")
       .select("*")
       .eq("user_id", userId)
@@ -472,7 +470,7 @@ export default function AccountScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          onPress={() => router.navigate("/profilescreen")}
           style={styles.backButton}
         >
           <ChevronLeft size={24} color={textColor} />

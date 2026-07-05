@@ -1,5 +1,6 @@
 import { useColorScheme } from "react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
+import { useMemo } from "react";
 
 type ThemeTokens = {
   isDark: boolean;
@@ -15,6 +16,7 @@ type ThemeTokens = {
   accentColor: string;
   startbg: string;
   startPrimary: string;
+  accentColorbg: string;
 };
 
 export type AppTheme =
@@ -43,6 +45,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#2563EB",
     startbg: "#DDDDDD",
     startPrimary: "#333333",
+    accentColorbg: "rgb(37, 99, 235, 0.5)",
   },
 
   dark: {
@@ -59,6 +62,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#2563EB",
     startbg: "#333333",
     startPrimary: "#DDDDDD",
+    accentColorbg: "rgb(37, 99, 235, 0.5)",
   },
 
   modern: {
@@ -75,6 +79,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#007AFF",
     startbg: "#DDDDDD",
     startPrimary: "#333333",
+    accentColorbg: "rgb(0, 122, 255, 0.5)",
   },
 
   chill: {
@@ -91,6 +96,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#CFA06B",
     startbg: "#333333",
     startPrimary: "#DDDDDD",
+    accentColorbg: "rgb(207, 160, 107, 0.5)",
   },
 
   midnight: {
@@ -107,6 +113,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#6C63FF",
     startbg: "#333333",
     startPrimary: "#DDDDDD",
+    accentColorbg: "rgb(108, 99, 255, 0.5)",
   },
 
   ocean: {
@@ -123,6 +130,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#00B4D8",
     startbg: "#333333",
     startPrimary: "#DDDDDD",
+    accentColorbg: "rgb(0, 180, 216, 0.5)",
   },
 
   forest: {
@@ -139,6 +147,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#2E7D32",
     startbg: "#DDDDDD",
     startPrimary: "#333333",
+    accentColorbg: "rgba(46, 125, 50, 0.5)",
   },
 };
 
@@ -167,38 +176,40 @@ export function useAppTheme() {
   const systemScheme = useColorScheme();
   const theme = useAuthStore((s) => s.settings.theme) ?? "light";
 
-  const resolvedTheme: AppTheme =
-    theme === ("system" as any)
-      ? systemScheme === "dark"
-        ? "dark"
-        : "light"
-      : theme;
+  return useMemo(() => {
+    const resolvedTheme: AppTheme =
+      theme === ("system" as any)
+        ? systemScheme === "dark"
+          ? "dark"
+          : "light"
+        : theme;
 
-  const tokens = THEMES[resolvedTheme] ?? THEMES.light;
-  const { isDark } = tokens;
+    const tokens = THEMES[resolvedTheme] ?? THEMES.light;
+    const { isDark } = tokens;
 
-  const primaryLight = isDark ? "rgba(37, 99, 235, 0.2)" : "#EFF6FF";
-  const dangerLight = isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2";
-  const successLight = isDark ? "rgba(34, 197, 94, 0.1)" : "#F0FDF4";
-  const warningLight = isDark ? "rgba(245, 158, 11, 0.1)" : "#FFFBEB";
-  const infoLight = isDark ? "rgba(59, 130, 246, 0.1)" : "#EFF6FF";
-  const purpleLight = isDark ? "rgba(139, 92, 246, 0.1)" : "#F5F3FF";
-  const chevronColor = isDark ? "#4b5563" : "#94a3b8";
+    const primaryLight = isDark ? "rgba(37, 99, 235, 0.2)" : "#EFF6FF";
+    const dangerLight = isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2";
+    const successLight = isDark ? "rgba(34, 197, 94, 0.1)" : "#F0FDF4";
+    const warningLight = isDark ? "rgba(245, 158, 11, 0.1)" : "#FFFBEB";
+    const infoLight = isDark ? "rgba(59, 130, 246, 0.1)" : "#EFF6FF";
+    const purpleLight = isDark ? "rgba(139, 92, 246, 0.1)" : "#F5F3FF";
+    const chevronColor = isDark ? "#4b5563" : "#94a3b8";
 
-  return {
-    theme: resolvedTheme,
+    return {
+      theme: resolvedTheme,
 
-    ...tokens,
+      ...tokens,
 
-    ...SEMANTIC,
-    primaryLight,
-    dangerLight,
-    successLight,
-    warningLight,
-    infoLight,
-    purpleLight,
-    chevronColor,
-  };
+      ...SEMANTIC,
+      primaryLight,
+      dangerLight,
+      successLight,
+      warningLight,
+      infoLight,
+      purpleLight,
+      chevronColor,
+    };
+  }, [theme, systemScheme]);
 }
 
 // ── Tab Theme Hook ────────────────────────────────────────────────────────────

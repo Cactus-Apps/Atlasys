@@ -532,7 +532,6 @@ export default function RouteSheet({
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
-    bg,
     cardBg,
     cardBgSecondary,
     textColor,

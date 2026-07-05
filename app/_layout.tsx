@@ -7,20 +7,20 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import AnimatedSplash from "@/components/overlays/SplashScreen";
 import * as Sentry from "@sentry/react-native";
-import type { ErrorEvent, EventHint } from "@sentry/core";
 import * as ImagePicker from "expo-image-picker";
-import { AppState, View, useColorScheme } from "react-native";
+import { AppState, useColorScheme } from "react-native";
 import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
 import { PostHogProvider } from "posthog-react-native";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
+import { useAppFonts } from "@/lib/fonts";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
 function sentryBeforeSend(
-  event: ErrorEvent,
-  _hint: EventHint,
-): ErrorEvent | null {
+  event: Sentry.ErrorEvent,
+  _hint: any,
+): Sentry.ErrorEvent | null {
   try {
     const { useAuthStore: store } = require("@/lib/storage/zustand");
     if (store.getState().settings.crashReports === false) {
@@ -130,7 +130,7 @@ function TelemetrySync() {
 function AppBootstrap() {
   const { isLoadingUser, user } = useAuth();
   const [animationDone, setAnimationDone] = useState(false);
-  const splashHiddenRef = useRef(false);
+  const [fontsLoaded] = useAppFonts();
   const [i18nGate, setI18nGate] = useState(false);
   const [storeReady, setStoreReady] = useState(
     useAuthStore.persist.hasHydrated(),
@@ -211,7 +211,7 @@ function AppBootstrap() {
     }
   }, [storeReady, isLoadingUser, user, isOnboardingCompleted, segments]);
 
-  const isReady = storeReady && !isLoadingUser && i18nGate;
+  const isReady = storeReady && !isLoadingUser && i18nGate && fontsLoaded;
 
   if (!isReady) {
     return <AnimatedSplash onFinish={() => setAnimationDone(true)} />;

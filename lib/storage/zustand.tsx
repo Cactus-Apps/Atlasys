@@ -65,6 +65,8 @@ type NavRouteData = {
 type StoreAuth = {
   savedPlaces: SavedPlace[];
   addPlace: (place: Omit<SavedPlace, "addedAt">) => void;
+  updatePlace: (name: string, updates: Partial<Omit<SavedPlace, "name" | "addedAt">>) => void;
+  reorderPlaces: (fromIndex: number, toIndex: number) => void;
   removePlace: (name: string) => void;
   isPlaceSaved: (name: string) => boolean;
   _seededForUserId: string | null;
@@ -167,6 +169,21 @@ export const useAuthStore = create<StoreAuth>()(
             ...state.savedPlaces.filter((p) => p.name !== place.name),
           ],
         }));
+      },
+      updatePlace: (name, updates) => {
+        set((state) => ({
+          savedPlaces: state.savedPlaces.map((p) =>
+            p.name === name ? { ...p, ...updates } : p,
+          ),
+        }));
+      },
+      reorderPlaces: (fromIndex, toIndex) => {
+        set((state) => {
+          const updated = [...state.savedPlaces];
+          const [moved] = updated.splice(fromIndex, 1);
+          updated.splice(toIndex, 0, moved);
+          return { savedPlaces: updated };
+        });
       },
       removePlace: (name) => {
         set((state) => ({

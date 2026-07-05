@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   FlatList,
   Share,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
-import { Image } from "expo-image";
+import { ImageBackground } from "expo-image";
 import * as Sentry from "@sentry/react-native";
 import {
   MapPin,
@@ -26,6 +26,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
+import { reverseGeocodeAddress } from "@/lib/geocoding/geocoding";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
@@ -36,6 +37,7 @@ export default function SavedScreen() {
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
+  const updatePlace = useAuthStore((state) => state.updatePlace);
 
   const handleRemove = (name: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -56,7 +58,10 @@ export default function SavedScreen() {
 
   const handleCityMap = (place: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const cityId = place.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const cityId = place.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
     const q =
       `name=${encodeURIComponent(place.name)}&latitude=${place.latitude}&longitude=${place.longitude}` +
       (place.region ? `&region=${encodeURIComponent(place.region)}` : "") +
@@ -83,87 +88,113 @@ export default function SavedScreen() {
     }
   };
 
-  const renderItem = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View
-      entering={FadeInDown.delay(index * 100).springify()}
-      style={styles.card}
-    >
-      <View style={styles.imageContainer}>
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
+    const hasThumbnail = !!item.thumbnail;
+
+    const nameContent = (
+      <View style={styles.textContainer}>
+        <Text
+          style={[styles.placeName, hasThumbnail && styles.whiteText]}
+          numberOfLines={1}
+        >
+          {item.name}
+        </Text>
+        <Text style={styles.placeLocation} numberOfLines={1}>
+          {item.country || "Unknown"}
+        </Text>
+      </View>
+    );
+
+    const actionContent = (
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[
+            styles.actionBtnPrimary,
+            hasThumbnail && styles.actionBtnOverlayPrimary,
+          ]}
+          onPress={() => {
+            handleCityMap(item);
+            posthog.capture("saved_place_citymap");
+          }}
+        >
+          <Building2 size={20} color={theme.white} />
+
+          <Text style={styles.badgeText}>{t("Saved_open_city_map")}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionBtn, hasThumbnail && styles.actionBtnOverlay]}
+          onPress={() => {
+            handleNavigate(item);
+            posthog.capture("saved_place_opened", {
+              country: item.country,
+              has_thumbnail: !!item.thumbnail,
+            });
+          }}
+        >
+          <ExternalLinkIcon
+            size={20}
+            color={hasThumbnail ? theme.white : theme.primary}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionBtn, hasThumbnail && styles.actionBtnOverlay]}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleShare(item);
+          }}
+        >
+          <Share2
+            size={20}
+            color={hasThumbnail ? theme.white : theme.chevronColor}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+
+    return (
+      <Animated.View
+        entering={FadeInDown.delay(index * 100).springify()}
+        style={styles.card}
+      >
         {item.thumbnail ? (
-          <Image
+          <ImageBackground
             source={{
               uri: item.thumbnail,
               headers: { Referer: "https://en.wikipedia.org/" },
             }}
-            style={styles.image}
+            style={styles.cardBackground}
             contentFit="cover"
             cachePolicy="memory-disk"
             transition={200}
-          />
+          >
+            <View style={styles.overlay}>
+              <View style={styles.topRow}>
+                {nameContent}
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleRemove(item.name);
+                  }}
+                >
+                  <Trash2 size={18} color={theme.danger} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.bottomRow}>{actionContent}</View>
+            </View>
+          </ImageBackground>
         ) : (
-          <View style={styles.placeholderImage}>
-            <MapPin size={32} color={theme.chevronColor} />
+          <View style={styles.noImageContainer}>
+            <View style={styles.placeholderImage}>
+              <MapPin size={32} color={theme.chevronColor} />
+            </View>
+            {nameContent}
+            {actionContent}
           </View>
         )}
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            handleRemove(item.name);
-          }}
-        >
-          <Trash2 size={18} color={theme.danger} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.infoContainer}>
-        <View style={styles.textContainer}>
-          <Text style={styles.placeName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.placeLocation} numberOfLines={1}>
-            {item.region ? `${item.region}, ` : ""}
-            {item.country || "Unknown"}
-          </Text>
-        </View>
-
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.actionBtnPrimary}
-            onPress={() => {
-              handleCityMap(item);
-              posthog.capture("saved_place_citymap");
-            }}
-          >
-            <Building2 size={20} color={theme.white} />
-
-            <Text style={styles.badgeText}>{t("Saved_open_city_map")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => {
-              handleNavigate(item);
-              posthog.capture("saved_place_opened", {
-                country: item.country,
-                has_thumbnail: !!item.thumbnail,
-              });
-            }}
-          >
-            <ExternalLinkIcon size={20} color={theme.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleShare(item);
-            }}
-          >
-            <Share2 size={20} color={theme.chevronColor} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Animated.View>
-  );
+      </Animated.View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -216,6 +247,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     isModern,
     primary,
     white,
+    accentColorbg,
   } = theme;
 
   return StyleSheet.create({
@@ -267,25 +299,51 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       shadowRadius: isModern ? 16 : 12,
       elevation: isModern ? 4 : 3,
     },
-    imageContainer: {
+    cardBackground: {
       width: "100%",
-      height: 180,
-      backgroundColor: cardBgSecondary,
+      minHeight: 220,
     },
-    image: {
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      padding: 16,
+      justifyContent: "space-between",
+      minHeight: 220,
+    },
+    topRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+    },
+    bottomRow: {
+      flexDirection: "row",
+      justifyContent: "flex-start",
+    },
+    noImageContainer: {
       width: "100%",
-      height: "100%",
+      minHeight: 200,
+      backgroundColor: cardBgSecondary,
+      padding: 16,
+    },
+    actionBtnOverlay: {
+      backgroundColor: "rgba(255,255,255,0.15)",
+    },
+    actionBtnOverlayPrimary: {
+      backgroundColor: accentColorbg,
     },
     placeholderImage: {
       width: "100%",
-      height: "100%",
+      height: 140,
       alignItems: "center",
       justifyContent: "center",
     },
+    whiteText: {
+      color: "#fff",
+    },
+    whiteSubText: {
+      color: "rgba(255,255,255,0.75)",
+    },
     removeButton: {
-      position: "absolute",
-      top: 12,
-      right: 12,
       backgroundColor: "rgba(255, 255, 255, 0.9)",
       width: 36,
       height: 36,
@@ -334,7 +392,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       justifyContent: "center",
     },
     actionBtnPrimary: {
-      width: 120,
+      width: 170,
       height: 44,
       flexDirection: "row",
       gap: 10,

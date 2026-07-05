@@ -116,8 +116,7 @@ type WrapperProps = {
 export function TabBarNew({ children }: WrapperProps) {
   return (
     <Tabs
-      detachInactiveScreens={false}
-      screenOptions={{ headerShown: false, lazy: false }}
+      screenOptions={{ headerShown: false }}
       tabBar={(props) => <TabBarNewInner {...props} />}
     >
       {children}

@@ -68,6 +68,7 @@ import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import { Image as ExpoImage } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
+import { reverseGeocodeAddress } from "@/lib/geocoding/geocoding";
 import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import {
@@ -1653,6 +1654,7 @@ export default function MapScreen() {
                     }, null).f;
 
                     const [lon, lat] = closest.geometry.coordinates;
+                    const address = await reverseGeocodeAddress(lat, lon, i18n.language);
 
                     setBottomSheetIndex(2);
                     sheetRef.current?.snapToIndex(2);
@@ -1660,6 +1662,8 @@ export default function MapScreen() {
                       name: closest.properties?.name ?? t("Unknown_poi"),
                       latitude: lat,
                       longitude: lon,
+                      country: address.country,
+                      region: address.region,
                     });
                     posthog.capture("city_tapped");
                   },

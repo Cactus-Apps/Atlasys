@@ -27,3 +27,30 @@ export async function reverseGeocode(
     return defaultFallback;
   }
 }
+
+export async function reverseGeocodeAddress(
+  lat: number,
+  lng: number,
+  language?: string,
+): Promise<{ country?: string; region?: string }> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      {
+        headers: {
+          "Accept-Language": language || "en",
+          "User-Agent": `GPS/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+        },
+      },
+    );
+    const text = await res.text();
+    const data = JSON.parse(text);
+    return {
+      country: data.address?.country,
+      region: data.address?.state,
+    };
+  } catch (err: any) {
+    Sentry.captureException(err);
+    return {};
+  }
+}

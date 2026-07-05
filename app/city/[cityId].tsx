@@ -20,7 +20,6 @@ import {
   Compass,
   Navigation,
   UtensilsCrossed,
-  Camera,
   Clock,
   Phone,
   Globe,
@@ -78,8 +77,8 @@ import {
   enrichPOIsWithImages,
   fetchLocalizedName,
   type CityPOI,
-  type TransitRoute,
   type CityTransitStop,
+  type TransitRoute,
 } from "@/lib/geocoding/cityoverpass";
 import {
   fetchPOIDetails,
@@ -87,14 +86,12 @@ import {
   parseOpeningHoursTable,
   type OverpassPOIDetails,
   type OpenStatus,
-  type DayHours,
 } from "@/lib/geocoding/overpass";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import BottomPanel, {
   SCREEN_HEIGHT,
-  MIN_TOP,
-  MAX_TOP,
 } from "@/components/sheets_modal/BottomPanel";
+import { StopToast } from "@/components/overlays/StopToast";
 
 type TabName = "discover" | "transit" | "info";
 
@@ -167,6 +164,7 @@ export default function CityScreen() {
   const [errorTransit, setErrorTransit] = useState<string | null>(null);
   const [selectedPOI, setSelectedPOI] = useState<CityPOI | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<TransitRoute | null>(null);
+  const [toastStop, setToastStop] = useState<CityTransitStop | null>(null);
   const [loadingRouteDetails, setLoadingRouteDetails] = useState(false);
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const [localSaved, setLocalSaved] = useState(() => isPlaceSaved(cityName));
@@ -496,21 +494,29 @@ export default function CityScreen() {
   const handleRouteTap = async (route: TransitRoute) => {
     if (selectedRoute?.id === route.id) {
       setSelectedRoute(null);
+      setToastStop(null);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedRoute(route);
     setSelectedPOI(null);
+    setToastStop(null);
 
     const osmId = parseInt(route.id.replace("r-", ""), 10);
     if (!isNaN(osmId)) {
       setLoadingRouteDetails(true);
+      console.warn(`[handleRouteTap] fetching details for osmId=${osmId}`);
       const details = await fetchTransitRouteDetails(osmId);
 
       if (!details) {
+        console.warn(`[handleRouteTap] details is null for osmId=${osmId}`);
         setLoadingRouteDetails(false);
         return;
       }
+
+      console.warn(
+        `[handleRouteTap] details: geometry=${details.geometry?.type}, coords=${(details.geometry?.coordinates as any)?.length}, stops=${details.stops?.length}`,
+      );
 
       setSelectedRoute((prev) =>
         prev?.id === route.id
@@ -548,15 +554,6 @@ export default function CityScreen() {
     }
     return null;
   }
-
-  const ROUTE_TYPE_LABELS: Record<string, string> = {
-    subway: t("route_type_subway"),
-    light_rail: t("route_type_light_rail"),
-    tram: t("route_type_tram"),
-    train: t("route_type_train"),
-    bus: t("route_type_bus"),
-    ferry: t("route_type_ferry"),
-  };
 
   const TRANSIT_TABS: {
     key: string;
@@ -1415,7 +1412,7 @@ export default function CityScreen() {
             />
             {selectedRoute?.geometry && (
               <GeoJSONSource
-                key={selectedRoute.id}
+                key={`route-${selectedRoute.id}`}
                 id="selected-route"
                 source={{
                   type: "geojson",
@@ -1430,6 +1427,10 @@ export default function CityScreen() {
                     layer: {
                       id: "selected-route-line",
                       type: "line",
+                      layout: {
+                        "line-join": "round",
+                        "line-cap": "round",
+                      },
                       paint: {
                         "line-color": selectedRoute.colour,
                         "line-width": 5,
@@ -1455,6 +1456,11 @@ export default function CityScreen() {
                         border: 2px solid white;
                       "></div>
                     `,
+                  },
+                }}
+                listeners={{
+                  click: {
+                    elementListener: () => setToastStop(stop),
                   },
                 }}
               />
@@ -1544,6 +1550,15 @@ export default function CityScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {toastStop && selectedRoute && (
+        <StopToast
+          stopName={toastStop.name}
+          colour={selectedRoute.colour}
+          onClose={() => setToastStop(null)}
+          duration={4000}
+        />
+      )}
 
       {/* Bottom Panel */}
       <BottomPanel splitPosition={splitPosition}>
@@ -1728,16 +1743,8 @@ function PoiInfoRow({
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const {
-    isDark,
-    isModern,
-    cardBg,
-    textColor,
-    subTextColor,
-    primary,
-    white,
-    black,
-  } = theme;
+  const { isDark, isModern, cardBg, textColor, subTextColor, primary, white } =
+    theme;
 
   return StyleSheet.create({
     header: {

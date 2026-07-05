@@ -25,13 +25,14 @@ import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
 import { UpdateBanner } from "@/components/overlays/UpdateBanner";
 import { useAuthStore } from "@/lib/storage/zustand";
+import { fonts } from "@/lib/fonts";
 
 export function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState<string | undefined>("");
   const theme = useAppTheme();
-  const styles = getStyles(theme);
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const version = Application.nativeApplicationVersion;
   const avatarConfig = useAuthStore((s) => s.avatarConfig);
 
@@ -206,7 +207,7 @@ export function ProfileScreen() {
                         ]}
                       >
                         <item.icon
-                          color={item.color}
+                          color={theme.white}
                           size={22}
                           strokeWidth={2.5}
                         />
@@ -293,10 +294,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     profileName: {
       fontSize: 24,
-      fontWeight: "800",
+      fontFamily: fonts.displayBold,
       color: textColor,
     },
     profileEmail: {
+      fontFamily: fonts.regular,
       fontSize: 14,
       color: subTextColor,
       marginTop: 2,
@@ -313,9 +315,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 4,
     },
     badgeText: {
+      fontFamily: fonts.semibold,
       color: white,
       fontSize: 11,
-      fontWeight: "700",
     },
     listContainer: {
       padding: 20,
@@ -325,11 +327,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     groupTitle: {
       fontSize: 12,
-      fontWeight: "800",
       color: subTextColor,
       letterSpacing: 1.5,
       marginBottom: 12,
       marginLeft: 4,
+      fontFamily: fonts.semibold,
     },
     groupContent: {
       backgroundColor: cardBg,
@@ -360,11 +362,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginLeft: 16,
     },
     menuLabel: {
+      fontFamily: fonts.semibold,
       fontSize: 16,
-      fontWeight: "700",
       color: textColor,
     },
     menuSubLabel: {
+      fontFamily: fonts.regular,
       fontSize: 13,
       color: subTextColor,
       marginTop: 2,
@@ -379,6 +382,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginTop: 10,
     },
     footerText: {
+      fontFamily: fonts.medium,
       fontSize: 12,
       color: chevronColor,
       fontWeight: "600",

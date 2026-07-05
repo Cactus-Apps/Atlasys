@@ -7,6 +7,7 @@ import {
   CreditCard,
   Download,
   MapPin,
+  NavigationIcon,
   Rocket,
   UserRound,
 } from "lucide-react-native";
@@ -32,6 +33,7 @@ type TopicKey =
   | "coolPlaces"
   | "subscriptions"
   | "offlineMaps"
+  | "navigations"
   | "updates";
 
 function resolveTopics(settings: {
@@ -46,6 +48,7 @@ function resolveTopics(settings: {
     subscriptions: t?.subscriptions ?? fb,
     offlineMaps: t?.offlineMaps ?? fb,
     updates: t?.updates ?? fb,
+    navigations: t?.navigations ?? fb,
   };
 }
 
@@ -68,10 +71,10 @@ const TOPIC_ROWS: {
     Icon: MapPin,
   },
   {
-    key: "subscriptions",
-    labelKey: "Notifications_topic_subscriptions",
-    descriptionKey: "Notifications_topic_subscriptions_sub",
-    Icon: CreditCard,
+    key: "navigations",
+    labelKey: "Navigations",
+    descriptionKey: "Navigations directions",
+    Icon: NavigationIcon,
   },
   {
     key: "offlineMaps",
@@ -120,20 +123,6 @@ export default function NotificationsScreen() {
       </View>
 
       <View>
-        <View style={styles.section}>
-          <View style={styles.introBanner}>
-            <View style={styles.introIconWrap}>
-              <AlertTriangleIcon size={28} color={theme.danger} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.introTitle}>
-                {t("Notifications_beta_title")}
-              </Text>
-              <Text style={styles.introSub}>{t("Notifications_beta_sub")}</Text>
-            </View>
-          </View>
-        </View>
-
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
@@ -164,7 +153,6 @@ export default function NotificationsScreen() {
                       </View>
                       <Switch
                         value={enabled}
-                        disabled={true}
                         onValueChange={(v) => setTopic(row.key, v)}
                         trackColor={{
                           false: theme.cardBgSecondary,
@@ -194,7 +182,6 @@ export default function NotificationsScreen() {
             </View>
           </View>
         </ScrollView>
-        <BlurView style={styles.disabledOverlay} intensity={35} tint="dark" />
       </View>
     </SafeAreaView>
   );

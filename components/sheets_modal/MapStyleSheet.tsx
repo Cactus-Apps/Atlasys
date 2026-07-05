@@ -5,10 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   Modal,
   Platform,
-  Animated,
 } from "react-native";
 import { X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";

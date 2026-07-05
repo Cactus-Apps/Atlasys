@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native";
 import i18n from "@/app/i18n";
 
 export type CityPOI = {
@@ -344,7 +345,7 @@ export async function fetchTransitRoutes(
   if (!data?.elements) {
     throw new Error("No response from Overpass API");
   }
-  return data.elements
+  const rawRoutes: TransitRoute[] = data.elements
     .filter((el: any) => el.tags?.name || el.tags?.ref)
     .map((el: any) => {
       const t = el.tags || {};
@@ -356,6 +357,157 @@ export async function fetchTransitRoutes(
         colour: t.colour || t.color || "#3B82F6",
       };
     });
+
+  const groups = new Map<string, TransitRoute[]>();
+  for (const r of rawRoutes) {
+    const num = r.ref.match(/^(\d+)/);
+    const key = num ? `${r.routeType}-${num[1]}` : `${r.routeType}-${r.ref}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r);
+  }
+
+  const result: TransitRoute[] = [];
+  for (const [, group] of groups) {
+    if (group.length === 1) {
+      result.push(group[0]);
+    } else {
+      group.sort(
+        (a, b) =>
+          a.ref.length - b.ref.length ||
+          (a.ref || a.name).localeCompare(b.ref || b.name),
+      );
+      result.push(group[0]);
+    }
+  }
+  return result;
+}
+
+function orderWaySegments(segments: number[][][]): number[][] {
+  if (segments.length === 0) return [];
+  if (segments.length === 1) return segments[0];
+
+  const ptsKey = (pt: number[]) => `${pt[0].toFixed(5)},${pt[1].toFixed(5)}`;
+
+  const adj = new Map<string, number[]>();
+  for (let i = 0; i < segments.length; i++) {
+    const fk = ptsKey(segments[i][0]);
+    const lk = ptsKey(segments[i][segments[i].length - 1]);
+    if (!adj.has(fk)) adj.set(fk, []);
+    if (!adj.has(lk)) adj.set(lk, []);
+    if (fk !== lk) {
+      adj.get(fk)!.push(i);
+      adj.get(lk)!.push(i);
+    } else {
+      adj.get(fk)!.push(i);
+    }
+  }
+
+  const leaves: string[] = [];
+  for (const [key, conns] of adj) {
+    if (conns.length === 1) leaves.push(key);
+  }
+
+  let bestPath: number[][] = [];
+
+  if (leaves.length >= 2) {
+    const segArray = segments;
+
+    function dfs(
+      currentKey: string,
+      visited: Set<number>,
+      path: number[][],
+    ) {
+      if (leaves.includes(currentKey) && path.length > bestPath.length) {
+        bestPath = path.map((p) => p);
+      }
+      for (const segIdx of adj.get(currentKey) || []) {
+        if (visited.has(segIdx)) continue;
+        visited.add(segIdx);
+        const seg = segArray[segIdx];
+        const fwd = ptsKey(seg[0]) === currentKey;
+        const segCoords = fwd ? seg : [...seg].reverse();
+        const nextKey = ptsKey(segCoords[segCoords.length - 1]);
+        const newPath =
+          path.length === 0
+            ? segCoords
+            : [...path, ...segCoords.slice(1)];
+        dfs(nextKey, visited, newPath);
+        visited.delete(segIdx);
+      }
+    }
+
+    for (const leafKey of leaves) {
+      for (const segIdx of adj.get(leafKey) || []) {
+        const visited = new Set<number>([segIdx]);
+        const seg = segArray[segIdx];
+        const fwd = ptsKey(seg[0]) === leafKey;
+        const segCoords = fwd ? seg : [...seg].reverse();
+        const nextKey = ptsKey(segCoords[segCoords.length - 1]);
+        dfs(nextKey, visited, segCoords);
+      }
+    }
+
+    if (bestPath.length > 0) return bestPath;
+  }
+
+  const remaining = segments.map((seg) => ({ seg }));
+  const ordered: number[][] = [...remaining[0].seg];
+  remaining.splice(0, 1);
+
+  while (remaining.length > 0) {
+    const last = ordered[ordered.length - 1];
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    let bestReversed = false;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const seg = remaining[i].seg;
+      const first = seg[0];
+      const lastPt = seg[seg.length - 1];
+
+      const dFirst = Math.hypot(last[0] - first[0], last[1] - first[1]);
+      const dLast = Math.hypot(last[0] - lastPt[0], last[1] - lastPt[1]);
+      const minDist = dFirst < dLast ? dFirst : dLast;
+
+      if (minDist < bestDist) {
+        bestDist = minDist;
+        bestIdx = i;
+        bestReversed = dLast < dFirst;
+      }
+    }
+
+    const best = remaining[bestIdx].seg;
+    if (bestReversed) {
+      ordered.push(...[...best].reverse().slice(1));
+    } else {
+      ordered.push(...best.slice(1));
+    }
+    remaining.splice(bestIdx, 1);
+  }
+
+  const first = ordered[0];
+  const last = ordered[ordered.length - 1];
+  const endToStart = Math.hypot(
+    last[0] - first[0],
+    last[1] - first[1],
+  );
+
+  if (endToStart < 0.005 && ordered.length > 20) {
+    let maxDistSq = 0;
+    let maxIdx = 0;
+    for (let i = 0; i < ordered.length; i++) {
+      const dx = ordered[i][0] - first[0];
+      const dy = ordered[i][1] - first[1];
+      const d = dx * dx + dy * dy;
+      if (d > maxDistSq) {
+        maxDistSq = d;
+        maxIdx = i;
+      }
+    }
+    return ordered.slice(0, maxIdx + 1);
+  }
+
+  return ordered;
 }
 
 export async function fetchTransitRouteDetails(osmId: number): Promise<{
@@ -368,18 +520,30 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       relation(${osmId});
       >>;
     );
-    out geom tags;
+      out geom;
   `;
   try {
     const data = await overpassQuery(query);
-    if (!data?.elements?.length) return null;
+    if (!data?.elements?.length) {
+      Sentry.captureMessage("fetchTransitRouteDetails: empty response", {
+        extra: { osmId },
+      });
+      return null;
+    }
 
     const relation = data.elements.find((el: any) => el.type === "relation");
-    if (!relation) return null;
+    if (!relation) {
+      Sentry.captureMessage("fetchTransitRouteDetails: no relation found", {
+        extra: { osmId, elementCount: data.elements.length },
+      });
+      return null;
+    }
 
     const elementsIndex = new Map(
       data.elements.map((el: any) => [Math.abs(el.id), el]),
     );
+
+    const trackRoles = new Set(["", "forward", "backward"]);
 
     const waySegments: number[][][] = [];
     const visited = new Set<number>();
@@ -390,16 +554,11 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       visited.add(el.id);
 
       if (el.type === "way" && el.geometry) {
+        const role = member.role || "";
+        if (!trackRoles.has(role)) return;
         const pts = el.geometry.map((pt: any) => [pt.lon, pt.lat]);
-        if (member.role === "backward") pts.reverse();
+        if (role === "backward") pts.reverse();
         waySegments.push(pts);
-        return;
-      }
-
-      if (el.type === "relation" && el.members) {
-        for (const sub of el.members) {
-          traverseMember(sub);
-        }
       }
     }
 
@@ -407,26 +566,15 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       traverseMember(member);
     }
 
-    const orderedCoords: number[][] = [];
-    if (waySegments.length > 0) {
-      orderedCoords.push(...waySegments[0]);
+    console.warn(
+      `[fetchTransitRouteDetails] osmId=${osmId}, elements=${data.elements.length}, ways=${waySegments.length}`,
+    );
 
-      for (let i = 1; i < waySegments.length; i++) {
-        const prev = orderedCoords[orderedCoords.length - 1];
-        const seg = waySegments[i];
-        const first = seg[0];
-        const last = seg[seg.length - 1];
+    const orderedCoords: number[][] = orderWaySegments(waySegments);
 
-        const distToFirst = Math.hypot(prev[0] - first[0], prev[1] - first[1]);
-        const distToLast = Math.hypot(prev[0] - last[0], prev[1] - last[1]);
-
-        if (distToFirst <= distToLast) {
-          orderedCoords.push(...seg.slice(1));
-        } else {
-          orderedCoords.push(...[...seg].reverse().slice(1));
-        }
-      }
-    }
+    console.warn(
+      `[fetchTransitRouteDetails] orderedCoords=${orderedCoords.length}`,
+    );
 
     let geometry: TransitRoute["geometry"] | undefined;
     if (orderedCoords.length > 0) {
@@ -483,7 +631,8 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       geometry: geometry || { type: "LineString", coordinates: [] },
       stops,
     };
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return null;
   }
 }
