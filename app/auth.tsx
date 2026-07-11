@@ -24,6 +24,7 @@ import {
 import * as Sentry from "@sentry/react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { fonts } from "@/lib/fonts";
 import { useAppTheme } from "@/lib/theme";
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons";
 
@@ -65,6 +66,7 @@ export default function AuthScreen() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleAuth = async () => {
     if (!email || !password) {
       setError(t("Please_fill_in_all_fields"));
@@ -328,7 +330,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "900",
+    fontFamily: fonts.bold,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
@@ -351,7 +353,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   errorBox: {
     backgroundColor: "rgba(239, 68, 68, 0.1)",
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     textAlign: "center",
   },
   mainBtn: {
@@ -379,14 +381,14 @@ const styles = StyleSheet.create({
   mainBtnText: {
     color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
   },
   switchBtn: {
     alignItems: "center",
     marginTop: 16,
   },
   switchBtnText: {
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: 15,
   },
   footer: {
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginBottom: 16,
   },
 });

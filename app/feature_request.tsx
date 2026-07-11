@@ -2,6 +2,7 @@ import { FeedbackWidget } from "@sentry/react-native";
 import { router } from "expo-router";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 export default function FeatureRequest() {
@@ -37,7 +38,7 @@ export default function FeatureRequest() {
         title: {
           color: theme.textColor,
           fontSize: 32,
-          fontWeight: "bold",
+          fontFamily: fonts.bold,
           paddingRight: 34,
         },
         label: {
@@ -78,7 +79,7 @@ export default function FeatureRequest() {
         submitText: {
           color: theme.white,
           fontSize: 16,
-          fontWeight: "600",
+          fontFamily: fonts.semibold,
         },
         cancelButton: {
           borderRadius: 10,
@@ -94,7 +95,7 @@ export default function FeatureRequest() {
         cancelText: {
           color: theme.subTextColor,
           fontSize: 16,
-          fontWeight: "600",
+          fontFamily: fonts.semibold,
         },
         sentryLogo: {
           tintColor: theme.textColor,

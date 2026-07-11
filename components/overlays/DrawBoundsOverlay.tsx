@@ -11,6 +11,7 @@ import {
 import { Check, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import * as Sentry from "@sentry/react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -274,8 +275,8 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
       gap: 6,
     },
-    confirmText: { color: white, fontWeight: "700", fontSize: 15 },
-    headerTitle: { color: textColor, fontSize: 17, fontWeight: "700" },
+    confirmText: { color: white, fontFamily: fonts.bold, fontSize: 15 },
+    headerTitle: { color: textColor, fontSize: 17, fontFamily: fonts.bold },
     headerSub: { color: subTextColor, fontSize: 12, marginTop: 2 },
   });
 };

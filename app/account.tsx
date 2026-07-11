@@ -32,6 +32,7 @@ import { useAppTheme } from "@/lib/theme";
 import { posthog } from "@/lib/config/posthog";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { generateRandomAvatarConfig } from "@/lib/avatar/avatar-utils";
+import { fonts } from "@/lib/fonts";
 
 interface DeleteRequest {
   id: string;
@@ -197,11 +198,11 @@ export default function AccountScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [request, setRequest] = useState<DeleteRequest | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loading2, setLoading2] = useState(false);
   const { t } = useTranslation();
-  const [progress, setProgress] = useState(0);
   const [ModalVisible2, setModalVisible2] = useState(false);
   const [daysLeft, setdaysLeft] = useState<number | null>(null);
+  const [loading2, setLoading2] = useState(false);
+  const [progress, setProgress] = useState(0);
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   const avatarConfig = useAuthStore((s) => s.avatarConfig);
@@ -823,7 +824,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -850,7 +851,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     emailText: {
       fontSize: 20,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 8,
     },
@@ -871,7 +872,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     statusText: {
       fontSize: 12,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: success,
     },
     card: {
@@ -888,7 +889,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     cardTitle: {
       fontSize: 14,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1,
@@ -912,12 +913,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     menuLabel: {
       fontSize: 13,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: subTextColor,
     },
     menuValue: {
       fontSize: 15,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       marginTop: 2,
     },
@@ -936,7 +937,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     dangerTitle: {
       fontSize: 14,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: danger,
       textTransform: "uppercase",
       letterSpacing: 1,
@@ -951,7 +952,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     deleteButtonText: {
       color: white,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       fontSize: 16,
     },
     dangerNote: {
@@ -977,7 +978,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     signOutText: {
       color: danger,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       fontSize: 16,
     },
     requestCard: {
@@ -1001,7 +1002,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     requestTitle: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     statusTag: {
@@ -1011,7 +1012,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     statusTagText: {
       fontSize: 12,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
     },
     progressContainer: {
       marginBottom: 16,
@@ -1030,12 +1031,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     progressText: {
       fontSize: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: subTextColor,
     },
     daysText: {
       fontSize: 14,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       textAlign: "center",
     },
@@ -1055,7 +1056,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalTitle: {
       fontSize: 20,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
       textAlign: "center",
       marginBottom: 12,
@@ -1087,7 +1088,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalButtonText: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     editBadge: {
@@ -1123,7 +1124,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     editModalTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     editModalRandomize: {
@@ -1137,7 +1138,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     randomizeText: {
       fontSize: 13,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: primary,
     },
     editModalContent: {
@@ -1159,7 +1160,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     editModalSectionTitle: {
       fontSize: 14,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1,
@@ -1170,7 +1171,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     partLabel: {
       fontSize: 12,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1,
@@ -1197,7 +1198,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     partOptionText: {
       fontSize: 13,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
     },
     partOptionTextSelected: {
@@ -1220,7 +1221,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     colorRowLabel: {
       flex: 1,
       fontSize: 14,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     colorSwatchSmall: {
@@ -1272,7 +1273,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     cancelBtnText: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     saveBtn: {
@@ -1284,7 +1285,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     saveBtnText: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: white,
     },
     all: {

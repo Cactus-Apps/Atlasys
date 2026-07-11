@@ -4,7 +4,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  DockIcon,
   LanguagesIcon,
   RefreshCw,
   SettingsIcon,
@@ -26,8 +25,8 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { AppTheme, TabTheme } from "@/lib/theme";
-import { useAppTheme } from "@/lib/theme";
+import { AppTheme, TabTheme, useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { TabBarPreview } from "@/components/tab-bars/TabBarPreview";
 import { AnalyticsChoice, applyAnalyticsChoice } from "@/lib/auth/analytics";
 import { posthog } from "@/lib/config/posthog";
@@ -36,12 +35,12 @@ export default function Settings() {
   const [ModalVisible, setModalVisible] = useState(false);
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const [analyticsChoice, setAnalyticsChoice] =
-    useState<AnalyticsChoice>("none");
-  const updateSettings = useAuthStore((s) => s.updateSettings);
   const appSettings = useAuthStore((s) => s.settings);
+  const [analyticsChoice, setAnalyticsChoice] = useState<AnalyticsChoice>(
+    appSettings.analytics ?? "none",
+  );
+  const updateSettings = useAuthStore((s) => s.updateSettings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
-  const userId = useAuthStore((s) => s.userId);
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const buildNumber = Application.nativeBuildVersion;
@@ -80,12 +79,6 @@ export default function Settings() {
       return;
     }
     updateSettings({ [key]: value });
-  };
-
-  const setAnalytics = (choice: AnalyticsChoice) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateSettings({ analytics: choice });
-    applyAnalyticsChoice(choice, userId ?? undefined);
   };
 
   const THEME_OPTIONS: {
@@ -369,7 +362,7 @@ export default function Settings() {
                     style={{
                       marginTop: 8,
                       fontSize: 13,
-                      fontWeight: isActive ? "700" : "500",
+                      fontFamily: isActive ? fonts.bold : fonts.medium,
                       color: isActive ? theme.accentColor : theme.subTextColor,
                     }}
                   >
@@ -448,7 +441,7 @@ export default function Settings() {
                         <Text
                           style={{
                             fontSize: 8,
-                            fontWeight: "900",
+                            fontFamily: fonts.bold,
                             color: "#fff",
                             letterSpacing: 0.5,
                           }}
@@ -481,7 +474,7 @@ export default function Settings() {
                     style={{
                       marginTop: 8,
                       fontSize: 13,
-                      fontWeight: isActive ? "700" : "500",
+                      fontFamily: isActive ? fonts.bold : fonts.medium,
                       color: isActive ? theme.accentColor : theme.subTextColor,
                     }}
                   >
@@ -508,6 +501,8 @@ export default function Settings() {
                   ]}
                   onPress={() => {
                     setAnalyticsChoice(choice);
+                    updateSettings({ analytics: choice });
+                    applyAnalyticsChoice(choice, undefined);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                 >
@@ -733,7 +728,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -748,7 +743,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionTitle: {
       fontSize: 12,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1.5,
@@ -795,7 +790,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     menuLabel: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     menuValue: {
@@ -811,13 +806,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     infoLabel: {
       fontSize: 15,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
     },
     infoValue: {
       fontSize: 15,
       color: subTextColor,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     separator: {
       height: 1,
@@ -846,12 +841,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     modalTitle: {
       fontSize: 20,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     closeButtonText: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: primary,
     },
     languageList: {
@@ -871,12 +866,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     languageLabel: {
       flex: 1,
       fontSize: 17,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
     },
     selectedLanguageLabel: {
       color: primary,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
     },
     premiumBadge: {
       backgroundColor: primary,
@@ -886,7 +881,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     premiumBadgeText: {
       fontSize: 10,
-      fontWeight: "900",
+      fontFamily: fonts.bold,
       color: white,
     },
     radioOuter: {
@@ -908,7 +903,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionLabel: {
       fontSize: 13,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 0.8,
@@ -931,7 +926,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     analyticsOptionTitle: {
       fontSize: 14,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
       marginBottom: 2,
     },

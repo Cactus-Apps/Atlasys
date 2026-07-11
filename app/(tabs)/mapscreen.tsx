@@ -69,7 +69,6 @@ import { useTranslation } from "react-i18next";
 import { Image as ExpoImage } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
 import { reverseGeocodeAddress } from "@/lib/geocoding/geocoding";
-import { supabase } from "@/lib/auth/supabase";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import {
   GestureHandlerRootView,
@@ -94,6 +93,7 @@ import PoiSheet from "@/components/sheets_modal/PoiSheet";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
+import { fonts } from "@/lib/fonts";
 
 const { width, height } = Dimensions.get("window");
 
@@ -167,7 +167,7 @@ export default function MapScreen() {
   const mapCenterRef = useRef<[number, number] | null>(null);
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
-  const [, setZoom] = useState(12);
+  const locationSubscribedRef = useRef(false);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
   const initialCenter = useMemo<[number, number]>(() => {
@@ -177,23 +177,24 @@ export default function MapScreen() {
   const [profile, setProfile] = useState<"driving" | "cycling" | "walking">(
     "driving",
   );
-  const [, setImages] = useState<string[]>([]);
-  const [, setDistanceInfo] = useState<{
+  const distanceInfoRef = useRef<{
     distance: number;
     duration: number;
-  } | null>();
-  const [CityInfo] = useState("");
+  } | null>(null);
+  const setDistanceInfo = (info: { distance: number; duration: number } | null) => {
+    distanceInfoRef.current = info;
+  };
   const [MapStyle, setMapStyle] = useState<string | StyleSpecification>(
     "https://tiles.openfreemap.org/styles/bright",
   );
-  const [, setSub] = useState<Location.LocationSubscription | null>(null);
+  const subRef = useRef<Location.LocationSubscription | null>(null);
+  const setSub = (s: Location.LocationSubscription | null) => { subRef.current = s; };
+  const selectedRef = useRef<CityResult | null>(null);
+  const setSelected = (s: CityResult | null) => { selectedRef.current = s; };
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [, setSelected] = useState<CityResult | null>(null);
-  const [start] = useState<[number, number] | null>();
-  const [end] = useState<[number, number] | null>();
-  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const lastFetchTimeRef = useRef(0);
+  const lastFetchCityKeyRef = useRef("");
   const [query, setQuery] = useState("");
-  const [, setEmail] = useState<string | null>();
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
@@ -303,6 +304,9 @@ export default function MapScreen() {
   // Location/GPS Stuff
 
   useEffect(() => {
+    if (locationSubscribedRef.current) return;
+    locationSubscribedRef.current = true;
+
     let cancelled = false;
     let liveSub: Location.LocationSubscription | null = null;
 
@@ -391,16 +395,7 @@ export default function MapScreen() {
       liveSub?.remove();
       setSub(null);
     };
-  }, [locationReady, t]);
-
-  // User Auth Stuff
-  useEffect(() => {
-    const fetchUserEmail = async () => {
-      const { data } = await supabase.auth.getUser();
-      const user = data?.user;
-      setEmail(user?.email);
-    };
-    fetchUserEmail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper functions
@@ -788,23 +783,29 @@ export default function MapScreen() {
       } catch (error) {
         Sentry.captureException(error);
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+          if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     const now = Date.now();
-    if (now - lastFetchTime < 3000) return;
-    Promise.resolve().then(() => setLastFetchTime(now));
-    fetchWikipediaData();
-
-    return () => controller.abort();
+    const cityKey = `${city?.name}|${city?.latitude}|${city?.longitude}`;
+    if (
+      cityKey === lastFetchCityKeyRef.current &&
+      now - lastFetchTimeRef.current < 3000
+    )
+      return;
+    lastFetchTimeRef.current = now;
+    lastFetchCityKeyRef.current = cityKey;
+    const wikiTimer = setTimeout(() => fetchWikipediaData());
+    return () => {
+      controller.abort();
+      clearTimeout(wikiTimer);
+    };
   }, [
     city?.name,
     city?.latitude,
     city?.longitude,
     i18n.language,
-    lastFetchTime,
-    t,
   ]);
 
   // Weather logic
@@ -834,8 +835,8 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (!city?.latitude || !city?.longitude) {
-      Promise.resolve().then(() => setTileDataUri(null));
-      return;
+      const tileClearTimer = setTimeout(() => setTileDataUri(null));
+      return () => clearTimeout(tileClearTimer);
     }
     const zoom = 13;
     const n = Math.pow(2, zoom);
@@ -846,7 +847,10 @@ export default function MapScreen() {
         2,
     );
     const url = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x}/${y}.png`;
-    Promise.resolve().then(() => {
+    const cancel = { current: false };
+
+    setTimeout(() => {
+      if (cancel.current) return;
       setTileLoading(true);
       setTileError(false);
     });
@@ -874,9 +878,11 @@ export default function MapScreen() {
         setTileError(true);
         setTileLoading(false);
       });
+
+    return () => { cancel.current = true; };
   }, [city?.latitude, city?.longitude]);
 
-  const getWeatherIcon = (code: number) => {
+  const getWeatherIcon = useCallback((code: number) => {
     if (code <= 2) return <Sun size={20} color="#FFD700" />;
     if (code <= 2) return <CloudSunIcon size={20} color="#948b59" />;
     if (code <= 63) return <CloudRainIcon size={20} color="#3B82F6" />;
@@ -885,7 +891,7 @@ export default function MapScreen() {
     if (code <= 82) return <CloudRainIcon size={20} color="#3B82F6" />;
     if (code <= 99) return <CloudLightningIcon size={20} color="94A3B8" />;
     return <Cloud size={20} color="#94A3B8" />;
-  };
+  }, []);
 
   const searchCities = useCallback(
     async (q: string) => {
@@ -924,18 +930,17 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (!query || query.length < 2) {
-      Promise.resolve().then(() => setResults([]));
-      return;
+      const clearResultsTimer = setTimeout(() => setResults([]));
+      return () => clearTimeout(clearResultsTimer);
     }
-    const t = setTimeout(() => searchCities(query), 350);
-    return () => clearTimeout(t);
+    const searchTimer = setTimeout(() => searchCities(query), 350);
+    return () => clearTimeout(searchTimer);
   }, [query, searchCities]);
 
   function onSelectCity(city: CityResult) {
     sheetRef.current?.snapToIndex(2);
     setSelected(city);
     Keyboard.dismiss();
-    setZoom(9);
 
     addToSearchHistory(city.name ?? city.city);
 
@@ -963,7 +968,6 @@ export default function MapScreen() {
 
   function selectCity(city: SelectedCity) {
     setCity(city);
-    setImages([]);
     setResults([]);
     setQuery(city.name);
     mapRef.current?.flyTo({
@@ -976,20 +980,6 @@ export default function MapScreen() {
   }
 
   // Routing
-  const fitRouteBounds = useCallback(() => {
-    if (!mapRef.current || !start || !end) return;
-    const bounds: [number, number, number, number] = [
-      Math.min(start[0], end[0]),
-      Math.min(start[1], end[1]),
-      Math.max(start[0], end[0]),
-      Math.max(start[1], end[1]),
-    ];
-    mapRef.current.fitBounds(bounds, {
-      padding: 60,
-      duration: 800,
-    });
-  }, [start, end]);
-
   const buildStyleWithRoutes = useCallback(
     async (base: string | StyleSpecification): Promise<StyleSpecification> => {
       let style: StyleSpecification;
@@ -1050,48 +1040,6 @@ export default function MapScreen() {
       }
     }, 800);
   };
-
-  useEffect(() => {
-    if (!start || !end) return;
-
-    const fetchRoute = async () => {
-      const url =
-        `https://router.project-osrm.org/route/v1/${profile}/` +
-        `${start[0]},${start[1]};${end[0]},${end[1]}` +
-        `?overview=full&alternatives=true&geometries=geojson`;
-
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const json = await res.json();
-
-      if (!json.routes?.length) return;
-
-      setRoute(json.routes);
-      posthog.capture("route_started", {
-        profile: profile,
-      });
-
-      setDistanceInfo({
-        distance: json.routes[0].distance,
-        duration: json.routes[0].duration,
-      });
-      fitRouteBounds();
-
-      const theme = MAP_THEMES.find(
-        (t) => t.key === currentThemeKeyRef.current,
-      );
-      if (theme) {
-        const withRoutes = await buildStyleWithRoutes(theme.url);
-        setMapStyle(withRoutes);
-      }
-    };
-
-    fetchRoute().catch((error: unknown) =>
-      Sentry.captureException(
-        error instanceof Error ? error : new Error("Failed to fetch route"),
-      ),
-    );
-  }, [start, end, buildStyleWithRoutes, fitRouteBounds, profile]);
 
   const onMapClick = async (event: any) => {
     Keyboard.dismiss();
@@ -1186,10 +1134,12 @@ export default function MapScreen() {
     let timer: any;
 
     if (locationReady) {
-      Promise.resolve().then(() => setShowError(false));
-      timer = setTimeout(() => {
+      timer = setTimeout(() => setShowError(false));
+      const delayed = setTimeout(() => {
         setShowError(true);
       }, 5000);
+      const clear = () => { clearTimeout(timer); clearTimeout(delayed); };
+      return clear;
     }
 
     return () => clearTimeout(timer);
@@ -1221,7 +1171,7 @@ export default function MapScreen() {
         >
           <AlertCircleIcon color={theme.danger} />
           <Text
-            style={{ color: theme.textColor, fontSize: 13, fontWeight: "500" }}
+            style={{ color: theme.textColor, fontSize: 13, fontFamily: fonts.medium }}
           >
             {error}
           </Text>
@@ -1254,7 +1204,7 @@ export default function MapScreen() {
           )}
           {showError && <AlertTriangle color={theme.danger} />}
           <Text
-            style={{ color: theme.textColor, fontSize: 13, fontWeight: "500" }}
+            style={{ color: theme.textColor, fontSize: 13, fontFamily: fonts.medium }}
           >
             {showError
               ? t("Location_could_not_resolve")
@@ -1300,7 +1250,7 @@ export default function MapScreen() {
                     style={{
                       color: theme.white,
                       fontSize: 18,
-                      fontWeight: "700",
+                      fontFamily: fonts.bold,
                     }}
                   >
                     {routePickMode === "start"
@@ -1358,7 +1308,7 @@ export default function MapScreen() {
                   <Text
                     style={{
                       color: theme.white,
-                      fontWeight: "700",
+                      fontFamily: fonts.bold,
                       fontSize: 16,
                     }}
                   >
@@ -1887,7 +1837,7 @@ export default function MapScreen() {
                         textAnchor="middle"
                         fill="white"
                         fontSize="11"
-                        fontWeight="700"
+                        fontFamily={fonts.bold}
                       >
                         N
                       </SvgText>
@@ -1960,7 +1910,7 @@ export default function MapScreen() {
                         <Text
                           style={{
                             fontSize: 23,
-                            fontWeight: "600",
+                            fontFamily: fonts.semibold,
                             marginLeft: 20,
                             color: theme.textColor,
                           }}
@@ -2020,7 +1970,7 @@ export default function MapScreen() {
                           <Route color={theme.white} size={24} />
                           <Text
                             style={{
-                              fontWeight: "500",
+                              fontFamily: fonts.medium,
                               fontSize: 18,
                               color: theme.white,
                               paddingHorizontal: 10,
@@ -2214,7 +2164,6 @@ export default function MapScreen() {
                     {city && <View style={{ paddingBottom: 16 }}></View>}
                     <Text style={styles.extractText}>
                       {article?.extract}
-                      {CityInfo}
                     </Text>
                     <TouchableOpacity
                       onPress={openURL}
@@ -2418,7 +2367,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     weatherText: {
       fontSize: 14,
-      fontWeight: "bold",
+      fontFamily: fonts.bold,
       color: subTextColor,
     },
     articleHeader: {
@@ -2479,7 +2428,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     filterTextActive: {
       color: white,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
     },
     readMoreButton: {
       marginTop: 20,
@@ -2492,7 +2441,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     readMoreText: {
       color: primary,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       fontSize: 16,
     },
     fullscreenImageWrapper: {
@@ -2529,7 +2478,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     historyHeaderText: {
       fontSize: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: subTextColor,
       textTransform: "uppercase",
       paddingRight: 170,
@@ -2564,7 +2513,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionTitle: {
       fontSize: 18,
-      fontWeight: "bold",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     imageList: {
@@ -2616,7 +2565,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     suggTitle: {
       fontSize: 16,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
     },
     suggSub: {
@@ -2735,7 +2684,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     cityMapCardTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: "#fff",
     },
     cityMapCardLoading: {
@@ -2757,7 +2706,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     cityMapCardSub: {
       fontSize: 14,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
     },
   });

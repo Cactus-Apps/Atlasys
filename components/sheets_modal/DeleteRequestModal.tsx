@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { AlertTriangle, X, Clock } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -43,7 +44,7 @@ export default function DeleteRequestModal({
           alignItems: "center",
           marginBottom: 20,
         },
-        cardTitle: { fontSize: 20, fontWeight: "700" },
+        cardTitle: { fontSize: 20, fontFamily: fonts.bold },
         closeBtn: {
           backgroundColor: theme.cardBgSecondary,
           borderRadius: 20,
@@ -66,7 +67,7 @@ export default function DeleteRequestModal({
           paddingVertical: 14,
           alignItems: "center",
         },
-        okText: { fontWeight: "700", fontSize: 16 },
+        okText: { fontFamily: fonts.bold, fontSize: 16 },
       }),
     [theme, status],
   );

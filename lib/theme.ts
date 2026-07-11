@@ -45,7 +45,7 @@ const THEMES: Record<AppTheme, ThemeTokens> = {
     accentColor: "#2563EB",
     startbg: "#DDDDDD",
     startPrimary: "#333333",
-    accentColorbg: "rgb(37, 99, 235, 0.5)",
+    accentColorbg: "rgba(37, 99, 235, 0.5)",
   },
 
   dark: {

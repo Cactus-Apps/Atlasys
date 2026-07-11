@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 export function GoogleLogo({ size = 20 }: { size?: number }) {
@@ -49,7 +50,6 @@ export function OAuthProviderButtons({
   const { t } = useTranslation();
   const busy = disabled || googleLoading;
   const googleBg = isDark ? "#131314" : "#FFFFFF";
-  const googleBorder = isDark ? "#5F6368" : "#747775";
   const googleText = isDark ? "#E8EAED" : "#1F1F1F";
 
   return (
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     letterSpacing: 0.15,
   },
 });

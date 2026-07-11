@@ -4,7 +4,7 @@ import { UpdateProvider } from "@/lib/hooks/update-context";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { runExpoUpdateCheck } from "@/lib/hooks/expoUpdateCheck";
 import { Slot, useRouter, useSegments } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import AnimatedSplash from "@/components/overlays/SplashScreen";
 import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -22,6 +22,7 @@ function sentryBeforeSend(
   _hint: any,
 ): Sentry.ErrorEvent | null {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { useAuthStore: store } = require("@/lib/storage/zustand");
     if (store.getState().settings.crashReports === false) {
       return null;
@@ -209,7 +210,7 @@ function AppBootstrap() {
       router.replace("/(tabs)/mapscreen");
       return;
     }
-  }, [storeReady, isLoadingUser, user, isOnboardingCompleted, segments]);
+  }, [storeReady, isLoadingUser, user, isOnboardingCompleted, segments, i18nGate, router]);
 
   const isReady = storeReady && !isLoadingUser && i18nGate && fontsLoaded;
 

@@ -6,12 +6,12 @@ import {
   StyleSheet,
   Platform,
   Linking,
-  Alert,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { X, AlertCircle, Copy, Github, Check } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import * as Sentry from "@sentry/react-native";
@@ -236,7 +236,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
     },
     headerSub: { fontSize: 11, color: subTextColor },
-    title: { fontSize: 17, fontWeight: "600", color: textColor },
+    title: { fontSize: 17, fontFamily: fonts.semibold, color: textColor },
     closeBtn: {
       width: 32,
       height: 32,
@@ -264,7 +264,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionLabel: {
       fontSize: 11,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 0.5,
@@ -277,7 +277,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     detailItem: { width: "47%" },
     detailKey: { fontSize: 11, color: subTextColor, marginBottom: 2 },
-    detailValue: { fontSize: 13, fontWeight: "500", color: textColor },
+    detailValue: { fontSize: 13, fontFamily: fonts.medium, color: textColor },
     availableBox: { marginBottom: 20 },
     availableItem: {
       flexDirection: "row",
@@ -313,7 +313,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderWidth: 0.5,
       borderColor: borderColor,
     },
-    btnSecondaryText: { fontSize: 14, fontWeight: "500", color: textColor },
+    btnSecondaryText: { fontSize: 14, fontFamily: fonts.medium, color: textColor },
     btnPrimary: {
       flex: 1,
       flexDirection: "row",
@@ -324,6 +324,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 16 : 12,
       backgroundColor: danger,
     },
-    btnPrimaryText: { fontSize: 14, fontWeight: "500", color: white },
+    btnPrimaryText: { fontSize: 14, fontFamily: fonts.medium, color: white },
   });
 };

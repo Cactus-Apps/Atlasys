@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import {
   FlatList,
   Share,
@@ -26,7 +26,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
-import { reverseGeocodeAddress } from "@/lib/geocoding/geocoding";
+import { fonts } from "@/lib/fonts";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
@@ -37,7 +37,6 @@ export default function SavedScreen() {
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
-  const updatePlace = useAuthStore((state) => state.updatePlace);
 
   const handleRemove = (name: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -58,10 +57,12 @@ export default function SavedScreen() {
 
   const handleCityMap = (place: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const cityId = place.name
+    const rawSlug = place.name
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
+    const cityId = rawSlug || encodeURIComponent(place.name.toLowerCase());
+
     const q =
       `name=${encodeURIComponent(place.name)}&latitude=${place.latitude}&longitude=${place.longitude}` +
       (place.region ? `&region=${encodeURIComponent(place.region)}` : "") +
@@ -94,12 +95,15 @@ export default function SavedScreen() {
     const nameContent = (
       <View style={styles.textContainer}>
         <Text
-          style={[styles.placeName, hasThumbnail && styles.whiteText]}
+          style={[styles.placeLocation, hasThumbnail && styles.whiteSubText]}
           numberOfLines={1}
         >
           {item.name}
         </Text>
-        <Text style={styles.placeLocation} numberOfLines={1}>
+        <Text
+          style={[styles.placeLocation, hasThumbnail && styles.whiteSubText]}
+          numberOfLines={1}
+        >
           {item.country || "Unknown"}
         </Text>
       </View>
@@ -185,8 +189,19 @@ export default function SavedScreen() {
           </ImageBackground>
         ) : (
           <View style={styles.noImageContainer}>
-            <View style={styles.placeholderImage}>
-              <MapPin size={32} color={theme.chevronColor} />
+            <View style={styles.topRow}>
+              <View style={styles.placeholderImage}>
+                <MapPin size={32} color={theme.chevronColor} />
+              </View>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleRemove(item.name);
+                }}
+              >
+                <Trash2 size={18} color={theme.danger} />
+              </TouchableOpacity>
             </View>
             {nameContent}
             {actionContent}
@@ -266,7 +281,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 24,
-      fontWeight: "900",
+      fontFamily: fonts.bold,
       color: textColor,
       letterSpacing: -0.5,
     },
@@ -280,7 +295,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     badgeText: {
       color: white,
       fontSize: 14,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
     },
     listContent: {
       padding: 16,
@@ -365,14 +380,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     placeName: {
       fontSize: 18,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     placeLocation: {
       fontSize: 14,
       color: subTextColor,
       marginTop: 2,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     actions: {
       flexDirection: "row",
@@ -425,7 +440,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     emptyTitle: {
       fontSize: 20,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 8,
     },
@@ -446,7 +461,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     exploreBtnText: {
       color: white,
       fontSize: 16,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
     },
     lockContainer: {
       flex: 1,
@@ -482,7 +497,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     lockTitle: {
       fontSize: 24,
-      fontWeight: "900",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 12,
     },
@@ -507,7 +522,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     unlockBtnText: {
       color: white,
       fontSize: 18,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
     },
   });
 };

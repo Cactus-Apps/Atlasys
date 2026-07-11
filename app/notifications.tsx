@@ -1,10 +1,8 @@
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import {
-  AlertTriangleIcon,
   Bell,
   ChevronLeft,
-  CreditCard,
   Download,
   MapPin,
   NavigationIcon,
@@ -22,10 +20,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 type TopicKey =
@@ -220,7 +217,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -243,7 +240,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionTitle: {
       fontSize: 12,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1.5,
@@ -295,7 +292,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     menuLabel: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     menuValue: {
@@ -344,7 +341,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     introTitle: {
       fontSize: 15,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 3,
     },

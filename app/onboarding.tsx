@@ -34,6 +34,7 @@ import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
 import { posthog } from "@/lib/config/posthog";
+import { fonts } from "@/lib/fonts";
 import { applyAnalyticsChoice } from "@/lib/auth/analytics";
 import { useTranslation } from "react-i18next";
 
@@ -132,7 +133,7 @@ function VisualPlaceholder({
 }) {
   const { t } = useTranslation();
   const theme = useAppTheme();
-  const s = useMemo(() => getStyles(theme), [theme.isDark, theme.isModern]);
+  const s = useMemo(() => getStyles(theme), [theme]);
   if (type === "map_preview") {
     return (
       <View style={[s.frame, { borderColor: accent + "40" }]}>
@@ -252,7 +253,7 @@ function VisualPlaceholder({
             <View key={item.label} style={s.checkRow}>
               <View style={[s.checkBullet, { backgroundColor: accent + "30" }]}>
                 <Text
-                  style={{ color: accent, fontSize: 10, fontWeight: "700" }}
+                  style={{ color: accent, fontSize: 10, fontFamily: fonts.bold }}
                 >
                   ✓
                 </Text>
@@ -333,7 +334,7 @@ export default function OnboardingScreen() {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const theme = useAppTheme();
-  const s = useMemo(() => getStyles(theme), [theme.isDark, theme.isModern]);
+  const s = useMemo(() => getStyles(theme), [theme]);
 
   type AnalyticsChoice = "full" | "anonymous" | "none";
   const [analyticsChoice, setAnalyticsChoice] =
@@ -359,6 +360,7 @@ export default function OnboardingScreen() {
       setDirection("forward");
       setCurrentIndex((i) => i + 1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLast]);
 
   const handleSkip = useCallback(() => {
@@ -783,13 +785,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     appBadgeText: {
       fontSize: 13,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       letterSpacing: 0.5,
     },
     skipText: {
       color: subTextColor,
       fontSize: 14,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     slideContent: {
       flex: 1,
@@ -814,13 +816,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     tagText: {
       fontSize: 12,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       letterSpacing: 1,
       textTransform: "uppercase",
     },
     headline: {
       fontSize: 32,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: white,
       lineHeight: 38,
       letterSpacing: -0.5,
@@ -863,7 +865,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     nextBtnText: {
       color: white,
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       letterSpacing: 0.2,
     },
     footNote: {
@@ -894,7 +896,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     consentHeadline: {
       fontSize: 30,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: white,
       textAlign: "center",
       letterSpacing: -0.5,
@@ -956,7 +958,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     checkboxLink: {
       color: "#00C4B4",
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       textDecorationLine: "underline",
     },
     errorBox: {
@@ -1068,7 +1070,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     badgeText: {
       fontSize: 11,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
     },
     // Route Card
     routeCard: {
@@ -1107,7 +1109,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     modeText: {
       fontSize: 12,
       color: subTextColor,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     infoBox: {
       flexDirection: "row",
@@ -1119,7 +1121,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     infoVal: {
       fontSize: 20,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       flex: 1,
       textAlign: "center",
     },
@@ -1141,7 +1143,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     offlineTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       marginTop: 4,
     },
     regionRow: {
@@ -1165,7 +1167,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     regionName: {
       color: textColor,
       fontSize: 13,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
     },
     regionMeta: {
       color: subTextColor,
@@ -1201,7 +1203,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     checkLabel: {
       color: textColor,
       fontSize: 13,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     // Code Card (Open Source)
     codeCard: {
@@ -1230,7 +1232,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     codeFilename: {
       fontSize: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       letterSpacing: 0.3,
     },
     codeBody: {
@@ -1271,7 +1273,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     analyticsOptionTitle: {
       fontSize: 14,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: "#fff",
       marginBottom: 2,
     },
@@ -1299,7 +1301,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionLabel: {
       fontSize: 13,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: "rgba(255,255,255,0.6)",
       textTransform: "uppercase",
       letterSpacing: 0.8,
@@ -1328,7 +1330,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     analyticsChipText: {
       fontSize: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: "rgba(255,255,255,0.5)",
     },
     analyticsChipTextActive: {

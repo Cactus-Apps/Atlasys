@@ -5,6 +5,7 @@ import { Download, X, AlertTriangle } from "lucide-react-native";
 import { tilesForBounds, estimateSizeMB } from "@/lib/storage/mbtiles";
 import { downloadRegion } from "@/lib/storage/downloadTiles";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { reverseGeocode } from "@/lib/geocoding/geocoding";
 import { useTranslation } from "react-i18next";
 import CircularProgress from "../overlays/CircularWavyProgressIndicator";
@@ -52,7 +53,7 @@ function ZoomStepper({
         <Text
           style={{
             fontSize: 11,
-            fontWeight: "700",
+            fontFamily: fonts.bold,
             color: theme.subTextColor,
             letterSpacing: 0.5,
           }}
@@ -62,7 +63,7 @@ function ZoomStepper({
         <Text
           style={{
             fontSize: 22,
-            fontWeight: "800",
+            fontFamily: fonts.bold,
             color: theme.textColor,
             marginTop: 2,
           }}
@@ -327,7 +328,7 @@ export default function DownloadSheet({
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: "600",
+                fontFamily: fonts.semibold,
                 color: theme.textColor,
               }}
             >
@@ -401,11 +402,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
       marginBottom: 20,
     },
-    title: { fontSize: 20, fontWeight: "700", color: textColor },
+    title: { fontSize: 20, fontFamily: fonts.bold, color: textColor },
     closeBtn: { backgroundColor: iconBg, borderRadius: 20, padding: 6 },
     section: { marginBottom: 20 },
     label: { fontSize: 14, color: subTextColor, marginBottom: 4 },
-    value: { fontWeight: "700", color: textColor },
+    value: { fontFamily: fonts.bold, color: textColor },
     estimateBox: {
       backgroundColor: cardBg,
       borderRadius: isModern ? 18 : 12,
@@ -414,7 +415,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderColor: borderColor,
       borderWidth: 1,
     },
-    estimateText: { fontSize: 15, fontWeight: "600", color: textColor },
+    estimateText: { fontSize: 15, fontFamily: fonts.semibold, color: textColor },
     warningRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -437,7 +438,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     progressText: { fontSize: 14, color: subTextColor, textAlign: "center" },
     cancelBtn: { marginTop: 8, alignItems: "center" },
-    cancelText: { color: danger, fontWeight: "600" },
+    cancelText: { color: danger, fontFamily: fonts.semibold },
     doneBox: {
       padding: 16,
       backgroundColor: successLight,
@@ -445,7 +446,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       marginBottom: 20,
       alignItems: "center",
     },
-    doneText: { fontSize: 16, fontWeight: "600", color: success },
+    doneText: { fontSize: 16, fontFamily: fonts.semibold, color: success },
     downloadBtn: {
       backgroundColor: primary,
       borderRadius: 14,
@@ -458,6 +459,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     downloadBtnDisabled: {
       backgroundColor: chevronColor,
     },
-    downloadBtnText: { color: white, fontWeight: "700", fontSize: 16 },
+    downloadBtnText: { color: white, fontFamily: fonts.bold, fontSize: 16 },
   });
 };

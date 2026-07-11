@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.7.0",
+    "version": "1.7.1",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -19,7 +19,7 @@
         "backgroundColor": "#DDDDDD"
       },
       "package": "com.cactus_apps.Atlasys",
-      "versionCode": 27,
+      "versionCode": 28,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
@@ -75,6 +75,6 @@
     "updates": {
       "url": "https://u.expo.dev/753eb474-331e-49f0-a5a9-fa0d2431fe5e"
     },
-    "owner": "helloworld127"
+    "owner": "atlasys127"
   }
 }

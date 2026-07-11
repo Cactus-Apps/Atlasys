@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import "./i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -273,7 +274,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -290,7 +291,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     introTitle: {
       fontSize: 24,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
       marginTop: 16,
     },
@@ -348,7 +349,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     versionTag: {
       fontSize: 14,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: "#2563EB",
       backgroundColor: theme.isModern
         ? theme.iconBg
@@ -363,13 +364,13 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontSize: 15,
       color: textColor,
       lineHeight: 22,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     logDate: {
       fontSize: 12,
       color: subTextColor,
       marginTop: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
     },
   });
 };

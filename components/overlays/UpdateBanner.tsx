@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { X, Download, RotateCcw } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 import { useUpdate } from "@/lib/hooks/update-context";
 import { posthog } from "@/lib/config/posthog";
@@ -98,7 +99,7 @@ export function UpdateBanner() {
                 <TouchableOpacity
                   style={[styles.button, styles.dismissButton]}
                   onPress={() => {
-                    dismiss;
+                    dismiss();
                     posthog.capture("ota_update_dismissed");
                   }}
                 >
@@ -167,7 +168,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     textContent: {},
     title: {
       fontSize: 14,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: theme.textColor,
     },
     subtitle: {

@@ -407,43 +407,37 @@ function orderWaySegments(segments: number[][][]): number[][] {
     if (conns.length === 1) leaves.push(key);
   }
 
-  let bestPath: number[][] = [];
-
   if (leaves.length >= 2) {
     const segArray = segments;
-
-    function dfs(
-      currentKey: string,
-      visited: Set<number>,
-      path: number[][],
-    ) {
-      if (leaves.includes(currentKey) && path.length > bestPath.length) {
-        bestPath = path.map((p) => p);
-      }
-      for (const segIdx of adj.get(currentKey) || []) {
-        if (visited.has(segIdx)) continue;
-        visited.add(segIdx);
-        const seg = segArray[segIdx];
-        const fwd = ptsKey(seg[0]) === currentKey;
-        const segCoords = fwd ? seg : [...seg].reverse();
-        const nextKey = ptsKey(segCoords[segCoords.length - 1]);
-        const newPath =
-          path.length === 0
-            ? segCoords
-            : [...path, ...segCoords.slice(1)];
-        dfs(nextKey, visited, newPath);
-        visited.delete(segIdx);
-      }
-    }
+    let bestPath: number[][] = [];
 
     for (const leafKey of leaves) {
-      for (const segIdx of adj.get(leafKey) || []) {
-        const visited = new Set<number>([segIdx]);
-        const seg = segArray[segIdx];
-        const fwd = ptsKey(seg[0]) === leafKey;
-        const segCoords = fwd ? seg : [...seg].reverse();
-        const nextKey = ptsKey(segCoords[segCoords.length - 1]);
-        dfs(nextKey, visited, segCoords);
+      const visited = new Set<number>();
+      let currentKey = leafKey;
+      let path: number[][] = [];
+
+      while (true) {
+        const neighbors = adj.get(currentKey) || [];
+        let found = false;
+        for (const segIdx of neighbors) {
+          if (visited.has(segIdx)) continue;
+          visited.add(segIdx);
+          const seg = segArray[segIdx];
+          const fwd = ptsKey(seg[0]) === currentKey;
+          const segCoords = fwd ? seg : [...seg].reverse();
+          path =
+            path.length === 0
+              ? segCoords
+              : [...path, ...segCoords.slice(1)];
+          currentKey = ptsKey(segCoords[segCoords.length - 1]);
+          found = true;
+          break;
+        }
+        if (!found) break;
+      }
+
+      if (path.length > bestPath.length) {
+        bestPath = path;
       }
     }
 

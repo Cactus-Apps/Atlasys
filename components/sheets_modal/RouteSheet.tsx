@@ -11,6 +11,7 @@ import BottomSheet, {
   BottomSheetTextInput,
 } from "@gorhom/bottom-sheet";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import {
   Car,
   Bike,
@@ -114,10 +115,16 @@ export default function RouteSheet({
 
   // Sync labels in fields when set externally (e.g. via map tap)
   useEffect(() => {
-    if (start) Promise.resolve().then(() => setStartQuery(start.label));
+    if (start) {
+      const timer = setTimeout(() => setStartQuery(start.label));
+      return () => clearTimeout(timer);
+    }
   }, [start]);
   useEffect(() => {
-    if (end) Promise.resolve().then(() => setEndQuery(end.label));
+    if (end) {
+      const timer = setTimeout(() => setEndQuery(end.label));
+      return () => clearTimeout(timer);
+    }
   }, [end]);
 
   // Nominatim search
@@ -153,6 +160,7 @@ export default function RouteSheet({
       setSearchingStart(false);
     }, 400);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startQuery, focusedField]);
 
   useEffect(() => {
@@ -168,6 +176,7 @@ export default function RouteSheet({
       setSearchingEnd(false);
     }, 400);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endQuery, focusedField]);
 
   const OSRM_ENDPOINTS: Record<Profile, string> = {
@@ -214,6 +223,7 @@ export default function RouteSheet({
     }
     const timer = setTimeout(() => fetchRoute(), 100);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start, end, profile]);
 
   const selectResult = (result: SearchResult, field: "start" | "end") => {
@@ -281,8 +291,8 @@ export default function RouteSheet({
               key={key}
               style={[s.modeBtn, profile === key && s.modeBtnActive]}
               onPress={() => {
-                (setProfile(key),
-                  posthog.capture("route_profile_changed", { profile: key }));
+                setProfile(key);
+                posthog.capture("route_profile_changed", { profile: key });
               }}
             >
               <Icon
@@ -480,7 +490,7 @@ export default function RouteSheet({
             <Text
               style={{
                 color: theme.white,
-                fontWeight: "700",
+                fontFamily: fonts.bold,
                 fontSize: 16,
               }}
             >
@@ -515,7 +525,7 @@ export default function RouteSheet({
                 <Text
                   style={{
                     color: theme.white,
-                    fontWeight: "700",
+                    fontFamily: fonts.bold,
                     fontSize: 16,
                   }}
                 >
@@ -555,7 +565,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       alignItems: "center",
       marginBottom: 16,
     },
-    title: { fontSize: 20, fontWeight: "700", color: textColor },
+    title: { fontSize: 20, fontFamily: fonts.bold, color: textColor },
     closeBtn: { backgroundColor: iconBg, borderRadius: 20, padding: 6 },
     modeRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
     modeBtn: {
@@ -569,7 +579,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       backgroundColor: cardBgSecondary,
     },
     modeBtnActive: { backgroundColor: tabIndicator },
-    modeLabel: { fontSize: 13, fontWeight: "600", color: subTextColor },
+    modeLabel: { fontSize: 13, fontFamily: fonts.semibold, color: subTextColor },
     modeLabelActive: { color: white },
     fields: { marginBottom: 16 },
     fieldWrapper: {
@@ -624,7 +634,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: borderColor,
     },
-    suggestMain: { fontSize: 14, fontWeight: "600", color: textColor },
+    suggestMain: { fontSize: 14, fontFamily: fonts.semibold, color: textColor },
     suggestSub: { fontSize: 12, color: subTextColor, marginTop: 1 },
     pickHint: {
       flexDirection: "row",
@@ -638,7 +648,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     pickHintText: {
       color: tabIndicator,
       fontSize: 13,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
       flex: 1,
     },
     infoBox: {
@@ -662,7 +672,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     resultItem: { flex: 1, alignItems: "center" },
     resultValue: {
       fontSize: 22,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: primary,
     },
     resultLabel: { fontSize: 12, color: subTextColor, marginTop: 2 },

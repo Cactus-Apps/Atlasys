@@ -1,5 +1,5 @@
 import { MapIcon, Box, Download, Navigation } from "lucide-react-native";
-import React from "react";
+import React, { memo } from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import i18n from "@/app/i18n";
 
@@ -15,7 +15,7 @@ interface Props {
   setDrawMode: (v: boolean) => void;
 }
 
-export default function NavigationSideBar({
+export default memo(function NavigationSideBar({
   markerPos,
   resetPitch,
   setRoute,
@@ -67,7 +67,7 @@ export default function NavigationSideBar({
       ))}
     </View>
   );
-}
+});
 
 const s = StyleSheet.create({
   container: {

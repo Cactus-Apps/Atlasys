@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import {
   ChevronRight,
   Github,
@@ -203,7 +204,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -229,7 +230,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     heroTitle: {
       fontSize: 28,
-      fontWeight: "900",
+      fontFamily: fonts.bold,
       color: textColor,
       letterSpacing: -0.5,
     },
@@ -239,14 +240,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       textAlign: "center",
       marginTop: 8,
       paddingHorizontal: 20,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     section: {
       marginBottom: 24,
     },
     sectionTitle: {
       fontSize: 12,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1.5,
@@ -279,7 +280,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     menuLabel: {
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     menuSub: {

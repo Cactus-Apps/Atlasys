@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View, Text, Dimensions } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import { BookOpen } from "lucide-react-native";
 import Animated, {
   useSharedValue,
@@ -9,6 +9,7 @@ import Animated, {
   withSequence,
 } from "react-native-reanimated";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 export function LoadingOverlay() {
@@ -26,6 +27,7 @@ export function LoadingOverlay() {
       -1,
       true,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -46,7 +48,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     statusText: {
       marginTop: 20,
       fontSize: 18,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: theme.textColor,
     },
     loadingOverlay: {

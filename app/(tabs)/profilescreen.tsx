@@ -9,7 +9,6 @@ import {
   MapIcon,
   MessageCircleQuestionMark,
   SettingsIcon,
-  ShieldUser,
   UserIcon,
   UserRound,
 } from "lucide-react-native";
@@ -385,7 +384,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontFamily: fonts.medium,
       fontSize: 12,
       color: chevronColor,
-      fontWeight: "600",
     },
   });
 };

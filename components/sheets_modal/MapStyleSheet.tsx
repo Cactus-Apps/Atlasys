@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 import cityStyle from "@/assets/map/city-style.json";
 import googlestyle from "@/assets/map/google-style.json";
@@ -224,7 +225,7 @@ export default function MapStyleSheet({
                   style={[
                     s.previewLabel,
                     { color: isActive ? theme.tabIndicator : theme.textColor },
-                    isActive && { fontWeight: "700" },
+                    isActive && { fontFamily: fonts.bold },
                   ]}
                 >
                   {t(mt.labelKey)}
@@ -310,7 +311,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  title: { fontSize: 20, fontWeight: "700" },
+  title: { fontSize: 20, fontFamily: fonts.bold },
   closeBtn: { borderRadius: 20, padding: 6 },
   previewRow: {
     flexDirection: "row",

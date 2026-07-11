@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useAuthStore } from "@/lib/storage/zustand";
+import { fonts } from "@/lib/fonts";
 import { posthog } from "@/lib/config/posthog";
 import { useTranslation } from "react-i18next";
 import {
@@ -30,6 +31,9 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { darken } from "./(tabs)/mapscreen";
+
+const BASE_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+let styleCache: StyleSpecification | null = null;
 
 function pointToSegmentDist(
   px: number,
@@ -244,16 +248,14 @@ export default function NavigationScreen() {
           Math.sin(dLon / 2) ** 2;
       totalRemaining += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
-    if (navRoute.duration && navRoute.distance) {
-      const ratio = Math.max(0, totalRemaining / navRoute.distance);
-      Promise.resolve().then(() => {
+    const t = setTimeout(() => {
+      if (navRoute.duration && navRoute.distance) {
+        const ratio = Math.max(0, totalRemaining / navRoute.distance);
         setRemainingDist(totalRemaining);
         setRemainingTime(navRoute.duration * ratio);
         setProgress(Math.max(0, Math.min(1, 1 - ratio)));
-      });
-    }
+      }
 
-    Promise.resolve().then(() => {
       const nextIdx = Math.min(index + 5, coords.length - 1);
       if (nextIdx > index) {
         const brng = getBearing(coords[index], coords[nextIdx]);
@@ -270,6 +272,7 @@ export default function NavigationScreen() {
         }
       }
     });
+    return () => clearTimeout(t);
   }, [location, coords, steps, navRoute]);
 
   useEffect(() => {
@@ -284,15 +287,21 @@ export default function NavigationScreen() {
     }
   }, [location, bearing]);
 
-  // Build map style with embedded route source
+  // Build map style with embedded route source (cached style fetch)
   useEffect(() => {
     if (!navRoute?.geometry) return;
     let cancelled = false;
 
     (async () => {
       try {
-        const res = await fetch("https://tiles.openfreemap.org/styles/bright");
-        const style = await res.json();
+        let style: StyleSpecification;
+        if (styleCache) {
+          style = JSON.parse(JSON.stringify(styleCache));
+        } else {
+          const res = await fetch(BASE_STYLE_URL);
+          style = await res.json();
+          if (!cancelled) styleCache = JSON.parse(JSON.stringify(style));
+        }
 
         if (cancelled) return;
 
@@ -341,12 +350,11 @@ export default function NavigationScreen() {
     }, 200);
   }, [coords, mapStyle]);
 
-  // Cleanup when navigating away
+  // Cleanup when navigating away (keep navRoute so route survives re-mount)
   useEffect(() => {
     return () => {
       subRef.current?.remove();
       subRef.current = null;
-      useAuthStore.getState().setNavRoute(null);
     };
   }, []);
 
@@ -362,7 +370,7 @@ export default function NavigationScreen() {
             style={[s.backBtn, { backgroundColor: theme.primary || "#2563EB" }]}
             onPress={() => router.back()}
           >
-            <Text style={{ color: theme.white || "#fff", fontWeight: "600" }}>
+            <Text style={{ color: theme.white || "#fff", fontFamily: fonts.semibold }}>
               {t("Nav_back_to_map")}
             </Text>
           </TouchableOpacity>
@@ -606,12 +614,12 @@ const s = StyleSheet.create({
   instructionTextWrap: { flex: 1 },
   instructionDist: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginBottom: 2,
   },
   instructionText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   bottomBar: {
     position: "absolute",
@@ -637,14 +645,14 @@ const s = StyleSheet.create({
   },
   etaLabel: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   etaValue: {
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: fonts.bold,
   },
   etaDivider: {
     width: 1,
@@ -671,7 +679,7 @@ const s = StyleSheet.create({
   },
   stopBtnText: {
     color: "#fff",
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: 15,
   },
   stepNavRow: {
@@ -700,7 +708,7 @@ const s = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     textAlign: "center",
   },
   backBtn: {

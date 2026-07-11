@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Dimensions,
-  Modal,
-} from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Sentry from "@sentry/react-native";
 import {
@@ -18,11 +11,10 @@ import {
 } from "lucide-react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { getTotalDiskCapacityAsync } from "expo-file-system/legacy";
+import { fonts } from "@/lib/fonts";
 import { listMBTiles, deleteMBTiles, MBTilesInfo } from "@/lib/storage/mbtiles";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
-
-const { width } = Dimensions.get("window");
 
 function StorageRing({
   usedBytes,
@@ -90,7 +82,7 @@ function StorageRing({
           <Text
             style={{
               fontSize: 26,
-              fontWeight: "800",
+              fontFamily: fonts.bold,
               color: dark ? "#F8FAFC" : "#0F172A",
               letterSpacing: -1,
             }}
@@ -100,7 +92,7 @@ function StorageRing({
           <Text
             style={{
               fontSize: 11,
-              fontWeight: "600",
+              fontFamily: fonts.semibold,
               color: dark ? "#64748B" : "#94A3B8",
               letterSpacing: 0.5,
               textTransform: "uppercase",
@@ -124,7 +116,9 @@ function StorageRing({
                 backgroundColor: color,
               }}
             />
-            <Text style={{ fontSize: 11, color: color, fontWeight: "700" }}>
+            <Text
+              style={{ fontSize: 11, color: color, fontFamily: fonts.bold }}
+            >
               {Math.round(percent * 100)}% von 10 GB
             </Text>
           </View>
@@ -163,7 +157,7 @@ function EmptyState({ dark }: { dark: boolean }) {
       <Text
         style={{
           fontSize: 20,
-          fontWeight: "800",
+          fontFamily: fonts.bold,
           color: dark ? "#F8FAFC" : "#0F172A",
           letterSpacing: -0.5,
         }}
@@ -197,7 +191,7 @@ function EmptyState({ dark }: { dark: boolean }) {
         <Text
           style={{
             fontSize: 20,
-            fontWeight: "800",
+            fontFamily: fonts.bold,
             color: theme.white,
             letterSpacing: -0.5,
           }}
@@ -216,7 +210,7 @@ export default function OfflineMapsTab() {
   const [maps, setMaps] = useState<MBTilesInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalBytes, setTotalBytes] = useState(64 * 1024 * 1024 * 1024);
-  const [ModalVisible, setModalVisible] = useState(false);
+  const [, setModalVisible] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
@@ -233,8 +227,8 @@ export default function OfflineMapsTab() {
     try {
       const total = await getTotalDiskCapacityAsync();
       if (total) setTotalBytes(total);
-    } catch {
-      (err: any) => Sentry.captureException(err);
+    } catch (err: any) {
+      Sentry.captureException(err);
     }
   };
 
@@ -243,6 +237,7 @@ export default function OfflineMapsTab() {
 
     import("expo-file-system/legacy").then(({ readDirectoryAsync }) => {
       const dir =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("expo-file-system/legacy").documentDirectory + "mbtiles/";
       readDirectoryAsync(dir).catch((err) => Sentry.captureException(err));
     });
@@ -288,7 +283,7 @@ export default function OfflineMapsTab() {
       visible={deleteTarget !== null}
       transparent
       animationType="fade"
-      onRequestClose={() => setModalVisible(false)}
+      onRequestClose={() => setModalVisible(null)}
     >
       <View
         style={{
@@ -311,7 +306,7 @@ export default function OfflineMapsTab() {
           <Text
             style={{
               fontSize: 20,
-              fontWeight: "800",
+              fontFamily: fonts.bold,
               color: textPrimary,
               textAlign: "center",
               marginBottom: 12,
@@ -344,13 +339,17 @@ export default function OfflineMapsTab() {
               }}
             >
               <Text
-                style={{ fontSize: 16, fontWeight: "700", color: textPrimary }}
+                style={{
+                  fontSize: 16,
+                  fontFamily: fonts.bold,
+                  color: textPrimary,
+                }}
               >
                 {t("Delete")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setModalVisible(false)}
+              onPress={() => setModalVisible(null)}
               style={{
                 flex: 1,
                 backgroundColor: theme.cardBgSecondary,
@@ -360,7 +359,11 @@ export default function OfflineMapsTab() {
               }}
             >
               <Text
-                style={{ fontSize: 16, fontWeight: "700", color: textPrimary }}
+                style={{
+                  fontSize: 16,
+                  fontFamily: fonts.bold,
+                  color: textPrimary,
+                }}
               >
                 {t("Cancel")}
               </Text>
@@ -391,7 +394,11 @@ export default function OfflineMapsTab() {
             <ChevronLeft size={24} color={theme.textColor} />
           </TouchableOpacity>
           <Text
-            style={{ fontSize: 18, fontWeight: "700", color: theme.textColor }}
+            style={{
+              fontSize: 18,
+              fontFamily: fonts.bold,
+              color: theme.textColor,
+            }}
           >
             Offline Maps
           </Text>
@@ -421,7 +428,11 @@ export default function OfflineMapsTab() {
           <ChevronLeft size={24} color={theme.textColor} />
         </TouchableOpacity>
         <Text
-          style={{ fontSize: 18, fontWeight: "700", color: theme.textColor }}
+          style={{
+            fontSize: 18,
+            fontFamily: fonts.bold,
+            color: theme.textColor,
+          }}
         >
           Offline Maps
         </Text>
@@ -451,7 +462,7 @@ export default function OfflineMapsTab() {
               <Text
                 style={{
                   fontSize: 11,
-                  fontWeight: "700",
+                  fontFamily: fonts.bold,
                   color: textSecondary,
                   letterSpacing: 1.2,
                   textTransform: "uppercase",
@@ -485,7 +496,7 @@ export default function OfflineMapsTab() {
                     <Text
                       style={{
                         fontSize: 18,
-                        fontWeight: "800",
+                        fontFamily: fonts.bold,
                         color: textPrimary,
                         letterSpacing: -0.5,
                       }}
@@ -497,7 +508,7 @@ export default function OfflineMapsTab() {
                         fontSize: 11,
                         color: textSecondary,
                         marginTop: 2,
-                        fontWeight: "500",
+                        fontFamily: fonts.medium,
                       }}
                     >
                       {stat.label}
@@ -509,7 +520,7 @@ export default function OfflineMapsTab() {
             <Text
               style={{
                 fontSize: 11,
-                fontWeight: "700",
+                fontFamily: fonts.bold,
                 color: textSecondary,
                 letterSpacing: 1.2,
                 textTransform: "uppercase",
@@ -551,7 +562,11 @@ export default function OfflineMapsTab() {
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <Text
-                style={{ fontSize: 15, fontWeight: "700", color: textPrimary }}
+                style={{
+                  fontSize: 15,
+                  fontFamily: fonts.bold,
+                  color: textPrimary,
+                }}
                 numberOfLines={1}
               >
                 {item.name}
@@ -574,7 +589,7 @@ export default function OfflineMapsTab() {
                     style={{
                       fontSize: 11,
                       color: "#3B82F6",
-                      fontWeight: "700",
+                      fontFamily: fonts.bold,
                     }}
                   >
                     z{item.minZoom}–{item.maxZoom}
@@ -596,7 +611,7 @@ export default function OfflineMapsTab() {
                     style={{
                       fontSize: 11,
                       color: "#22C55E",
-                      fontWeight: "700",
+                      fontFamily: fonts.bold,
                     }}
                   >
                     {formatSize(item.size)}

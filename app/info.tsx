@@ -24,6 +24,7 @@ import {
 import * as Application from "expo-application";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 
 export default function Info() {
   const router = useRouter();
@@ -215,7 +216,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -253,14 +254,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     appName: {
       fontSize: 28,
-      fontWeight: "900",
+      fontFamily: fonts.bold,
       color: textColor,
       letterSpacing: -0.5,
     },
     tagline: {
       fontSize: 14,
       color: subTextColor,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       marginTop: 4,
     },
     socialLinks: {
@@ -284,7 +285,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionTitle: {
       fontSize: 12,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1.5,
@@ -302,7 +303,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontSize: 15,
       lineHeight: 24,
       color: textColor,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     menuItem: {
       flexDirection: "row",
@@ -319,7 +320,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     menuLabel: {
       flex: 1,
       fontSize: 16,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       marginLeft: 16,
     },
@@ -343,14 +344,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 8,
     },
     bannerText: {
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       fontSize: 14,
     },
     versionText: {
       textAlign: "center",
       fontSize: 12,
       color: subTextColor,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       marginTop: 20,
     },
   });

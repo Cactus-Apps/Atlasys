@@ -92,6 +92,7 @@ import BottomPanel, {
   SCREEN_HEIGHT,
 } from "@/components/sheets_modal/BottomPanel";
 import { StopToast } from "@/components/overlays/StopToast";
+import { fonts } from "@/lib/fonts";
 
 type TabName = "discover" | "transit" | "info";
 
@@ -141,10 +142,7 @@ export default function CityScreen() {
   const theme = useAppTheme();
   const { t, i18n } = useTranslation();
   const mapRef = useRef<MapRef | null>(null);
-  const styles = useMemo(
-    () => getStyles(theme),
-    [theme.isDark, theme.isModern],
-  );
+  const styles = useMemo(() => getStyles(theme), [theme]);
 
   const cityName = params.name || params.cityId || "Unknown";
   const lat = params.latitude ? parseFloat(params.latitude) : NaN;
@@ -278,6 +276,7 @@ export default function CityScreen() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon]);
 
   useEffect(() => {
@@ -378,6 +377,7 @@ export default function CityScreen() {
 
     fetchArticle();
     return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityName]);
 
   const handleBack = () => {
@@ -435,6 +435,7 @@ export default function CityScreen() {
         setErrorTransit((err?.message || String(err)).substring(0, 120));
         setLoadingTransit(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon]);
 
   const handleShowOnMap = useCallback(() => {
@@ -445,6 +446,7 @@ export default function CityScreen() {
         duration: 600,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPOI?.lon, selectedPOI?.lat]);
 
   const handleRouteItemPress = (route: TransitRoute) => () => {
@@ -1167,7 +1169,7 @@ export default function CityScreen() {
                   <Text
                     style={{
                       color: "#fff",
-                      fontWeight: "700",
+                      fontFamily: fonts.bold,
                       fontSize: 16,
                     }}
                   >
@@ -1705,14 +1707,14 @@ function PoiInfoRow({
     },
     label: {
       fontSize: 11,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       textTransform: "uppercase",
       letterSpacing: 0.5,
       marginBottom: 2,
     },
     val: {
       fontSize: 14,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
       lineHeight: 20,
     },
   });
@@ -1774,7 +1776,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     headerSub: {
@@ -1802,7 +1804,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sheetTabLabel: {
       fontSize: 13,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
     },
     sheetContent: {
       flex: 1,
@@ -1832,7 +1834,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     transitTabLabel: {
       fontSize: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
     },
 
     // POI Card
@@ -1881,12 +1883,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     poiCardBadgeText: {
       color: "#fff",
       fontSize: 11,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       textTransform: "capitalize",
     },
     poiCardName: {
       fontSize: 17,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: "#fff",
       letterSpacing: -0.2,
     },
@@ -1929,12 +1931,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     poiDetailBadgeText: {
       fontSize: 12,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       textTransform: "capitalize",
     },
     poiDetailName: {
       fontSize: 22,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       letterSpacing: -0.3,
       color: textColor,
     },
@@ -1971,7 +1973,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     poiPrimaryBtnText: {
       color: "#fff",
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       fontSize: 15,
     },
     poiIconBtn: {
@@ -2008,7 +2010,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     poiSectionTitleText: {
       fontSize: 15,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
     },
     poiHoursRaw: {
       fontSize: 14,
@@ -2026,7 +2028,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     poiDayName: {
       fontSize: 14,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       width: 100,
     },
     poiDayHours: {
@@ -2034,11 +2036,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     poiDayHoursText: {
       fontSize: 14,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     poiDayClosed: {
       fontSize: 13,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
     },
     poiDayStatus: {
       paddingHorizontal: 8,
@@ -2048,7 +2050,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     poiDayStatusText: {
       color: "#fff",
       fontSize: 11,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
     },
     poiInfoGrid: {
       paddingHorizontal: 20,
@@ -2072,14 +2074,14 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     poiInfoLabel: {
       fontSize: 11,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       textTransform: "uppercase",
       letterSpacing: 0.5,
       marginBottom: 2,
     },
     poiInfoValue: {
       fontSize: 14,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
       lineHeight: 20,
     },
     poiNoDetails: {
@@ -2119,7 +2121,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     stopName: {
       fontSize: 14,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
       paddingLeft: 8,
       paddingVertical: 6,
       flex: 1,
@@ -2128,7 +2130,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     // Shared
     tabTitle: {
       fontSize: 15,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 8,
     },
@@ -2168,7 +2170,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     listItemName: {
       fontSize: 14,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: textColor,
     },
     listItemSub: {
@@ -2214,7 +2216,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     wikipediaBtnText: {
       color: white,
       fontSize: 14,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
     },
     errorBox: {
       alignItems: "center",
@@ -2224,7 +2226,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     errorTitle: {
       fontSize: 15,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       textAlign: "center",
     },
     errorMsg: {
@@ -2240,12 +2242,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     retryBtnText: {
       color: white,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       fontSize: 14,
     },
     sectionHeader: {
       fontSize: 13,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: subTextColor,
       textTransform: "uppercase",
       letterSpacing: 1,

@@ -1,4 +1,5 @@
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Scale } from "lucide-react-native";
 import React, { useMemo } from "react";
@@ -108,7 +109,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 17,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -144,7 +145,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     introTitle: {
       fontSize: 15,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 3,
     },
@@ -158,7 +159,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     sectionTitle: {
       fontSize: 14,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 8,
       letterSpacing: 0.2,

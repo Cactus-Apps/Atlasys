@@ -8,9 +8,10 @@ import {
   StyleSheet,
   Linking,
 } from "react-native";
-import { Info, Sparkles, AlertTriangle, X, Github } from "lucide-react-native";
+import { Sparkles, X, Github } from "lucide-react-native";
 import { Announcement, markAllSeen } from "@/lib/hooks/announcements";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { posthog } from "@/lib/config/posthog";
 import { useTranslation } from "react-i18next";
 
@@ -34,38 +35,6 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
   const storeUpdate = useMemo(
     () => announcements.find((a) => a.is_store_update),
     [announcements],
-  );
-
-  const typeConfig = useMemo(
-    () => ({
-      info: {
-        icon: Info,
-        color: theme.info,
-        bg: theme.infoLight,
-        label: t("Announcement_type_info"),
-      },
-      update: {
-        icon: Sparkles,
-        color: theme.purple,
-        bg: theme.purpleLight,
-        label: t("Announcement_type_update"),
-      },
-      warning: {
-        icon: AlertTriangle,
-        color: theme.warning,
-        bg: theme.warningLight,
-        label: t("Announcement_type_warning"),
-      },
-    }),
-    [
-      theme.info,
-      theme.infoLight,
-      theme.purple,
-      theme.purpleLight,
-      theme.warning,
-      theme.warningLight,
-      t,
-    ],
   );
 
   const s = useMemo(
@@ -93,7 +62,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
           alignItems: "center",
           marginBottom: 20,
         },
-        cardTitle: { fontSize: 20, fontWeight: "700" },
+        cardTitle: { fontSize: 20, fontFamily: fonts.bold },
         closeBtn: {
           backgroundColor: theme.cardBgSecondary,
           borderRadius: 20,
@@ -113,8 +82,8 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
           borderRadius: 20,
           marginBottom: 8,
         },
-        badgeText: { fontSize: 12, fontWeight: "700" },
-        itemTitle: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
+        badgeText: { fontSize: 12, fontFamily: fonts.bold },
+        itemTitle: { fontSize: 16, fontFamily: fonts.bold, marginBottom: 6 },
         itemMsg: { fontSize: 14, lineHeight: 21 },
         itemDate: { fontSize: 11, marginTop: 8 },
         okBtn: {
@@ -127,7 +96,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
           gap: 12,
           justifyContent: "center",
         },
-        okText: { fontWeight: "700", fontSize: 16 },
+        okText: { fontFamily: fonts.bold, fontSize: 16 },
         storeBody: {
           alignItems: "center",
           paddingVertical: 8,
@@ -135,7 +104,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
         storeIcon: { marginBottom: 12 },
         storeTitle: {
           fontSize: 18,
-          fontWeight: "700",
+          fontFamily: fonts.bold,
           textAlign: "center",
           marginBottom: 8,
         },
@@ -153,13 +122,13 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
           borderRadius: 12,
           gap: 6,
         },
-        storeLinkText: { fontWeight: "600", fontSize: 15 },
+        storeLinkText: { fontFamily: fonts.semibold, fontSize: 15 },
         cancelBtn: {
           paddingVertical: 12,
           alignItems: "center",
           marginTop: 8,
         },
-        cancelText: { fontWeight: "500", fontSize: 14 },
+        cancelText: { fontFamily: fonts.medium, fontSize: 14 },
       }),
     [theme],
   );
@@ -303,8 +272,6 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
             showsVerticalScrollIndicator={false}
           >
             {announcements.map((a, idx) => {
-              const cfg = typeConfig[a.type] ?? typeConfig.info;
-              const Icon = cfg.icon;
               return (
                 <View
                   key={a.id}

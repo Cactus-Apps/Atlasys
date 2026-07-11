@@ -25,6 +25,7 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 import {
   fetchPOIDetails,
@@ -124,6 +125,7 @@ export default function PoiSheet({
       setDetails(data);
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPoi?.osm_id]);
 
   if (!selectedPoi) return null;
@@ -427,7 +429,7 @@ const s = StyleSheet.create({
   },
   name: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     letterSpacing: -0.3,
     marginBottom: 8,
   },
@@ -451,7 +453,7 @@ const s = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     textTransform: "capitalize",
   },
   description: {
@@ -486,7 +488,7 @@ const s = StyleSheet.create({
   },
   primaryBtnText: {
     color: "#fff",
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     fontSize: 15,
   },
   iconBtn: {
@@ -532,14 +534,14 @@ const s = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     lineHeight: 20,
   },
   noDetails: {

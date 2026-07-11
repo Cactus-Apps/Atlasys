@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 import { ChevronLeft, FileText } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -211,7 +212,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: "700",
+      fontFamily: fonts.bold,
       color: textColor,
     },
     backButton: {
@@ -228,7 +229,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     introTitle: {
       fontSize: 24,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
       marginTop: 16,
     },
@@ -249,7 +250,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     licenseTitle: {
       fontSize: 18,
-      fontWeight: "800",
+      fontFamily: fonts.bold,
       color: textColor,
       marginBottom: 12,
     },

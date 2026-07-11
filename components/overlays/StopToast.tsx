@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { X } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 
 interface StopToastProps {
   stopName: string;
@@ -118,12 +119,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     name: {
       fontSize: 15,
-      fontWeight: "600",
+      fontFamily: fonts.semibold,
       color: theme.textColor,
     },
     SubName: {
       fontSize: 13,
-      fontWeight: "500",
+      fontFamily: fonts.medium,
       color: theme.subTextColor,
     },
     timerBar: {

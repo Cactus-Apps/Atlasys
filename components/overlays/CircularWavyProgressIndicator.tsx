@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { View, Animated, Easing, Text } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -29,6 +30,7 @@ export default function CircularProgress({
       easing: Easing.out(Easing.quad),
       useNativeDriver: false, // SVG stroke props
     }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress]);
 
   // eslint-disable-next-line react-hooks/refs
@@ -81,7 +83,7 @@ export default function CircularProgress({
           style={{
             color,
             fontSize: size * 0.22,
-            fontWeight: "800",
+            fontFamily: fonts.bold,
             letterSpacing: -0.5,
           }}
         >
@@ -92,7 +94,7 @@ export default function CircularProgress({
             style={{
               color: color + "80",
               fontSize: size * 0.11,
-              fontWeight: "500",
+              fontFamily: fonts.medium,
               marginTop: 2,
             }}
           >
@@ -104,7 +106,7 @@ export default function CircularProgress({
             style={{
               color,
               fontSize: size * 0.11,
-              fontWeight: "600",
+              fontFamily: fonts.semibold,
               marginTop: 2,
             }}
           >

@@ -16,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Home, User, HelpCircle, MapIcon, Bookmark } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
+import { fonts } from "@/lib/fonts";
 
 type Props = {
   state: any;
@@ -45,6 +46,7 @@ function TabBarNewInner({ state, descriptors, navigation }: Props) {
         easing: Easing.out(Easing.cubic),
       },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index, TAB_WIDTH]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   indicatorMask: {
     position: "absolute",
