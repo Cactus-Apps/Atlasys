@@ -8,9 +8,8 @@ import * as WebBrowser from "expo-web-browser";
 import { syncConsentToServer } from "@/app/onboarding";
 import * as Linking from "expo-linking";
 import { Platform } from "react-native";
-import { posthog } from "../config/posthog";
-import { applyAnalyticsChoice } from "./analytics";
 import { generateRandomAvatarConfig } from "@/lib/avatar/avatar-utils";
+import { sendDailyPing } from "./daily-ping";
 import i18n from "@/app/i18n";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -51,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(sessionUser);
         if (sessionUser) {
           await syncStateFromMetadata(sessionUser);
+          sendDailyPing();
         }
       } catch (err: any) {
         if (
@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentUser) {
           await syncStateFromMetadata(currentUser);
           useAuthStore.getState().seedDefaultPlace();
+          sendDailyPing();
         } else {
           clearStore({ preserveOnboarding: true });
         }
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const syncStateFromMetadata = async (targetUser: User) => {
     try {
-      const { setOnboardingCompleted, updateSettings, setUserId, settings } =
+      const { setOnboardingCompleted, updateSettings, setUserId } =
         useAuthStore.getState();
       const metadata = targetUser.user_metadata || {};
 
@@ -98,8 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (metadata.settings) {
         updateSettings({
           ...metadata.settings,
-          // Never overwrite device-specific settings from server metadata
-          analytics: settings.analytics,
         });
       }
 
@@ -118,10 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
-
-      const analyticsChoice =
-        useAuthStore.getState().settings.analytics ?? "none";
-      applyAnalyticsChoice(analyticsChoice, targetUser.id);
     } catch (err) {
       Sentry.captureException(err);
     }
@@ -170,10 +165,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await syncConsentToServer(data.user.id, supabase);
       }
       if (data.user) {
-        // One-time analytics event for email or Google sign-in
-        posthog.capture("user_signed_in", {
-          method: data.user.app_metadata?.provider ?? "email",
-        });
         router.replace("/(tabs)/mapscreen");
       }
     } catch (err) {
@@ -200,7 +191,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.session) {
         setUser(data.session.user);
-        posthog.capture("user_signed_up", { method: "email" });
         return null;
       }
 
@@ -215,7 +205,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw loginError;
       }
 
-      posthog.capture("user_signed_up", { method: "email" });
       await getUser();
       return null;
     } catch (err: any) {
@@ -344,7 +333,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      posthog.capture("user_signed_out");
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);

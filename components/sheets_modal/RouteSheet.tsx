@@ -23,7 +23,6 @@ import {
 } from "lucide-react-native";
 import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
-import { posthog } from "@/lib/config/posthog";
 
 type RoutePoint = { label: string; coordinate: [number, number] };
 type Profile = "driving" | "cycling" | "walking";
@@ -130,17 +129,19 @@ export default function RouteSheet({
   // Nominatim search
   const searchNominatim = async (query: string): Promise<SearchResult[]> => {
     if (query.length < 2) return [];
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=${encodeURIComponent(i18n.language || "en")}`,
-      {
-        headers: {
-          "User-Agent": `GPS/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})"`,
-        },
-      },
-    );
-    const text = await res.text();
     try {
-      return JSON.parse(text);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=${encodeURIComponent(i18n.language || "en")}`,
+        {
+          headers: {
+            "User-Agent": `GPS/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL ?? "gps@app"})`,
+          },
+        },
+      );
+      const text = await res.text();
+      if (!text || !res.ok) return [];
+      const data = JSON.parse(text);
+      return Array.isArray(data) ? data : [];
     } catch (err: any) {
       Sentry.captureException(err);
       return [];
@@ -195,7 +196,7 @@ export default function RouteSheet({
         `${base}/route/v1/${profile}/` +
         `${start.coordinate[0]},${start.coordinate[1]};` +
         `${end.coordinate[0]},${end.coordinate[1]}` +
-        `?overview=full&alternatives=true&geometries=geojson`;
+        `?overview=full&alternatives=true&geometries=geojson&steps=true`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Route request failed: ${res.status}`);
       const json = await res.json();
@@ -292,7 +293,6 @@ export default function RouteSheet({
               style={[s.modeBtn, profile === key && s.modeBtnActive]}
               onPress={() => {
                 setProfile(key);
-                posthog.capture("route_profile_changed", { profile: key });
               }}
             >
               <Icon

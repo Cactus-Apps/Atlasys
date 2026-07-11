@@ -14,7 +14,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "@/lib/auth/supabase";
 import {
   GestureHandlerRootView,
@@ -146,6 +146,7 @@ export function ProfileScreen() {
 
   return (
     <GestureHandlerRootView>
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}

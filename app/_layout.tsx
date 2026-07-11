@@ -99,7 +99,7 @@ Sentry.init({
       namePlaceholder: "Fullname",
     }),
   ],
-  sendDefaultPii: true,
+  sendDefaultPii: false,
   enableLogs: true,
 });
 
@@ -236,14 +236,7 @@ export default Sentry.wrap(function RooLayout() {
   const theme = isDarkTheme ? "light" : "dark";
 
   return (
-    <PostHogProvider
-      client={posthog}
-      autocapture={{
-        captureScreens: false,
-        captureTouches: true,
-        propsToCapture: ["testID"],
-      }}
-    >
+    <PostHogProvider client={posthog}>
       <UpdateProvider>
         <AuthProvider>
           <TelemetrySync />

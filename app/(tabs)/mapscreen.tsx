@@ -6,6 +6,7 @@ import {
   MapRef,
   MarkerRef,
   VectorTileSource,
+  GeoJSONSource,
 } from "react-native-maplibre-gl-js";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sentry from "@sentry/react-native";
@@ -37,6 +38,7 @@ import {
   CloudLightningIcon,
   CloudSunIcon,
   ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react-native";
 import React, {
   useCallback,
@@ -63,6 +65,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  AppState,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
@@ -77,6 +80,7 @@ import {
 import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
 import MapStyleSheet, {
   buildSatelliteStyle,
+  buildSatellite3DStyle,
   MAP_THEMES,
   MapTheme,
 } from "@/components/sheets_modal/MapStyleSheet";
@@ -84,16 +88,17 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import RouteSheet from "@/components/sheets_modal/RouteSheet";
 import DownloadSheet from "@/components/sheets_modal/DownloadSheet";
+import FilterModal from "@/components/sheets_modal/FilterModal";
 import { useAuthStore } from "@/lib/storage/zustand";
 import LottieView from "lottie-react-native";
 import ErrorSheet from "@/components/sheets_modal/ErrorSheet";
 import DrawBoundsOverlay from "@/components/overlays/DrawBoundsOverlay";
 import NavigationSideBar from "@/components/overlays/NavigationSideBar";
 import PoiSheet from "@/components/sheets_modal/PoiSheet";
-import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { fonts } from "@/lib/fonts";
+import { FILTER_CATEGORIES, FILTER_DEFS } from "@/lib/config/filters";
 
 const { width, height } = Dimensions.get("window");
 
@@ -145,22 +150,19 @@ type RoutePoint = {
 
 const SNAP_POINTS = ["15%", "25%", "50%", "80%", "100%"];
 
-const FILTER_DEFS = [
-  { id: "restaurants", labelKey: "Restaurants", subclass: ["restaurant"] },
-  { id: "cafes", labelKey: "Cafés", subclass: ["cafe"] },
-  { id: "hotels", labelKey: "Hotels", subclass: ["hotel", "hostel"] },
-  {
-    id: "attractions",
-    labelKey: "Attractions",
-    subclass: ["attraction", "museum", "monument", "artwork"],
-  },
-  { id: "bars", labelKey: "Bars", subclass: ["bar", "pub"] },
-  {
-    id: "shopping",
-    labelKey: "Shopping",
-    subclass: ["mall", "supermarket", "shop"],
-  },
-] as const;
+export interface FilterCategory {
+  id: string;
+  labelKey: string;
+  icon: string;
+  color: string;
+}
+
+export interface FilterItem {
+  id: string;
+  labelKey: string;
+  subclass: string[];
+  categoryId: string;
+}
 
 export default function MapScreen() {
   const markerRef = useRef<MarkerRef | null>(null);
@@ -181,16 +183,22 @@ export default function MapScreen() {
     distance: number;
     duration: number;
   } | null>(null);
-  const setDistanceInfo = (info: { distance: number; duration: number } | null) => {
+  const setDistanceInfo = (
+    info: { distance: number; duration: number } | null,
+  ) => {
     distanceInfoRef.current = info;
   };
   const [MapStyle, setMapStyle] = useState<string | StyleSpecification>(
     "https://tiles.openfreemap.org/styles/bright",
   );
   const subRef = useRef<Location.LocationSubscription | null>(null);
-  const setSub = (s: Location.LocationSubscription | null) => { subRef.current = s; };
+  const setSub = (s: Location.LocationSubscription | null) => {
+    subRef.current = s;
+  };
   const selectedRef = useRef<CityResult | null>(null);
-  const setSelected = (s: CityResult | null) => { selectedRef.current = s; };
+  const setSelected = (s: CityResult | null) => {
+    selectedRef.current = s;
+  };
   const [loadingSearch, setLoadingSearch] = useState(false);
   const lastFetchTimeRef = useRef(0);
   const lastFetchCityKeyRef = useRef("");
@@ -240,16 +248,32 @@ export default function MapScreen() {
   const { t, i18n } = useTranslation();
   const filters = useMemo(
     () =>
-      FILTER_DEFS.map((f) => ({
-        id: f.id,
-        label: t(f.labelKey),
-        subclass: [...f.subclass],
-      })),
+      FILTER_DEFS.map((f) => {
+        const cat = FILTER_CATEGORIES.find((c) => c.id === f.categoryId);
+        return {
+          id: f.id,
+          label: t(f.labelKey),
+          subclass: [...f.subclass],
+          color: cat?.color ?? "#888",
+          categoryId: f.categoryId,
+        };
+      }),
     [t],
+  );
+
+  const chipFilters = useMemo(
+    () =>
+      filters.filter((f) =>
+        ["restaurants", "cafes", "hotels", "attractions", "museums"].includes(
+          f.id,
+        ),
+      ),
+    [filters],
   );
   const sheetPoiRef = useRef<BottomSheet>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const activeFilterRef = useRef<string | null>(null);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const routePickModeRef = useRef<"start" | "end" | null>(null);
   const setPickMode = (mode: "start" | "end" | null) => {
     routePickModeRef.current = mode;
@@ -298,105 +322,147 @@ export default function MapScreen() {
     setActiveFilter(filterId);
   };
 
+  const originalPoiFiltersRef = useRef<Record<string, unknown>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const apply = async () => {
+      if (!mapRef.current) return;
+      try {
+        const style = await mapRef.current.getStyle();
+        if (cancelled) return;
+        const poiLayers = (style as any).layers?.filter(
+          (l: any) => l["source-layer"] === "poi",
+        );
+        if (!poiLayers?.length) return;
+
+        for (const layer of poiLayers) {
+          if (cancelled) return;
+          if (!(layer.id in originalPoiFiltersRef.current)) {
+            originalPoiFiltersRef.current[layer.id] = layer.filter ?? null;
+          }
+          if (activeFilter) {
+            const def = FILTER_DEFS.find((f) => f.id === activeFilter);
+            if (!def) continue;
+            const orig = originalPoiFiltersRef.current[layer.id];
+            const cls = ["in", ["get", "class"], ["literal", def.subclass]];
+            const next = orig ? ["all", orig, cls] : cls;
+            await mapRef.current.setFilter(layer.id, next as any);
+          } else {
+            const orig = originalPoiFiltersRef.current[layer.id];
+            await mapRef.current.setFilter(layer.id, (orig ?? null) as any);
+          }
+        }
+      } catch {}
+    };
+    apply();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFilter]);
+
   const StatusBarStyle: "dark" | "light" =
     currentThemeKey === "dark" ? "light" : "dark";
 
   // Location/GPS Stuff
 
-  useEffect(() => {
-    if (locationSubscribedRef.current) return;
-    locationSubscribedRef.current = true;
-
+  const startLocationWatcher = useCallback(async () => {
+    if (subRef.current) return;
     let cancelled = false;
-    let liveSub: Location.LocationSubscription | null = null;
 
-    (async () => {
+    try {
+      const { status, canAskAgain } =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        if (!canAskAgain) {
+          setError(t("Location_denied_permanent"));
+        } else {
+          setErrorSheetOpen(true);
+          setError(t("Location_authorization_denied"));
+        }
+        setLocationReady(true);
+        return;
+      }
+
       try {
-        // Step 1: request GPS permission
-        const { status, canAskAgain } =
-          await Location.requestForegroundPermissionsAsync();
-
-        if (status !== "granted") {
-          if (!canAskAgain) {
-            setError(t("Location_denied_permanent"));
-          } else {
-            setErrorSheetOpen(true);
-            setError(t("Location_authorization_denied"));
-          }
+        const lastKnown = await Location.getLastKnownPositionAsync();
+        if (lastKnown && !cancelled && !hasCenteredOnce.current) {
+          const { latitude, longitude } = lastKnown.coords;
+          setMarkerPos([longitude, latitude]);
           setLocationReady(true);
-          return;
-        }
-
-        // Step 2: one quick position fix
-        try {
-          const lastKnown = await Location.getLastKnownPositionAsync();
-          if (lastKnown && !cancelled && !hasCenteredOnce.current) {
-            const { latitude, longitude } = lastKnown.coords;
-            setMarkerPos([longitude, latitude]);
-            setLocationReady(true);
-            if (mapRef.current) {
-              hasCenteredOnce.current = true;
-              mapRef.current.flyTo({
-                center: [longitude, latitude],
-                zoom: 14,
-                speed: 0.8,
-                duration: 600,
-              });
-              ensureGlobe();
-            }
+          if (mapRef.current) {
+            hasCenteredOnce.current = true;
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              speed: 0.8,
+              duration: 600,
+            });
+            ensureGlobe();
           }
-        } catch (e) {
-          Sentry.captureException(e);
         }
-
-        // Step 3: live GPS watcher
-        const s = await Location.watchPositionAsync(
-          {
-            accuracy:
-              Platform.OS === "android"
-                ? Location.Accuracy.Balanced
-                : Location.Accuracy.High,
-            timeInterval: 2000,
-            distanceInterval: 1,
-          },
-          (loc) => {
-            if (cancelled) return;
-            lastLocRef.current = loc;
-            const { latitude, longitude } = loc.coords;
-            setMarkerPos([longitude, latitude]);
-
-            if (!locationReady) setLocationReady(true);
-
-            if (!hasCenteredOnce.current && mapRef.current) {
-              hasCenteredOnce.current = true;
-              mapRef.current.flyTo({
-                center: [longitude, latitude],
-                zoom: 14,
-                speed: 0.3,
-                curve: 1,
-                duration: 100,
-                pitch: 0,
-              });
-              ensureGlobe();
-            }
-          },
-        );
-
-        liveSub = s;
-        if (!cancelled) setSub(s);
       } catch (e) {
         Sentry.captureException(e);
-        setLocationReady(true);
       }
-    })();
 
-    return () => {
-      cancelled = true;
-      liveSub?.remove();
-      setSub(null);
-    };
+      const s = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 1000,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          if (cancelled) return;
+          lastLocRef.current = loc;
+          const { latitude, longitude } = loc.coords;
+          setMarkerPos([longitude, latitude]);
+
+          if (!locationReady) setLocationReady(true);
+
+          if (!hasCenteredOnce.current && mapRef.current) {
+            hasCenteredOnce.current = true;
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              speed: 0.3,
+              curve: 1,
+              duration: 100,
+              pitch: 0,
+            });
+            ensureGlobe();
+          }
+        },
+      );
+
+      if (!cancelled) {
+        subRef.current = s;
+      }
+    } catch (e) {
+      Sentry.captureException(e);
+      setLocationReady(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    startLocationWatcher();
+
+    return () => {
+      subRef.current?.remove();
+      subRef.current = null;
+    };
+  }, [startLocationWatcher]);
+
+  // Restart GPS watcher when app returns from background
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        startLocationWatcher();
+      }
+    });
+    return () => sub.remove();
+  }, [startLocationWatcher]);
 
   // Helper functions
   const clearInput = () => {
@@ -431,14 +497,12 @@ export default function MapScreen() {
   const resetToNorth = () => {
     mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 500 });
     setPitch(false);
-    posthog.capture("compass_reset_to_north");
   };
 
   const resetPitch = () => {
     const nextPitch = !pitch;
     mapRef.current?.easeTo({ pitch: nextPitch ? 60 : 0, duration: 500 });
     setPitch(nextPitch);
-    posthog.capture("pitch_reset");
   };
 
   const ensureGlobe = async () => {
@@ -631,8 +695,6 @@ export default function MapScreen() {
         const isJunk = (url: string) => {
           const lower = url.toLowerCase();
           return [
-            // only focused on german words
-            //f eel free to expand this
             "locator_map",
             "location_map",
             "relief_map",
@@ -783,7 +845,7 @@ export default function MapScreen() {
       } catch (error) {
         Sentry.captureException(error);
       } finally {
-          if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
@@ -801,12 +863,7 @@ export default function MapScreen() {
       controller.abort();
       clearTimeout(wikiTimer);
     };
-  }, [
-    city?.name,
-    city?.latitude,
-    city?.longitude,
-    i18n.language,
-  ]);
+  }, [city?.name, city?.latitude, city?.longitude, i18n.language]);
 
   // Weather logic
   useEffect(() => {
@@ -879,7 +936,9 @@ export default function MapScreen() {
         setTileLoading(false);
       });
 
-    return () => { cancel.current = true; };
+    return () => {
+      cancel.current = true;
+    };
   }, [city?.latitude, city?.longitude]);
 
   const getWeatherIcon = useCallback((code: number) => {
@@ -980,37 +1039,6 @@ export default function MapScreen() {
   }
 
   // Routing
-  const buildStyleWithRoutes = useCallback(
-    async (base: string | StyleSpecification): Promise<StyleSpecification> => {
-      let style: StyleSpecification;
-      if (typeof base === "string") {
-        const res = await fetch(base);
-        style = await res.json();
-      } else {
-        style = JSON.parse(JSON.stringify(base));
-      }
-
-      if (route?.length) {
-        route.forEach((r: any, i: number) => {
-          if (!r.geometry) return;
-          const sid = `route-${i}`;
-          style.sources[sid] = { type: "geojson", data: r.geometry };
-          style.layers.push({
-            id: `route-line-${i}`,
-            type: "line",
-            source: sid,
-            paint: {
-              "line-width": i === 0 ? 6 : 3,
-              "line-color": i === 0 ? theme.primaryDark : theme.subTextColor,
-            },
-          });
-        });
-      }
-
-      return style;
-    },
-    [route, theme],
-  );
 
   const handleSelectTheme = async (theme: MapTheme) => {
     const pos = useAuthStore.getState().mapPosition;
@@ -1019,16 +1047,14 @@ export default function MapScreen() {
 
     if (theme.key === "Satelite") {
       const style = await buildSatelliteStyle();
-      const withRoutes = await buildStyleWithRoutes(style);
-      setMapStyle(withRoutes);
+      setMapStyle(style);
+    } else if (theme.key === "Satelite3D") {
+      const style = await buildSatellite3DStyle();
+      setMapStyle(style);
     } else {
-      const withRoutes = await buildStyleWithRoutes(theme.url);
-      setMapStyle(withRoutes);
+      setMapStyle(theme.url);
     }
 
-    posthog.capture("map_style_changed", {
-      style: currentThemeKey,
-    });
     setMapStyleSheetOpen(false);
 
     setTimeout(() => {
@@ -1041,77 +1067,96 @@ export default function MapScreen() {
     }, 800);
   };
 
-  const onMapClick = async (event: any) => {
+  const onMapClick = (event: any) => {
     Keyboard.dismiss();
     const { lng, lat } = event.lngLat;
     if (drawModeRef.current) return;
     if (!mapRef.current) return;
     if (routePickModeRef.current) return;
 
-    const allFeatures = await mapRef.current.queryRenderedFeatures(undefined);
-
-    // ← NUR poi_ Features
-    const poiFeatures = allFeatures.filter((f: any) =>
-      f.layer?.id?.startsWith("poi_"),
-    );
-    if (!poiFeatures.length) return;
-
-    // Apply filter to poiFeatures, not allFeatures
-    const activeSubclasses = activeFilterRef.current
-      ? (filters.find((f) => f.id === activeFilterRef.current)?.subclass ?? [])
-      : null;
-
-    const filtered = activeSubclasses
-      ? poiFeatures.filter((f: any) =>
-          activeSubclasses.includes(f.properties?.subclass ?? ""),
-        )
-      : poiFeatures;
-
-    if (!filtered.length) return;
-
-    let closest = null;
-    let minDist = Infinity;
-
-    for (const f of filtered) {
-      if (f.geometry.type !== "Point") continue;
-      const [fLon, fLat] = f.geometry.coordinates;
-      const dist = Math.hypot(fLon - lng, fLat - lat);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = f;
-      }
-    }
-
-    if (!closest || minDist > 0.001) return;
-
-    const [lon, lat2] = (closest.geometry as any).coordinates;
-    let osm_id = Number(closest.properties?.osm_id) || 0;
-    if (osm_id === 0) {
-      const nominatimResult = await getOsmIdFromNominatim(
-        closest.properties?.name ?? "",
-        lat2,
-        lon,
+    mapRef.current.queryRenderedFeatures(undefined).then((allFeatures) => {
+      const poiFeatures = allFeatures.filter((f: any) =>
+        f.layer?.id?.startsWith("poi_"),
       );
-      if (nominatimResult) osm_id = nominatimResult.osm_id;
-    }
+      if (!poiFeatures.length) return;
 
-    const data = {
-      name: closest.properties?.name ?? t("Unknown_poi"),
-      type: closest.properties?.class ?? "",
-      subclass: closest.properties?.subclass ?? "",
-      osm_id,
-      osm_type: closest.properties?.osm_type ?? "node",
-      lat: lat2,
-      lon,
-    };
+      const activeSubclasses = activeFilterRef.current
+        ? (filters.find((f) => f.id === activeFilterRef.current)?.subclass ??
+          [])
+        : null;
 
-    posthog.capture("poi_tapped", {
-      type: data.subclass || data.type,
+      const filtered = activeSubclasses
+        ? poiFeatures.filter((f: any) =>
+            activeSubclasses.includes(f.properties?.subclass ?? ""),
+          )
+        : poiFeatures;
+
+      if (!filtered.length) return;
+
+      let closest = null;
+      let minDist = Infinity;
+
+      for (const f of filtered) {
+        if (f.geometry.type !== "Point") continue;
+        const [fLon, fLat] = f.geometry.coordinates;
+        const dist = Math.hypot(fLon - lng, fLat - lat);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = f;
+        }
+      }
+
+      if (!closest || minDist > 0.001) return;
+
+      const [lon, lat2] = (closest.geometry as any).coordinates;
+      const osm_id = Number(closest.properties?.osm_id) || 0;
+
+      const data = {
+        name: closest.properties?.name ?? t("Unknown_poi"),
+        type: closest.properties?.class ?? "",
+        subclass: closest.properties?.subclass ?? "",
+        osm_id,
+        osm_type: closest.properties?.osm_type ?? "node",
+        lat: lat2,
+        lon,
+      };
+
+      setSelectedPoi(data);
+
+      if (osm_id === 0) {
+        getOsmIdFromNominatim(closest.properties?.name ?? "", lat2, lon).then(
+          (result) => {
+            if (result) {
+              setSelectedPoi((prev) =>
+                prev && prev.lat === lat2 && prev.lon === lon
+                  ? {
+                      ...prev,
+                      osm_id: result.osm_id,
+                      osm_type: result.osm_type,
+                    }
+                  : prev,
+              );
+            } else {
+              setSelectedPoi((prev) =>
+                prev && prev.lat === lat2 && prev.lon === lon
+                  ? { ...prev, osm_id: -1 }
+                  : prev,
+              );
+            }
+          },
+        );
+      }
     });
-
-    setSelectedPoi(data);
-    sheetPoiRef.current?.snapToIndex(0);
   };
+
+  // Open PoiSheet after render when a POI is selected
+  useEffect(() => {
+    if (selectedPoi) {
+      requestAnimationFrame(() => {
+        sheetPoiRef.current?.snapToIndex(0);
+      });
+    }
+  }, [selectedPoi]);
 
   const updateBearing = async () => {
     try {
@@ -1138,7 +1183,10 @@ export default function MapScreen() {
       const delayed = setTimeout(() => {
         setShowError(true);
       }, 5000);
-      const clear = () => { clearTimeout(timer); clearTimeout(delayed); };
+      const clear = () => {
+        clearTimeout(timer);
+        clearTimeout(delayed);
+      };
       return clear;
     }
 
@@ -1171,7 +1219,11 @@ export default function MapScreen() {
         >
           <AlertCircleIcon color={theme.danger} />
           <Text
-            style={{ color: theme.textColor, fontSize: 13, fontFamily: fonts.medium }}
+            style={{
+              color: theme.textColor,
+              fontSize: 13,
+              fontFamily: fonts.medium,
+            }}
           >
             {error}
           </Text>
@@ -1204,7 +1256,11 @@ export default function MapScreen() {
           )}
           {showError && <AlertTriangle color={theme.danger} />}
           <Text
-            style={{ color: theme.textColor, fontSize: 13, fontFamily: fonts.medium }}
+            style={{
+              color: theme.textColor,
+              fontSize: 13,
+              fontFamily: fonts.medium,
+            }}
           >
             {showError
               ? t("Location_could_not_resolve")
@@ -1604,7 +1660,11 @@ export default function MapScreen() {
                     }, null).f;
 
                     const [lon, lat] = closest.geometry.coordinates;
-                    const address = await reverseGeocodeAddress(lat, lon, i18n.language);
+                    const address = await reverseGeocodeAddress(
+                      lat,
+                      lon,
+                      i18n.language,
+                    );
 
                     setBottomSheetIndex(2);
                     sheetRef.current?.snapToIndex(2);
@@ -1615,7 +1675,6 @@ export default function MapScreen() {
                       country: address.country,
                       region: address.region,
                     });
-                    posthog.capture("city_tapped");
                   },
                 },
               },
@@ -1658,27 +1717,44 @@ export default function MapScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.filterRow}
               >
-                {filters.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[
-                      styles.filterChip,
-                      activeFilter === item.id && styles.filterChipActive,
-                    ]}
-                    onPress={() =>
-                      handleSetFilter(activeFilter === item.id ? null : item.id)
-                    }
-                  >
-                    <Text
+                {chipFilters.map((item) => {
+                  const isActive = activeFilter === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
                       style={[
-                        styles.filterText,
-                        activeFilter === item.id && styles.filterTextActive,
+                        styles.filterChip,
+                        isActive && {
+                          backgroundColor: item.color,
+                          borderColor: item.color,
+                        },
                       ]}
+                      onPress={() => handleSetFilter(isActive ? null : item.id)}
                     >
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <View
+                        style={[
+                          styles.filterDot,
+                          { backgroundColor: isActive ? "#fff" : item.color },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.filterText,
+                          isActive && styles.filterTextActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity
+                  style={styles.filterChip}
+                  onPress={() => setFilterModalOpen(true)}
+                >
+                  <SlidersHorizontal size={14} color={theme.textColor} />
+                  <Text style={styles.filterText}>{t("Filter_more")}</Text>
+                </TouchableOpacity>
               </ScrollView>
 
               {query.length === 0 &&
@@ -2162,9 +2238,7 @@ export default function MapScreen() {
                       </View>
                     </TouchableOpacity>
                     {city && <View style={{ paddingBottom: 16 }}></View>}
-                    <Text style={styles.extractText}>
-                      {article?.extract}
-                    </Text>
+                    <Text style={styles.extractText}>{article?.extract}</Text>
                     <TouchableOpacity
                       onPress={openURL}
                       style={styles.readMoreButton}
@@ -2242,7 +2316,6 @@ export default function MapScreen() {
               const tmp = routeStart;
               setRouteStart(routeEnd);
               setRouteEnd(tmp);
-              posthog.capture("route_start_end_swapped");
             }}
             onSetStart={(point) => setRouteStart(point)}
             onSetEnd={(point) => setRouteEnd(point)}
@@ -2253,14 +2326,6 @@ export default function MapScreen() {
                 distance: routes[0].distance,
                 duration: routes[0].duration,
               });
-
-              const theme = MAP_THEMES.find(
-                (t) => t.key === currentThemeKeyRef.current,
-              );
-              if (theme) {
-                const withRoutes = await buildStyleWithRoutes(theme.url);
-                setMapStyle(withRoutes);
-              }
 
               // Fit map to route bounds
               if (!mapRef.current || !routes[0].geometry) return;
@@ -2325,6 +2390,39 @@ export default function MapScreen() {
             ]}
             githubRepo="cactus-apps/atlasys"
           />
+          {route?.map((r: any, i: number) =>
+            r.geometry ? (
+              <GeoJSONSource
+                key={`route-${i}`}
+                id={`route-${i}`}
+                source={{
+                  type: "geojson",
+                  data: {
+                    type: "Feature",
+                    properties: {},
+                    geometry: r.geometry,
+                  },
+                }}
+                layers={[
+                  {
+                    layer: {
+                      id: `route-line-${i}`,
+                      type: "line",
+                      layout: {
+                        "line-join": "round",
+                        "line-cap": "round",
+                      },
+                      paint: {
+                        "line-width": i === 0 ? 6 : 3,
+                        "line-color":
+                          i === 0 ? theme.primaryDark : theme.subTextColor,
+                      },
+                    },
+                  },
+                ]}
+              />
+            ) : null,
+          )}
         </MapProvider>
       </View>
       <MapStyleSheet
@@ -2332,6 +2430,14 @@ export default function MapScreen() {
         currentTheme={currentThemeKey}
         onSelect={handleSelectTheme}
         onClose={() => setMapStyleSheetOpen(false)}
+      />
+      <FilterModal
+        open={filterModalOpen}
+        categories={FILTER_CATEGORIES}
+        filters={FILTER_DEFS}
+        activeFilter={activeFilter}
+        onSelect={handleSetFilter}
+        onClose={() => setFilterModalOpen(false)}
       />
       <StatusBar style={StatusBarStyle} />
     </GestureHandlerRootView>
@@ -2412,6 +2518,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       flexDirection: "row",
     },
     filterChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
       paddingHorizontal: 14,
       paddingVertical: 6,
       backgroundColor: cardBgSecondary,
@@ -2421,6 +2530,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     filterChipActive: {
       backgroundColor: tabIndicator,
+    },
+    filterDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
     filterText: {
       fontSize: 13,

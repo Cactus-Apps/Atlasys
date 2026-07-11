@@ -24,7 +24,6 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { fonts } from "@/lib/fonts";
 
@@ -118,7 +117,6 @@ export default function SavedScreen() {
           ]}
           onPress={() => {
             handleCityMap(item);
-            posthog.capture("saved_place_citymap");
           }}
         >
           <Building2 size={20} color={theme.white} />
@@ -129,10 +127,6 @@ export default function SavedScreen() {
           style={[styles.actionBtn, hasThumbnail && styles.actionBtnOverlay]}
           onPress={() => {
             handleNavigate(item);
-            posthog.capture("saved_place_opened", {
-              country: item.country,
-              has_thumbnail: !!item.thumbnail,
-            });
           }}
         >
           <ExternalLinkIcon

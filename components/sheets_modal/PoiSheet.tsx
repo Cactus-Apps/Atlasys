@@ -111,40 +111,41 @@ export default function PoiSheet({
   const theme = useAppTheme();
   const [details, setDetails] = useState<OverpassPOIDetails | null>(null);
   const [loading, setLoading] = useState(false);
-  const lastOsmId = useRef<number | null>(null);
+  const fetchedOsmIdRef = useRef<number | null>(null);
 
-  // Load Overpass details when the selected POI changes
   useEffect(() => {
-    if (!selectedPoi?.osm_id || selectedPoi.osm_id === lastOsmId.current)
-      return;
-    lastOsmId.current = selectedPoi.osm_id;
+    if (!selectedPoi) return;
+
     setDetails(null);
     setLoading(true);
+    fetchedOsmIdRef.current = null;
 
-    fetchPOIDetails(selectedPoi.osm_id, selectedPoi.osm_type).then((data) => {
-      setDetails(data);
+    if (selectedPoi.osm_id === -1) {
       setLoading(false);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPoi?.osm_id]);
+      return;
+    }
 
-  if (!selectedPoi) return null;
+    if (!selectedPoi.osm_id) return;
 
-  const openStatus = details?.openingHours
-    ? parseOpeningHours(details.openingHours)
-    : null;
+    let cancelled = false;
+    fetchedOsmIdRef.current = selectedPoi.osm_id;
 
-  const address = [
-    details?.street && details?.housenumber
-      ? `${details.street} ${details.housenumber}`
-      : details?.street,
-    details?.postcode && details?.city
-      ? `${details.postcode} ${details.city}`
-      : details?.city,
-  ]
-    .filter(Boolean)
-    .join(", ");
+    fetchPOIDetails(selectedPoi.osm_id, selectedPoi.osm_type)
+      .then((data) => {
+        if (!cancelled) {
+          setDetails(data);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [selectedPoi?.osm_id, selectedPoi?.lat, selectedPoi?.lon]);
 
+  // Always render BottomSheet (hidden at index=-1) so the ref stays valid
   return (
     <BottomSheet
       ref={sheetRef}
@@ -162,256 +163,276 @@ export default function PoiSheet({
       handleIndicatorStyle={{ backgroundColor: theme.subTextColor, width: 40 }}
     >
       <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-        {/* ── Header ── */}
-        <View style={s.header}>
-          <View style={{ flex: 1 }}>
-            {/* Name */}
-            <Text
-              style={[s.name, { color: theme.textColor }]}
-              numberOfLines={2}
-            >
-              {selectedPoi.name}
-            </Text>
-
-            {/* Category badge + opening status */}
-            <View style={s.badgeRow}>
-              <View style={[s.badge, { backgroundColor: theme.primaryLight }]}>
-                <Text style={[s.badgeText, { color: theme.primary }]}>
-                  {selectedPoi.subclass || selectedPoi.type}
+        {!selectedPoi ? (
+          <View style={{ height: 200 }} />
+        ) : (
+          <>
+            {/* ── Header ── */}
+            <View style={s.header}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[s.name, { color: theme.textColor }]}
+                  numberOfLines={2}
+                >
+                  {selectedPoi.name}
                 </Text>
+
+                <View style={s.badgeRow}>
+                  <View style={[s.badge, { backgroundColor: theme.primaryLight }]}>
+                    <Text style={[s.badgeText, { color: theme.primary }]}>
+                      {selectedPoi.subclass || selectedPoi.type}
+                    </Text>
+                  </View>
+
+                  {details?.openingHours && (() => {
+                    const openStatus = parseOpeningHours(details.openingHours);
+                    return (
+                      <View
+                        style={[
+                          s.badge,
+                          { backgroundColor: openStatus.color + "20" },
+                        ]}
+                      >
+                        <View
+                          style={[s.dot, { backgroundColor: openStatus.color }]}
+                        />
+                        <Text style={[s.badgeText, { color: openStatus.color }]}>
+                          {openStatus.label}
+                        </Text>
+                      </View>
+                    );
+                  })()}
+                </View>
+
+                {details?.description && (
+                  <Text style={[s.description, { color: theme.subTextColor }]}>
+                    {details.description}
+                  </Text>
+                )}
               </View>
 
-              {openStatus && (
-                <View
-                  style={[
-                    s.badge,
-                    { backgroundColor: openStatus.color + "20" },
-                  ]}
+              <TouchableOpacity
+                onPress={() => sheetRef.current?.close()}
+                style={[s.closeBtn, { backgroundColor: theme.cardBgSecondary }]}
+              >
+                <X size={18} color={theme.subTextColor} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+
+            {/*Action Buttons*/}
+            <View style={s.actions}>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onRouteStart(
+                    markerPos
+                      ? { label: t("Poi_my_location"), coordinate: markerPos }
+                      : null,
+                    {
+                      label: selectedPoi.name,
+                      coordinate: [selectedPoi.lon, selectedPoi.lat],
+                    },
+                  );
+                  sheetRef.current?.close();
+                }}
+                style={[s.primaryBtn, { backgroundColor: theme.primary }]}
+              >
+                <Route color="#fff" size={20} />
+                <Text style={s.primaryBtnText}>{t("Poi_start_route")}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  const elementType = selectedPoi.osm_id > 0 ? "node" : "way";
+                  await Share.share({
+                    message: `${selectedPoi.name}\nhttps://www.openstreetmap.org/${elementType}/${Math.abs(selectedPoi.osm_id)}`,
+                  });
+                }}
+                style={[s.iconBtn, { backgroundColor: theme.cardBgSecondary }]}
+              >
+                <Share2 color={theme.primary} size={20} />
+              </TouchableOpacity>
+
+              {details?.phone && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(`tel:${details.phone}`)}
+                  style={[s.iconBtn, { backgroundColor: theme.successLight }]}
                 >
-                  <View
-                    style={[s.dot, { backgroundColor: openStatus.color }]}
-                  />
-                  <Text style={[s.badgeText, { color: openStatus.color }]}>
-                    {openStatus.label}
-                  </Text>
-                </View>
+                  <Phone color={theme.success} size={20} />
+                </TouchableOpacity>
+              )}
+
+              {details?.website && (
+                <TouchableOpacity
+                  onPress={() =>
+                    Linking.openURL(
+                      details.website!.startsWith("http")
+                        ? details.website!
+                        : `https://${details.website}`,
+                    )
+                  }
+                  style={[s.iconBtn, { backgroundColor: theme.infoLight }]}
+                >
+                  <Globe color={theme.info} size={20} />
+                </TouchableOpacity>
               )}
             </View>
 
-            {details?.description && (
-              <Text style={[s.description, { color: theme.subTextColor }]}>
-                {details.description}
+            <View style={[s.divider, { backgroundColor: theme.borderColor }]} />
+
+            {loading && (
+              <View style={s.loadingRow}>
+                <ActivityIndicator color={theme.primary} size="small" />
+                <Text style={[s.loadingText, { color: theme.subTextColor }]}>
+                  {t("Poi_loading_details")}
+                </Text>
+              </View>
+            )}
+
+            {!loading && details && (() => {
+              const openStatus = details.openingHours
+                ? parseOpeningHours(details.openingHours)
+                : null;
+              const address = [
+                details.street && details.housenumber
+                  ? `${details.street} ${details.housenumber}`
+                  : details.street,
+                details.postcode && details.city
+                  ? `${details.postcode} ${details.city}`
+                  : details.city,
+              ]
+                .filter(Boolean)
+                .join(", ");
+
+              return (
+                <View style={s.infoSection}>
+                  {details.openingHours && (
+                    <InfoRow
+                      icon={<Clock size={16} color={theme.primary} />}
+                      label={t("Poi_label_opening_hours")}
+                      value={details.openingHours}
+                      valueColor={openStatus?.color}
+                    />
+                  )}
+
+                  {address ? (
+                    <InfoRow
+                      icon={<MapPin size={16} color={theme.primary} />}
+                      label={t("Poi_label_address")}
+                      value={address}
+                      onPress={() =>
+                        Linking.openURL(
+                          `https://www.openstreetmap.org/?mlat=${selectedPoi.lat}&mlon=${selectedPoi.lon}`,
+                        )
+                      }
+                    />
+                  ) : null}
+
+                  {details.phone && (
+                    <InfoRow
+                      icon={<Phone size={16} color={theme.success} />}
+                      label={t("Poi_label_phone")}
+                      value={details.phone}
+                      onPress={() => Linking.openURL(`tel:${details.phone}`)}
+                      valueColor={theme.success}
+                    />
+                  )}
+
+                  {details.website && (
+                    <InfoRow
+                      icon={<Globe size={16} color={theme.info} />}
+                      label={t("Poi_label_website")}
+                      value={details.website.replace(/^https?:\/\//, "")}
+                      onPress={() =>
+                        Linking.openURL(
+                          details.website!.startsWith("http")
+                            ? details.website!
+                            : `https://${details.website}`,
+                        )
+                      }
+                      valueColor={theme.info}
+                    />
+                  )}
+
+                  {details.email && (
+                    <InfoRow
+                      icon={<Mail size={16} color={theme.purple} />}
+                      label={t("Poi_label_email")}
+                      value={details.email}
+                      onPress={() => Linking.openURL(`mailto:${details.email}`)}
+                      valueColor={theme.purple}
+                    />
+                  )}
+
+                  {details.cuisine && (
+                    <InfoRow
+                      icon={<ChefHat size={16} color={theme.warning} />}
+                      label={t("Poi_label_cuisine")}
+                      value={details.cuisine}
+                    />
+                  )}
+
+                  {details.stars && (
+                    <InfoRow
+                      icon={<Star size={16} color={theme.warning} />}
+                      label={t("Poi_label_category")}
+                      value={t("Poi_stars_value", {
+                        stars: "★".repeat(parseInt(details.stars)),
+                        n: details.stars,
+                      })}
+                    />
+                  )}
+
+                  {details.wheelchair && (
+                    <InfoRow
+                      icon={<Accessibility size={16} color={theme.info} />}
+                      label={t("Poi_label_accessibility")}
+                      value={
+                        details.wheelchair === "yes"
+                          ? t("Poi_wheelchair_yes")
+                          : details.wheelchair === "limited"
+                            ? t("Poi_wheelchair_limited")
+                            : t("Poi_wheelchair_no")
+                      }
+                      valueColor={
+                        details.wheelchair === "yes"
+                          ? theme.success
+                          : details.wheelchair === "limited"
+                            ? theme.warning
+                            : theme.danger
+                      }
+                    />
+                  )}
+
+                  <InfoRow
+                    icon={<MapPin size={16} color={theme.subTextColor} />}
+                    label={t("Poi_label_coordinates")}
+                    value={`${selectedPoi.lat.toFixed(5)}, ${selectedPoi.lon.toFixed(5)}`}
+                  />
+
+                  <InfoRow
+                    icon={<Info size={16} color={theme.subTextColor} />}
+                    label={t("Poi_label_source")}
+                    value={t("Poi_osm_edit_hint")}
+                    onPress={() => {
+                      const elementType = selectedPoi.osm_id > 0 ? "node" : "way";
+                      Linking.openURL(
+                        `https://www.openstreetmap.org/${elementType}/${Math.abs(selectedPoi.osm_id)}`,
+                      );
+                    }}
+                    valueColor={theme.subTextColor}
+                  />
+                </View>
+              );
+            })()}
+
+            {!loading && !details && !!selectedPoi && (
+              <Text style={[s.noDetails, { color: theme.subTextColor }]}>
+                {t("Poi_no_details")}
               </Text>
             )}
-          </View>
-
-          <TouchableOpacity
-            onPress={onClose}
-            style={[s.closeBtn, { backgroundColor: theme.cardBgSecondary }]}
-          >
-            <X size={18} color={theme.subTextColor} strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-
-        {/*Action Buttons*/}
-        <View style={s.actions}>
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onRouteStart(
-                markerPos
-                  ? { label: t("Poi_my_location"), coordinate: markerPos }
-                  : null,
-                {
-                  label: selectedPoi.name,
-                  coordinate: [selectedPoi.lon, selectedPoi.lat],
-                },
-              );
-              sheetRef.current?.close();
-            }}
-            style={[s.primaryBtn, { backgroundColor: theme.primary }]}
-          >
-            <Route color="#fff" size={20} />
-            <Text style={s.primaryBtnText}>{t("Poi_start_route")}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const elementType = selectedPoi.osm_id > 0 ? "node" : "way";
-              await Share.share({
-                message: `${selectedPoi.name}\nhttps://www.openstreetmap.org/${elementType}/${Math.abs(selectedPoi.osm_id)}`,
-              });
-            }}
-            style={[s.iconBtn, { backgroundColor: theme.cardBgSecondary }]}
-          >
-            <Share2 color={theme.primary} size={20} />
-          </TouchableOpacity>
-
-          {details?.phone && (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`tel:${details.phone}`)}
-              style={[s.iconBtn, { backgroundColor: theme.successLight }]}
-            >
-              <Phone color={theme.success} size={20} />
-            </TouchableOpacity>
-          )}
-
-          {details?.website && (
-            <TouchableOpacity
-              onPress={() =>
-                Linking.openURL(
-                  details.website!.startsWith("http")
-                    ? details.website!
-                    : `https://${details.website}`,
-                )
-              }
-              style={[s.iconBtn, { backgroundColor: theme.infoLight }]}
-            >
-              <Globe color={theme.info} size={20} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={[s.divider, { backgroundColor: theme.borderColor }]} />
-
-        {loading && (
-          <View style={s.loadingRow}>
-            <ActivityIndicator color={theme.primary} size="small" />
-            <Text style={[s.loadingText, { color: theme.subTextColor }]}>
-              {t("Poi_loading_details")}
-            </Text>
-          </View>
-        )}
-
-        {!loading && details && (
-          <View style={s.infoSection}>
-            {/* Full opening hours string */}
-            {details.openingHours && (
-              <InfoRow
-                icon={<Clock size={16} color={theme.primary} />}
-                label={t("Poi_label_opening_hours")}
-                value={details.openingHours}
-                valueColor={openStatus?.color}
-              />
-            )}
-
-            {address ? (
-              <InfoRow
-                icon={<MapPin size={16} color={theme.primary} />}
-                label={t("Poi_label_address")}
-                value={address}
-                onPress={() =>
-                  Linking.openURL(
-                    `https://www.openstreetmap.org/?mlat=${selectedPoi.lat}&mlon=${selectedPoi.lon}`,
-                  )
-                }
-              />
-            ) : null}
-
-            {details.phone && (
-              <InfoRow
-                icon={<Phone size={16} color={theme.success} />}
-                label={t("Poi_label_phone")}
-                value={details.phone}
-                onPress={() => Linking.openURL(`tel:${details.phone}`)}
-                valueColor={theme.success}
-              />
-            )}
-
-            {details.website && (
-              <InfoRow
-                icon={<Globe size={16} color={theme.info} />}
-                label={t("Poi_label_website")}
-                value={details.website.replace(/^https?:\/\//, "")}
-                onPress={() =>
-                  Linking.openURL(
-                    details.website!.startsWith("http")
-                      ? details.website!
-                      : `https://${details.website}`,
-                  )
-                }
-                valueColor={theme.info}
-              />
-            )}
-
-            {/* E-Mail */}
-            {details.email && (
-              <InfoRow
-                icon={<Mail size={16} color={theme.purple} />}
-                label={t("Poi_label_email")}
-                value={details.email}
-                onPress={() => Linking.openURL(`mailto:${details.email}`)}
-                valueColor={theme.purple}
-              />
-            )}
-
-            {details.cuisine && (
-              <InfoRow
-                icon={<ChefHat size={16} color={theme.warning} />}
-                label={t("Poi_label_cuisine")}
-                value={details.cuisine}
-              />
-            )}
-
-            {details.stars && (
-              <InfoRow
-                icon={<Star size={16} color={theme.warning} />}
-                label={t("Poi_label_category")}
-                value={t("Poi_stars_value", {
-                  stars: "★".repeat(parseInt(details.stars)),
-                  n: details.stars,
-                })}
-              />
-            )}
-
-            {details.wheelchair && (
-              <InfoRow
-                icon={<Accessibility size={16} color={theme.info} />}
-                label={t("Poi_label_accessibility")}
-                value={
-                  details.wheelchair === "yes"
-                    ? t("Poi_wheelchair_yes")
-                    : details.wheelchair === "limited"
-                      ? t("Poi_wheelchair_limited")
-                      : t("Poi_wheelchair_no")
-                }
-                valueColor={
-                  details.wheelchair === "yes"
-                    ? theme.success
-                    : details.wheelchair === "limited"
-                      ? theme.warning
-                      : theme.danger
-                }
-              />
-            )}
-
-            <InfoRow
-              icon={<MapPin size={16} color={theme.subTextColor} />}
-              label={t("Poi_label_coordinates")}
-              value={`${selectedPoi.lat.toFixed(5)}, ${selectedPoi.lon.toFixed(5)}`}
-            />
-
-            <InfoRow
-              icon={<Info size={16} color={theme.subTextColor} />}
-              label={t("Poi_label_source")}
-              value={t("Poi_osm_edit_hint")}
-              onPress={() => {
-                const elementType = selectedPoi.osm_id > 0 ? "node" : "way";
-                Linking.openURL(
-                  `https://www.openstreetmap.org/${elementType}/${Math.abs(selectedPoi.osm_id)}`,
-                );
-              }}
-              valueColor={theme.subTextColor}
-            />
-          </View>
-        )}
-
-        {/* No details */}
-        {!loading && !details && (
-          <Text style={[s.noDetails, { color: theme.subTextColor }]}>
-            {t("Poi_no_details")}
-          </Text>
+          </>
         )}
       </BottomSheetScrollView>
     </BottomSheet>

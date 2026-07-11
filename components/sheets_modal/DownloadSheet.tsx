@@ -9,7 +9,6 @@ import { fonts } from "@/lib/fonts";
 import { reverseGeocode } from "@/lib/geocoding/geocoding";
 import { useTranslation } from "react-i18next";
 import CircularProgress from "../overlays/CircularWavyProgressIndicator";
-import { posthog } from "@/lib/config/posthog";
 
 interface Props {
   open: boolean;
@@ -201,21 +200,8 @@ export default function DownloadSheet({
         t("Download_area_too_large_title"),
         t("Download_area_too_large_message"),
       );
-      posthog.capture("Download_area_too_large", {
-        min_zoom: minZoom,
-        max_zoom: maxZoom,
-        estimated_tiles: tileCount,
-        estimated_mb: estimatedMB,
-      });
       return;
     }
-
-    posthog.capture("offline_download_started", {
-      min_zoom: minZoom,
-      max_zoom: maxZoom,
-      estimated_tiles: tileCount,
-      estimated_mb: estimatedMB,
-    });
 
     setProgress(0);
     setStatus("downloading");
@@ -256,9 +242,6 @@ export default function DownloadSheet({
 
     if (result) {
       setStatus("done");
-      posthog.capture("offline_download_completed", {
-        tile_count: tileCount,
-      });
       onDownloadComplete();
     }
   };
@@ -339,10 +322,6 @@ export default function DownloadSheet({
                 cancelRef.current.cancelled = true;
                 setStatus("idle");
                 setProgress(0);
-                posthog.capture("offline_download_cancelled", {
-                  progress_at_cancel: progress,
-                  tiles_done: Math.round((tileCount * progress) / 100),
-                });
               }}
               style={s.cancelBtn}
             >

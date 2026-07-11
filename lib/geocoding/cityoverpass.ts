@@ -1,6 +1,17 @@
 import * as Sentry from "@sentry/react-native";
 import i18n from "@/app/i18n";
 
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text || !res.ok) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.warn("safeJson parse error, starts with:", text.slice(0, 80));
+    return null;
+  }
+}
+
 export type CityPOI = {
   osmId: number;
   osmType: string;
@@ -170,8 +181,8 @@ export async function getCityOSMId(
       },
     });
     if (!res.ok) return null;
-    const json = await res.json();
-    if (!json.length) return null;
+    const json = await safeJson(res);
+    if (!json?.length) return null;
 
     const result = json[0];
     return {
@@ -649,8 +660,8 @@ export async function fetchPOIWikiImage(
           `https://${lang}.wikipedia.org/w/api.php?action=query&prop=pageprops&titles=${encodeURIComponent(title)}&format=json&origin=*`,
           { headers: { "User-Agent": HEADERS["User-Agent"] } },
         );
-        const data = await res.json();
-        const pages = data.query?.pages;
+        const data = await safeJson(res);
+        const pages = data?.query?.pages;
         if (pages) {
           const pageId = Object.keys(pages)[0];
           qid = pages[pageId]?.pageprops?.wikibase_item;
@@ -663,8 +674,8 @@ export async function fetchPOIWikiImage(
     const wdRes = await fetch(
       `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
     );
-    const wdData = await wdRes.json();
-    const entity = wdData.entities?.[qid];
+    const wdData = await safeJson(wdRes);
+    const entity = wdData?.entities?.[qid];
     const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
     if (!imageClaim) return null;
 
@@ -673,8 +684,8 @@ export async function fetchPOIWikiImage(
       `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(imageName)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=50&format=json&origin=*`,
       { headers: { "User-Agent": HEADERS["User-Agent"] } },
     );
-    const infoData = await infoRes.json();
-    const pages = infoData.query?.pages;
+    const infoData = await safeJson(infoRes);
+    const pages = infoData?.query?.pages;
     if (pages) {
       const pageId = Object.keys(pages)[0];
       const info = pages[pageId]?.imageinfo?.[0];
@@ -721,8 +732,8 @@ export async function fetchLocalizedName(
       { headers: HEADERS },
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    const pages = data.query?.pages;
+    const data = await safeJson(res);
+    const pages = data?.query?.pages;
     if (pages) {
       const pageId = Object.keys(pages)[0];
       const langlinks = pages[pageId]?.langlinks;
@@ -752,16 +763,17 @@ export async function fetchWikipediaArticle(
       `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(title)}&limit=1&format=json&origin=*`,
       { headers },
     );
-    const searchData = await searchRes.json();
-    if (!searchData[1]?.length) return null;
+    const searchData = await safeJson(searchRes);
+    if (!searchData?.[1]?.length) return null;
     const pageTitle = searchData[1][0];
 
     const extractRes = await fetch(
       `https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts|pageprops&exintro&explaintext&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
       { headers },
     );
-    const extractData = await extractRes.json();
-    const pages = extractData.query.pages;
+    const extractData = await safeJson(extractRes);
+    const pages = extractData?.query?.pages;
+    if (!pages) return null;
     const pageId = Object.keys(pages)[0];
     const extract = pages[pageId].extract || "";
 
@@ -773,14 +785,14 @@ export async function fetchWikipediaArticle(
         const wdRes = await fetch(
           `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
         );
-        const wdData = await wdRes.json();
+        const wdData = await safeJson(wdRes);
         const cat = wdData.entities?.[qid]?.sitelinks?.commonswiki?.title;
         if (cat) {
           const cmRes = await fetch(
             `https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(cat)}&cmtype=file&cmlimit=50&format=json&origin=*`,
             { headers },
           );
-          const cmData = await cmRes.json();
+          const cmData = await safeJson(cmRes);
           imageTitles =
             cmData.query?.categorymembers?.map((cm: any) => cm.title) || [];
         }
@@ -792,7 +804,7 @@ export async function fetchWikipediaArticle(
         `https://${lang}.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`,
         { headers },
       );
-      const imagesData = await imagesRes.json();
+      const imagesData = await safeJson(imagesRes);
       imageTitles =
         imagesData.query?.pages[pageId]?.images?.map((img: any) => img.title) ||
         [];
@@ -834,12 +846,12 @@ export async function fetchWikipediaArticle(
       `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=600&format=json&origin=*`,
       { headers },
     );
-    const infoData = await infoRes.json();
+    const infoData = await safeJson(infoRes);
 
     const images: { previewUrl: string; fullUrl: string }[] = [];
     let thumbnail: string | null = null;
 
-    if (infoData.query?.pages) {
+    if (infoData?.query?.pages) {
       Object.values(infoData.query.pages).forEach((p: any) => {
         const info = p.imageinfo?.[0];
         if (info?.url && !isJunk(info.url)) {

@@ -6,6 +6,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { fetchUnseen, Announcement } from "@/lib/hooks/announcements";
 import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
 import DeleteRequestModal from "@/components/sheets_modal/DeleteRequestModal";
+import UpdateInfoModal from "@/components/overlays/UpdateInfoModal";
+import SurveyModal from "@/components/sheets_modal/SurveyModal";
+import GitHubStarModal from "@/components/sheets_modal/GitHubStarModal";
+import FeedbackModal from "@/components/sheets_modal/FeedbackModal";
 import { supabase } from "@/lib/auth/supabase";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -16,6 +20,15 @@ import {
 } from "@/lib/hooks/deleteAccount";
 import { useAppTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
+import { fetchActiveSurvey, Survey } from "@/lib/hooks/surveys";
+import {
+  shouldShowGitHubStar,
+  markGitHubStarShown,
+  shouldShowFeedback,
+  markFeedbackShown,
+} from "@/lib/hooks/coldStartModals";
+
+type ColdStartModal = "survey" | "github" | "feedback" | null;
 
 export default function TabsLayout() {
   const { t } = useTranslation();
@@ -25,11 +38,55 @@ export default function TabsLayout() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [deleteReq, setDeleteReq] = useState<DeleteRequest | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUpdateInfo, setShowUpdateInfo] = useState(false);
   const deletingRef = useRef(false);
+
+  const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
+  const [coldStartModal, setColdStartModal] = useState<ColdStartModal>(null);
 
   useEffect(() => {
     fetchUnseen().then(setAnnouncements);
   }, []);
+
+  useEffect(() => {
+    if (user?.id && !useAuthStore.getState().seenAnalyticsUpdate) {
+      queueMicrotask(() => setShowUpdateInfo(true));
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const evaluateColdStartModal = async () => {
+      const survey = await fetchActiveSurvey(user.id);
+      if (survey) {
+        setActiveSurvey(survey);
+        setColdStartModal("survey");
+        return;
+      }
+
+      if (await shouldShowGitHubStar()) {
+        setColdStartModal("github");
+        return;
+      }
+
+      if (await shouldShowFeedback()) {
+        setColdStartModal("feedback");
+      }
+    };
+
+    evaluateColdStartModal();
+  }, [user?.id]);
+
+  const handleColdStartModalClose = async () => {
+    if (coldStartModal === "github") {
+      await markGitHubStarShown();
+    } else if (coldStartModal === "feedback") {
+      await markFeedbackShown();
+    }
+    setColdStartModal(null);
+    setActiveSurvey(null);
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -107,6 +164,26 @@ export default function TabsLayout() {
         visible={showDeleteModal}
         status={deleteReq?.status ?? null}
         onClose={handleDeleteClose}
+      />
+      <UpdateInfoModal
+        visible={showUpdateInfo}
+        onClose={() => {
+          useAuthStore.getState().setSeenAnalyticsUpdate(true);
+          setShowUpdateInfo(false);
+        }}
+      />
+      <SurveyModal
+        visible={coldStartModal === "survey"}
+        survey={activeSurvey}
+        onClose={handleColdStartModalClose}
+      />
+      <GitHubStarModal
+        visible={coldStartModal === "github"}
+        onClose={handleColdStartModalClose}
+      />
+      <FeedbackModal
+        visible={coldStartModal === "feedback"}
+        onClose={handleColdStartModalClose}
       />
     </>
   );

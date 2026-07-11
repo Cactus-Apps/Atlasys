@@ -51,6 +51,12 @@ export const MAP_THEMES: MapTheme[] = [
     colors: ["#4a6a3a", "#2d4a2d", "#1a3a5c"],
   },
   {
+    key: "Satelite3D",
+    labelKey: "Map_theme_satellite_3d",
+    url: "https://tiles.openfreemap.org/styles/liberty",
+    colors: ["#2a4a2a", "#1a3a1a", "#0a2a4a"],
+  },
+  {
     key: "city",
     labelKey: "Map_theme_city",
     url: cityStyle as StyleSpecification,
@@ -275,6 +281,57 @@ export async function buildSatelliteStyle(): Promise<StyleSpecification> {
     },
     ...symbolLayers,
   ];
+
+  return style;
+}
+
+const SATELLITE_RASTER_SOURCE = {
+  type: "raster" as const,
+  tiles: [
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  ],
+  tileSize: 256,
+  attribution: "© Esri, Maxar, Earthstar Geographics",
+};
+
+const SAT_LABEL_REPAINT = {
+  "text-color": "#ffffff",
+  "text-halo-color": "#000000",
+  "text-halo-width": 1.5,
+};
+
+export async function buildSatellite3DStyle(): Promise<StyleSpecification> {
+  const response = await fetch("https://tiles.openfreemap.org/styles/liberty");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch liberty style: ${response.status}`);
+  }
+  const style = await response.json();
+
+  style.sources["satellite"] = SATELLITE_RASTER_SOURCE;
+
+  const nonSymbolFillLine = style.layers.filter(
+    (l: any) => l.type !== "symbol",
+  );
+  const symbolLayers = style.layers
+    .filter((l: any) => l.type === "symbol")
+    .map((l: any) => ({
+      ...l,
+      paint: { ...l.paint, ...SAT_LABEL_REPAINT },
+    }));
+
+  const satelliteInsertIndex = nonSymbolFillLine.findIndex(
+    (l: any) => l.id === "road_area_pattern",
+  );
+  const insertAt =
+    satelliteInsertIndex >= 0 ? satelliteInsertIndex : nonSymbolFillLine.length;
+
+  nonSymbolFillLine.splice(insertAt, 0, {
+    id: "satellite-3d",
+    type: "raster",
+    source: "satellite",
+  });
+
+  style.layers = [...nonSymbolFillLine, ...symbolLayers];
 
   return style;
 }

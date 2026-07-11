@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { MapProvider, Map, Marker, MapRef } from "react-native-maplibre-gl-js";
+import { MapProvider, Map, Marker, MapRef, GeoJSONSource } from "react-native-maplibre-gl-js";
 import type { StyleSpecification } from "maplibre-gl";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
@@ -17,11 +17,11 @@ import {
   StyleSheet,
   StatusBar,
   Platform,
+  AppState,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { fonts } from "@/lib/fonts";
-import { posthog } from "@/lib/config/posthog";
 import { useTranslation } from "react-i18next";
 import {
   Navigation,
@@ -31,9 +31,6 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { darken } from "./(tabs)/mapscreen";
-
-const BASE_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
-let styleCache: StyleSpecification | null = null;
 
 function pointToSegmentDist(
   px: number,
@@ -81,6 +78,18 @@ function findNearestPointOnRoute(
     }
   }
   return { index: bestIdx, dist: bestDist, nearest: bestPoint };
+}
+
+function haversineMeters(a: [number, number], b: [number, number]): number {
+  const R = 6371000;
+  const dLat = ((b[1] - a[1]) * Math.PI) / 180;
+  const dLon = ((b[0] - a[0]) * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a[1] * Math.PI) / 180) *
+      Math.cos((b[1] * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
 function getBearing(from: [number, number], to: [number, number]): number {
@@ -159,18 +168,23 @@ export default function NavigationScreen() {
   const theme = useAppTheme();
   const navRoute = useAuthStore((s) => s.navRoute);
   const [location, setLocation] = useState<[number, number] | null>(null);
-  const [bearing, setBearing] = useState(0);
   const [speed, setSpeed] = useState(0);
+  const bearingRef = useRef(0);
+  const locationRef = useRef<[number, number] | null>(null);
+  const flyToPending = useRef(false);
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [remainingDist, setRemainingDist] = useState(navRoute?.distance || 0);
   const [remainingTime, setRemainingTime] = useState(navRoute?.duration || 0);
   const [progress, setProgress] = useState(0);
-  const [mapStyle, setMapStyle] = useState<string | StyleSpecification>(
+  const [mapStyle] = useState<string>(
     "https://tiles.openfreemap.org/styles/bright",
   );
   const mapRef = useRef<MapRef>(null);
   const subRef = useRef<Location.LocationSubscription | null>(null);
   const [stopped, setStopped] = useState(false);
+  const lastLocRef = useRef<[number, number] | null>(null);
+  const lastTimeRef = useRef<number>(0);
+  const filteredSpeedRef = useRef<number>(0);
 
   const coords = useMemo(
     () => navRoute?.geometry?.coordinates || [],
@@ -181,53 +195,112 @@ export default function NavigationScreen() {
   const nextStep = steps[currentStepIdx + 1];
   const destCoords = navRoute?.destinationCoords;
 
+  const mapOptions = useMemo(
+    () => ({
+      style: mapStyle,
+      center: coords[0] || [0, 0],
+      zoom: 16,
+      pitch: 60,
+    }),
+    [mapStyle, coords],
+  );
+
   const stopNavigation = useCallback(() => {
     setStopped(true);
     subRef.current?.remove();
     subRef.current = null;
     useAuthStore.getState().setNavRoute(null);
-    posthog.capture("navigation_stopped");
     router.back();
   }, [router]);
 
-  useEffect(() => {
-    if (!navRoute) return;
+  const startNavLocationWatcher = useCallback(async () => {
+    if (subRef.current || stopped) return;
     let cancelled = false;
 
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
 
-        const sub = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.High,
-            timeInterval: 1000,
-            distanceInterval: 3,
-          },
-          (loc) => {
-            if (cancelled || stopped) return;
-            const { latitude, longitude, speed: sp, heading } = loc.coords;
-            const pos: [number, number] = [longitude, latitude];
-            setLocation(pos);
-            setSpeed(sp || 0);
-            if (heading != null && heading >= 0) {
-              setBearing(heading);
+      const sub = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 500,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          if (cancelled || stopped) return;
+          const { latitude, longitude, speed: sp, heading } = loc.coords;
+          const pos: [number, number] = [longitude, latitude];
+          const now = Date.now();
+
+          // Plausibility filter: reject jumps that are physically impossible
+          if (lastLocRef.current && lastTimeRef.current > 0) {
+            const dt = (now - lastTimeRef.current) / 1000;
+            const dist = haversineMeters(lastLocRef.current, pos);
+            const rawSpeed = sp || 0;
+            const maxAllowedSpeed = Math.max(rawSpeed, filteredSpeedRef.current, 5) * 2.5 + 15;
+            const impliedSpeed = dt > 0 ? dist / dt : 0;
+
+            if (impliedSpeed > maxAllowedSpeed && dist > 80) {
+              return;
             }
-          },
-        );
-        if (!cancelled) subRef.current = sub;
-      } catch (e) {
-        Sentry.captureException(e);
-      }
-    })();
+          }
 
+          lastLocRef.current = pos;
+          lastTimeRef.current = now;
+
+          // Smooth speed
+          const rawSpeed = sp || 0;
+          filteredSpeedRef.current = filteredSpeedRef.current * 0.7 + rawSpeed * 0.3;
+
+          locationRef.current = pos;
+          if (heading != null && heading >= 0) {
+            bearingRef.current = heading;
+          }
+
+          setLocation(pos);
+          setSpeed(filteredSpeedRef.current);
+
+          if (!flyToPending.current && mapRef.current) {
+            flyToPending.current = true;
+            requestAnimationFrame(() => {
+              if (mapRef.current && locationRef.current) {
+                mapRef.current.flyTo({
+                  center: locationRef.current,
+                  zoom: 16,
+                  pitch: 60,
+                  bearing: bearingRef.current,
+                  duration: 1000,
+                });
+              }
+              flyToPending.current = false;
+            });
+          }
+        },
+      );
+      if (!cancelled) subRef.current = sub;
+    } catch (e) {
+      Sentry.captureException(e);
+    }
+  }, [stopped]);
+
+  useEffect(() => {
+    startNavLocationWatcher();
     return () => {
-      cancelled = true;
       subRef.current?.remove();
       subRef.current = null;
     };
-  }, [navRoute, stopped]);
+  }, [startNavLocationWatcher]);
+
+  // Restart GPS watcher when app returns from background
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        startNavLocationWatcher();
+      }
+    });
+    return () => sub.remove();
+  }, [startNavLocationWatcher]);
 
   useEffect(() => {
     if (!location || !coords.length || !navRoute) return;
@@ -236,17 +309,7 @@ export default function NavigationScreen() {
     const remaining = coords.slice(index);
     let totalRemaining = 0;
     for (let i = 0; i < remaining.length - 1; i++) {
-      const [lon1, lat1] = remaining[i];
-      const [lon2, lat2] = remaining[i + 1];
-      const R = 6371000;
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLon = ((lon2 - lon1) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
-          Math.sin(dLon / 2) ** 2;
-      totalRemaining += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      totalRemaining += haversineMeters(remaining[i], remaining[i + 1]);
     }
     const t = setTimeout(() => {
       if (navRoute.duration && navRoute.distance) {
@@ -259,7 +322,7 @@ export default function NavigationScreen() {
       const nextIdx = Math.min(index + 5, coords.length - 1);
       if (nextIdx > index) {
         const brng = getBearing(coords[index], coords[nextIdx]);
-        setBearing((prev) => prev * 0.3 + brng * 0.7);
+        bearingRef.current = bearingRef.current * 0.3 + brng * 0.7;
       }
 
       const traveled = navRoute.distance - totalRemaining;
@@ -274,62 +337,6 @@ export default function NavigationScreen() {
     });
     return () => clearTimeout(t);
   }, [location, coords, steps, navRoute]);
-
-  useEffect(() => {
-    if (location && mapRef.current) {
-      mapRef.current.flyTo({
-        center: location,
-        zoom: 16,
-        pitch: 60,
-        bearing: bearing,
-        duration: 500,
-      });
-    }
-  }, [location, bearing]);
-
-  // Build map style with embedded route source (cached style fetch)
-  useEffect(() => {
-    if (!navRoute?.geometry) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        let style: StyleSpecification;
-        if (styleCache) {
-          style = JSON.parse(JSON.stringify(styleCache));
-        } else {
-          const res = await fetch(BASE_STYLE_URL);
-          style = await res.json();
-          if (!cancelled) styleCache = JSON.parse(JSON.stringify(style));
-        }
-
-        if (cancelled) return;
-
-        style.sources["nav-route"] = {
-          type: "geojson",
-          data: navRoute.geometry,
-        };
-
-        style.layers.push({
-          id: "nav-route-line",
-          type: "line",
-          source: "nav-route",
-          paint: {
-            "line-width": 6,
-            "line-color": "#2563EB",
-          },
-        });
-
-        setMapStyle(style as StyleSpecification);
-      } catch (e) {
-        Sentry.captureException(e);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navRoute?.geometry]);
 
   // Fit route bounds on mount
   useEffect(() => {
@@ -386,13 +393,34 @@ export default function NavigationScreen() {
       <MapProvider>
         <Map
           ref={mapRef}
-          options={{
-            style: mapStyle,
-            center: location || coords[0] || [0, 0],
-            zoom: 16,
-            pitch: 60,
-          }}
+          options={mapOptions}
         />
+
+        {navRoute?.geometry && (
+          <GeoJSONSource
+            id="nav-route"
+            source={{
+              type: "geojson",
+              data: {
+                type: "Feature",
+                properties: {},
+                geometry: navRoute.geometry,
+              },
+            }}
+            layers={[
+              {
+                layer: {
+                  id: "nav-route-line",
+                  type: "line",
+                  paint: {
+                    "line-width": 6,
+                    "line-color": "#2563EB",
+                  },
+                },
+              },
+            ]}
+          />
+        )}
 
         {location && (
           <Marker

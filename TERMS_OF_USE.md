@@ -85,7 +85,7 @@ Atlasys uses external services governed by their own terms and privacy policies:
 • Nominatim – nominatim.openstreetmap.org: reverse geocoding
 • Supabase: authentication and data storage
 • Sentry: crash reporting
-• PostHog: usage analytics (only with your consent)
+• PostHog: usage daily ping (only with your consent)
 
 Cactus Apps is not responsible for the content, availability, security, or data
 practices of these third-party services and accepts no liability for damages

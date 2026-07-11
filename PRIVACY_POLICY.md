@@ -57,7 +57,7 @@ this permission at any time in your device settings.
 
 • Contract performance (Art. 6(1)(b)): Providing your account and core app
 functionality.
-• Consent (Art. 6(1)(a)): Location access, analytics (PostHog), and crash
+• Consent (Art. 6(1)(a)): Location access, daily ping (PostHog), and crash
 reporting preferences chosen during onboarding. You may withdraw consent at
 any time in the app settings.
 • Legitimate interests (Art. 6(1)(f)): Security logs, fraud prevention, and
@@ -79,9 +79,8 @@ Privacy policy: supabase.com/privacy
 Anonymous technical error reports only. No location data included.
 Privacy policy: sentry.io/privacy
 
-• PostHog (usage analytics, only with your consent)
-You choose the level of analytics during onboarding: full (linked to your
-account), anonymous (no account link), or none.
+• PostHog (usage daily ping, only with your consent)
+You choose the level of daily ping, or none.
 Privacy policy: posthog.com/privacy
 
 • OpenFreeMap / OpenStreetMap (map tiles)

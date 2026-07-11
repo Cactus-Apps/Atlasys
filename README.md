@@ -111,7 +111,7 @@ For security vulnerabilities, please email **cactus_apps@proton.me** instead of 
 | Offline Maps    | expo-sqlite + custom MBTiles              |
 | State           | Zustand                                   |
 | Crash Reporting | Sentry                                    |
-| Analytics       | PostHog (opt-in)                          |
+| Daily ping      | PostHog (opt-in)                          |
 
 ---
 

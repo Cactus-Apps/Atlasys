@@ -12,7 +12,6 @@ import { Sparkles, X, Github } from "lucide-react-native";
 import { Announcement, markAllSeen } from "@/lib/hooks/announcements";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
-import { posthog } from "@/lib/config/posthog";
 import { useTranslation } from "react-i18next";
 
 import { Image } from "expo-image";
@@ -136,10 +135,6 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
   const handleClose = useCallback(async () => {
     await markAllSeen(announcements.map((a) => a.id));
     onClose();
-    posthog.capture("announcement_viewed", {
-      count: announcements.length,
-      type: announcements[0]?.type,
-    });
   }, [announcements, onClose]);
 
   const handleOrionStore = useCallback(async () => {

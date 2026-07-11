@@ -29,7 +29,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
-import { posthog } from "@/lib/config/posthog";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { generateRandomAvatarConfig } from "@/lib/avatar/avatar-utils";
 import { fonts } from "@/lib/fonts";
@@ -418,7 +417,6 @@ export default function AccountScreen() {
         Sentry.captureException(error);
         Alert.alert(t("Error"), t("Request_could_not_be_sent"));
       } else {
-        posthog.capture("user_delete-account");
         Alert.alert(t("Success"), t("deletion_request_created"));
         setRequest(data);
         updateProgress("pending");

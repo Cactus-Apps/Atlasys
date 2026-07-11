@@ -33,9 +33,7 @@ import * as Haptics from "expo-haptics";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
-import { posthog } from "@/lib/config/posthog";
 import { fonts } from "@/lib/fonts";
-import { applyAnalyticsChoice } from "@/lib/auth/analytics";
 import { useTranslation } from "react-i18next";
 
 const CONSENT_VERSION = "1.0";
@@ -253,7 +251,11 @@ function VisualPlaceholder({
             <View key={item.label} style={s.checkRow}>
               <View style={[s.checkBullet, { backgroundColor: accent + "30" }]}>
                 <Text
-                  style={{ color: accent, fontSize: 10, fontFamily: fonts.bold }}
+                  style={{
+                    color: accent,
+                    fontSize: 10,
+                    fontFamily: fonts.bold,
+                  }}
                 >
                   ✓
                 </Text>
@@ -332,17 +334,14 @@ export default function OnboardingScreen() {
   const [showConsent, setShowConsent] = useState(params.showConsent === "true");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [pingEnabled, setPingEnabled] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const theme = useAppTheme();
   const s = useMemo(() => getStyles(theme), [theme]);
 
-  type AnalyticsChoice = "full" | "anonymous" | "none";
-  const [analyticsChoice, setAnalyticsChoice] =
-    useState<AnalyticsChoice>("none");
-  const updateSettings = useAuthStore((s) => s.updateSettings);
-
   const router = useRouter();
   const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
+  const updateSettings = useAuthStore((s) => s.updateSettings);
 
   const slide = slides[currentIndex];
   const isLast = currentIndex === slides.length - 1;
@@ -351,16 +350,10 @@ export default function OnboardingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (isLast) {
       setShowConsent(true);
-      posthog.capture("onboarding_completed", {
-        analytics_choice: analyticsChoice,
-        accepted_terms: acceptedTerms,
-        accepted_privacy: acceptedPrivacy,
-      });
     } else {
       setDirection("forward");
       setCurrentIndex((i) => i + 1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLast]);
 
   const handleSkip = useCallback(() => {
@@ -377,11 +370,7 @@ export default function OnboardingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       await saveConsentLocally();
-      updateSettings({ analytics: analyticsChoice });
-      applyAnalyticsChoice(analyticsChoice, undefined);
-      posthog.capture("onboarding_completed", {
-        analytics_choice: analyticsChoice,
-      });
+      updateSettings({ ping: pingEnabled });
     } catch (error) {
       Sentry.captureException(error);
     } finally {
@@ -391,7 +380,7 @@ export default function OnboardingScreen() {
   }, [
     acceptedTerms,
     acceptedPrivacy,
-    analyticsChoice,
+    pingEnabled,
     router,
     setOnboardingCompleted,
     updateSettings,
@@ -515,52 +504,24 @@ export default function OnboardingScreen() {
                   {t("Onboarding_accept_privacy_suffix")}
                 </Text>
               </TouchableOpacity>
-            </View>
 
-            <View style={s.analyticsSection}>
-              <Text style={s.sectionLabel}>
-                {t("Onboarding_analytics_section")}
-              </Text>
-
-              <View style={s.analyticsChipRow}>
-                {(["none", "anonymous", "full"] as AnalyticsChoice[]).map(
-                  (choice) => (
-                    <TouchableOpacity
-                      key={choice}
-                      style={[
-                        s.analyticsChip,
-                        analyticsChoice === choice && s.analyticsChipActive,
-                      ]}
-                      onPress={() => {
-                        setAnalyticsChoice(choice);
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          s.analyticsChipText,
-                          analyticsChoice === choice &&
-                            s.analyticsChipTextActive,
-                        ]}
-                      >
-                        {choice === "none" && t("Onboarding_analytics_none")}
-                        {choice === "anonymous" &&
-                          t("Onboarding_analytics_anonymous")}
-                        {choice === "full" && t("Onboarding_analytics_full")}
-                      </Text>
-                    </TouchableOpacity>
-                  ),
-                )}
-              </View>
-
-              <Text style={s.analyticsHint}>
-                {analyticsChoice === "none" &&
-                  t("Onboarding_analytics_hint_none")}
-                {analyticsChoice === "anonymous" &&
-                  t("Onboarding_analytics_hint_anonymous")}
-                {analyticsChoice === "full" &&
-                  t("Onboarding_analytics_hint_full")}
-              </Text>
+              <TouchableOpacity
+                style={s.checkboxRow}
+                onPress={() => {
+                  setPingEnabled((v) => !v);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[s.checkbox, pingEnabled && s.checkboxChecked]}>
+                  {pingEnabled && (
+                    <Check size={13} color="#fff" strokeWidth={3} />
+                  )}
+                </View>
+                <Text style={s.checkboxText}>
+                  {t("Onboarding_analytics_toggle")}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {consentError && (
@@ -1255,91 +1216,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: 10,
       borderWidth: 1,
       alignSelf: "flex-start",
-    },
-    analyticsOption: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 12,
-      padding: 14,
-      borderRadius: 14,
-      borderWidth: 1.5,
-      borderColor: "rgba(255,255,255,0.1)",
-      backgroundColor: "rgba(255,255,255,0.04)",
-      marginBottom: 8,
-    },
-    analyticsOptionActive: {
-      borderColor: "#00C4B4",
-      backgroundColor: "rgba(0,196,180,0.08)",
-    },
-    analyticsOptionTitle: {
-      fontSize: 14,
-      fontFamily: fonts.semibold,
-      color: "#fff",
-      marginBottom: 2,
-    },
-    analyticsOptionSub: {
-      fontSize: 12,
-      color: "rgba(255,255,255,0.5)",
-      lineHeight: 16,
-    },
-    radioOuter: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      borderWidth: 2,
-      borderColor: "rgba(255,255,255,0.3)",
-      justifyContent: "center",
-      alignItems: "center",
-      marginTop: 1,
-      flexShrink: 0,
-    },
-    radioInner: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: "#00C4B4",
-    },
-    sectionLabel: {
-      fontSize: 13,
-      fontFamily: fonts.bold,
-      color: "rgba(255,255,255,0.6)",
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
-      marginBottom: 8,
-    },
-    analyticsSection: {
-      marginBottom: 12,
-    },
-    analyticsChipRow: {
-      flexDirection: "row",
-      gap: 8,
-      marginBottom: 6,
-    },
-    analyticsChip: {
-      flex: 1,
-      paddingVertical: 8,
-      borderRadius: 20,
-      borderWidth: 1.5,
-      borderColor: "rgba(255,255,255,0.15)",
-      backgroundColor: "rgba(255,255,255,0.05)",
-      alignItems: "center",
-    },
-    analyticsChipActive: {
-      borderColor: "#00C4B4",
-      backgroundColor: "rgba(0,196,180,0.15)",
-    },
-    analyticsChipText: {
-      fontSize: 12,
-      fontFamily: fonts.semibold,
-      color: "rgba(255,255,255,0.5)",
-    },
-    analyticsChipTextActive: {
-      color: "#00C4B4",
-    },
-    analyticsHint: {
-      fontSize: 11,
-      color: "rgba(255,255,255,0.1)",
-      textAlign: "center",
     },
   });
 };

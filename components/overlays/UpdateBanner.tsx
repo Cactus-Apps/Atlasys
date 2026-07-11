@@ -11,7 +11,6 @@ import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 import { useUpdate } from "@/lib/hooks/update-context";
-import { posthog } from "@/lib/config/posthog";
 
 export function UpdateBanner() {
   const { t } = useTranslation();
@@ -31,7 +30,6 @@ export function UpdateBanner() {
 
   const handleReload = async () => {
     await reload();
-    posthog.capture("ota_update_applied");
   };
 
   return (
@@ -100,7 +98,6 @@ export function UpdateBanner() {
                   style={[styles.button, styles.dismissButton]}
                   onPress={() => {
                     dismiss();
-                    posthog.capture("ota_update_dismissed");
                   }}
                 >
                   <X size={16} color={theme.textColor} />

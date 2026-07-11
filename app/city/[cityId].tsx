@@ -66,7 +66,6 @@ import { useTranslation } from "react-i18next";
 import { Image as ExpoImage } from "expo-image";
 import cityStyle from "@/assets/map/city-style.json";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -400,7 +399,6 @@ export default function CityScreen() {
         country,
         thumbnail: article?.thumbnail || params.thumbnail,
       });
-      posthog.capture("city_saved", { city: cityName });
     } else {
       setLocalSaved(false);
       removePlace(cityName);

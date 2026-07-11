@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppTheme, TabTheme } from "../theme";
-import { AnalyticsChoice } from "@/lib/auth/analytics";
 
 type AvatarConfig = {
   seed?: string;
@@ -65,7 +64,10 @@ type NavRouteData = {
 type StoreAuth = {
   savedPlaces: SavedPlace[];
   addPlace: (place: Omit<SavedPlace, "addedAt">) => void;
-  updatePlace: (name: string, updates: Partial<Omit<SavedPlace, "name" | "addedAt">>) => void;
+  updatePlace: (
+    name: string,
+    updates: Partial<Omit<SavedPlace, "name" | "addedAt">>,
+  ) => void;
   reorderPlaces: (fromIndex: number, toIndex: number) => void;
   removePlace: (name: string) => void;
   isPlaceSaved: (name: string) => boolean;
@@ -75,9 +77,11 @@ type StoreAuth = {
   // Onboarding & Settings & Theme
   isOnboardingCompleted: boolean;
   setOnboardingCompleted: (val: boolean) => void;
+  seenAnalyticsUpdate: boolean;
+  setSeenAnalyticsUpdate: (val: boolean) => void;
   settings: {
     notifications: boolean;
-    analytics: AnalyticsChoice;
+    analytics: boolean;
     /** Sentry: false = don't send crash reports (absent → enabled) */
     crashReports?: boolean;
     /** Expo Updates: background check (absent → enabled) */
@@ -132,9 +136,10 @@ const initialState = {
   savedPlaces: [],
   _seededForUserId: null,
   isOnboardingCompleted: false,
+  seenAnalyticsUpdate: false,
   settings: {
     notifications: false,
-    analytics: "none" as AnalyticsChoice,
+    analytics: true,
     crashReports: true,
     autoUpdateCheck: true,
     theme: "light" as AppTheme,
@@ -216,11 +221,13 @@ export const useAuthStore = create<StoreAuth>()(
         });
       },
 
-      isOnboardingCompleted: false,
-      setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
+  isOnboardingCompleted: false,
+  setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
+  seenAnalyticsUpdate: false,
+  setSeenAnalyticsUpdate: (val) => set({ seenAnalyticsUpdate: val }),
       settings: {
         notifications: false,
-        analytics: "none",
+        analytics: true,
         crashReports: true,
         autoUpdateCheck: true,
         theme: "light" as AppTheme,
@@ -294,6 +301,7 @@ export const useAuthStore = create<StoreAuth>()(
       },
       partialize: (state) => ({
         isOnboardingCompleted: state.isOnboardingCompleted,
+        seenAnalyticsUpdate: state.seenAnalyticsUpdate,
         settings: state.settings,
         userId: state.userId,
         savedPlaces: state.savedPlaces,

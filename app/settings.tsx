@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import {
+  BarChart3,
   Bug,
   Check,
   ChevronLeft,
@@ -28,17 +29,12 @@ import { useAuthStore } from "@/lib/storage/zustand";
 import { AppTheme, TabTheme, useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { TabBarPreview } from "@/components/tab-bars/TabBarPreview";
-import { AnalyticsChoice, applyAnalyticsChoice } from "@/lib/auth/analytics";
-import { posthog } from "@/lib/config/posthog";
 
 export default function Settings() {
   const [ModalVisible, setModalVisible] = useState(false);
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const appSettings = useAuthStore((s) => s.settings);
-  const [analyticsChoice, setAnalyticsChoice] = useState<AnalyticsChoice>(
-    appSettings.analytics ?? "none",
-  );
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const currentTheme = useAuthStore((s) => s.settings.theme) ?? "light";
   const theme = useAppTheme();
@@ -56,7 +52,6 @@ export default function Settings() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     i18n.changeLanguage(langCode);
     setModalVisible(false);
-    posthog.capture("language_changed");
   };
 
   const currentLanguageLabel =
@@ -64,9 +59,10 @@ export default function Settings() {
 
   const crashReportsOn = appSettings.crashReports !== false;
   const autoUpdateOn = appSettings.autoUpdateCheck !== false;
+  const pingOn = appSettings.ping === true;
 
   const togglePrivacy = (
-    key: "crashReports" | "autoUpdateCheck",
+    key: "crashReports" | "autoUpdateCheck" | "ping",
     value: boolean,
   ) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -260,9 +256,6 @@ export default function Settings() {
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     updateSettings({ theme: opt.value });
-                    posthog.capture("theme_changed", {
-                      theme: opt.value,
-                    });
                   }}
                   activeOpacity={0.8}
                   style={{ alignItems: "center", width: 110 }}
@@ -393,9 +386,6 @@ export default function Settings() {
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     updateSettings({ tabTheme: opt.value });
-                    posthog.capture("tab_theme_changed", {
-                      tabTheme: opt.value,
-                    });
                   }}
                   activeOpacity={0.8}
                   style={{ alignItems: "center", width: 110 }}
@@ -487,58 +477,6 @@ export default function Settings() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>
-            {t("Settings_section_Analytics")}
-          </Text>
-          <View style={styles.card}>
-            {(["full", "anonymous", "none"] as AnalyticsChoice[]).map(
-              (choice) => (
-                <TouchableOpacity
-                  key={choice}
-                  style={[
-                    styles.analyticsOption,
-                    analyticsChoice === choice && styles.analyticsOptionActive,
-                  ]}
-                  onPress={() => {
-                    setAnalyticsChoice(choice);
-                    updateSettings({ analytics: choice });
-                    applyAnalyticsChoice(choice, undefined);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      analyticsChoice === choice && {
-                        borderColor: theme.primary,
-                      },
-                    ]}
-                  >
-                    {analyticsChoice === choice && (
-                      <View style={styles.radioInner} />
-                    )}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.analyticsOptionTitle}>
-                      {choice === "full" && t("Settings_analytics_full")}
-                      {choice === "anonymous" &&
-                        t("Settings_analytics_anonymous")}
-                      {choice === "none" && t("Settings_analytics_none")}
-                    </Text>
-                    <Text style={styles.analyticsOptionSub}>
-                      {choice === "full" && t("Settings_analytics_full_sub")}
-                      {choice === "anonymous" &&
-                        t("Settings_analytics_anonymous_sub")}
-                      {choice === "none" && t("Settings_analytics_none_sub")}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ),
-            )}
-          </View>
-        </View>
-
-        <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {t("Settings_section_Location_privacy")}
           </Text>
@@ -612,6 +550,35 @@ export default function Settings() {
                   true: theme.primaryLight,
                 }}
                 thumbColor={autoUpdateOn ? theme.primary : theme.white}
+                ios_backgroundColor={
+                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+                }
+              />
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <BarChart3
+                  size={22}
+                  color={pingOn ? theme.primary : theme.subTextColor}
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>
+                  {t("Settings_analytics_toggle")}
+                </Text>
+                <Text style={styles.menuValue}>
+                  {t("Settings_analytics_toggle_sub")}
+                </Text>
+              </View>
+              <Switch
+                value={pingOn}
+                onValueChange={(v) => togglePrivacy("ping", v)}
+                trackColor={{
+                  false: theme.cardBgSecondary,
+                  true: theme.primaryLight,
+                }}
+                thumbColor={pingOn ? theme.primary : theme.white}
                 ios_backgroundColor={
                   Platform.OS === "ios" ? theme.cardBgSecondary : undefined
                 }
@@ -702,7 +669,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     primary,
     overlay,
     white,
-    primaryLight,
   } = theme;
 
   // Adapt border radii for classic vs modern
@@ -908,32 +874,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       textTransform: "uppercase",
       letterSpacing: 0.8,
       marginBottom: 8,
-    },
-    analyticsOption: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 12,
-      padding: 14,
-      borderRadius: 14,
-      borderWidth: 1.5,
-      borderColor: subTextColor,
-      backgroundColor: "rgba(255,255,255,0.04)",
-      marginBottom: 8,
-    },
-    analyticsOptionActive: {
-      borderColor: primary,
-      backgroundColor: primaryLight,
-    },
-    analyticsOptionTitle: {
-      fontSize: 14,
-      fontFamily: fonts.semibold,
-      color: textColor,
-      marginBottom: 2,
-    },
-    analyticsOptionSub: {
-      fontSize: 12,
-      color: subTextColor,
-      lineHeight: 16,
     },
   });
 };
