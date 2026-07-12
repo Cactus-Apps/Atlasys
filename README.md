@@ -10,7 +10,6 @@
 [![iOS](https://img.shields.io/badge/iOS-Coming_Soon-999?style=flat-square&logo=apple&logoColor=white)]()
 [![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](LICENSE.md)
 [![Website](https://img.shields.io/badge/Website-atlasys.vercel.app-2563EB?style=flat-square)](https://atlasys.vercel.app)
-[![Instagram](https://img.shields.io/badge/Instagram-@atlasys.app-E1306C?style=flat-square&logo=instagram&logoColor=white)](https://www.instagram.com/atlasys.app)
 
 </div>
 
@@ -22,8 +21,6 @@ Atlasys is a privacy-first, open-source map application built with React Native 
 
 Map data comes from [OpenStreetMap](https://openstreetmap.org) under the ODbL license. Routing is powered by [OSRM](https://routing.openstreetmap.de). No proprietary map APIs. No hidden trackers.
 
-> [!IMPORTANT]
-> The Android APK releases on **June 1, 2026**. iOS support is planned shortly after.
 
 ---
 
@@ -57,9 +54,6 @@ Map data comes from [OpenStreetMap](https://openstreetmap.org) under the ODbL li
 3. If prompted about installing from an unknown source, tap **Allow**.
 4. Tap **Install**.
 
-> [!NOTE]
-> Apple App Store support is planned. iOS is not yet available.
-
 ---
 
 ## Getting Started (Development)
@@ -76,7 +70,7 @@ Map data comes from [OpenStreetMap](https://openstreetmap.org) under the ODbL li
 git clone https://github.com/Cactus-Apps/Atlasys.git
 cd Atlasys
 npm install
-cp .env.example .env.local   # fill in your keys
+cp .env.example .env.local
 npx expo start
 ```
 
@@ -126,7 +120,6 @@ Atlasys collects as little data as possible. Your GPS location stays on your dev
 ## Links
 
 - Website: [atlasys.vercel.app](https://atlasys.vercel.app)
-- Instagram: [@atlasys.app](https://www.instagram.com/atlasys.app)
 - Contact: [cactus_apps@proton.me](mailto:cactus_apps@proton.me)
 
 ---
