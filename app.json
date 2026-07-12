@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.7.2",
+    "version": "1.7.3",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -19,10 +19,14 @@
         "backgroundColor": "#DDDDDD"
       },
       "package": "com.cactus_apps.Atlasys",
-      "versionCode": 29,
+      "versionCode": 30,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "intentFilters": [
         {
@@ -60,7 +64,9 @@
       "expo-image",
       "expo-sqlite",
       "@sentry/react-native",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/withNotifeeForegroundService",
+      "./plugins/withAndroidBuildOptimizations"
     ],
     "experiments": {
       "typedRoutes": true

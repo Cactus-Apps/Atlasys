@@ -9,6 +9,12 @@ import { fonts } from "@/lib/fonts";
 import { reverseGeocode } from "@/lib/geocoding/geocoding";
 import { useTranslation } from "react-i18next";
 import CircularProgress from "../overlays/CircularWavyProgressIndicator";
+import {
+  showDownloadNotification,
+  updateDownloadProgress,
+  completeDownloadNotification,
+  cancelDownloadNotification,
+} from "@/lib/notifications/notifeeService";
 
 interface Props {
   open: boolean;
@@ -220,6 +226,8 @@ export default function DownloadSheet({
         `Region ${new Date().toLocaleDateString()}`;
     }
 
+    await showDownloadNotification(regionName, tileCount);
+
     const result = await downloadRegion(
       id,
       regionName,
@@ -229,6 +237,7 @@ export default function DownloadSheet({
       (p) => {
         if (cancelRef.current.cancelled) return;
         setProgress(p.percent);
+        updateDownloadProgress(regionName, p.downloaded, p.total);
         if (
           p.status === "done" ||
           p.status === "cancelled" ||
@@ -242,6 +251,7 @@ export default function DownloadSheet({
 
     if (result) {
       setStatus("done");
+      await completeDownloadNotification(regionName);
       onDownloadComplete();
     }
   };
@@ -320,6 +330,7 @@ export default function DownloadSheet({
             <TouchableOpacity
               onPress={() => {
                 cancelRef.current.cancelled = true;
+                cancelDownloadNotification();
                 setStatus("idle");
                 setProgress(0);
               }}

@@ -323,6 +323,7 @@ export default function MapScreen() {
   };
 
   const originalPoiFiltersRef = useRef<Record<string, unknown>>({});
+  const originalMinzoomRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -341,6 +342,10 @@ export default function MapScreen() {
           if (!(layer.id in originalPoiFiltersRef.current)) {
             originalPoiFiltersRef.current[layer.id] = layer.filter ?? null;
           }
+          if (!(layer.id in originalMinzoomRef.current)) {
+            originalMinzoomRef.current[layer.id] = layer.minzoom ?? 0;
+          }
+
           if (activeFilter) {
             const def = FILTER_DEFS.find((f) => f.id === activeFilter);
             if (!def) continue;
@@ -348,9 +353,25 @@ export default function MapScreen() {
             const cls = ["in", ["get", "class"], ["literal", def.subclass]];
             const next = orig ? ["all", orig, cls] : cls;
             await mapRef.current.setFilter(layer.id, next as any);
+            await mapRef.current.setLayerZoomRange(layer.id, 10, 24);
           } else {
             const orig = originalPoiFiltersRef.current[layer.id];
             await mapRef.current.setFilter(layer.id, (orig ?? null) as any);
+            const origMinzoom = originalMinzoomRef.current[layer.id] ?? 0;
+            await mapRef.current.setLayerZoomRange(layer.id, origMinzoom, 24);
+          }
+        }
+
+        if (cancelled) return;
+        if (activeFilter) {
+          const zoom = await mapRef.current.getZoom();
+          if (zoom > 13) {
+            await mapRef.current.flyTo({ zoom: 13, duration: 500 });
+          }
+        } else {
+          const zoom = await mapRef.current.getZoom();
+          if (zoom < 15) {
+            await mapRef.current.flyTo({ zoom: 15, duration: 500 });
           }
         }
       } catch {}

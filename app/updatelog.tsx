@@ -20,6 +20,12 @@ const UpdateLog = () => {
 
   const logs = [
     {
+      version: "1.7.2",
+      date: "2026-07-11",
+      text: "Live notifications with @notifee/react-native for navigation and offline map downloads. Fixed map flickering during navigation, POI modal first-click issue, POI details loading, empty modal after close, and full map re-render on GPS updates.",
+      type: "feature",
+    },
+    {
       version: "1.6.8",
       date: "2026-06-21",
       text: "New navigation sidebar with turn-by-turn directions, improved route planning, enhanced geocoding, circular progress indicator, and Zustand storage refactor.",

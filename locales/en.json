@@ -636,5 +636,15 @@
   "Feedback_privacy": "Your feedback is sent to Sentry for analysis. No personal data is stored.",
   "Feedback_submit": "Send Feedback",
   "Feedback_thanks_title": "Thank you!",
-  "Feedback_thanks_body": "Your feedback has been sent. We appreciate your input!"
+  "Feedback_thanks_body": "Your feedback has been sent. We appreciate your input!",
+  "Loading_searching_landmarks": "Searching for top landmarks...",
+  "Loading_finding_gems": "Finding hidden gems nearby...",
+  "Loading_collecting_hours": "Collecting opening hours...",
+  "Loading_enriching_photos": "Enriching results with photos...",
+  "Loading_ranking_spots": "Ranking the best spots...",
+  "Loading_mapping_subway": "Mapping subway lines...",
+  "Loading_tracing_bus": "Tracing bus routes...",
+  "Loading_finding_tram": "Finding tram networks...",
+  "Loading_discovering_ferry": "Discovering ferry connections...",
+  "Loading_organizing_routes": "Organizing all routes..."
 }

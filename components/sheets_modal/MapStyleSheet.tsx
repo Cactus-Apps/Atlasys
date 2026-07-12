@@ -51,12 +51,6 @@ export const MAP_THEMES: MapTheme[] = [
     colors: ["#4a6a3a", "#2d4a2d", "#1a3a5c"],
   },
   {
-    key: "Satelite3D",
-    labelKey: "Map_theme_satellite_3d",
-    url: "https://tiles.openfreemap.org/styles/liberty",
-    colors: ["#2a4a2a", "#1a3a1a", "#0a2a4a"],
-  },
-  {
     key: "city",
     labelKey: "Map_theme_city",
     url: cityStyle as StyleSpecification,

@@ -31,6 +31,11 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { darken } from "./(tabs)/mapscreen";
+import {
+  showNavigationNotification,
+  updateNavigationProgress,
+  stopNavigationNotification,
+} from "@/lib/notifications/notifeeService";
 
 function pointToSegmentDist(
   px: number,
@@ -185,6 +190,7 @@ export default function NavigationScreen() {
   const lastLocRef = useRef<[number, number] | null>(null);
   const lastTimeRef = useRef<number>(0);
   const filteredSpeedRef = useRef<number>(0);
+  const notifShownRef = useRef(false);
 
   const coords = useMemo(
     () => navRoute?.geometry?.coordinates || [],
@@ -209,9 +215,18 @@ export default function NavigationScreen() {
     setStopped(true);
     subRef.current?.remove();
     subRef.current = null;
+    stopNavigationNotification();
     useAuthStore.getState().setNavRoute(null);
     router.back();
   }, [router]);
+
+  // Show navigation notification on mount
+  useEffect(() => {
+    if (navRoute && !notifShownRef.current) {
+      notifShownRef.current = true;
+      showNavigationNotification(navRoute.destinationName);
+    }
+  }, [navRoute]);
 
   const startNavLocationWatcher = useCallback(async () => {
     if (subRef.current || stopped) return;
@@ -311,12 +326,14 @@ export default function NavigationScreen() {
     for (let i = 0; i < remaining.length - 1; i++) {
       totalRemaining += haversineMeters(remaining[i], remaining[i + 1]);
     }
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
+      let currentProgress = 0;
       if (navRoute.duration && navRoute.distance) {
         const ratio = Math.max(0, totalRemaining / navRoute.distance);
         setRemainingDist(totalRemaining);
         setRemainingTime(navRoute.duration * ratio);
-        setProgress(Math.max(0, Math.min(1, 1 - ratio)));
+        currentProgress = Math.max(0, Math.min(1, 1 - ratio));
+        setProgress(currentProgress);
       }
 
       const nextIdx = Math.min(index + 5, coords.length - 1);
@@ -325,17 +342,28 @@ export default function NavigationScreen() {
         bearingRef.current = bearingRef.current * 0.3 + brng * 0.7;
       }
 
+      let activeStepIdx = 0;
       const traveled = navRoute.distance - totalRemaining;
       let cumulative = 0;
       for (let i = 0; i < steps.length; i++) {
         cumulative += steps[i].distance || 0;
         if (traveled < cumulative) {
+          activeStepIdx = i;
           setCurrentStepIdx(i);
           break;
         }
       }
+
+      const instruction = getInstructionText(steps[activeStepIdx], t);
+      updateNavigationProgress({
+        instruction,
+        remainingDist: formatDistance(totalRemaining),
+        remainingTime: formatTime(navRoute.duration * (1 - currentProgress)),
+        progress: currentProgress,
+      });
     });
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location, coords, steps, navRoute]);
 
   // Fit route bounds on mount
@@ -362,6 +390,7 @@ export default function NavigationScreen() {
     return () => {
       subRef.current?.remove();
       subRef.current = null;
+      stopNavigationNotification();
     };
   }, []);
 

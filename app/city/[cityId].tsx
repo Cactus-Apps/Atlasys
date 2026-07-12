@@ -92,6 +92,7 @@ import BottomPanel, {
 } from "@/components/sheets_modal/BottomPanel";
 import { StopToast } from "@/components/overlays/StopToast";
 import { fonts } from "@/lib/fonts";
+import CityLoadingSkeleton from "@/components/city/CityLoadingSkeleton";
 
 type TabName = "discover" | "transit" | "info";
 
@@ -967,7 +968,7 @@ export default function CityScreen() {
   const renderDiscoverTab = () => (
     <View style={{ flex: 1 }}>
       {loadingPOI ? (
-        <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
+        <CityLoadingSkeleton variant="discover" />
       ) : errorPOI ? (
         <View style={styles.errorBox}>
           <Text style={[styles.errorTitle, { color: theme.danger }]}>
@@ -1070,7 +1071,7 @@ export default function CityScreen() {
   const renderTransitTab = () => (
     <View style={{ flex: 1 }}>
       {loadingTransit ? (
-        <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
+        <CityLoadingSkeleton variant="transit" />
       ) : errorTransit ? (
         <View style={styles.errorBox}>
           <Text style={[styles.errorTitle, { color: theme.danger }]}>

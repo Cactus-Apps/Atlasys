@@ -642,5 +642,15 @@
   "Feedback_privacy": "Tu opinión se envía a Sentry para análisis. No se almacenan datos personales.",
   "Feedback_submit": "Enviar opinión",
   "Feedback_thanks_title": "¡Gracias!",
-  "Feedback_thanks_body": "Tu opinión ha sido enviada. ¡Agradecemos tu aporte!"
+  "Feedback_thanks_body": "Tu opinión ha sido enviada. ¡Agradecemos tu aporte!",
+  "Loading_searching_landmarks": "Buscando monumentos destacados...",
+  "Loading_finding_gems": "Encontrando joyas ocultas cerca...",
+  "Loading_collecting_hours": "Recopilando horarios de apertura...",
+  "Loading_enriching_photos": "Enriqueciendo resultados con fotos...",
+  "Loading_ranking_spots": "Clasificando los mejores lugares...",
+  "Loading_mapping_subway": "Mapeando líneas de metro...",
+  "Loading_tracing_bus": "Rastreando rutas de autobús...",
+  "Loading_finding_tram": "Encontrando redes de tranvía...",
+  "Loading_discovering_ferry": "Descubriendo conexiones de ferry...",
+  "Loading_organizing_routes": "Organizando todas las rutas..."
 }
