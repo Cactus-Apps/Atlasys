@@ -9,12 +9,6 @@ import { fonts } from "@/lib/fonts";
 import { reverseGeocode } from "@/lib/geocoding/geocoding";
 import { useTranslation } from "react-i18next";
 import CircularProgress from "../overlays/CircularWavyProgressIndicator";
-import {
-  showDownloadNotification,
-  updateDownloadProgress,
-  completeDownloadNotification,
-  cancelDownloadNotification,
-} from "@/lib/notifications/notifeeService";
 
 interface Props {
   open: boolean;
@@ -220,13 +214,16 @@ export default function DownloadSheet({
 
     let regionName = name.trim();
     if (!regionName) {
-      const label = await reverseGeocode(centerLat, centerLng, undefined, i18n.language);
+      const label = await reverseGeocode(
+        centerLat,
+        centerLng,
+        undefined,
+        i18n.language,
+      );
       regionName =
         label.split(",")[0].trim() ||
         `Region ${new Date().toLocaleDateString()}`;
     }
-
-    await showDownloadNotification(regionName, tileCount);
 
     const result = await downloadRegion(
       id,
@@ -237,7 +234,6 @@ export default function DownloadSheet({
       (p) => {
         if (cancelRef.current.cancelled) return;
         setProgress(p.percent);
-        updateDownloadProgress(regionName, p.downloaded, p.total);
         if (
           p.status === "done" ||
           p.status === "cancelled" ||
@@ -251,7 +247,6 @@ export default function DownloadSheet({
 
     if (result) {
       setStatus("done");
-      await completeDownloadNotification(regionName);
       onDownloadComplete();
     }
   };
@@ -330,7 +325,6 @@ export default function DownloadSheet({
             <TouchableOpacity
               onPress={() => {
                 cancelRef.current.cancelled = true;
-                cancelDownloadNotification();
                 setStatus("idle");
                 setProgress(0);
               }}
@@ -405,7 +399,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderColor: borderColor,
       borderWidth: 1,
     },
-    estimateText: { fontSize: 15, fontFamily: fonts.semibold, color: textColor },
+    estimateText: {
+      fontSize: 15,
+      fontFamily: fonts.semibold,
+      color: textColor,
+    },
     warningRow: {
       flexDirection: "row",
       alignItems: "center",

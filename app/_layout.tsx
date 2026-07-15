@@ -14,10 +14,6 @@ import { PostHogProvider } from "posthog-react-native";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
-import {
-  createNotificationChannels,
-  requestNotificationPermission,
-} from "@/lib/notifications/notifeeService";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
@@ -178,11 +174,6 @@ function AppBootstrap() {
   }, []);
 
   useEffect(() => {
-    createNotificationChannels();
-    requestNotificationPermission();
-  }, []);
-
-  useEffect(() => {
     if (!storeReady) return;
 
     if (currentTheme === "light" && systemScheme) {
@@ -219,7 +210,15 @@ function AppBootstrap() {
       router.replace("/(tabs)/mapscreen");
       return;
     }
-  }, [storeReady, isLoadingUser, user, isOnboardingCompleted, segments, i18nGate, router]);
+  }, [
+    storeReady,
+    isLoadingUser,
+    user,
+    isOnboardingCompleted,
+    segments,
+    i18nGate,
+    router,
+  ]);
 
   const isReady = storeReady && !isLoadingUser && i18nGate && fontsLoaded;
 

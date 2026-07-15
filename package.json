@@ -65,6 +65,7 @@
     "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.0",
+    "live-update-notification": "file:modules/live-update-notification",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

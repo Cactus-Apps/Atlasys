@@ -1,5 +1,11 @@
 import { useRouter } from "expo-router";
-import { MapProvider, Map, Marker, MapRef, GeoJSONSource } from "react-native-maplibre-gl-js";
+import {
+  MapProvider,
+  Map,
+  Marker,
+  MapRef,
+  GeoJSONSource,
+} from "react-native-maplibre-gl-js";
 import type { StyleSpecification } from "maplibre-gl";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
@@ -31,11 +37,6 @@ import {
   AlertTriangle,
 } from "lucide-react-native";
 import { darken } from "./(tabs)/mapscreen";
-import {
-  showNavigationNotification,
-  updateNavigationProgress,
-  stopNavigationNotification,
-} from "@/lib/notifications/notifeeService";
 
 function pointToSegmentDist(
   px: number,
@@ -123,14 +124,19 @@ function formatDistance(meters: number): string {
   return `${Math.round(meters)} m`;
 }
 
-function getInstructionText(step: any, t: (key: string, opts?: any) => string): string {
+function getInstructionText(
+  step: any,
+  t: (key: string, opts?: any) => string,
+): string {
   if (!step) return "";
   const type = step.maneuver?.type || "";
   const modifier = step.maneuver?.modifier || "";
   const name = step.name || "";
 
   if (type === "depart")
-    return name ? t("Nav_instruction_depart_with_name", { name }) : t("Nav_instruction_depart");
+    return name
+      ? t("Nav_instruction_depart_with_name", { name })
+      : t("Nav_instruction_depart");
   if (type === "arrive") return t("Nav_instruction_arrive");
   if (type === "roundabout" || type === "rotary") {
     const exit = step.maneuver?.exit || 1;
@@ -143,13 +149,19 @@ function getInstructionText(step: any, t: (key: string, opts?: any) => string): 
   }
   if (type === "merge") return t("Nav_instruction_merge");
   if (type === "on ramp") {
-    return name ? t("Nav_instruction_on_ramp_with_name", { name }) : t("Nav_instruction_on_ramp");
+    return name
+      ? t("Nav_instruction_on_ramp_with_name", { name })
+      : t("Nav_instruction_on_ramp");
   }
   if (type === "off ramp") {
-    return name ? t("Nav_instruction_off_ramp_with_name", { name }) : t("Nav_instruction_off_ramp");
+    return name
+      ? t("Nav_instruction_off_ramp_with_name", { name })
+      : t("Nav_instruction_off_ramp");
   }
   if (type === "motorway_junction") {
-    return name ? t("Nav_instruction_motorway_junction_with_name", { name }) : t("Nav_instruction_motorway_junction");
+    return name
+      ? t("Nav_instruction_motorway_junction_with_name", { name })
+      : t("Nav_instruction_motorway_junction");
   }
   if (type === "end of road") {
     if (modifier === "left") return t("Nav_instruction_end_of_road_left");
@@ -157,12 +169,16 @@ function getInstructionText(step: any, t: (key: string, opts?: any) => string): 
     return t("Nav_instruction_end_of_road_straight");
   }
   if (type === "turn" || type === "new name") {
-    const dirText = t(`Nav_instruction_turn_${modifier}`, { defaultValue: modifier });
+    const dirText = t(`Nav_instruction_turn_${modifier}`, {
+      defaultValue: modifier,
+    });
     if (name) return t("Nav_instruction_turn_with_name", { dirText, name });
     return dirText;
   }
   if (type === "notification") {
-    return name ? t("Nav_instruction_notification_with_name", { name }) : t("Nav_instruction_notification");
+    return name
+      ? t("Nav_instruction_notification_with_name", { name })
+      : t("Nav_instruction_notification");
   }
   return name || t("Nav_instruction_continue");
 }
@@ -190,7 +206,6 @@ export default function NavigationScreen() {
   const lastLocRef = useRef<[number, number] | null>(null);
   const lastTimeRef = useRef<number>(0);
   const filteredSpeedRef = useRef<number>(0);
-  const notifShownRef = useRef(false);
 
   const coords = useMemo(
     () => navRoute?.geometry?.coordinates || [],
@@ -215,18 +230,9 @@ export default function NavigationScreen() {
     setStopped(true);
     subRef.current?.remove();
     subRef.current = null;
-    stopNavigationNotification();
     useAuthStore.getState().setNavRoute(null);
     router.back();
   }, [router]);
-
-  // Show navigation notification on mount
-  useEffect(() => {
-    if (navRoute && !notifShownRef.current) {
-      notifShownRef.current = true;
-      showNavigationNotification(navRoute.destinationName);
-    }
-  }, [navRoute]);
 
   const startNavLocationWatcher = useCallback(async () => {
     if (subRef.current || stopped) return;
@@ -253,7 +259,8 @@ export default function NavigationScreen() {
             const dt = (now - lastTimeRef.current) / 1000;
             const dist = haversineMeters(lastLocRef.current, pos);
             const rawSpeed = sp || 0;
-            const maxAllowedSpeed = Math.max(rawSpeed, filteredSpeedRef.current, 5) * 2.5 + 15;
+            const maxAllowedSpeed =
+              Math.max(rawSpeed, filteredSpeedRef.current, 5) * 2.5 + 15;
             const impliedSpeed = dt > 0 ? dist / dt : 0;
 
             if (impliedSpeed > maxAllowedSpeed && dist > 80) {
@@ -266,7 +273,8 @@ export default function NavigationScreen() {
 
           // Smooth speed
           const rawSpeed = sp || 0;
-          filteredSpeedRef.current = filteredSpeedRef.current * 0.7 + rawSpeed * 0.3;
+          filteredSpeedRef.current =
+            filteredSpeedRef.current * 0.7 + rawSpeed * 0.3;
 
           locationRef.current = pos;
           if (heading != null && heading >= 0) {
@@ -326,14 +334,12 @@ export default function NavigationScreen() {
     for (let i = 0; i < remaining.length - 1; i++) {
       totalRemaining += haversineMeters(remaining[i], remaining[i + 1]);
     }
-    const timer = setTimeout(() => {
-      let currentProgress = 0;
+    const t = setTimeout(() => {
       if (navRoute.duration && navRoute.distance) {
         const ratio = Math.max(0, totalRemaining / navRoute.distance);
         setRemainingDist(totalRemaining);
         setRemainingTime(navRoute.duration * ratio);
-        currentProgress = Math.max(0, Math.min(1, 1 - ratio));
-        setProgress(currentProgress);
+        setProgress(Math.max(0, Math.min(1, 1 - ratio)));
       }
 
       const nextIdx = Math.min(index + 5, coords.length - 1);
@@ -342,28 +348,17 @@ export default function NavigationScreen() {
         bearingRef.current = bearingRef.current * 0.3 + brng * 0.7;
       }
 
-      let activeStepIdx = 0;
       const traveled = navRoute.distance - totalRemaining;
       let cumulative = 0;
       for (let i = 0; i < steps.length; i++) {
         cumulative += steps[i].distance || 0;
         if (traveled < cumulative) {
-          activeStepIdx = i;
           setCurrentStepIdx(i);
           break;
         }
       }
-
-      const instruction = getInstructionText(steps[activeStepIdx], t);
-      updateNavigationProgress({
-        instruction,
-        remainingDist: formatDistance(totalRemaining),
-        remainingTime: formatTime(navRoute.duration * (1 - currentProgress)),
-        progress: currentProgress,
-      });
     });
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearTimeout(t);
   }, [location, coords, steps, navRoute]);
 
   // Fit route bounds on mount
@@ -390,7 +385,6 @@ export default function NavigationScreen() {
     return () => {
       subRef.current?.remove();
       subRef.current = null;
-      stopNavigationNotification();
     };
   }, []);
 
@@ -406,7 +400,12 @@ export default function NavigationScreen() {
             style={[s.backBtn, { backgroundColor: theme.primary || "#2563EB" }]}
             onPress={() => router.back()}
           >
-            <Text style={{ color: theme.white || "#fff", fontFamily: fonts.semibold }}>
+            <Text
+              style={{
+                color: theme.white || "#fff",
+                fontFamily: fonts.semibold,
+              }}
+            >
               {t("Nav_back_to_map")}
             </Text>
           </TouchableOpacity>
@@ -420,10 +419,7 @@ export default function NavigationScreen() {
       <StatusBar hidden />
 
       <MapProvider>
-        <Map
-          ref={mapRef}
-          options={mapOptions}
-        />
+        <Map ref={mapRef} options={mapOptions} />
 
         {navRoute?.geometry && (
           <GeoJSONSource

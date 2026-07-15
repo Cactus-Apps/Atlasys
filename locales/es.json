@@ -652,5 +652,17 @@
   "Loading_tracing_bus": "Rastreando rutas de autobús...",
   "Loading_finding_tram": "Encontrando redes de tranvía...",
   "Loading_discovering_ferry": "Descubriendo conexiones de ferry...",
-  "Loading_organizing_routes": "Organizando todas las rutas..."
+  "Loading_organizing_routes": "Organizando todas las rutas...",
+  "Notifications_push_status": "Notificaciones push",
+  "Notifications_push_checking": "Verificando estado...",
+  "Notifications_push_enabled": "Notificaciones activadas",
+  "Notifications_push_enabled_sub": "Recibirás notificaciones push sobre tu cuenta y actualizaciones.",
+  "Notifications_push_disabled": "Notificaciones desactivadas",
+  "Notifications_push_disabled_sub": "Activa las notificaciones push para mantenerte informado sobre tu cuenta y actualizaciones.",
+  "Notifications_push_enable": "Activar",
+  "Notifications_test": "Notificación de prueba",
+  "Notifications_test_sub": "Envía una notificación de prueba para verificar que funciona",
+  "Notifications_test_title": "Notificación de prueba",
+  "Notifications_test_body": "¡Las notificaciones push funcionan correctamente!",
+  "Notifications_footer_hint": "Las categorías anteriores controlan qué temas recibes. El permiso de push se gestiona en la configuración de tu dispositivo."
 }

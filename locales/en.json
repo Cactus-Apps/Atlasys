@@ -646,5 +646,17 @@
   "Loading_tracing_bus": "Tracing bus routes...",
   "Loading_finding_tram": "Finding tram networks...",
   "Loading_discovering_ferry": "Discovering ferry connections...",
-  "Loading_organizing_routes": "Organizing all routes..."
+  "Loading_organizing_routes": "Organizing all routes...",
+  "Notifications_push_status": "Push Notifications",
+  "Notifications_push_checking": "Checking status...",
+  "Notifications_push_enabled": "Notifications enabled",
+  "Notifications_push_enabled_sub": "You will receive push notifications for account and update alerts.",
+  "Notifications_push_disabled": "Notifications disabled",
+  "Notifications_push_disabled_sub": "Enable push notifications to stay informed about your account and updates.",
+  "Notifications_push_enable": "Enable",
+  "Notifications_test": "Test notification",
+  "Notifications_test_sub": "Send a test notification to verify it works",
+  "Notifications_test_title": "Test Notification",
+  "Notifications_test_body": "Push notifications are working correctly!",
+  "Notifications_footer_hint": "Notification categories above control which topics you receive. Push permission is managed in your device settings."
 }

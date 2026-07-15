@@ -653,5 +653,17 @@
   "Loading_tracing_bus": "Verfolge Busverbindungen...",
   "Loading_finding_tram": "Finde Straßenbahnnetze...",
   "Loading_discovering_ferry": "Entdecke Fährverbindungen...",
-  "Loading_organizing_routes": "Organisiere alle Routen..."
+  "Loading_organizing_routes": "Organisiere alle Routen...",
+  "Notifications_push_status": "Push-Benachrichtigungen",
+  "Notifications_push_checking": "Status wird überprüft...",
+  "Notifications_push_enabled": "Benachrichtigungen aktiviert",
+  "Notifications_push_enabled_sub": "Du erhältst Push-Benachrichtigungen für Konto- und Update-Infos.",
+  "Notifications_push_disabled": "Benachrichtigungen deaktiviert",
+  "Notifications_push_disabled_sub": "Aktiviere Push-Benachrichtigungen, um über dein Konto und Updates informiert zu bleiben.",
+  "Notifications_push_enable": "Aktivieren",
+  "Notifications_test": "Test-Benachrichtigung",
+  "Notifications_test_sub": "Sende eine Test-Benachrichtigung zur Überprüfung",
+  "Notifications_test_title": "Test-Benachrichtigung",
+  "Notifications_test_body": "Push-Benachrichtigungen funktionieren einwandfrei!",
+  "Notifications_footer_hint": "Die obigen Kategorien steuern, welche Themen du empfängst. Die Push-Berechtigung wird in deinen Geräteeinstellungen verwaltet."
 }
