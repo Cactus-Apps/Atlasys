@@ -6,7 +6,6 @@ import {
   MapRef,
   GeoJSONSource,
 } from "react-native-maplibre-gl-js";
-import type { StyleSpecification } from "maplibre-gl";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
 import React, {

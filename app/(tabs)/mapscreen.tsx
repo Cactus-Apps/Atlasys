@@ -81,7 +81,6 @@ import { LoadingOverlay } from "@/components/overlays/LoadingOverlay";
 import MapStyleSheet, {
   buildSatelliteStyle,
   buildSatellite3DStyle,
-  MAP_THEMES,
   MapTheme,
 } from "@/components/sheets_modal/MapStyleSheet";
 import * as Haptics from "expo-haptics";
@@ -169,7 +168,6 @@ export default function MapScreen() {
   const mapCenterRef = useRef<[number, number] | null>(null);
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
-  const locationSubscribedRef = useRef(false);
   const [route, setRoute] = useState<any>(null);
   const hasCenteredOnce = useRef(false);
   const initialCenter = useMemo<[number, number]>(() => {
@@ -192,9 +190,6 @@ export default function MapScreen() {
     "https://tiles.openfreemap.org/styles/bright",
   );
   const subRef = useRef<Location.LocationSubscription | null>(null);
-  const setSub = (s: Location.LocationSubscription | null) => {
-    subRef.current = s;
-  };
   const selectedRef = useRef<CityResult | null>(null);
   const setSelected = (s: CityResult | null) => {
     selectedRef.current = s;
@@ -467,6 +462,7 @@ export default function MapScreen() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startLocationWatcher();
 
     return () => {
@@ -884,7 +880,7 @@ export default function MapScreen() {
       controller.abort();
       clearTimeout(wikiTimer);
     };
-  }, [city?.name, city?.latitude, city?.longitude, i18n.language]);
+  }, [city?.name, city?.latitude, city?.longitude, i18n.language, t]);
 
   // Weather logic
   useEffect(() => {

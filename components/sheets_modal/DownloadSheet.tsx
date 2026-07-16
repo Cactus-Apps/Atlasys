@@ -161,7 +161,6 @@ export default function DownloadSheet({
   const sheetRef = useRef<BottomSheet>(null);
   const [minZoom, setMinZoom] = useState(8);
   const [maxZoom, setMaxZoom] = useState(14);
-  const [name, setName] = useState("");
   const [progress, setProgress] = useState<number>(0);
   const [status, setStatus] = useState<"idle" | "downloading" | "done">("idle");
   const cancelRef = useRef({ cancelled: false });
@@ -212,7 +211,7 @@ export default function DownloadSheet({
     const centerLat = (bounds[1] + bounds[3]) / 2;
     const centerLng = (bounds[0] + bounds[2]) / 2;
 
-    let regionName = name.trim();
+    let regionName = "";
     if (!regionName) {
       const label = await reverseGeocode(
         centerLat,

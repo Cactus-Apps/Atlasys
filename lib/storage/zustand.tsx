@@ -86,6 +86,8 @@ type StoreAuth = {
     crashReports?: boolean;
     /** Expo Updates: background check (absent → enabled) */
     autoUpdateCheck?: boolean;
+    /** Daily analytics ping (absent → disabled) */
+    ping?: boolean;
     theme: AppTheme; // ← replaces both old fields
     /** Fine control; missing in old saves → fallback to `notifications` */
     tabTheme: TabTheme;

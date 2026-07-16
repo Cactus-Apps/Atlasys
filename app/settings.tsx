@@ -74,7 +74,7 @@ export default function Settings() {
       updateSettings({ autoUpdateCheck: value });
       return;
     }
-    updateSettings({ [key]: value });
+    updateSettings({ ping: value });
   };
 
   const THEME_OPTIONS: {

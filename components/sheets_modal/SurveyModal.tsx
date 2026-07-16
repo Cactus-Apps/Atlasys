@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { ClipboardList, X, ChevronRight, ChevronLeft, Check } from "lucide-react-native";
+import { ClipboardList, ChevronRight, ChevronLeft, Check } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
@@ -40,7 +40,7 @@ export default function SurveyModal({ visible, survey, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const questions = survey?.questions ?? [];
+  const questions = useMemo(() => survey?.questions ?? [], [survey?.questions]);
   const currentQ = questions[step];
   const isLast = step === questions.length - 1;
   const currentAnswer = currentQ ? answers[currentQ.id]?.answer : undefined;

@@ -116,6 +116,7 @@ export default function PoiSheet({
   useEffect(() => {
     if (!selectedPoi) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDetails(null);
     setLoading(true);
     fetchedOsmIdRef.current = null;
@@ -143,7 +144,7 @@ export default function PoiSheet({
         }
       });
     return () => { cancelled = true; };
-  }, [selectedPoi?.osm_id, selectedPoi?.lat, selectedPoi?.lon]);
+  }, [selectedPoi, selectedPoi?.osm_id, selectedPoi?.lat, selectedPoi?.lon]);
 
   // Always render BottomSheet (hidden at index=-1) so the ref stays valid
   return (
