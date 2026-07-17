@@ -200,8 +200,8 @@ export default function AccountScreen() {
   const { t } = useTranslation();
   const [ModalVisible2, setModalVisible2] = useState(false);
   const [daysLeft, setdaysLeft] = useState<number | null>(null);
-  const [loading2, setLoading2] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [, setLoading2] = useState(false);
+  const [, setProgress] = useState(0);
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   const avatarConfig = useAuthStore((s) => s.avatarConfig);

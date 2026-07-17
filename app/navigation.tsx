@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   MapProvider,
   Map,
@@ -8,6 +8,8 @@ import {
 } from "react-native-maplibre-gl-js";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
+import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
+
 import React, {
   useEffect,
   useRef,
@@ -187,6 +189,15 @@ export default function NavigationScreen() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const navRoute = useAuthStore((s) => s.navRoute);
+
+  useFocusEffect(
+    useCallback(() => {
+      activateKeepAwake("navigation");
+      return () => {
+        deactivateKeepAwake("navigation");
+      };
+    }, []),
+  );
   const [location, setLocation] = useState<[number, number] | null>(null);
   const [speed, setSpeed] = useState(0);
   const bearingRef = useRef(0);

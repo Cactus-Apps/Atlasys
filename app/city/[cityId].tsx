@@ -56,6 +56,7 @@ import {
   View,
   ScrollView,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -153,6 +154,7 @@ export default function CityScreen() {
   const [activeTab, setActiveTab] = useState<TabName>("discover");
   const [activeTransitType, setActiveTransitType] = useState<string>("all");
   const [pois, setPois] = useState<CityPOI[]>([]);
+  const [visiblePoiCount, setVisiblePoiCount] = useState(15);
   const [transitRoutes, setTransitRoutes] = useState<TransitRoute[]>([]);
   const [article, setArticle] = useState<ArticleData | null>(null);
   const [loadingPOI, setLoadingPOI] = useState(true);
@@ -166,6 +168,7 @@ export default function CityScreen() {
   const [loadingRouteDetails, setLoadingRouteDetails] = useState(false);
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const [localSaved, setLocalSaved] = useState(() => isPlaceSaved(cityName));
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
   // POI detail state
   const [poiDetails, setPoiDetails] = useState<OverpassPOIDetails | null>(null);
@@ -230,12 +233,12 @@ export default function CityScreen() {
     fetchCityPOIs(lat, lon)
       .then(async (data: CityPOI[]) => {
         if (cancelled) return;
-        setLoadingPOI(true);
         setErrorPOI(null);
         const enriched = await enrichPOIsWithImages(data);
-        const ranked = rankPOIs(enriched).slice(0, 20);
+        const ranked = rankPOIs(enriched);
         if (!cancelled) {
           setPois(ranked);
+          setVisiblePoiCount(15);
           setLoadingPOI(false);
         }
       })
@@ -334,22 +337,35 @@ export default function CityScreen() {
                   .map((t: string) => encodeURIComponent(t))
                   .join("|");
                 const iiRes = await fetch(
-                  `https://${wikiLang}.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=600&format=json&origin=*`,
+                  `https://${wikiLang}.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=320&format=json&origin=*`,
                   { headers, signal: controller.signal },
                 );
                 const iiData = await iiRes.json();
                 if (iiData.query?.pages) {
+                  const isJunk = (url: string) => {
+                    const lower = url.toLowerCase();
+                    return [
+                      "locator_map", "location_map", "relief_map",
+                      "topographic", "orthophoto", "_map.", "karte.",
+                      "flag_of", "flagge_", "coat_of_arms", "wappen_",
+                      "klimadiagramm", "climograph", "icon", "logo",
+                      ".svg", "blank_", "placeholder", "no_image",
+                      "transparent",
+                    ].some((w) => lower.includes(w));
+                  };
                   Object.values(iiData.query.pages).forEach((p: any) => {
                     const info = p.imageinfo?.[0];
+                    const canonical = info?.thumburl || info?.url;
                     if (
-                      info?.url &&
-                      (info.url.endsWith(".jpg") ||
-                        info.url.endsWith(".png") ||
-                        info.url.endsWith(".jpeg"))
+                      canonical &&
+                      !isJunk(canonical) &&
+                      (canonical.endsWith(".jpg") ||
+                        canonical.endsWith(".png") ||
+                        canonical.endsWith(".jpeg"))
                     ) {
                       imageUrls.push({
                         previewUrl: info.thumburl || info.url,
-                        fullUrl: info.url,
+                        fullUrl: info.thumburl || info.url,
                       });
                     }
                   });
@@ -411,8 +427,11 @@ export default function CityScreen() {
     setLoadingPOI(true);
     setErrorPOI(null);
     fetchCityPOIs(lat, lon)
-      .then((data: CityPOI[]) => {
-        setPois(data);
+      .then(async (data: CityPOI[]) => {
+        const enriched = await enrichPOIsWithImages(data);
+        const ranked = rankPOIs(enriched);
+        setPois(ranked);
+        setVisiblePoiCount(15);
         setLoadingPOI(false);
       })
       .catch((err: any) => {
@@ -652,6 +671,7 @@ export default function CityScreen() {
             style={styles.poiHero}
             contentFit="cover"
             transition={300}
+            cachePolicy="memory-disk"
           />
         )}
 
@@ -987,9 +1007,10 @@ export default function CityScreen() {
       ) : pois.length === 0 ? (
         <Text style={styles.emptyText}>{t("No_sights_found")}</Text>
       ) : (
-        <FlatList
-          data={pois}
+        <FlashList
+          data={pois.slice(0, visiblePoiCount)}
           keyExtractor={(item) => String(item.osmId)}
+
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 16 }}
           renderItem={({ item }) => {
@@ -1001,12 +1022,16 @@ export default function CityScreen() {
                 onPress={() => handlePOITap(item)}
                 activeOpacity={0.85}
               >
-                {item.image ? (
+                {item.image && !failedImages.has(item.osmId) ? (
                   <ExpoImage
                     source={{ uri: item.image }}
                     style={styles.poiCardImage}
                     contentFit="cover"
                     transition={200}
+                    cachePolicy="memory-disk"
+                    onError={() =>
+                      setFailedImages((prev) => new Set(prev).add(item.osmId))
+                    }
                   />
                 ) : (
                   <View
@@ -1063,6 +1088,22 @@ export default function CityScreen() {
               </TouchableOpacity>
             );
           }}
+          ListFooterComponent={
+            visiblePoiCount < pois.length ? (
+              <TouchableOpacity
+                onPress={() =>
+                  setVisiblePoiCount((prev) =>
+                    Math.min(prev + 10, pois.length),
+                  )
+                }
+                style={styles.showMoreBtn}
+              >
+                <Text style={styles.showMoreBtnText}>
+                  {t("Show_more")} ({pois.length - visiblePoiCount})
+                </Text>
+              </TouchableOpacity>
+            ) : null
+          }
         />
       )}
     </View>
@@ -1333,6 +1374,7 @@ export default function CityScreen() {
               style={styles.heroImage}
               contentFit="cover"
               transition={300}
+              cachePolicy="memory-disk"
             />
           )}
           {article.images.length > 0 && (
@@ -1348,6 +1390,7 @@ export default function CityScreen() {
                   style={styles.galleryImage}
                   contentFit="cover"
                   transition={200}
+                  cachePolicy="memory-disk"
                 />
               )}
             />
@@ -1674,7 +1717,7 @@ export default function CityScreen() {
   );
 }
 
-function PoiInfoRow({
+export function PoiInfoRow({
   icon,
   label,
   value,
@@ -1895,6 +1938,21 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontSize: 12,
       color: "rgba(255,255,255,0.8)",
       marginTop: 2,
+    },
+    showMoreBtn: {
+      marginHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 12,
+      paddingVertical: 12,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: primary,
+      alignItems: "center",
+    },
+    showMoreBtnText: {
+      color: primary,
+      fontFamily: fonts.semibold,
+      fontSize: 14,
     },
 
     // POI Detail

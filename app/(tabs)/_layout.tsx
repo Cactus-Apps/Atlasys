@@ -6,7 +6,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { fetchUnseen, Announcement } from "@/lib/hooks/announcements";
 import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
 import DeleteRequestModal from "@/components/sheets_modal/DeleteRequestModal";
-import UpdateInfoModal from "@/components/overlays/UpdateInfoModal";
+import UpdateScreen from "@/components/sheets_modal/UpdateScreen";
+import { fetchCurrentUpdate, type AppUpdate } from "@/lib/hooks/useUpdateInfo";
 import SurveyModal from "@/components/sheets_modal/SurveyModal";
 import GitHubStarModal from "@/components/sheets_modal/GitHubStarModal";
 import FeedbackModal from "@/components/sheets_modal/FeedbackModal";
@@ -38,7 +39,8 @@ export default function TabsLayout() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [deleteReq, setDeleteReq] = useState<DeleteRequest | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showUpdateInfo, setShowUpdateInfo] = useState(false);
+  const [showUpdateScreen, setShowUpdateScreen] = useState(false);
+  const [updateData, setUpdateData] = useState<AppUpdate | null>(null);
   const deletingRef = useRef(false);
 
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
@@ -49,9 +51,18 @@ export default function TabsLayout() {
   }, []);
 
   useEffect(() => {
-    if (user?.id && !useAuthStore.getState().seenAnalyticsUpdate) {
-      queueMicrotask(() => setShowUpdateInfo(true));
-    }
+    if (!user?.id) return;
+
+    const checkForUpdate = async () => {
+      const lastSeen = useAuthStore.getState().lastSeenUpdateVersion;
+      const update = await fetchCurrentUpdate();
+      if (update && update.version !== lastSeen) {
+        setUpdateData(update);
+        queueMicrotask(() => setShowUpdateScreen(true));
+      }
+    };
+
+    checkForUpdate();
   }, [user?.id]);
 
   useEffect(() => {
@@ -165,11 +176,19 @@ export default function TabsLayout() {
         status={deleteReq?.status ?? null}
         onClose={handleDeleteClose}
       />
-      <UpdateInfoModal
-        visible={showUpdateInfo}
+      <UpdateScreen
+        visible={showUpdateScreen}
+        version={updateData?.version ?? ""}
+        title={updateData?.title ?? "What's New"}
+        slides={updateData?.slides ?? []}
         onClose={() => {
-          useAuthStore.getState().setSeenAnalyticsUpdate(true);
-          setShowUpdateInfo(false);
+          if (updateData) {
+            useAuthStore
+              .getState()
+              .setLastSeenUpdateVersion(updateData.version);
+          }
+          setShowUpdateScreen(false);
+          setUpdateData(null);
         }}
       />
       <SurveyModal

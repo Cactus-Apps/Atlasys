@@ -154,6 +154,10 @@ limitations under the License.`,
     title: "eventemitter3",
     content: mit("Copyright (c) Arnout Kazemier and contributors"),
   },
+  {
+    title: "@shopify/flash-list",
+    content: mit("Copyright (c) 2022 Shopify"),
+  },
 ];
 
 export default function Licenses() {

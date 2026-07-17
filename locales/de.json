@@ -213,6 +213,12 @@
   "UpdateInfo_analytics_sub": "Hilft uns zu verstehen wie viele Leute die App nutzen",
   "UpdateInfo_next": "Weiter",
   "UpdateInfo_finish": "Fertig",
+  "UpdateScreen_skip": "Überspringen",
+  "UpdateScreen_next": "Weiter",
+  "UpdateScreen_back": "Zurück",
+  "UpdateScreen_finish": "Fertig",
+  "UpdateScreen_ping_label": "Anonymer täglicher Ping",
+  "UpdateScreen_ping_sub": "Hilft uns zu verstehen wie viele Leute die App nutzen",
   "Settings_section_App_Info": "App-Info",
   "Settings_location_label": "Standort",
   "Settings_location_sub": "Karte, GPS-Widget und Wetter nutzen Ihre Position.",
@@ -665,5 +671,9 @@
   "Notifications_test_sub": "Sende eine Test-Benachrichtigung zur Überprüfung",
   "Notifications_test_title": "Test-Benachrichtigung",
   "Notifications_test_body": "Push-Benachrichtigungen funktionieren einwandfrei!",
-  "Notifications_footer_hint": "Die obigen Kategorien steuern, welche Themen du empfängst. Die Push-Berechtigung wird in deinen Geräteeinstellungen verwaltet."
+  "Notifications_footer_hint": "Die obigen Kategorien steuern, welche Themen du empfängst. Die Push-Berechtigung wird in deinen Geräteeinstellungen verwaltet.",
+  "Read_more": "Mehr lesen",
+  "Read_on_wikipedia": "Auf Wikipedia lesen",
+  "Data_provided_by": "Daten bereitgestellt von",
+  "Show_more": "Mehr anzeigen"
 }

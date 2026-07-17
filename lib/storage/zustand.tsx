@@ -79,6 +79,9 @@ type StoreAuth = {
   setOnboardingCompleted: (val: boolean) => void;
   seenAnalyticsUpdate: boolean;
   setSeenAnalyticsUpdate: (val: boolean) => void;
+  /** Version the user last saw in the UpdateScreen */
+  lastSeenUpdateVersion: string;
+  setLastSeenUpdateVersion: (val: string) => void;
   settings: {
     notifications: boolean;
     analytics: boolean;
@@ -139,6 +142,7 @@ const initialState = {
   _seededForUserId: null,
   isOnboardingCompleted: false,
   seenAnalyticsUpdate: false,
+  lastSeenUpdateVersion: "",
   settings: {
     notifications: false,
     analytics: true,
@@ -227,6 +231,8 @@ export const useAuthStore = create<StoreAuth>()(
   setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
   seenAnalyticsUpdate: false,
   setSeenAnalyticsUpdate: (val) => set({ seenAnalyticsUpdate: val }),
+  lastSeenUpdateVersion: "",
+  setLastSeenUpdateVersion: (val) => set({ lastSeenUpdateVersion: val }),
       settings: {
         notifications: false,
         analytics: true,
@@ -304,6 +310,7 @@ export const useAuthStore = create<StoreAuth>()(
       partialize: (state) => ({
         isOnboardingCompleted: state.isOnboardingCompleted,
         seenAnalyticsUpdate: state.seenAnalyticsUpdate,
+        lastSeenUpdateVersion: state.lastSeenUpdateVersion,
         settings: state.settings,
         userId: state.userId,
         savedPlaces: state.savedPlaces,

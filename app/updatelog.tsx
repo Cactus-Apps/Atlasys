@@ -20,7 +20,25 @@ const UpdateLog = () => {
 
   const logs = [
     {
-      version: "1.7.2",
+      version: "1.7.6",
+      date: "2026-07-16",
+      text: "Redesigned loading skeleton for city places and transit. Fixed POI detail click on map, improved map click detection with proper feature querying. Full-screen update screen with feature highlights.",
+      type: "feature",
+    },
+    {
+      version: "1.7.5",
+      date: "2026-07-14",
+      text: "New city loading skeleton with animated cards for places and transit information. Ping setting replaces analytics toggle.",
+      type: "improvement",
+    },
+    {
+      version: "1.7.4",
+      date: "2026-07-12",
+      text: "Bug fixes: TypeScript errors resolved, lint cleanup across codebase. Removed unused variables and fixed React hook dependencies.",
+      type: "improvement",
+    },
+    {
+      version: "1.7.3",
       date: "2026-07-11",
       text: "Live notifications with @notifee/react-native for navigation and offline map downloads. Fixed map flickering during navigation, POI modal first-click issue, POI details loading, empty modal after close, and full map re-render on GPS updates.",
       type: "feature",

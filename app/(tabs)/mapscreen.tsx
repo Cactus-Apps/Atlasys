@@ -37,8 +37,8 @@ import {
   Snowflake,
   CloudLightningIcon,
   CloudSunIcon,
-  ChevronRight,
   SlidersHorizontal,
+  Info,
 } from "lucide-react-native";
 import React, {
   useCallback,
@@ -98,6 +98,9 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { fonts } from "@/lib/fonts";
 import { FILTER_CATEGORIES, FILTER_DEFS } from "@/lib/config/filters";
+import CityMapsButton from "@/components/city/CityMapsIcon";
+import { useWeatherForecast } from "@/lib/hooks/useWeatherForecast";
+import WeeklyForecast from "@/components/overlays/WeeklyForecast";
 
 const { width, height } = Dimensions.get("window");
 
@@ -206,12 +209,11 @@ export default function MapScreen() {
   const removeFromSearchHistory = useAuthStore(
     (s) => s.removeFromSearchHistory,
   );
+  const [city, setCity] = useState<SelectedCity | null>(null);
+  const weather = useWeatherForecast(city);
   const clearSearchHistory = useAuthStore((s) => s.clearSearchHistory);
   const [isPlayingAnimation, setIsPlayingAnimation] = useState<boolean>(false);
   const ref = useRef<LottieView>(null);
-  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(
-    null,
-  );
   const [markerPos, setMarkerPos] = useState<[number, number]>();
   const [selectedPoi, setSelectedPoi] = useState<{
     name: string;
@@ -222,8 +224,8 @@ export default function MapScreen() {
     lat: number;
     lon: number;
   } | null>(null);
-  const [city, setCity] = useState<SelectedCity | null>(null);
   const [article, setArticle] = useState<ArticleData | null>(null);
+  const [articleExpanded, setArticleExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [BottomSheetIndex, setBottomSheetIndex] = useState<number>(2);
   const [, setBottomSheetIndex2] = useState<number>(2);
@@ -234,9 +236,9 @@ export default function MapScreen() {
     null,
   );
   const [isSearching, setIsSearching] = useState(false);
-  const [tileDataUri, setTileDataUri] = useState<string | null>(null);
-  const [tileLoading, setTileLoading] = useState(true);
-  const [tileError, setTileError] = useState(false);
+  const [, setTileDataUri] = useState<string | null>(null);
+  const [, setTileLoading] = useState(true);
+  const [, setTileError] = useState(false);
   const theme = useAppTheme();
   const router = useRouter();
   const styles = useMemo(() => getStyles(theme), [theme]);
@@ -506,6 +508,7 @@ export default function MapScreen() {
     setQuery("");
     setResults([]);
     setArticle(null);
+    setArticleExpanded(false);
     sheetRef.current?.close();
     setBottomSheetIndex(-1);
   };
@@ -882,31 +885,6 @@ export default function MapScreen() {
     };
   }, [city?.name, city?.latitude, city?.longitude, i18n.language, t]);
 
-  // Weather logic
-  useEffect(() => {
-    if (!city?.latitude || !city?.longitude) return;
-
-    const fetchWeather = async () => {
-      try {
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current_weather=true`,
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.current_weather) {
-          setWeather({
-            temp: Math.round(data.current_weather.temperature),
-            code: data.current_weather.weathercode,
-          });
-        }
-      } catch (error) {
-        Sentry.captureException(error);
-      }
-    };
-
-    fetchWeather();
-  }, [city?.latitude, city?.longitude]);
-
   useEffect(() => {
     if (!city?.latitude || !city?.longitude) {
       const tileClearTimer = setTimeout(() => setTileDataUri(null));
@@ -1084,14 +1062,18 @@ export default function MapScreen() {
     }, 800);
   };
 
-  const onMapClick = (event: any) => {
+  const onMapClick = async (event: any) => {
     Keyboard.dismiss();
     const { lng, lat } = event.lngLat;
     if (drawModeRef.current) return;
     if (!mapRef.current) return;
     if (routePickModeRef.current) return;
 
-    mapRef.current.queryRenderedFeatures(undefined).then((allFeatures) => {
+    try {
+      const allFeatures = await mapRef.current.queryRenderedFeatures(
+        event.point,
+      );
+
       const poiFeatures = allFeatures.filter((f: any) =>
         f.layer?.id?.startsWith("poi_"),
       );
@@ -1133,7 +1115,7 @@ export default function MapScreen() {
         type: closest.properties?.class ?? "",
         subclass: closest.properties?.subclass ?? "",
         osm_id,
-        osm_type: closest.properties?.osm_type ?? "node",
+        osm_type: closest.properties?.osm_type || undefined,
         lat: lat2,
         lon,
       };
@@ -1163,7 +1145,9 @@ export default function MapScreen() {
           },
         );
       }
-    });
+    } catch (e) {
+      Sentry.captureException(e);
+    }
   };
 
   // Open PoiSheet after render when a POI is selected
@@ -1983,7 +1967,6 @@ export default function MapScreen() {
               }}
               onChange={(i) => {
                 setBottomSheetIndex(i);
-                if (i === -1) setSelectedPoi(null);
               }}
             >
               {loading && <LoadingOverlay />}
@@ -2179,89 +2162,85 @@ export default function MapScreen() {
                         />
                       </View>
                     )}
-                    <TouchableOpacity
-                      onPress={openCityMap}
-                      style={styles.cityMapCard}
-                      activeOpacity={0.85}
-                    >
-                      <View style={styles.cityMapCardPreview}>
-                        {tileDataUri && !tileError ? (
-                          <>
-                            <ExpoImage
-                              source={{ uri: tileDataUri }}
-                              style={{ width: "100%", height: "100%" }}
-                              contentFit="cover"
-                            />
-                          </>
-                        ) : (
-                          <View style={{ flex: 1, backgroundColor: "#e8f5e9" }}>
-                            <View
-                              style={[
-                                styles.cmRoad,
-                                { top: "35%", backgroundColor: "#81c784" },
-                              ]}
-                            />
-                            <View
-                              style={[
-                                styles.cmRoad,
-                                {
-                                  top: "55%",
-                                  backgroundColor: "#a5d6a7",
-                                  height: 2,
-                                },
-                              ]}
-                            />
-                            <View
-                              style={[
-                                styles.cmRoadV,
-                                { left: "25%", backgroundColor: "#81c784" },
-                              ]}
-                            />
-                            <View
-                              style={[
-                                styles.cmRoadV,
-                                {
-                                  left: "55%",
-                                  backgroundColor: "#a5d6a7",
-                                  width: 2,
-                                },
-                              ]}
-                            />
-                            <View style={styles.cmPark} />
-                            <View style={styles.cmWater} />
-                            <View style={styles.cmBuilding} />
-                            <View
-                              style={[
-                                styles.cmBuilding,
-                                {
-                                  top: "25%",
-                                  left: "65%",
-                                  width: 8,
-                                  height: 8,
-                                },
-                              ]}
-                            />
-                          </View>
-                        )}
-                        {tileLoading && (
-                          <View style={styles.cityMapCardLoading}>
-                            <ActivityIndicator size="small" color="#fff" />
-                          </View>
-                        )}
-                      </View>
-                      <View style={styles.cityMapCardFooter}>
-                        <Text style={styles.cityMapCardSub}>{city?.name}</Text>
-                        <ChevronRight size={16} color={theme.subTextColor} />
-                      </View>
-                    </TouchableOpacity>
+                    <CityMapsButton onPress={openCityMap} />
                     {city && <View style={{ paddingBottom: 16 }}></View>}
-                    <Text style={styles.extractText}>{article?.extract}</Text>
-                    <TouchableOpacity
-                      onPress={openURL}
-                      style={styles.readMoreButton}
+                    <Text style={styles.wikiSectionHeading}>
+                      {article.title}
+                    </Text>
+                    <Text
+                      style={styles.extractText}
+                      numberOfLines={articleExpanded ? undefined : 4}
+                      ellipsizeMode="tail"
                     >
-                      <Text style={styles.readMoreText}>Wikipedia</Text>
-                    </TouchableOpacity>
+                      {article?.extract}
+                    </Text>
+                    {!articleExpanded ? (
+                      <TouchableOpacity
+                        onPress={() => setArticleExpanded(true)}
+                        style={{ marginTop: 8 }}
+                      >
+                        <Text style={styles.readMoreLink}>
+                          {t("Read_more")}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={openURL}
+                        style={{ marginTop: 8 }}
+                      >
+                        <Text style={styles.readMoreLink}>
+                          {t("Read_on_wikipedia")}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    <WeeklyForecast weather={weather} />
+                    <View style={styles.wikiFooter}>
+                      <View style={styles.wikiFooterRow}>
+                        <Info size={14} color={theme.subTextColor} />
+                        <Text style={styles.wikiFooterLabel}>
+                          {t("Data_provided_by")}
+                        </Text>
+                      </View>
+                      <View style={styles.wikiFooterLinks}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            Linking.openURL("https://www.openstreetmap.org/")
+                          }
+                          style={styles.wikiFooterLink}
+                        >
+                          <Text style={styles.wikiFooterLinkText}>
+                            OpenStreetMap
+                          </Text>
+                        </TouchableOpacity>
+                        <Text style={styles.wikiFooterDot}>·</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            const wikiLang = (i18n.language || "en").split(
+                              "-",
+                            )[0];
+                            Linking.openURL(
+                              `https://${wikiLang}.wikipedia.org/`,
+                            );
+                          }}
+                          style={styles.wikiFooterLink}
+                        >
+                          <Text style={styles.wikiFooterLinkText}>
+                            Wikipedia
+                          </Text>
+                        </TouchableOpacity>
+                        <Text style={styles.wikiFooterDot}>·</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            Linking.openURL(`https://open-meteo.com/`);
+                          }}
+                          style={styles.wikiFooterLink}
+                        >
+                          <Text style={styles.wikiFooterLinkText}>
+                            Open-Meteo
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
                 </BottomSheetScrollView>
               )}
@@ -2561,19 +2540,16 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: white,
       fontFamily: fonts.semibold,
     },
-    readMoreButton: {
-      marginTop: 20,
-      padding: 15,
-      backgroundColor: "transparent",
-      borderRadius: 12,
-      borderColor: primary,
-      borderWidth: 2,
-      alignItems: "center",
-    },
-    readMoreText: {
+    readMoreLink: {
       color: primary,
       fontFamily: fonts.semibold,
-      fontSize: 16,
+      fontSize: 14,
+    },
+    wikiSectionHeading: {
+      fontSize: 18,
+      fontFamily: fonts.bold,
+      color: textColor,
+      marginBottom: 10,
     },
     fullscreenImageWrapper: {
       width: width,
@@ -2839,6 +2815,41 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontSize: 14,
       fontFamily: fonts.semibold,
       color: textColor,
+    },
+    wikiFooter: {
+      marginTop: 24,
+      paddingTop: 16,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: borderColor,
+      alignItems: "center",
+      gap: 8,
+    },
+    wikiFooterRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    wikiFooterLabel: {
+      fontSize: 12,
+      fontFamily: fonts.medium,
+      color: subTextColor,
+    },
+    wikiFooterLinks: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    wikiFooterLink: {
+      paddingVertical: 2,
+    },
+    wikiFooterLinkText: {
+      fontSize: 13,
+      fontFamily: fonts.semibold,
+      color: primary,
+    },
+    wikiFooterDot: {
+      fontSize: 13,
+      color: subTextColor,
     },
   });
 };

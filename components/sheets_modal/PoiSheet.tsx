@@ -38,7 +38,7 @@ type SelectedPoi = {
   type: string;
   subclass: string;
   osm_id: number;
-  osm_type: string;
+  osm_type?: string;
   lat: number;
   lon: number;
 };
@@ -121,17 +121,17 @@ export default function PoiSheet({
     setLoading(true);
     fetchedOsmIdRef.current = null;
 
-    if (selectedPoi.osm_id === -1) {
-      setLoading(false);
-      return;
-    }
-
-    if (!selectedPoi.osm_id) return;
-
     let cancelled = false;
     fetchedOsmIdRef.current = selectedPoi.osm_id;
 
-    fetchPOIDetails(selectedPoi.osm_id, selectedPoi.osm_type)
+    fetchPOIDetails(
+      selectedPoi.osm_id,
+      selectedPoi.osm_type,
+      2,
+      selectedPoi.name,
+      selectedPoi.lat,
+      selectedPoi.lon,
+    )
       .then((data) => {
         if (!cancelled) {
           setDetails(data);

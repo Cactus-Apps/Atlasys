@@ -242,7 +242,7 @@
       "source-layer": "transportation",
       "filter": ["==", "class", "rail"],
       "paint": {
-        "line-color": "#A098B8",
+        "line-color": "#7a7d80",
         "line-width": 2,
         "line-dasharray": [3, 3]
       }
@@ -254,7 +254,7 @@
       "source-layer": "transportation",
       "filter": ["==", "class", "transit"],
       "paint": {
-        "line-color": "#6A6090",
+        "line-color": "#7a7d80",
         "line-width": 2.5
       }
     },
@@ -266,7 +266,7 @@
       "filter": ["==", "class", "transit"],
       "minzoom": 14,
       "paint": {
-        "line-color": "#5A5080",
+        "line-color": "#7a7d80",
         "line-width": 4,
         "line-opacity": 0.2
       }
@@ -313,8 +313,18 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "poi",
-      "filter": ["in", "class", "attraction", "museum", "monument", "castle", "artwork", "zoo", "aquarium"],
-      "minzoom": 13,
+      "filter": [
+        "in",
+        "class",
+        "attraction",
+        "museum",
+        "monument",
+        "castle",
+        "artwork",
+        "zoo",
+        "aquarium"
+      ],
+      "minzoom": 11,
       "layout": {
         "text-field": ["get", "name"],
         "text-size": 12,
@@ -338,8 +348,17 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "poi",
-      "filter": ["in", "class", "restaurant", "cafe", "fast_food", "bar", "pub", "food"],
-      "minzoom": 15,
+      "filter": [
+        "in",
+        "class",
+        "restaurant",
+        "cafe",
+        "fast_food",
+        "bar",
+        "pub",
+        "food"
+      ],
+      "minzoom": 12,
       "layout": {
         "text-field": ["get", "name"],
         "text-size": 11,
@@ -359,7 +378,7 @@
       "source": "openmaptiles",
       "source-layer": "poi",
       "filter": ["in", "class", "shop", "mall", "supermarket"],
-      "minzoom": 16,
+      "minzoom": 13,
       "layout": {
         "text-field": ["get", "name"],
         "text-size": 10,
@@ -379,7 +398,7 @@
       "source": "openmaptiles",
       "source-layer": "poi",
       "filter": ["==", "class", "transit"],
-      "minzoom": 14,
+      "minzoom": 12,
       "layout": {
         "text-field": ["get", "name"],
         "text-size": 10,
@@ -398,8 +417,28 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "poi",
-      "filter": ["!in", "class", "transit", "attraction", "museum", "monument", "castle", "artwork", "zoo", "aquarium", "restaurant", "cafe", "fast_food", "bar", "pub", "food", "shop", "mall", "supermarket"],
-      "minzoom": 16,
+      "filter": [
+        "!in",
+        "class",
+        "transit",
+        "attraction",
+        "museum",
+        "monument",
+        "castle",
+        "artwork",
+        "zoo",
+        "aquarium",
+        "restaurant",
+        "cafe",
+        "fast_food",
+        "bar",
+        "pub",
+        "food",
+        "shop",
+        "mall",
+        "supermarket"
+      ],
+      "minzoom": 13,
       "layout": {
         "text-field": ["get", "name"],
         "text-size": 10,

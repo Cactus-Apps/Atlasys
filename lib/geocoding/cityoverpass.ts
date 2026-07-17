@@ -673,6 +673,7 @@ export async function fetchPOIWikiImage(
 
     const wdRes = await fetch(
       `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
+      { headers: { "User-Agent": HEADERS["User-Agent"] } },
     );
     const wdData = await safeJson(wdRes);
     const entity = wdData?.entities?.[qid];
@@ -681,7 +682,7 @@ export async function fetchPOIWikiImage(
 
     const imageName = imageClaim.replace(/ /g, "_");
     const infoRes = await fetch(
-      `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(imageName)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=50&format=json&origin=*`,
+      `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(imageName)}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=320&format=json&origin=*`,
       { headers: { "User-Agent": HEADERS["User-Agent"] } },
     );
     const infoData = await safeJson(infoRes);
@@ -689,7 +690,23 @@ export async function fetchPOIWikiImage(
     if (pages) {
       const pageId = Object.keys(pages)[0];
       const info = pages[pageId]?.imageinfo?.[0];
-      return info?.thumburl || info?.url || null;
+      const thumburl = info?.thumburl;
+      const url = info?.url;
+
+      if (thumburl) return thumburl;
+
+      if (url) {
+        const lower = url.toLowerCase();
+        if (
+          lower.endsWith(".jpg") ||
+          lower.endsWith(".jpeg") ||
+          lower.endsWith(".png") ||
+          lower.endsWith(".gif") ||
+          lower.endsWith(".webp")
+        ) {
+          return url;
+        }
+      }
     }
 
     return null;

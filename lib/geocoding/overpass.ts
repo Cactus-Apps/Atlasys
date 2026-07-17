@@ -50,69 +50,117 @@ export async function getOsmIdFromNominatim(
   }
 }
 
+function tagsToDetails(t: any): OverpassPOIDetails {
+  return {
+    name: t.name,
+    phone: t.phone ?? t["contact:phone"],
+    website: t.website ?? t["contact:website"] ?? t.url,
+    email: t.email ?? t["contact:email"],
+    openingHours: t.opening_hours,
+    street: t["addr:street"],
+    housenumber: t["addr:housenumber"],
+    city: t["addr:city"],
+    postcode: t["addr:postcode"],
+    wheelchair: t.wheelchair,
+    cuisine: t.cuisine?.replace(/;/g, ", "),
+    takeaway: t.takeaway,
+    delivery: t.delivery,
+    stars: t.stars ?? t["tourism:stars"],
+    fee: t.fee,
+    wikidata: t.wikidata,
+    wikipedia: t.wikipedia,
+    description: t.description,
+  };
+}
+
+function pickBestElement(elements: any[]): any | null {
+  if (!elements.length) return null;
+  if (elements.length === 1) return elements[0];
+  return elements.reduce((best: any, cur: any) =>
+    Object.keys(cur.tags ?? {}).length > Object.keys(best.tags ?? {}).length ? cur : best,
+  );
+}
+
+const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+const OVERPASS_UA = `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`;
+
+async function overpassPost(query: string, timeoutMs = 8000): Promise<any | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(OVERPASS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": OVERPASS_UA,
+      },
+      body: `data=${encodeURIComponent(query)}`,
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return null; }
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 export async function fetchPOIDetails(
   osmId: number,
   osmType?: string,
   retries = 2,
+  fallbackName?: string,
+  fallbackLat?: number,
+  fallbackLon?: number,
 ): Promise<OverpassPOIDetails | null> {
-  if (!osmId) return null;
+  const hasValidId = osmId > 0;
 
-  const absId = Math.abs(osmId);
-  const validTypes = ["node", "way", "relation"];
-  const elementType = validTypes.includes(osmType || "") ? osmType : "node";
-  const query = `[out:json][timeout:10];${elementType}(${absId});out body;`;
+  // ── 1. Try direct ID lookup ──
+  if (hasValidId) {
+    const absId = Math.abs(osmId);
+    const validTypes = ["node", "way", "relation"];
+    const hasExplicitType = validTypes.includes(osmType || "");
 
-  const UA = `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`;
-  const url = "https://overpass-api.de/api/interpreter";
-  const body = `data=${encodeURIComponent(query)}`;
+    let query: string;
+    if (hasExplicitType) {
+      query = `[out:json][timeout:10];${osmType}(${absId});out body;`;
+    } else {
+      query = `[out:json][timeout:10];(node(${absId});way(${absId});relation(${absId}););out body;`;
+    }
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": UA,
-        },
-        body,
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (!res.ok) continue;
-      const text = await res.text();
-      let json;
-      try { json = JSON.parse(text); } catch { continue; }
-      const element = json.elements?.[0];
-      if (!element?.tags) continue;
-
-      const t = element.tags;
-      return {
-        name: t.name,
-        phone: t.phone ?? t["contact:phone"],
-        website: t.website ?? t["contact:website"] ?? t.url,
-        email: t.email ?? t["contact:email"],
-        openingHours: t.opening_hours,
-        street: t["addr:street"],
-        housenumber: t["addr:housenumber"],
-        city: t["addr:city"],
-        postcode: t["addr:postcode"],
-        wheelchair: t.wheelchair,
-        cuisine: t.cuisine?.replace(/;/g, ", "),
-        takeaway: t.takeaway,
-        delivery: t.delivery,
-        stars: t.stars ?? t["tourism:stars"],
-        fee: t.fee,
-        wikidata: t.wikidata,
-        wikipedia: t.wikipedia,
-        description: t.description,
-      };
-    } catch {
-      if (attempt === retries) return null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const json = await overpassPost(query);
+      if (!json) continue;
+      const element = pickBestElement(json.elements ?? []);
+      if (element?.tags) return tagsToDetails(element.tags);
     }
   }
+
+  // ── 2. Fallback: search Overpass by coordinates ──
+  if (fallbackLat != null && fallbackLon != null) {
+    const coordQuery = `[out:json][timeout:10];(
+      node(around:30,${fallbackLat},${fallbackLon})["name"];
+      way(around:30,${fallbackLat},${fallbackLon})["name"];
+      relation(around:30,${fallbackLat},${fallbackLon})["name"];
+    );out body;`;
+    const json = await overpassPost(coordQuery);
+    const elements: any[] = json?.elements ?? [];
+    if (elements.length) {
+      // If we have a name, prefer the element whose name matches
+      let best = pickBestElement(elements);
+      if (fallbackName) {
+        const lower = fallbackName.toLowerCase();
+        const match = elements.find(
+          (e: any) => e.tags?.name?.toLowerCase() === lower,
+        );
+        if (match) best = match;
+      }
+      if (best?.tags) return tagsToDetails(best.tags);
+    }
+  }
+
   return null;
 }
 

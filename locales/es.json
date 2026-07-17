@@ -664,5 +664,9 @@
   "Notifications_test_sub": "Envía una notificación de prueba para verificar que funciona",
   "Notifications_test_title": "Notificación de prueba",
   "Notifications_test_body": "¡Las notificaciones push funcionan correctamente!",
-  "Notifications_footer_hint": "Las categorías anteriores controlan qué temas recibes. El permiso de push se gestiona en la configuración de tu dispositivo."
+  "Notifications_footer_hint": "Las categorías anteriores controlan qué temas recibes. El permiso de push se gestiona en la configuración de tu dispositivo.",
+  "Read_more": "Leer más",
+  "Read_on_wikipedia": "Leer en Wikipedia",
+  "Data_provided_by": "Datos proporcionados por",
+  "Show_more": "Mostrar más"
 }

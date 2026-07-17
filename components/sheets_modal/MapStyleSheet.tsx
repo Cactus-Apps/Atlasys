@@ -13,16 +13,14 @@ import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 import cityStyle from "@/assets/map/city-style.json";
-import googlestyle from "@/assets/map/google-style.json";
 import sateliteStyle from "@/assets/map/satellite-style.json";
-import appleStyle from "@/assets/map/apple-style.json";
 import type { StyleSpecification } from "maplibre-gl";
 
 export type MapTheme = {
   key: string;
   labelKey: string;
   url: string | StyleSpecification;
-  colors: string[]; // preview swatches instead of bitmap thumbnails
+  colors: string[];
 };
 
 export const MAP_THEMES: MapTheme[] = [
@@ -30,7 +28,7 @@ export const MAP_THEMES: MapTheme[] = [
     key: "bright",
     labelKey: "Map_theme_bright",
     url: "https://tiles.openfreemap.org/styles/bright",
-    colors: ["#a8d5a2", "#f5f0e8", "#c8e6f5"], // Straße, Hintergrund, Wasser
+    colors: ["#a8d5a2", "#f5f0e8", "#c8e6f5"],
   },
   {
     key: "dark",
@@ -55,18 +53,6 @@ export const MAP_THEMES: MapTheme[] = [
     labelKey: "Map_theme_city",
     url: cityStyle as StyleSpecification,
     colors: ["#c8d8a8", "#f5f0eb", "#b8d8e8"],
-  },
-  {
-    key: "google",
-    labelKey: "Map_theme_google",
-    url: googlestyle as StyleSpecification,
-    colors: ["#FFCD5E", "#F1EFE6", "#A2D4E0"],
-  },
-  {
-    key: "apple",
-    labelKey: "Map_theme_apple_dark",
-    url: appleStyle as StyleSpecification,
-    colors: ["#2E343F", "#1C1C1E", "#1E3879"],
   },
 ];
 
