@@ -164,6 +164,7 @@ export default function CityScreen() {
   const [errorTransit, setErrorTransit] = useState<string | null>(null);
   const [selectedPOI, setSelectedPOI] = useState<CityPOI | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<TransitRoute | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [toastStop, setToastStop] = useState<CityTransitStop | null>(null);
   const [loadingRouteDetails, setLoadingRouteDetails] = useState(false);
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
@@ -1453,10 +1454,15 @@ export default function CityScreen() {
                 maxTileCacheZoomLevels: 2,
                 refreshExpiredTiles: false,
               }}
+              listeners={{
+                load: {
+                  objectListener: () => setMapReady(true),
+                },
+              }}
             />
-            {selectedRoute?.geometry && (
+            {mapReady && selectedRoute?.geometry && (
               <GeoJSONSource
-                key={`route-${selectedRoute.id}`}
+                key={`route-${selectedRoute.id}-${selectedRoute.geometry.coordinates?.length ?? 0}`}
                 id="selected-route"
                 source={{
                   type: "geojson",

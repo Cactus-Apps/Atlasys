@@ -1,36 +1,19 @@
-import { useEffect, useState } from "react";
 import { supabase } from "@/lib/auth/supabase";
-import * as Application from "expo-application";
-
-export interface UpdateSlide {
-  icon: string;
-  title: string;
-  body: string;
-  showPingToggle?: boolean;
-}
-
-export interface AppUpdate {
-  version: string;
-  title: string;
-  slides: UpdateSlide[];
-}
 
 /**
- * Fetches the current app version's update info from Supabase.
- * Returns null if no active update exists for this version.
+ * Fetches the current published app version from the Supabase `app_config` table.
+ * Returns the version string (e.g. "1.7.6") or null if not found.
  */
-export async function fetchCurrentUpdate(): Promise<AppUpdate | null> {
+export async function fetchCurrentVersion(): Promise<string | null> {
   try {
-    const appVersion = Application.nativeApplicationVersion ?? "0.0.0";
     const { data, error } = await supabase
-      .from("app_updates")
-      .select("version, title, slides")
-      .eq("active", true)
-      .eq("version", appVersion)
+      .from("app_config")
+      .select("value")
+      .eq("key", "current_version")
       .single();
 
     if (error || !data) return null;
-    return data as AppUpdate;
+    return data.value;
   } catch {
     return null;
   }

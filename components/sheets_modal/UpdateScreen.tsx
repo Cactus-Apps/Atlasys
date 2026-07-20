@@ -21,41 +21,50 @@ import {
   Check,
   Sparkles,
   Bug,
+  Shield,
   type LucideIcon,
 } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/lib/storage/zustand";
-import type { UpdateSlide } from "@/lib/hooks/useUpdateInfo";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const SLIDE_ICONS: Record<string, LucideIcon> = {
+  sparkles: Sparkles,
   "map-pin": MapPin,
   satellite: Satellite,
   bookmark: Bookmark,
   navigation: Navigation,
-  activity: Activity,
-  sparkles: Sparkles,
+  shield: Shield,
   bug: Bug,
 };
+
+interface Slide {
+  icon: string;
+  titleKey: string;
+  bodyKey: string;
+  showPingToggle?: boolean;
+}
+
+const SLIDES: Slide[] = [
+  { icon: "sparkles", titleKey: "US_welcome_title", bodyKey: "US_welcome_body" },
+  { icon: "map-pin", titleKey: "US_poi_title", bodyKey: "US_poi_body" },
+  { icon: "satellite", titleKey: "US_satellite_title", bodyKey: "US_satellite_body" },
+  { icon: "bookmark", titleKey: "US_citymaps_title", bodyKey: "US_citymaps_body" },
+  { icon: "navigation", titleKey: "US_navigation_title", bodyKey: "US_navigation_body" },
+  { icon: "shield", titleKey: "US_privacy_title", bodyKey: "US_privacy_body", showPingToggle: true },
+  { icon: "bug", titleKey: "US_bugfixes_title", bodyKey: "US_bugfixes_body" },
+];
 
 interface Props {
   visible: boolean;
   version: string;
-  title: string;
-  slides: UpdateSlide[];
   onClose: () => void;
 }
 
-export default function UpdateScreen({
-  visible,
-  version,
-  title,
-  slides,
-  onClose,
-}: Props) {
+export default function UpdateScreen({ visible, version, onClose }: Props) {
   const theme = useAppTheme();
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
@@ -77,6 +86,10 @@ export default function UpdateScreen({
           paddingHorizontal: 24,
           paddingTop: Platform.OS === "ios" ? 60 : 40,
           paddingBottom: 12,
+        },
+        headerLeft: {
+          flexDirection: "row",
+          gap: 6,
         },
         headerTitle: {
           fontSize: 13,
@@ -221,7 +234,7 @@ export default function UpdateScreen({
     [theme, pingOn],
   );
 
-  const isLast = page === slides.length - 1;
+  const isLast = page === SLIDES.length - 1;
 
   const handleNext = useCallback(() => {
     if (isLast) {
@@ -257,7 +270,7 @@ export default function UpdateScreen({
     <Modal visible={visible} animationType="fade" statusBarTranslucent>
       <View style={s.overlay}>
         <View style={s.header}>
-          <View style={{ flexDirection: "row", gap: 6 }}>
+          <View style={s.headerLeft}>
             <Text style={s.headerTitle}>Atlasys</Text>
             <Text style={s.headerVersion}>v{version}</Text>
           </View>
@@ -276,15 +289,15 @@ export default function UpdateScreen({
           contentOffset={{ x: 0, y: 0 }}
           style={s.slidesContainer}
         >
-          {slides.map((slide, i) => {
+          {SLIDES.map((slide, i) => {
             const IconComponent = SLIDE_ICONS[slide.icon] ?? Sparkles;
             return (
               <View key={i} style={s.slide}>
                 <View style={s.iconCircle}>
                   <IconComponent size={40} color={theme.primary} />
                 </View>
-                <Text style={s.slideTitle}>{slide.title}</Text>
-                <Text style={s.slideBody}>{slide.body}</Text>
+                <Text style={s.slideTitle}>{t(slide.titleKey, { version })}</Text>
+                <Text style={s.slideBody}>{t(slide.bodyKey)}</Text>
 
                 {slide.showPingToggle && (
                   <View style={s.toggleRow}>
@@ -323,7 +336,7 @@ export default function UpdateScreen({
 
         <View style={s.footer}>
           <View style={s.progressRow}>
-            {slides.map((_, i) => (
+            {SLIDES.map((_, i) => (
               <View
                 key={i}
                 style={[
@@ -351,9 +364,7 @@ export default function UpdateScreen({
               onPress={handleNext}
               activeOpacity={0.8}
             >
-              <Text
-                style={[s.navBtnText, s.navBtnTextPrimary]}
-              >
+              <Text style={[s.navBtnText, s.navBtnTextPrimary]}>
                 {isLast ? t("UpdateScreen_finish") : t("UpdateScreen_next")}
               </Text>
               {isLast ? (

@@ -189,7 +189,7 @@ export default function Settings() {
       previewAccent: theme.accentColor,
       previewText: theme.textColor,
       previewSub: theme.subTextColor,
-      beta: true,
+      beta: false,
     },
   ];
 

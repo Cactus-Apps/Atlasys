@@ -213,6 +213,7 @@ export default function NavigationScreen() {
   const mapRef = useRef<MapRef>(null);
   const subRef = useRef<Location.LocationSubscription | null>(null);
   const [stopped, setStopped] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const lastLocRef = useRef<[number, number] | null>(null);
   const lastTimeRef = useRef<number>(0);
   const filteredSpeedRef = useRef<number>(0);
@@ -429,10 +430,19 @@ export default function NavigationScreen() {
       <StatusBar hidden />
 
       <MapProvider>
-        <Map ref={mapRef} options={mapOptions} />
+        <Map
+          ref={mapRef}
+          options={mapOptions}
+          listeners={{
+            load: {
+              objectListener: () => setMapReady(true),
+            },
+          }}
+        />
 
-        {navRoute?.geometry && (
+        {mapReady && navRoute?.geometry && (
           <GeoJSONSource
+            key={`nav-route-${navRoute.geometry.coordinates?.length ?? 0}`}
             id="nav-route"
             source={{
               type: "geojson",

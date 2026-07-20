@@ -172,6 +172,7 @@ export default function MapScreen() {
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
   const [route, setRoute] = useState<any>(null);
+  const [mapReady, setMapReady] = useState(false);
   const hasCenteredOnce = useRef(false);
   const initialCenter = useMemo<[number, number]>(() => {
     const pos = useAuthStore.getState().mapPosition;
@@ -1495,6 +1496,9 @@ export default function MapScreen() {
                   }
                 },
               },
+              load: {
+                objectListener: () => setMapReady(true),
+              },
             }}
           />
           {!routeSheetOpen && (
@@ -2386,10 +2390,10 @@ export default function MapScreen() {
             ]}
             githubRepo="cactus-apps/atlasys"
           />
-          {route?.map((r: any, i: number) =>
+          {mapReady && route?.map((r: any, i: number) =>
             r.geometry ? (
               <GeoJSONSource
-                key={`route-${i}`}
+                key={`route-${i}-${r.geometry.coordinates?.length ?? 0}`}
                 id={`route-${i}`}
                 source={{
                   type: "geojson",

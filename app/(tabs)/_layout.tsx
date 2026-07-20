@@ -7,7 +7,7 @@ import { fetchUnseen, Announcement } from "@/lib/hooks/announcements";
 import AnnouncementModal from "@/components/sheets_modal/AnnouncementModal";
 import DeleteRequestModal from "@/components/sheets_modal/DeleteRequestModal";
 import UpdateScreen from "@/components/sheets_modal/UpdateScreen";
-import { fetchCurrentUpdate, type AppUpdate } from "@/lib/hooks/useUpdateInfo";
+import { fetchCurrentVersion } from "@/lib/hooks/useUpdateInfo";
 import SurveyModal from "@/components/sheets_modal/SurveyModal";
 import GitHubStarModal from "@/components/sheets_modal/GitHubStarModal";
 import FeedbackModal from "@/components/sheets_modal/FeedbackModal";
@@ -40,7 +40,7 @@ export default function TabsLayout() {
   const [deleteReq, setDeleteReq] = useState<DeleteRequest | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showUpdateScreen, setShowUpdateScreen] = useState(false);
-  const [updateData, setUpdateData] = useState<AppUpdate | null>(null);
+  const [updateVersion, setUpdateVersion] = useState("");
   const deletingRef = useRef(false);
 
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
@@ -55,9 +55,9 @@ export default function TabsLayout() {
 
     const checkForUpdate = async () => {
       const lastSeen = useAuthStore.getState().lastSeenUpdateVersion;
-      const update = await fetchCurrentUpdate();
-      if (update && update.version !== lastSeen) {
-        setUpdateData(update);
+      const dbVersion = await fetchCurrentVersion();
+      if (dbVersion && dbVersion !== lastSeen) {
+        setUpdateVersion(dbVersion);
         queueMicrotask(() => setShowUpdateScreen(true));
       }
     };
@@ -178,17 +178,15 @@ export default function TabsLayout() {
       />
       <UpdateScreen
         visible={showUpdateScreen}
-        version={updateData?.version ?? ""}
-        title={updateData?.title ?? "What's New"}
-        slides={updateData?.slides ?? []}
+        version={updateVersion}
         onClose={() => {
-          if (updateData) {
+          if (updateVersion) {
             useAuthStore
               .getState()
-              .setLastSeenUpdateVersion(updateData.version);
+              .setLastSeenUpdateVersion(updateVersion);
           }
           setShowUpdateScreen(false);
-          setUpdateData(null);
+          setUpdateVersion("");
         }}
       />
       <SurveyModal
