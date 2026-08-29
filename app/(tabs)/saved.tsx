@@ -26,6 +26,11 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { fonts } from "@/lib/fonts";
+import {
+  placeCategoryColor,
+  placeCategoryLabel,
+  placeCategoryMeta,
+} from "@/components/sheets_modal/DropPinSheet";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
@@ -40,6 +45,25 @@ export default function SavedScreen() {
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
+  const customPlaces = useAuthStore((state) => state.customPlaces);
+  const removeCustomPlace = useAuthStore((state) => state.removeCustomPlace);
+
+  const handleRemoveMarker = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    removeCustomPlace(id);
+  };
+
+  const handleMarkerNavigate = (marker: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({
+      pathname: "/(tabs)/mapscreen",
+      params: {
+        destLat: String(marker.latitude),
+        destLon: String(marker.longitude),
+        destName: marker.name || marker.address || "Marker",
+      },
+    });
+  };
 
   const handleRemove = (name: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -153,7 +177,7 @@ export default function SavedScreen() {
       </View>
     );
 
-    return (
+  return (
       <Animated.View
         entering={FadeInDown.delay(index * 100).springify()}
         style={styles.card}
@@ -205,6 +229,67 @@ export default function SavedScreen() {
             {actionContent}
           </View>
         )}
+      </Animated.View>
+    );
+  };
+
+  const renderMarkerItem = ({
+    item,
+    index,
+  }: {
+    item: any;
+    index: number;
+  }) => {
+    const isCustom = item.category === "custom";
+    const metaKey = isCustom ? item.categoryIcon : item.category;
+    const meta = placeCategoryMeta(metaKey);
+    const Icon = meta?.icon;
+    const color = placeCategoryColor(metaKey);
+    const label = isCustom
+      ? item.customCategory || t("Place_cat_other")
+      : placeCategoryLabel(item.category, t);
+
+    return (
+      <Animated.View
+        entering={FadeInDown.delay(index * 80).springify()}
+        style={styles.markerCard}
+      >
+        <View
+          style={[styles.markerIcon, { backgroundColor: color + "20" }]}
+        >
+          {Icon && <Icon size={22} color={color} />}
+        </View>
+        <View style={styles.markerInfo}>
+          <Text style={styles.markerName} numberOfLines={1}>
+            {item.name || item.address || t("Place_default_name")}
+          </Text>
+          <View style={styles.markerMetaRow}>
+            <View style={[styles.markerCatTag, { backgroundColor: color + "18" }]}>
+              <Text style={[styles.markerCatText, { color }]} numberOfLines={1}>
+                {label}
+              </Text>
+            </View>
+            {!!item.address && (
+              <Text style={styles.markerAddress} numberOfLines={1}>
+                {item.address}
+              </Text>
+            )}
+          </View>
+        </View>
+        <View style={styles.markerActions}>
+          <TouchableOpacity
+            style={styles.markerActionBtn}
+            onPress={() => handleMarkerNavigate(item)}
+          >
+            <MapPin size={18} color={theme.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.markerActionBtn}
+            onPress={() => handleRemoveMarker(item.id)}
+          >
+            <Trash2 size={18} color={theme.danger} />
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     );
   };
@@ -307,19 +392,28 @@ export default function SavedScreen() {
       )}
 
       {activeTab === "markers" && (
-        <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconCircle}>
-            <MapPin size={48} color={theme.chevronColor} strokeWidth={1.5} />
-          </View>
-          <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
-          <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
-          <TouchableOpacity
-            style={styles.exploreBtn}
-            onPress={() => router.push("/(tabs)/mapscreen")}
-          >
-            <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
-          </TouchableOpacity>
-        </View>
+        <FlatList
+          data={customPlaces}
+          renderItem={renderMarkerItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <MapPin size={48} color={theme.chevronColor} strokeWidth={1.5} />
+              </View>
+              <Text style={styles.emptyTitle}>{t("No_saved_markers")}</Text>
+              <Text style={styles.emptySub}>{t("Add_markers_hint")}</Text>
+              <TouchableOpacity
+                style={styles.exploreBtn}
+                onPress={() => router.push("/(tabs)/mapscreen")}
+              >
+                <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
       )}
     </SafeAreaView>
   );
@@ -632,6 +726,72 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: white,
       fontSize: 18,
       fontFamily: fonts.bold,
+    },
+    markerCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 20 : 16,
+      padding: 14,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: borderColor,
+      shadowColor: theme.black,
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.05) : 0.04,
+      shadowRadius: isModern ? 10 : 8,
+      elevation: isModern ? 3 : 2,
+    },
+    markerIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: isModern ? 14 : 12,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
+    markerInfo: {
+      flex: 1,
+      gap: 4,
+    },
+    markerName: {
+      fontSize: 16,
+      fontFamily: fonts.bold,
+      color: textColor,
+    },
+    markerMetaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    markerCatTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 20,
+      maxWidth: "60%",
+    },
+    markerCatText: {
+      fontSize: 11,
+      fontFamily: fonts.bold,
+    },
+    markerAddress: {
+      flex: 1,
+      fontSize: 12,
+      color: subTextColor,
+      fontFamily: fonts.medium,
+    },
+    markerActions: {
+      flexDirection: "row",
+      gap: 8,
+      alignItems: "center",
+    },
+    markerActionBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: isModern ? 12 : 10,
+      backgroundColor: theme.iconBg,
+      alignItems: "center",
+      justifyContent: "center",
     },
   });
 };

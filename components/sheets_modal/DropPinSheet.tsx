@@ -34,6 +34,9 @@ export const placeCategoryLabel = (
   return cat ? t(cat.labelKey) : t("Place_cat_other");
 };
 
+export const placeCategoryMeta = (key?: string) =>
+  ALL_CATEGORIES.find((c) => c.key === key);
+
 export type PinData = {
   id?: string;
   name?: string;
@@ -54,6 +57,7 @@ interface Props {
     category: string;
     customCategory?: string;
     categoryIcon?: string;
+    address?: string;
   }) => void;
   onDelete: (id: string) => void;
   onRoute: (lat: number, lon: number, name: string) => void;
@@ -127,12 +131,13 @@ export default function DropPinSheet({
         category: "custom",
         customCategory: customCategory.trim(),
         categoryIcon,
+        address: address ?? undefined,
       });
       return;
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onSave({ name: finalName, category: category ?? "" });
+    onSave({ name: finalName, category: category ?? "", address: address ?? undefined });
   };
 
   const selectedCat = ALL_CATEGORIES.find((c) => c.key === category);

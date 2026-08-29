@@ -36,7 +36,13 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  House,
 } from "lucide-react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+} from "react-native-reanimated";
 import { darken } from "./(tabs)/mapscreen";
 
 function pointToSegmentDist(
@@ -184,6 +190,12 @@ function getInstructionText(
   return name || t("Nav_instruction_continue");
 }
 
+const OSRM_ENDPOINTS: Record<string, string> = {
+  driving: "https://routing.openstreetmap.de/routed-car",
+  cycling: "https://routing.openstreetmap.de/routed-bike",
+  walking: "https://routing.openstreetmap.de/routed-foot",
+};
+
 export default function NavigationScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -218,6 +230,13 @@ export default function NavigationScreen() {
   const lastTimeRef = useRef<number>(0);
   const filteredSpeedRef = useRef<number>(0);
 
+  const [arrived, setArrived] = useState(false);
+  const arrivedRef = useRef(false);
+  const [showWelcomeHome, setShowWelcomeHome] = useState(false);
+  const [recalcNotice, setRecalcNotice] = useState(false);
+  const offRouteSinceRef = useRef<number | null>(null);
+  const lastRecalcRef = useRef<number>(0);
+
   const coords = useMemo(
     () => navRoute?.geometry?.coordinates || [],
     [navRoute?.geometry?.coordinates],
@@ -235,6 +254,56 @@ export default function NavigationScreen() {
       pitch: 60,
     }),
     [mapStyle, coords],
+  );
+
+  const fetchNewRoute = useCallback(
+    async (
+      from: [number, number],
+      to: [number, number],
+      profile: "driving" | "cycling" | "walking",
+    ) => {
+      try {
+        const base = OSRM_ENDPOINTS[profile];
+        const url =
+          `${base}/route/v1/${profile}/` +
+          `${from[0]},${from[1]};${to[0]},${to[1]}` +
+          `?overview=full&alternatives=true&geometries=geojson&steps=true`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Route request failed: ${res.status}`);
+        const json = await res.json();
+        if (!json.routes?.length) return null;
+        return json.routes;
+      } catch (e) {
+        Sentry.captureException(e);
+        return null;
+      }
+    },
+    [],
+  );
+
+  const recalculateRoute = useCallback(
+    async (from: [number, number]) => {
+      const current = useAuthStore.getState().navRoute;
+      if (!current || !from) return;
+      const routes = await fetchNewRoute(
+        from,
+        current.destinationCoords,
+        current.profile,
+      );
+      if (!routes?.length) return;
+      const r = routes[0];
+      useAuthStore.getState().setNavRoute({
+        ...current,
+        geometry: r.geometry,
+        steps: r.legs?.[0]?.steps || [],
+        distance: r.distance,
+        duration: r.duration,
+        id: `nav-${Date.now()}`,
+      });
+      setRecalcNotice(true);
+      setTimeout(() => setRecalcNotice(false), 3000);
+    },
+    [fetchNewRoute],
   );
 
   const stopNavigation = useCallback(() => {
@@ -339,7 +408,41 @@ export default function NavigationScreen() {
   useEffect(() => {
     if (!location || !coords.length || !navRoute) return;
 
-    const { index } = findNearestPointOnRoute(location, coords);
+    const { index, dist: offRouteDist } = findNearestPointOnRoute(
+      location,
+      coords,
+    );
+
+    // Ankunftserkennung: nahe am Ziel und nahezu stillstehend
+    if (!arrivedRef.current && navRoute.destinationCoords) {
+      const distToDest = haversineMeters(location, navRoute.destinationCoords);
+      if (distToDest < 30 && filteredSpeedRef.current < 3) {
+        arrivedRef.current = true;
+        requestAnimationFrame(() => {
+          setArrived(true);
+          if (navRoute.isHome) setShowWelcomeHome(true);
+        });
+      }
+    }
+
+    // Abweichungserkennung: deutlich von der Route entfernt über längere Zeit
+    if (!arrivedRef.current) {
+      const now = Date.now();
+      if (offRouteDist > 200) {
+        if (offRouteSinceRef.current == null) offRouteSinceRef.current = now;
+        else if (
+          now - offRouteSinceRef.current > 8000 &&
+          now - lastRecalcRef.current > 15000
+        ) {
+          lastRecalcRef.current = now;
+          offRouteSinceRef.current = null;
+          recalculateRoute(location);
+        }
+      } else {
+        offRouteSinceRef.current = null;
+      }
+    }
+
     const remaining = coords.slice(index);
     let totalRemaining = 0;
     for (let i = 0; i < remaining.length - 1; i++) {
@@ -370,7 +473,18 @@ export default function NavigationScreen() {
       }
     });
     return () => clearTimeout(t);
-  }, [location, coords, steps, navRoute]);
+  }, [location, coords, steps, navRoute, recalculateRoute]);
+
+  // Navigation automatisch beenden, sobald das Ziel erreicht ist
+  useEffect(() => {
+    if (!arrived) return;
+    const finish = () => stopNavigation();
+    if (showWelcomeHome) {
+      const timer = setTimeout(finish, 3200);
+      return () => clearTimeout(timer);
+    }
+    requestAnimationFrame(finish);
+  }, [arrived, showWelcomeHome, stopNavigation]);
 
   // Fit route bounds on mount
   useEffect(() => {
@@ -442,7 +556,7 @@ export default function NavigationScreen() {
 
         {mapReady && navRoute?.geometry && (
           <GeoJSONSource
-            key={`nav-route-${navRoute.geometry.coordinates?.length ?? 0}`}
+            key={`nav-route-${navRoute.id}-${navRoute.geometry.coordinates?.length ?? 0}`}
             id="nav-route"
             source={{
               type: "geojson",
@@ -652,6 +766,42 @@ export default function NavigationScreen() {
           )}
         </View>
       )}
+
+      {showWelcomeHome && (
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          exiting={FadeOut.duration(400)}
+          style={s.welcomeOverlay}
+        >
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(500)}
+            style={s.welcomeCard}
+          >
+            <House size={64} color="#fff" strokeWidth={2} />
+            <Text style={s.welcomeTitle}>{t("Nav_welcome_home")}</Text>
+          </Animated.View>
+        </Animated.View>
+      )}
+
+      {recalcNotice && (
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={[
+            s.recalcBanner,
+            { backgroundColor: theme.cardBg || "#fff" },
+          ]}
+        >
+          <AlertTriangle
+            size={16}
+            color={theme.primary || "#2563EB"}
+            strokeWidth={2}
+          />
+          <Text style={[s.recalcText, { color: theme.textColor || "#111" }]}>
+            {t("Nav_recalculating")}
+          </Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -788,5 +938,46 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
+  },
+  welcomeOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(37, 99, 235, 0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
+  },
+  welcomeCard: {
+    alignItems: "center",
+    gap: 16,
+  },
+  welcomeTitle: {
+    color: "#fff",
+    fontFamily: fonts.bold,
+    fontSize: 28,
+  },
+  recalcBanner: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 30,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    zIndex: 100,
+  },
+  recalcText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
   },
 });

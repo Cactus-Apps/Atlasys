@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, Modal, Alert } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Sentry from "@sentry/react-native";
 import {
@@ -22,6 +28,7 @@ import { useAuthStore } from "@/lib/storage/zustand";
 import {
   exportMarkersToFile,
   importMarkersFromFile,
+  BackupTooLargeError,
 } from "@/lib/storage/markerBackupFile";
 
 function StorageRing({
@@ -32,6 +39,7 @@ function StorageRing({
   totalBytes: number;
 }) {
   const theme = useAppTheme();
+  const { t } = useTranslation();
   const dark = theme.isDark;
 
   const size = 180;
@@ -106,7 +114,7 @@ function StorageRing({
               textTransform: "uppercase",
             }}
           >
-            Offline Maps
+            {t("Storage_title")}
           </Text>
           <View
             style={{
@@ -127,7 +135,7 @@ function StorageRing({
             <Text
               style={{ fontSize: 11, color: color, fontFamily: fonts.bold }}
             >
-              {Math.round(percent * 100)}% von 10 GB
+              {Math.round(percent * 100)}% {t("Storage_of_10gb")}
             </Text>
           </View>
         </View>
@@ -265,6 +273,7 @@ function BackupCard({
 
 function EmptyState({ dark }: { dark: boolean }) {
   const theme = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -296,7 +305,7 @@ function EmptyState({ dark }: { dark: boolean }) {
           letterSpacing: -0.5,
         }}
       >
-        No offline maps
+        {t("Storage_empty")}
       </Text>
       <Text
         style={{
@@ -330,14 +339,14 @@ function EmptyState({ dark }: { dark: boolean }) {
             letterSpacing: -0.5,
           }}
         >
-          Go to Map
+          {t("Go_to_Map")}
         </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-export default function OfflineMapsTab() {
+export default function Storage() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const dark = theme.isDark;
@@ -348,6 +357,9 @@ export default function OfflineMapsTab() {
     id: string;
     name: string;
   } | null>(null);
+  const [alertBox, setAlertBox] = useState<{
+    message: string;
+  } | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
 
   const customCount = useAuthStore((s) => s.customPlaces.length);
@@ -356,16 +368,18 @@ export default function OfflineMapsTab() {
     if (backupBusy) return;
     const places = useAuthStore.getState().customPlaces;
     if (places.length === 0) {
-      Alert.alert(t("Backup_title"), t("Backup_empty"));
+      setAlertBox({ message: t("Backup_empty") });
       return;
     }
     try {
       setBackupBusy(true);
       await exportMarkersToFile(places);
-      Alert.alert(t("Backup_title"), t("Backup_exported", { count: places.length }));
+      setAlertBox({
+        message: t("Backup_exported", { count: places.length }),
+      });
     } catch (err) {
       Sentry.captureException(err);
-      Alert.alert(t("Backup_title"), t("Backup_error"));
+      setAlertBox({ message: t("Backup_error") });
     } finally {
       setBackupBusy(false);
     }
@@ -378,17 +392,27 @@ export default function OfflineMapsTab() {
       const { places, errors, canceled } = await importMarkersFromFile();
       if (canceled) return;
       if (places.length === 0) {
-        Alert.alert(t("Backup_title"), t("Backup_error"));
+        setAlertBox({ message: t("Backup_error") });
         return;
       }
-      const { added, updated } = useAuthStore.getState().importCustomPlaces(places);
-      Alert.alert(
-        t("Backup_title"),
-        t("Backup_imported", { added, updated, errors }),
-      );
+      const { added, updated } = useAuthStore
+        .getState()
+        .importCustomPlaces(places);
+      const skipSuffix =
+        errors > 0
+          ? t("Backup_imported_skip", { count: errors })
+          : "";
+      setAlertBox({
+        message:
+          t("Backup_imported", { added, updated }) + skipSuffix,
+      });
     } catch (err) {
       Sentry.captureException(err);
-      Alert.alert(t("Backup_title"), t("Backup_error"));
+      setAlertBox({
+        message: err instanceof BackupTooLargeError
+          ? t("Backup_too_large")
+          : t("Backup_error"),
+      });
     } finally {
       setBackupBusy(false);
     }
@@ -551,9 +575,70 @@ export default function OfflineMapsTab() {
     </Modal>
   );
 
+  const CustomAlertOverlay = (
+    <Modal
+      visible={alertBox !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setAlertBox(null)}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: overlay,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            width: "85%",
+            backgroundColor: cardBg,
+            borderRadius: defaultRadius,
+            padding: 24,
+            borderWidth: 1,
+            borderColor: border,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 16,
+              color: textSecondary,
+              textAlign: "center",
+              marginBottom: 24,
+              lineHeight: 22,
+            }}
+          >
+            {alertBox?.message}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setAlertBox(null)}
+            style={{
+              backgroundColor: theme.primary,
+              paddingVertical: 14,
+              borderRadius: 14,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: fonts.bold,
+                color: theme.white,
+              }}
+            >
+              {t("OK")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30 }}>
       {AlertDialogOverlay}
+      {CustomAlertOverlay}
       <View
         style={{
           flexDirection: "row",
@@ -576,7 +661,7 @@ export default function OfflineMapsTab() {
             color: theme.textColor,
           }}
         >
-          Offline Maps
+          {t("Storage_title")}
         </Text>
         <View style={{ width: 44 }} />
       </View>
@@ -618,7 +703,7 @@ export default function OfflineMapsTab() {
                   marginBottom: 4,
                 }}
               >
-                Storage Usage
+                {t("Storage_usage")}
               </Text>
               <StorageRing usedBytes={totalUsedBytes} totalBytes={totalBytes} />
               <View
@@ -632,14 +717,14 @@ export default function OfflineMapsTab() {
                 }}
               >
                 {[
-                  { label: "Maps", value: String(maps.length) },
+                  { label: t("Storage_maps"), value: String(maps.length) },
                   {
-                    label: "Total Tiles",
+                    label: t("Storage_total_tiles"),
                     value: maps
                       .reduce((s, m) => s + m.tileCount, 0)
                       .toLocaleString(),
                   },
-                  { label: "Size", value: formatSize(totalUsedBytes) },
+                  { label: t("Storage_size"), value: formatSize(totalUsedBytes) },
                 ].map((stat, i) => (
                   <View key={i} style={{ flex: 1, alignItems: "center" }}>
                     <Text
@@ -676,7 +761,7 @@ export default function OfflineMapsTab() {
                 marginBottom: 12,
               }}
             >
-              Downloaded Regions
+              {t("Storage_downloaded_regions")}
             </Text>
           </View>
         }
@@ -769,7 +854,7 @@ export default function OfflineMapsTab() {
                 </View>
               </View>
               <Text style={{ fontSize: 11, color: textSecondary }}>
-                {item.tileCount.toLocaleString()} tiles ·{" "}
+                {item.tileCount.toLocaleString()} {t("Storage_tiles")} ·{" "}
                 {formatDate(item.createdAt)}
               </Text>
             </View>

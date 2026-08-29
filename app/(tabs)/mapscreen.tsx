@@ -39,6 +39,11 @@ import {
   CloudSunIcon,
   SlidersHorizontal,
   Info,
+  UtensilsCrossed,
+  Coffee,
+  BedDouble,
+  Sparkles,
+  Landmark,
 } from "lucide-react-native";
 import React, {
   useCallback,
@@ -153,9 +158,18 @@ interface ArticleData {
 type RoutePoint = {
   label: string;
   coordinate: [number, number];
+  isHome?: boolean;
 };
 
 const SNAP_POINTS = ["15%", "25%", "50%", "80%", "100%"];
+
+const CHIP_ICONS: Record<string, React.ComponentType<any>> = {
+  restaurants: UtensilsCrossed,
+  cafes: Coffee,
+  hotels: BedDouble,
+  attractions: Sparkles,
+  museums: Landmark,
+};
 
 export interface FilterCategory {
   id: string;
@@ -275,6 +289,7 @@ export default function MapScreen() {
           subclass: [...f.subclass],
           color: cat?.color ?? "#888",
           categoryId: f.categoryId,
+          icon: CHIP_ICONS[f.id] ?? null,
         };
       }),
     [t],
@@ -300,6 +315,7 @@ export default function MapScreen() {
   };
   const [locationReady, setLocationReady] = useState(false);
   const [routeSheetOpen, setRouteSheetOpen] = useState(false);
+  const [navDisclaimerOpen, setNavDisclaimerOpen] = useState(false);
   const [routeStart, setRouteStart] = useState<RoutePoint | null>(null);
   const [routeEnd, setRouteEnd] = useState<RoutePoint | null>(null);
   const [routePickMode, setRoutePickMode] = useState<"start" | "end" | null>(
@@ -340,6 +356,47 @@ export default function MapScreen() {
     activeFilterRef.current = filterId;
     setActiveFilter(filterId);
   };
+
+  const navDisclaimerAccepted = useAuthStore(
+    (s) => s.navDisclaimerAccepted,
+  );
+  const setNavDisclaimerAccepted = useAuthStore(
+    (s) => s.setNavDisclaimerAccepted,
+  );
+
+  const startNavigation = useCallback(() => {
+    if (!route?.[0] || !routeStart || !routeEnd) return;
+    const r = route[0];
+    useAuthStore.getState().setNavRoute({
+      id: `nav-${Date.now()}`,
+      startName: routeStart.label,
+      startCoords: routeStart.coordinate,
+      destinationName: routeEnd.label,
+      destinationCoords: routeEnd.coordinate,
+      geometry: r.geometry,
+      steps: r.legs?.[0]?.steps || [],
+      distance: r.distance,
+      duration: r.duration,
+      profile: profile,
+      isHome: !!routeEnd.isHome,
+    });
+    router.push("/navigation");
+  }, [route, routeStart, routeEnd, profile, router]);
+
+  const handleStartNavigation = useCallback(() => {
+    if (!route?.[0] || !routeStart || !routeEnd) return;
+    if (navDisclaimerAccepted) {
+      startNavigation();
+    } else {
+      setNavDisclaimerOpen(true);
+    }
+  }, [route, routeStart, routeEnd, navDisclaimerAccepted, startNavigation]);
+
+  const acceptNavDisclaimer = useCallback(() => {
+    setNavDisclaimerAccepted(true);
+    setNavDisclaimerOpen(false);
+    startNavigation();
+  }, [setNavDisclaimerAccepted, startNavigation]);
 
   const originalPoiFiltersRef = useRef<Record<string, unknown>>({});
   const originalMinzoomRef = useRef<Record<string, number>>({});
@@ -1289,11 +1346,13 @@ export default function MapScreen() {
     category,
     customCategory,
     categoryIcon,
+    address,
   }: {
     name: string;
     category: string;
     customCategory?: string;
     categoryIcon?: string;
+    address?: string;
   }) => {
     if (!savedPinIdRef.current) return;
     updateCustomPlace(savedPinIdRef.current, {
@@ -1301,6 +1360,7 @@ export default function MapScreen() {
       category,
       customCategory,
       categoryIcon,
+      address,
     });
     savedPinIdRef.current = null;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1323,6 +1383,12 @@ export default function MapScreen() {
     );
     setRouteEnd({ label: name, coordinate: [lon, lat] });
     setRouteSheetOpen(true);
+    setViewPlace(null);
+    pinSheetRef.current?.close();
+  };
+
+  const handleMarkerTapForRoute = (place: CustomPlace) => {
+    setRouteEnd({ label: place.name || place.address || "Marker", coordinate: [place.longitude, place.latitude] });
     setViewPlace(null);
     pinSheetRef.current?.close();
   };
@@ -1813,8 +1879,7 @@ export default function MapScreen() {
               }}
             />
           )}
-          {!routeSheetOpen &&
-            !drawMode &&
+          {!drawMode &&
             customPlaces.map((place) => (
               <Marker
                 key={place.id}
@@ -1840,7 +1905,11 @@ export default function MapScreen() {
                 listeners={{
                   click: {
                     elementListener: () => {
-                      handleOpenCustomPlace(place);
+                      if (routeSheetOpen) {
+                        handleMarkerTapForRoute(place);
+                      } else {
+                        handleOpenCustomPlace(place);
+                      }
                     },
                   },
                 }}
@@ -1967,12 +2036,22 @@ export default function MapScreen() {
                       ]}
                       onPress={() => handleSetFilter(isActive ? null : item.id)}
                     >
-                      <View
-                        style={[
-                          styles.filterDot,
-                          { backgroundColor: isActive ? "#fff" : item.color },
-                        ]}
-                      />
+                      {item.icon ? (
+                        <item.icon
+                          size={16}
+                          color={isActive ? "#fff" : item.color}
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.filterDot,
+                            {
+                              backgroundColor: isActive ? "#fff" : item.color,
+                            },
+                          ]}
+                        />
+                      )}
                       <Text
                         style={[
                           styles.filterText,
@@ -2576,6 +2655,7 @@ export default function MapScreen() {
             }}
             onSetStart={(point) => setRouteStart(point)}
             onSetEnd={(point) => setRouteEnd(point)}
+            customPlaces={customPlaces}
             onRouteReady={async (routes, p) => {
               setRoute(routes);
               setProfile(p);
@@ -2599,23 +2679,7 @@ export default function MapScreen() {
               ];
               mapRef.current.fitBounds(bounds, { padding: 80, duration: 800 });
             }}
-            onStartNavigation={() => {
-              if (!route?.[0] || !routeStart || !routeEnd) return;
-              const r = route[0];
-              useAuthStore.getState().setNavRoute({
-                id: `nav-${Date.now()}`,
-                startName: routeStart.label,
-                startCoords: routeStart.coordinate,
-                destinationName: routeEnd.label,
-                destinationCoords: routeEnd.coordinate,
-                geometry: r.geometry,
-                steps: r.legs?.[0]?.steps || [],
-                distance: r.distance,
-                duration: r.duration,
-                profile: profile,
-              });
-              router.push("/navigation");
-            }}
+            onStartNavigation={handleStartNavigation}
           />
           <DownloadSheet
             open={downloadSheetOpen}
@@ -2647,6 +2711,53 @@ export default function MapScreen() {
             ]}
             githubRepo="cactus-apps/atlasys"
           />
+          <Modal
+            visible={navDisclaimerOpen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setNavDisclaimerOpen(false)}
+          >
+            <View style={styles.disclaimerOverlay}>
+              <View
+                style={[
+                  styles.disclaimerCard,
+                  { backgroundColor: theme.cardBg },
+                ]}
+              >
+                <View style={styles.disclaimerHeader}>
+                  <AlertTriangle size={22} color={theme.danger || "#EF4444"} />
+                  <Text style={[styles.disclaimerTitle, { color: theme.textColor }]}>
+                    {t("Nav_disclaimer_title")}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.disclaimerBody,
+                    { color: theme.subTextColor || "#666" },
+                  ]}
+                >
+                  {t("Nav_disclaimer_body")}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.disclaimerAccept, { backgroundColor: theme.primary || "#2563EB" }]}
+                  onPress={acceptNavDisclaimer}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.disclaimerAcceptText}>
+                    {t("Nav_disclaimer_accept")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setNavDisclaimerOpen(false)}
+                  style={styles.disclaimerDecline}
+                >
+                  <Text style={[styles.disclaimerDeclineText, { color: theme.textColor }]}>
+                    {t("Nav_disclaimer_decline")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
           {mapReady &&
             route?.map((r: any, i: number) =>
               r.geometry ? (
@@ -2801,6 +2912,58 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     filterTextActive: {
       color: white,
       fontFamily: fonts.semibold,
+    },
+    disclaimerOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    disclaimerCard: {
+      width: "100%",
+      maxWidth: 420,
+      borderRadius: 20,
+      padding: 24,
+      gap: 16,
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 10,
+    },
+    disclaimerHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    disclaimerTitle: {
+      fontSize: 18,
+      fontFamily: fonts.bold,
+      flex: 1,
+    },
+    disclaimerBody: {
+      fontSize: 14,
+      lineHeight: 21,
+      fontFamily: fonts.regular,
+    },
+    disclaimerAccept: {
+      alignItems: "center",
+      paddingVertical: 14,
+      borderRadius: 14,
+    },
+    disclaimerAcceptText: {
+      color: white,
+      fontFamily: fonts.semibold,
+      fontSize: 15,
+    },
+    disclaimerDecline: {
+      alignItems: "center",
+      paddingVertical: 10,
+    },
+    disclaimerDeclineText: {
+      fontFamily: fonts.medium,
+      fontSize: 14,
     },
     readMoreLink: {
       color: primary,

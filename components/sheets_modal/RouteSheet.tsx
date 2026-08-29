@@ -23,8 +23,17 @@ import {
 } from "lucide-react-native";
 import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
+import type { CustomPlace } from "@/lib/storage/zustand";
+import {
+  placeCategoryColor,
+  placeCategoryMeta,
+} from "@/components/sheets_modal/DropPinSheet";
 
-type RoutePoint = { label: string; coordinate: [number, number] };
+type RoutePoint = {
+  label: string;
+  coordinate: [number, number];
+  isHome?: boolean;
+};
 type Profile = "driving" | "cycling" | "walking";
 
 interface Props {
@@ -40,6 +49,7 @@ interface Props {
   onSetStart: (point: RoutePoint) => void;
   onSetEnd: (point: RoutePoint) => void;
   onStartNavigation: () => void;
+  customPlaces: CustomPlace[];
 }
 
 const PROFILE_DEFS: {
@@ -54,6 +64,8 @@ const PROFILE_DEFS: {
 
 type SearchResult = { display_name: string; lat: string; lon: string };
 
+const MARKER_PRIORITY = ["home", "work", "school"];
+
 export default function RouteSheet({
   open,
   start,
@@ -67,6 +79,7 @@ export default function RouteSheet({
   onSetStart,
   onSetEnd,
   onStartNavigation,
+  customPlaces,
 }: Props) {
   const sheetRef = useRef<BottomSheet>(null);
   const { t, i18n } = useTranslation();
@@ -244,6 +257,44 @@ export default function RouteSheet({
     setFocusedField(null);
   };
 
+  const selectMarker = (marker: CustomPlace, field: "start" | "end") => {
+    const point: RoutePoint = {
+      label: marker.name || marker.address || "Marker",
+      coordinate: [marker.longitude, marker.latitude],
+      isHome: marker.category === "home",
+    };
+    if (field === "start") {
+      onSetStart(point);
+      setStartQuery(point.label);
+      setStartResults([]);
+    } else {
+      onSetEnd(point);
+      setEndQuery(point.label);
+      setEndResults([]);
+    }
+    setFocusedField(null);
+  };
+
+  const markerKey = (m: CustomPlace) =>
+    m.category === "custom" ? m.categoryIcon : m.category;
+
+  const sortedMarkers = React.useMemo(() => {
+    const rank = (m: CustomPlace) => {
+      const idx = MARKER_PRIORITY.indexOf(markerKey(m) ?? "");
+      return idx === -1 ? 99 : idx;
+    };
+    return [...customPlaces].sort(
+      (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name),
+    );
+  }, [customPlaces]);
+
+  const matchesMarker = (m: CustomPlace, q: string) => {
+    const needle = q.toLowerCase();
+    return [m.name, m.customCategory, markerKey(m), m.address]
+      .filter(Boolean)
+      .some((v) => (v as string).toLowerCase().includes(needle));
+  };
+
   const formatDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
@@ -253,6 +304,108 @@ export default function RouteSheet({
   };
   const formatDistance = (m: number) =>
     m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+
+  const renderMarkerSuggestionItem = (
+    marker: CustomPlace,
+    field: "start" | "end",
+  ) => {
+    const metaKey = markerKey(marker);
+    const color = placeCategoryColor(metaKey);
+    const Icon = placeCategoryMeta(metaKey)?.icon;
+    return (
+      <TouchableOpacity
+        key={marker.id}
+        style={s.markerSuggestionItem}
+        onPress={() => selectMarker(marker, field)}
+      >
+        <View style={[s.markerSuggestionIcon, { backgroundColor: color + "20" }]}>
+          {Icon ? (
+            <Icon size={16} color={color} />
+          ) : (
+            <MapPin size={16} color={color} />
+          )}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.suggestMain} numberOfLines={1}>
+            {marker.name || marker.address || t("Place_default_name")}
+          </Text>
+          <Text style={s.suggestSub} numberOfLines={1}>
+            {marker.address ||
+              (marker.category === "custom"
+                ? marker.customCategory
+                : marker.category)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderMarkerSuggestions = (field: "start" | "end") => {
+    const query = field === "start" ? startQuery : endQuery;
+    const searching = field === "start" ? searchingStart : searchingEnd;
+    const results = field === "start" ? startResults : endResults;
+    if (focusedField !== field) return null;
+
+    if (!query || query.trim().length < 2) {
+      if (sortedMarkers.length === 0) return null;
+      return (
+        <View style={s.suggestBox}>
+          <View style={s.suggestSectionHeader}>
+            <Text style={s.suggestSectionTitle}>{t("Route_my_markers")}</Text>
+          </View>
+          {sortedMarkers.map((m) => renderMarkerSuggestionItem(m, field))}
+        </View>
+      );
+    }
+
+    const matching = sortedMarkers.filter((m) => matchesMarker(m, query));
+    const showMarkers = matching.length > 0;
+    const showNominatim = results.length > 0 || searching;
+
+    if (!showMarkers && !showNominatim) return null;
+
+    return (
+      <View style={s.suggestBox}>
+        {showMarkers && (
+          <>
+            <View style={s.suggestSectionHeader}>
+              <Text style={s.suggestSectionTitle}>
+                {t("Route_my_markers")}
+              </Text>
+            </View>
+            {matching.map((m) => renderMarkerSuggestionItem(m, field))}
+          </>
+        )}
+        {searching && (
+          <View style={s.markerLoadingRow}>
+            <ActivityIndicator size="small" color={theme.subTextColor} />
+            <Text style={s.suggestSub}>{t("Searching")}</Text>
+          </View>
+        )}
+        {results.map((r, i) => (
+          <TouchableOpacity
+            key={`n-${i}`}
+            style={s.suggestItem}
+            onPress={() => selectResult(r, field)}
+          >
+            <Navigation
+              size={14}
+              color={theme.subTextColor}
+              style={{ marginTop: 2 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={s.suggestMain} numberOfLines={1}>
+                {r.display_name.split(",")[0]}
+              </Text>
+              <Text style={s.suggestSub} numberOfLines={1}>
+                {r.display_name.split(",").slice(1, 3).join(",")}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   function onSheetClose() {
     onClose();
@@ -342,31 +495,7 @@ export default function RouteSheet({
           </View>
 
           {/* Start suggestions */}
-          {focusedField === "start" && startResults.length > 0 && (
-            <View style={s.suggestBox}>
-              {startResults.map((r, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={s.suggestItem}
-                  onPress={() => selectResult(r, "start")}
-                >
-                  <Navigation
-                    size={14}
-                    color={theme.subTextColor}
-                    style={{ marginTop: 2 }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.suggestMain} numberOfLines={1}>
-                      {r.display_name.split(",")[0]}
-                    </Text>
-                    <Text style={s.suggestSub} numberOfLines={1}>
-                      {r.display_name.split(",").slice(1, 3).join(",")}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {renderMarkerSuggestions("start")}
 
           {/* Connector + Swap */}
           <View style={s.connectorRow}>
@@ -411,31 +540,7 @@ export default function RouteSheet({
           </View>
 
           {/* Destination suggestions */}
-          {focusedField === "end" && endResults.length > 0 && (
-            <View style={s.suggestBox}>
-              {endResults.map((r, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={s.suggestItem}
-                  onPress={() => selectResult(r, "end")}
-                >
-                  <Navigation
-                    size={14}
-                    color={theme.subTextColor}
-                    style={{ marginTop: 2 }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.suggestMain} numberOfLines={1}>
-                      {r.display_name.split(",")[0]}
-                    </Text>
-                    <Text style={s.suggestSub} numberOfLines={1}>
-                      {r.display_name.split(",").slice(1, 3).join(",")}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {renderMarkerSuggestions("end")}
         </View>
 
         {pickMode && (
@@ -687,5 +792,39 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: isModern ? 16 : 12,
     },
     errorText: { color: danger, fontSize: 14 },
+    suggestSectionHeader: {
+      paddingTop: 10,
+      paddingHorizontal: 12,
+    },
+    suggestSectionTitle: {
+      fontSize: 11,
+      fontFamily: fonts.bold,
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 1,
+      marginBottom: 4,
+    },
+    markerSuggestionItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: borderColor,
+    },
+    markerSuggestionIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
+    markerLoadingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      padding: 12,
+    },
   });
 };

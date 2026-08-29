@@ -1,24 +1,53 @@
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import {
+  StorageAccessFramework,
   cacheDirectory,
   documentDirectory,
   writeAsStringAsync,
   readAsStringAsync,
 } from "expo-file-system/legacy";
+import { Platform } from "react-native";
 import * as Sentry from "@sentry/react-native";
-import { serializeMarkers, parseMarkers, MARKER_BACKUP_EXT } from "@/lib/storage/markerBackup";
+import {
+  serializeMarkers,
+  parseMarkers,
+  MARKER_BACKUP_EXT,
+  MARKER_BACKUP_HEADER,
+} from "@/lib/storage/markerBackup";
 import type { CustomPlace } from "@/lib/storage/zustand";
 
-/**
- * Exportiert die Marker als .atlys-Datei in den Cache und öffnet den
- * nativen Share-Sheet, damit du die Datei herunterladen/teilen kannst.
- */
+const MAX_BACKUP_SIZE = 25 * 1024 * 1024;
+
+export class BackupTooLargeError extends Error {
+  constructor() {
+    super("backup-too-large");
+    this.name = "BackupTooLargeError";
+  }
+}
+
 export async function exportMarkersToFile(
   places: CustomPlace[],
 ): Promise<{ uri: string; fileName: string }> {
   const content = serializeMarkers(places);
   const fileName = `atlys-markers-${new Date().toISOString().replace(/[:.]/g, "-")}.${MARKER_BACKUP_EXT}`;
+
+  if (Platform.OS === "android") {
+    const perms =
+      await StorageAccessFramework.requestDirectoryPermissionsAsync();
+    if (perms.granted && perms.directoryUri) {
+      const fileUri = await StorageAccessFramework.createFileAsync(
+        perms.directoryUri,
+        fileName,
+        "application/octet-stream",
+      );
+      await StorageAccessFramework.writeAsStringAsync(fileUri, content, {
+        encoding: "utf8",
+      });
+      return { uri: fileUri, fileName };
+    }
+  }
+
   const uri = (cacheDirectory ?? documentDirectory) + fileName;
   await writeAsStringAsync(uri, content, { encoding: "utf8" });
 
@@ -32,11 +61,6 @@ export async function exportMarkersToFile(
   return { uri, fileName };
 }
 
-/**
- * Öffnet den Dokument-Picker, liest die gewählte .atlys-Datei und parst
- * die Marker daraus. Gibt die geparsten Marker plus die Anzahl fehlerhafter
- * Zeilen zurück.
- */
 export async function importMarkersFromFile(): Promise<{
   places: Omit<CustomPlace, "id" | "addedAt">[];
   errors: number;
@@ -50,10 +74,22 @@ export async function importMarkersFromFile(): Promise<{
   if (result.canceled || !result.assets?.[0]?.uri) {
     return { places: [], errors: 0, canceled: true };
   }
+  const asset = result.assets[0];
+  const isAtlys =
+    asset.name != null && asset.name.toLowerCase().endsWith(MARKER_BACKUP_EXT);
+  if (!isAtlys) {
+    return { places: [], errors: 0, canceled: true };
+  }
+  if (asset.size != null && asset.size > MAX_BACKUP_SIZE) {
+    throw new BackupTooLargeError();
+  }
   try {
-    const text = await readAsStringAsync(result.assets[0].uri, {
+    const text = await readAsStringAsync(asset.uri, {
       encoding: "utf8",
     });
+    if (!text.includes(MARKER_BACKUP_HEADER)) {
+      return { places: [], errors: 0, canceled: true };
+    }
     const parsed = parseMarkers(text);
     return {
       places: parsed.items.map((it) => ({

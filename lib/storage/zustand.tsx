@@ -49,6 +49,8 @@ export type CustomPlace = {
   customCategory?: string;
   /** Key des gewählten Icons für Custom-Kategorien (Farbe + Icon werden daraus abgeleitet) */
   categoryIcon?: string;
+  /** Reverse-geocodierte Adresse des Markers */
+  address?: string;
 };
 
 type RouteData = {
@@ -72,6 +74,8 @@ type NavRouteData = {
   distance: number;
   duration: number;
   profile: "driving" | "cycling" | "walking";
+  /** True, wenn das Ziel ein als "Home" markierter Platz ist */
+  isHome?: boolean;
 };
 
 type StoreAuth = {
@@ -136,6 +140,10 @@ type StoreAuth = {
   navRoute: NavRouteData | null;
   setNavRoute: (route: NavRouteData | null) => void;
 
+  // Navigation disclaimer (persisted)
+  navDisclaimerAccepted: boolean;
+  setNavDisclaimerAccepted: (val: boolean) => void;
+
   // Search History
   searchHistory: string[];
   setSearchHistory: (history: string[]) => void;
@@ -186,6 +194,7 @@ const initialState = {
   avatarConfig: null,
   currentRoute: null,
   navRoute: null,
+  navDisclaimerAccepted: false,
   mapPosition: null,
   searchHistory: [],
   userId: null,
@@ -345,6 +354,8 @@ export const useAuthStore = create<StoreAuth>()(
       setCurrentRoute: (route) => set({ currentRoute: route }),
       navRoute: null,
       setNavRoute: (route) => set({ navRoute: route }),
+      navDisclaimerAccepted: false,
+      setNavDisclaimerAccepted: (val) => set({ navDisclaimerAccepted: val }),
 
       mapPosition: null,
       setMapPosition: (pos) => set({ mapPosition: pos }),
@@ -405,6 +416,7 @@ export const useAuthStore = create<StoreAuth>()(
         customPlaces: state.customPlaces,
         searchHistory: state.searchHistory,
         avatarConfig: state.avatarConfig,
+        navDisclaimerAccepted: state.navDisclaimerAccepted,
         _seededForUserId: state._seededForUserId,
       }),
       onRehydrateStorage: () => (state) => {

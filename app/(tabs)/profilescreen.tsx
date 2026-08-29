@@ -109,7 +109,7 @@ export function ProfileScreen() {
             icon: HardDrive,
             color: theme.info,
             bg: theme.infoLight,
-            route: "/OfflineMapsTab",
+            route: "/Storage",
           },
         ],
       },
