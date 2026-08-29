@@ -44,6 +44,7 @@ import {
   BedDouble,
   Sparkles,
   Landmark,
+  MapPin,
 } from "lucide-react-native";
 import React, {
   useCallback,
@@ -108,6 +109,7 @@ import { useWeatherForecast } from "@/lib/hooks/useWeatherForecast";
 import WeeklyForecast from "@/components/overlays/WeeklyForecast";
 import DropPinSheet, {
   placeCategoryColor,
+  placeCategoryMeta,
 } from "@/components/sheets_modal/DropPinSheet";
 import type { CustomPlace } from "@/lib/storage/zustand";
 import { CATEGORY_SVG_ICONS } from "@/lib/geocoding/places_categories";
@@ -357,9 +359,7 @@ export default function MapScreen() {
     setActiveFilter(filterId);
   };
 
-  const navDisclaimerAccepted = useAuthStore(
-    (s) => s.navDisclaimerAccepted,
-  );
+  const navDisclaimerAccepted = useAuthStore((s) => s.navDisclaimerAccepted);
   const setNavDisclaimerAccepted = useAuthStore(
     (s) => s.setNavDisclaimerAccepted,
   );
@@ -367,6 +367,12 @@ export default function MapScreen() {
   const startNavigation = useCallback(() => {
     if (!route?.[0] || !routeStart || !routeEnd) return;
     const r = route[0];
+    const [dLon, dLat] = routeEnd.coordinate;
+    const homePlace = customPlaces.find((p) => p.category === "home");
+    const isHomeDestination =
+      !!homePlace &&
+      Math.abs(homePlace.longitude - dLon) < 0.0005 &&
+      Math.abs(homePlace.latitude - dLat) < 0.0005;
     useAuthStore.getState().setNavRoute({
       id: `nav-${Date.now()}`,
       startName: routeStart.label,
@@ -378,10 +384,10 @@ export default function MapScreen() {
       distance: r.distance,
       duration: r.duration,
       profile: profile,
-      isHome: !!routeEnd.isHome,
+      isHome: !!routeEnd.isHome || isHomeDestination,
     });
     router.push("/navigation");
-  }, [route, routeStart, routeEnd, profile, router]);
+  }, [route, routeStart, routeEnd, profile, router, customPlaces]);
 
   const handleStartNavigation = useCallback(() => {
     if (!route?.[0] || !routeStart || !routeEnd) return;
@@ -1070,6 +1076,35 @@ export default function MapScreen() {
     return () => clearTimeout(searchTimer);
   }, [query, searchCities]);
 
+  const markerKey = (m: CustomPlace) =>
+    m.category === "custom" ? m.categoryIcon : m.category;
+
+  const filteredMarkers = useMemo(() => {
+    if (!query || query.length < 2) return [];
+    const needle = query.toLowerCase();
+    return customPlaces.filter((m) => {
+      const cat = markerKey(m) ?? "";
+      return [m.name, m.customCategory, m.address, cat]
+        .filter(Boolean)
+        .some((v) => (v as string).toLowerCase().includes(needle));
+    });
+  }, [query, customPlaces]);
+
+  const handleSelectMarkerSearch = (place: CustomPlace) => {
+    setResults([]);
+    setQuery("");
+    setCity(null);
+    Keyboard.dismiss();
+    mapRef.current?.flyTo({
+      center: [place.longitude, place.latitude],
+      zoom: 14,
+      duration: 800,
+    });
+    requestAnimationFrame(() => {
+      handleOpenCustomPlace(place);
+    });
+  };
+
   function onSelectCity(city: CityResult) {
     sheetRef.current?.snapToIndex(2);
     setSelected(city);
@@ -1388,7 +1423,11 @@ export default function MapScreen() {
   };
 
   const handleMarkerTapForRoute = (place: CustomPlace) => {
-    setRouteEnd({ label: place.name || place.address || "Marker", coordinate: [place.longitude, place.latitude] });
+    setRouteEnd({
+      label: place.name || place.address || "Marker",
+      coordinate: [place.longitude, place.latitude],
+      isHome: place.category === "home",
+    });
     setViewPlace(null);
     pinSheetRef.current?.close();
   };
@@ -2112,32 +2151,81 @@ export default function MapScreen() {
                   </Animated.View>
                 )}
 
-              {results.length > 0 && query.length > 0 && !city && (
-                <View style={styles.suggestionBox}>
-                  <FlatList
-                    data={results}
-                    keyExtractor={(item) => String(item.id)}
-                    keyboardShouldPersistTaps="handled"
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.suggestionItem}
-                        onPress={() => {
-                          setResults([]);
-                          onSelectCity(item);
-                        }}
-                      >
-                        <Text style={styles.suggTitle}>
-                          {item.name ?? item.city}
-                        </Text>
-                        <Text style={styles.suggSub}>
-                          {item.region ? item.region + ", " : ""}
-                          {item.country}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  />
-                </View>
-              )}
+              {(results.length > 0 || filteredMarkers.length > 0) &&
+                query.length > 0 &&
+                !city && (
+                  <View style={styles.suggestionBox}>
+                    <FlatList
+                      data={[
+                        ...filteredMarkers.map((m) => ({
+                          type: "marker" as const,
+                          m,
+                        })),
+                        ...results.map((r) => ({ type: "city" as const, r })),
+                      ]}
+                      keyExtractor={(item) =>
+                        item.type === "marker"
+                          ? `m-${item.m.id}`
+                          : `c-${String(item.r.id)}`
+                      }
+                      keyboardShouldPersistTaps="handled"
+                      renderItem={({ item }) =>
+                        item.type === "marker" ? (
+                          <TouchableOpacity
+                            style={styles.suggestionItem}
+                            onPress={() => handleSelectMarkerSearch(item.m)}
+                          >
+                            <View
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 15,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor:
+                                  placeCategoryColor(markerKey(item.m)) + "22",
+                              }}
+                            >
+                              <MapPin
+                                size={16}
+                                color={placeCategoryColor(markerKey(item.m))}
+                              />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.suggTitle} numberOfLines={1}>
+                                {item.m.name || item.m.address}
+                              </Text>
+                              <Text style={styles.suggSub} numberOfLines={1}>
+                                {item.m.address ||
+                                  item.m.customCategory ||
+                                  t(
+                                    placeCategoryMeta(markerKey(item.m))
+                                      ?.labelKey ?? "Place_cat_other",
+                                  )}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.suggestionItem}
+                            onPress={() => {
+                              setResults([]);
+                              onSelectCity(item.r);
+                            }}
+                          >
+                            <Text style={styles.suggTitle}>
+                              {item.r.name ?? item.r.city}
+                            </Text>
+                            <Text style={styles.suggSub}>
+                              {item.r.region ? item.r.region + ", " : ""}
+                              {item.r.country}
+                            </Text>
+                          </TouchableOpacity>
+                        )
+                      }
+                    />
+                  </View>
+                )}
             </View>
           )}
 
@@ -2726,7 +2814,9 @@ export default function MapScreen() {
               >
                 <View style={styles.disclaimerHeader}>
                   <AlertTriangle size={22} color={theme.danger || "#EF4444"} />
-                  <Text style={[styles.disclaimerTitle, { color: theme.textColor }]}>
+                  <Text
+                    style={[styles.disclaimerTitle, { color: theme.textColor }]}
+                  >
                     {t("Nav_disclaimer_title")}
                   </Text>
                 </View>
@@ -2739,7 +2829,10 @@ export default function MapScreen() {
                   {t("Nav_disclaimer_body")}
                 </Text>
                 <TouchableOpacity
-                  style={[styles.disclaimerAccept, { backgroundColor: theme.primary || "#2563EB" }]}
+                  style={[
+                    styles.disclaimerAccept,
+                    { backgroundColor: theme.primary || "#2563EB" },
+                  ]}
                   onPress={acceptNavDisclaimer}
                   activeOpacity={0.8}
                 >
@@ -2751,7 +2844,12 @@ export default function MapScreen() {
                   onPress={() => setNavDisclaimerOpen(false)}
                   style={styles.disclaimerDecline}
                 >
-                  <Text style={[styles.disclaimerDeclineText, { color: theme.textColor }]}>
+                  <Text
+                    style={[
+                      styles.disclaimerDeclineText,
+                      { color: theme.textColor },
+                    ]}
+                  >
                     {t("Nav_disclaimer_decline")}
                   </Text>
                 </TouchableOpacity>
@@ -2892,9 +2990,9 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       gap: 6,
       paddingHorizontal: 14,
       paddingVertical: 6,
-      backgroundColor: cardBgSecondary,
+      backgroundColor: inputBg,
       borderRadius: 20,
-      borderColor: subTextColor,
+      borderColor: inputBg,
       borderWidth: 2,
     },
     filterChipActive: {

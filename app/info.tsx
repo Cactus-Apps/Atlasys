@@ -10,6 +10,7 @@ import {
   ScaleIcon,
   ShieldIcon,
   Instagram,
+  Accessibility,
 } from "lucide-react-native";
 import * as React from "react";
 import {
@@ -107,10 +108,10 @@ export default function Info() {
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: "rgba(0,196,180,0.15)" },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <ShieldIcon size={20} color={"#00C4B4"} />
+                <ShieldIcon size={20} color={theme.white} />
               </View>
               <Text style={styles.menuLabel}>
                 {t("Info_menu_privacy_policy")}
@@ -127,13 +128,35 @@ export default function Info() {
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: "rgba(59,130,246,0.15)" },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <ScaleIcon size={20} color={"#3B82F6"} />
+                <ScaleIcon size={20} color={theme.white} />
               </View>
               <Text style={styles.menuLabel}>
                 {t("Info_menu_terms_of_use")}
+              </Text>
+              <ChevronRight size={18} color={theme.chevronColor} />
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() =>
+                router.navigate("/(legal)/Accessibility_Statement")
+              }
+            >
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
+                ]}
+              >
+                <Accessibility size={20} color={theme.white} />
+              </View>
+              <Text style={styles.menuLabel}>
+                {t("Info_menu_accessibility_statement")}
               </Text>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
@@ -150,10 +173,10 @@ export default function Info() {
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: theme.purpleLight },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <Copyright size={20} color={theme.purple} />
+                <Copyright size={20} color={theme.white} />
               </View>
               <Text style={styles.menuLabel}>{t("Licenses_screen_title")}</Text>
               <ChevronRight size={18} color={theme.chevronColor} />
@@ -168,10 +191,10 @@ export default function Info() {
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: theme.successLight },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <List size={20} color={theme.success} />
+                <List size={20} color={theme.white} />
               </View>
               <Text style={styles.menuLabel}>{t("Info_menu_update_log")}</Text>
               <ChevronRight size={18} color={theme.chevronColor} />

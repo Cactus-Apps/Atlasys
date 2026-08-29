@@ -55,13 +55,7 @@ export default function CityMapsButton({ onPress, isNew = true }: any) {
         <Text style={styles.subtitle}>Transit routes and top attractions</Text>
       </View>
 
-      <ChevronRight size={18} color="#7fa8ff" />
-
-      {isNew && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>NEW</Text>
-        </View>
-      )}
+      <ChevronRight size={18} color={theme.accentColor} />
     </Pressable>
   );
 }
