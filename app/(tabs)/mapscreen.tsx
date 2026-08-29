@@ -101,6 +101,11 @@ import { FILTER_CATEGORIES, FILTER_DEFS } from "@/lib/config/filters";
 import CityMapsButton from "@/components/city/CityMapsIcon";
 import { useWeatherForecast } from "@/lib/hooks/useWeatherForecast";
 import WeeklyForecast from "@/components/overlays/WeeklyForecast";
+import DropPinSheet, {
+  placeCategoryColor,
+} from "@/components/sheets_modal/DropPinSheet";
+import type { CustomPlace } from "@/lib/storage/zustand";
+import { CATEGORY_SVG_ICONS } from "@/lib/geocoding/places_categories";
 
 const { width, height } = Dimensions.get("window");
 
@@ -205,6 +210,10 @@ export default function MapScreen() {
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
   const addPlace = useAuthStore((s) => s.addPlace);
+  const customPlaces = useAuthStore((s) => s.customPlaces);
+  const addCustomPlace = useAuthStore((s) => s.addCustomPlace);
+  const updateCustomPlace = useAuthStore((s) => s.updateCustomPlace);
+  const removeCustomPlace = useAuthStore((s) => s.removeCustomPlace);
   const searchHistory = useAuthStore((s) => s.searchHistory);
   const addToSearchHistory = useAuthStore((s) => s.addToSearchHistory);
   const removeFromSearchHistory = useAuthStore(
@@ -233,6 +242,18 @@ export default function MapScreen() {
   const [results, setResults] = useState<CityResult[]>([]);
   const mapRef = useRef<MapRef | null>(null);
   const sheetRef = useRef<BottomSheet>(null);
+  const pinSheetRef = useRef<BottomSheet>(null);
+  const [viewPlace, setViewPlace] = useState<CustomPlace | null>(null);
+  const [pinMode, setPinMode] = useState<"create" | "view">("create");
+  const longPressRef = useRef<{
+    time: number;
+    x: number;
+    y: number;
+    lat: number;
+    lon: number;
+  } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedPinIdRef = useRef<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null,
   );
@@ -1160,6 +1181,169 @@ export default function MapScreen() {
     }
   }, [selectedPoi]);
 
+  // Long-press to drop a pin (custom places)
+  const handleMapTouchStart = (e: any) => {
+    if (e?.points?.length > 1) {
+      longPressRef.current = null;
+      return;
+    }
+    if (!e?.lngLat) return;
+    longPressRef.current = {
+      time: Date.now(),
+      x: e.point?.x,
+      y: e.point?.y,
+      lat: e.lngLat.lat,
+      lon: e.lngLat.lng,
+    };
+    longPressTimerRef.current = setTimeout(() => {
+      const start = longPressRef.current;
+      longPressRef.current = null;
+      longPressTimerRef.current = null;
+      if (!start) return;
+      if (routePickModeRef.current) return;
+      if (drawModeRef.current) return;
+      openPinCreateSheet(start.lat, start.lon);
+    }, 250);
+  };
+
+  const handleMapTouchMove = (e: any) => {
+    const start = longPressRef.current;
+    if (!start) return;
+    if (e?.points?.length > 1) {
+      longPressRef.current = null;
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      return;
+    }
+    const x = e.point?.x;
+    const y = e.point?.y;
+    if (x == null || y == null) return;
+    if (Math.hypot(x - start.x, y - start.y) > 18) {
+      longPressRef.current = null;
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+  };
+
+  const removeSavedMarkers = () => {
+    useAuthStore
+      .getState()
+      .customPlaces.filter((p) => !p.category)
+      .forEach((p) => removeCustomPlace(p.id));
+  };
+
+  const openPinCreateSheet = (lat: number, lon: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPinMode("create");
+    setViewPlace(null);
+    sheetRef.current?.close();
+
+    removeSavedMarkers();
+
+    addCustomPlace({
+      name: "",
+      category: "",
+      latitude: lat,
+      longitude: lon,
+    });
+
+    const newPlace = useAuthStore.getState().customPlaces[0];
+    if (newPlace) {
+      savedPinIdRef.current = newPlace.id;
+      setViewPlace(newPlace);
+    }
+
+    requestAnimationFrame(() => {
+      pinSheetRef.current?.snapToIndex(1);
+    });
+  };
+
+  const handleMapTouchEnd = (_e: any) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressRef.current = null;
+  };
+
+  const handleOpenCustomPlace = (place: CustomPlace) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPinMode("view");
+    setViewPlace(place);
+    mapRef.current?.flyTo({
+      center: [place.longitude, place.latitude],
+      zoom: 14,
+      duration: 800,
+    });
+    requestAnimationFrame(() => {
+      pinSheetRef.current?.snapToIndex(0);
+    });
+  };
+
+  const handleSaveCustomPlace = ({
+    name,
+    category,
+    customCategory,
+    categoryIcon,
+  }: {
+    name: string;
+    category: string;
+    customCategory?: string;
+    categoryIcon?: string;
+  }) => {
+    if (!savedPinIdRef.current) return;
+    updateCustomPlace(savedPinIdRef.current, {
+      name,
+      category,
+      customCategory,
+      categoryIcon,
+    });
+    savedPinIdRef.current = null;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setViewPlace(null);
+    pinSheetRef.current?.close();
+  };
+
+  const handleDeleteCustomPlace = (id: string) => {
+    if (savedPinIdRef.current === id) savedPinIdRef.current = null;
+    removeCustomPlace(id);
+    setViewPlace(null);
+    pinSheetRef.current?.close();
+  };
+
+  const handleRouteToCustomPlace = (lat: number, lon: number, name: string) => {
+    setRoute(null);
+    setDistanceInfo(null);
+    setRouteStart(
+      markerPos ? { label: t("Poi_my_location"), coordinate: markerPos } : null,
+    );
+    setRouteEnd({ label: name, coordinate: [lon, lat] });
+    setRouteSheetOpen(true);
+    setViewPlace(null);
+    pinSheetRef.current?.close();
+  };
+
+  const pinHtml = (color: string, iconSvg?: string) => `
+              <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                background: radial-gradient(circle at 50% 50%, ${color}, ${darken(color, 0.4)});
+                border-radius: 50%;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+                position: relative;
+                cursor: pointer;
+              " title="Location">
+                ${iconSvg ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>` : ""}
+              </div>
+            `;
+
   const updateBearing = async () => {
     try {
       const b = await mapRef.current?.getBearing?.();
@@ -1473,6 +1657,20 @@ export default function MapScreen() {
               click: {
                 objectListener: onMapClick,
               },
+              touchstart: {
+                objectListener: handleMapTouchStart,
+              },
+              touchmove: {
+                objectListener: handleMapTouchMove,
+              },
+              touchend: {
+                objectListener: handleMapTouchEnd,
+              },
+              touchcancel: {
+                objectListener: () => {
+                  longPressRef.current = null;
+                },
+              },
               mount: {
                 rnListener: () => {
                   ensureGlobe();
@@ -1615,6 +1813,39 @@ export default function MapScreen() {
               }}
             />
           )}
+          {!routeSheetOpen &&
+            !drawMode &&
+            customPlaces.map((place) => (
+              <Marker
+                key={place.id}
+                options={{
+                  coordinate: [place.longitude, place.latitude],
+                  element: {
+                    innerHTML: pinHtml(
+                      place.category === "custom"
+                        ? placeCategoryColor(place.categoryIcon)
+                        : place.category
+                          ? placeCategoryColor(place.category)
+                          : theme.danger,
+                      place.category === "custom"
+                        ? place.categoryIcon
+                          ? CATEGORY_SVG_ICONS[place.categoryIcon]
+                          : CATEGORY_SVG_ICONS["bookmark"]
+                        : place.category
+                          ? CATEGORY_SVG_ICONS[place.category]
+                          : CATEGORY_SVG_ICONS["bookmark"],
+                    ),
+                  },
+                }}
+                listeners={{
+                  click: {
+                    elementListener: () => {
+                      handleOpenCustomPlace(place);
+                    },
+                  },
+                }}
+              />
+            ))}
           <VectorTileSource
             id="cities-source"
             source={{
@@ -1955,6 +2186,32 @@ export default function MapScreen() {
               setRouteStart(start);
               setRouteEnd(end);
               setRouteSheetOpen(true);
+            }}
+          />
+
+          <DropPinSheet
+            sheetRef={pinSheetRef}
+            mode={pinMode}
+            pin={
+              viewPlace
+                ? {
+                    id: viewPlace.id,
+                    name: viewPlace.name,
+                    category: viewPlace.category,
+                    customCategory: viewPlace.customCategory,
+                    categoryIcon: viewPlace.categoryIcon,
+                    latitude: viewPlace.latitude,
+                    longitude: viewPlace.longitude,
+                  }
+                : null
+            }
+            snapPoints={["30%", "55%", "85%"]}
+            onSave={handleSaveCustomPlace}
+            onDelete={handleDeleteCustomPlace}
+            onRoute={handleRouteToCustomPlace}
+            onClose={() => {
+              savedPinIdRef.current = null;
+              setViewPlace(null);
             }}
           />
 
@@ -2390,39 +2647,40 @@ export default function MapScreen() {
             ]}
             githubRepo="cactus-apps/atlasys"
           />
-          {mapReady && route?.map((r: any, i: number) =>
-            r.geometry ? (
-              <GeoJSONSource
-                key={`route-${i}-${r.geometry.coordinates?.length ?? 0}`}
-                id={`route-${i}`}
-                source={{
-                  type: "geojson",
-                  data: {
-                    type: "Feature",
-                    properties: {},
-                    geometry: r.geometry,
-                  },
-                }}
-                layers={[
-                  {
-                    layer: {
-                      id: `route-line-${i}`,
-                      type: "line",
-                      layout: {
-                        "line-join": "round",
-                        "line-cap": "round",
-                      },
-                      paint: {
-                        "line-width": i === 0 ? 6 : 3,
-                        "line-color":
-                          i === 0 ? theme.primaryDark : theme.subTextColor,
+          {mapReady &&
+            route?.map((r: any, i: number) =>
+              r.geometry ? (
+                <GeoJSONSource
+                  key={`route-${i}-${r.geometry.coordinates?.length ?? 0}`}
+                  id={`route-${i}`}
+                  source={{
+                    type: "geojson",
+                    data: {
+                      type: "Feature",
+                      properties: {},
+                      geometry: r.geometry,
+                    },
+                  }}
+                  layers={[
+                    {
+                      layer: {
+                        id: `route-line-${i}`,
+                        type: "line",
+                        layout: {
+                          "line-join": "round",
+                          "line-cap": "round",
+                        },
+                        paint: {
+                          "line-width": i === 0 ? 6 : 3,
+                          "line-color":
+                            i === 0 ? theme.primaryDark : theme.subTextColor,
+                        },
                       },
                     },
-                  },
-                ]}
-              />
-            ) : null,
-          )}
+                  ]}
+                />
+              ) : null,
+            )}
         </MapProvider>
       </View>
       <MapStyleSheet

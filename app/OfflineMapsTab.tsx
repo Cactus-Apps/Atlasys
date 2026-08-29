@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Modal, Alert } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Sentry from "@sentry/react-native";
 import {
@@ -8,6 +8,9 @@ import {
   HardDrive,
   WifiOff,
   ChevronLeft,
+  Download,
+  Upload,
+  MapPin,
 } from "lucide-react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { getTotalDiskCapacityAsync } from "expo-file-system/legacy";
@@ -15,6 +18,11 @@ import { fonts } from "@/lib/fonts";
 import { listMBTiles, deleteMBTiles, MBTilesInfo } from "@/lib/storage/mbtiles";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/lib/storage/zustand";
+import {
+  exportMarkersToFile,
+  importMarkersFromFile,
+} from "@/lib/storage/markerBackupFile";
 
 function StorageRing({
   usedBytes,
@@ -128,16 +136,142 @@ function StorageRing({
   );
 }
 
+function BackupCard({
+  count,
+  busy,
+  onExport,
+  onImport,
+}: {
+  count: number;
+  busy: boolean;
+  onExport: () => void;
+  onImport: () => void;
+}) {
+  const theme = useAppTheme();
+  const { t } = useTranslation();
+  const dark = theme.isDark;
+  const cardBg = theme.cardBg;
+  const border = theme.borderColor;
+  const itemRadius = theme.isModern ? 14 : 12;
+
+  return (
+    <View
+      style={{
+        backgroundColor: cardBg,
+        borderRadius: theme.isModern ? 24 : 20,
+        padding: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: border,
+        shadowColor: "#000",
+        shadowOpacity: theme.isModern ? (dark ? 0 : 0.06) : 0,
+        shadowRadius: theme.isModern ? 12 : 0,
+        elevation: theme.isModern ? 4 : 0,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: itemRadius,
+            backgroundColor: theme.iconBg,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <MapPin size={22} color="#3B82F6" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontFamily: fonts.bold,
+              color: theme.textColor,
+            }}
+          >
+            {t("Backup_title")}
+          </Text>
+          <Text
+            style={{
+              fontSize: 12,
+              color: theme.subTextColor,
+              marginTop: 2,
+            }}
+          >
+            {t("Backup_sub", { count })}
+          </Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+        <TouchableOpacity
+          onPress={onExport}
+          disabled={busy}
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 13,
+            borderRadius: itemRadius,
+            backgroundColor: theme.primary,
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          <Download size={18} color={theme.white} />
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: fonts.bold,
+              color: theme.white,
+            }}
+          >
+            {t("Backup_export")}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onImport}
+          disabled={busy}
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 13,
+            borderRadius: itemRadius,
+            backgroundColor: theme.cardBgSecondary,
+            borderWidth: 1,
+            borderColor: border,
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          <Upload size={18} color={theme.textColor} />
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: fonts.bold,
+              color: theme.textColor,
+            }}
+          >
+            {t("Backup_import")}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function EmptyState({ dark }: { dark: boolean }) {
   const theme = useAppTheme();
 
   return (
     <View
       style={{
-        flex: 1,
         alignItems: "center",
-        justifyContent: "center",
-        padding: 48,
+        paddingVertical: 48,
+        paddingHorizontal: 48,
         gap: 16,
       }}
     >
@@ -208,13 +342,57 @@ export default function OfflineMapsTab() {
   const theme = useAppTheme();
   const dark = theme.isDark;
   const [maps, setMaps] = useState<MBTilesInfo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [totalBytes, setTotalBytes] = useState(64 * 1024 * 1024 * 1024);
   const [, setModalVisible] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+
+  const customCount = useAuthStore((s) => s.customPlaces.length);
+
+  const handleExport = async () => {
+    if (backupBusy) return;
+    const places = useAuthStore.getState().customPlaces;
+    if (places.length === 0) {
+      Alert.alert(t("Backup_title"), t("Backup_empty"));
+      return;
+    }
+    try {
+      setBackupBusy(true);
+      await exportMarkersToFile(places);
+      Alert.alert(t("Backup_title"), t("Backup_exported", { count: places.length }));
+    } catch (err) {
+      Sentry.captureException(err);
+      Alert.alert(t("Backup_title"), t("Backup_error"));
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (backupBusy) return;
+    try {
+      setBackupBusy(true);
+      const { places, errors, canceled } = await importMarkersFromFile();
+      if (canceled) return;
+      if (places.length === 0) {
+        Alert.alert(t("Backup_title"), t("Backup_error"));
+        return;
+      }
+      const { added, updated } = useAuthStore.getState().importCustomPlaces(places);
+      Alert.alert(
+        t("Backup_title"),
+        t("Backup_imported", { added, updated, errors }),
+      );
+    } catch (err) {
+      Sentry.captureException(err);
+      Alert.alert(t("Backup_title"), t("Backup_error"));
+    } finally {
+      setBackupBusy(false);
+    }
+  };
 
   const handleDelete = (id: string, name: string) => {
     setDeleteTarget({ id, name });
@@ -223,7 +401,6 @@ export default function OfflineMapsTab() {
   const load = async () => {
     const result = await listMBTiles();
     setMaps(result);
-    setLoading(false);
     try {
       const total = await getTotalDiskCapacityAsync();
       if (total) setTotalBytes(total);
@@ -374,41 +551,6 @@ export default function OfflineMapsTab() {
     </Modal>
   );
 
-  if (!loading && maps.length === 0) {
-    return (
-      <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30 }}>
-        {AlertDialogOverlay}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => router.navigate("/(tabs)/profilescreen")}
-            style={{ padding: 8 }}
-          >
-            <ChevronLeft size={24} color={theme.textColor} />
-          </TouchableOpacity>
-          <Text
-            style={{
-              fontSize: 18,
-              fontFamily: fonts.bold,
-              color: theme.textColor,
-            }}
-          >
-            Offline Maps
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-        <EmptyState dark={dark} />
-      </View>
-    );
-  }
-
   return (
     <View style={{ flex: 1, backgroundColor: bg, paddingTop: 30 }}>
       {AlertDialogOverlay}
@@ -445,6 +587,13 @@ export default function OfflineMapsTab() {
         contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 40 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 8 }}>
+            <BackupCard
+              count={customCount}
+              busy={backupBusy}
+              onExport={handleExport}
+              onImport={handleImport}
+            />
+
             <View
               style={{
                 backgroundColor: cardBg,
@@ -531,6 +680,7 @@ export default function OfflineMapsTab() {
             </Text>
           </View>
         }
+        ListEmptyComponent={<EmptyState dark={dark} />}
         renderItem={({ item }) => (
           <View
             style={{

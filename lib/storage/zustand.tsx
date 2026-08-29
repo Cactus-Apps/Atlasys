@@ -38,6 +38,19 @@ type SavedPlace = {
   addedAt: string;
 };
 
+export type CustomPlace = {
+  id: string;
+  name: string;
+  category: string;
+  latitude: number;
+  longitude: number;
+  addedAt: string;
+  /** Eigener Kategoriename für Custom-Kategorien (nur wenn category === "custom") */
+  customCategory?: string;
+  /** Key des gewählten Icons für Custom-Kategorien (Farbe + Icon werden daraus abgeleitet) */
+  categoryIcon?: string;
+};
+
 type RouteData = {
   id: string;
   destinationName: string;
@@ -73,6 +86,17 @@ type StoreAuth = {
   isPlaceSaved: (name: string) => boolean;
   _seededForUserId: string | null;
   seedDefaultPlace: () => void;
+
+  // Custom places (long-press pins, e.g. Home/Work)
+  customPlaces: CustomPlace[];
+  addCustomPlace: (place: Omit<CustomPlace, "id" | "addedAt">) => void;
+  updateCustomPlace: (id: string, updates: Partial<Omit<CustomPlace, "id" | "addedAt">>) => void;
+  removeCustomPlace: (id: string) => void;
+  importCustomPlaces: (places: Omit<CustomPlace, "id" | "addedAt">[]) => {
+    added: number;
+    updated: number;
+  };
+  isCustomPlaceSaved: (lat: number, lon: number) => boolean;
 
   // Onboarding & Settings & Theme
   isOnboardingCompleted: boolean;
@@ -139,6 +163,7 @@ type StoreAuth = {
 
 const initialState = {
   savedPlaces: [],
+  customPlaces: [],
   _seededForUserId: null,
   isOnboardingCompleted: false,
   seenAnalyticsUpdate: false,
@@ -203,6 +228,69 @@ export const useAuthStore = create<StoreAuth>()(
       },
       isPlaceSaved: (name) => {
         return get().savedPlaces.some((p) => p.name === name);
+      },
+      customPlaces: [],
+      addCustomPlace: (place) => {
+        const newPlace = {
+          ...place,
+          id: `place-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          addedAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          customPlaces: [newPlace, ...state.customPlaces],
+        }));
+      },
+      updateCustomPlace: (id, updates) => {
+        set((state) => ({
+          customPlaces: state.customPlaces.map((p) =>
+            p.id === id ? { ...p, ...updates } : p,
+          ),
+        }));
+      },
+      removeCustomPlace: (id) => {
+        set((state) => ({
+          customPlaces: state.customPlaces.filter((p) => p.id !== id),
+        }));
+      },
+      importCustomPlaces: (places) => {
+        let added = 0;
+        let updated = 0;
+        set((state) => {
+          const existing = [...state.customPlaces];
+          for (const p of places) {
+            const idx = existing.findIndex(
+              (e) =>
+                Math.abs(e.latitude - p.latitude) < 0.0001 &&
+                Math.abs(e.longitude - p.longitude) < 0.0001,
+            );
+            if (idx >= 0) {
+              existing[idx] = {
+                ...existing[idx],
+                name: p.name,
+                category: p.category,
+                customCategory: p.customCategory,
+                categoryIcon: p.categoryIcon,
+              };
+              updated++;
+            } else {
+              existing.push({
+                ...p,
+                id: `place-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                addedAt: new Date().toISOString(),
+              });
+              added++;
+            }
+          }
+          return { customPlaces: existing };
+        });
+        return { added, updated };
+      },
+      isCustomPlaceSaved: (lat, lon) => {
+        return get().customPlaces.some(
+          (p) =>
+            Math.abs(p.latitude - lat) < 0.0001 &&
+            Math.abs(p.longitude - lon) < 0.0001,
+        );
       },
       _seededForUserId: null,
       seedDefaultPlace: () => {
@@ -314,6 +402,7 @@ export const useAuthStore = create<StoreAuth>()(
         settings: state.settings,
         userId: state.userId,
         savedPlaces: state.savedPlaces,
+        customPlaces: state.customPlaces,
         searchHistory: state.searchHistory,
         avatarConfig: state.avatarConfig,
         _seededForUserId: state._seededForUserId,

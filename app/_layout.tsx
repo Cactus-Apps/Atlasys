@@ -14,6 +14,7 @@ import { PostHogProvider } from "posthog-react-native";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
+import { configureNotificationChannels } from "@/lib/storage/notifications";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
@@ -151,6 +152,10 @@ function AppBootstrap() {
 
     return () => clearTimeout(fallbackTimer);
   }, [animationDone]);
+
+  useEffect(() => {
+    configureNotificationChannels();
+  }, []);
 
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {

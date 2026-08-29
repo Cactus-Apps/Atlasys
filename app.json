@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.7.8",
+    "version": "1.7.9",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -64,9 +64,7 @@
       "expo-image",
       "expo-sqlite",
       "@sentry/react-native",
-      "expo-status-bar",
-      "./plugins/withNotifeeForegroundService",
-      "./plugins/withAndroidBuildOptimizations"
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

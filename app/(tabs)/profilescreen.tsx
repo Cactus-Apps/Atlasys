@@ -5,6 +5,7 @@ import {
   Bell,
   ChevronRight,
   Download,
+  HardDrive,
   Info,
   MapIcon,
   MessageCircleQuestionMark,
@@ -100,12 +101,12 @@ export function ProfileScreen() {
         ],
       },
       {
-        group: t("Profile_group_Offline_Maps"),
+        group: t("Profile_group_Storage"),
         items: [
           {
-            label: t("Profile_offline_maps"),
-            sub: t("Profile_offline_maps_sub"),
-            icon: Download,
+            label: t("Profile_storage"),
+            sub: t("Profile_storage_sub"),
+            icon: HardDrive,
             color: theme.info,
             bg: theme.infoLight,
             route: "/OfflineMapsTab",

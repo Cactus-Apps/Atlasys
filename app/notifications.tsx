@@ -24,6 +24,7 @@ import { useAuthStore } from "@/lib/storage/zustand";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
+import { requestNotificationPermission } from "@/lib/storage/notifications";
 
 type TopicKey =
   | "userAccount"
@@ -99,6 +100,9 @@ export default function NotificationsScreen() {
   const setTopic = (key: TopicKey, value: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const merged = resolveTopics(settings);
+    if (value) {
+      requestNotificationPermission();
+    }
     updateSettings({
       notificationTopics: { ...merged, [key]: value },
     });

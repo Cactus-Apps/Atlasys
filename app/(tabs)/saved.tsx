@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   FlatList,
   Share,
@@ -33,6 +33,10 @@ export default function SavedScreen() {
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const statusBarTheme = theme.isDark ? "light" : "dark";
+
+  const [activeTab, setActiveTab] = useState<"cities" | "places" | "markers">(
+    "cities",
+  );
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
@@ -215,32 +219,108 @@ export default function SavedScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={savedPlaces}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.name}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconCircle}>
-              <Bookmark
-                size={48}
-                color={theme.chevronColor}
-                strokeWidth={1.5}
-              />
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "cities" && styles.activeTab]}
+          onPress={() => setActiveTab("cities")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "cities" && styles.activeTabText,
+            ]}
+          >
+            Saved Cities
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "places" && styles.activeTab]}
+          onPress={() => setActiveTab("places")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "places" && styles.activeTabText,
+            ]}
+          >
+            Saved Places
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "markers" && styles.activeTab]}
+          onPress={() => setActiveTab("markers")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "markers" && styles.activeTabText,
+            ]}
+          >
+            Saved Markers
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === "cities" && (
+        <FlatList
+          data={savedPlaces}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.name}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <Bookmark
+                  size={48}
+                  color={theme.chevronColor}
+                  strokeWidth={1.5}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
+              <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
+              <TouchableOpacity
+                style={styles.exploreBtn}
+                onPress={() => router.push("/(tabs)/mapscreen")}
+              >
+                <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
-            <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
-            <TouchableOpacity
-              style={styles.exploreBtn}
-              onPress={() => router.push("/(tabs)/mapscreen")}
-            >
-              <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
-            </TouchableOpacity>
+          }
+        />
+      )}
+
+      {activeTab === "places" && (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <MapPin size={48} color={theme.chevronColor} strokeWidth={1.5} />
           </View>
-        }
-      />
+          <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
+          <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
+          <TouchableOpacity
+            style={styles.exploreBtn}
+            onPress={() => router.push("/(tabs)/mapscreen")}
+          >
+            <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {activeTab === "markers" && (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <MapPin size={48} color={theme.chevronColor} strokeWidth={1.5} />
+          </View>
+          <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
+          <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
+          <TouchableOpacity
+            style={styles.exploreBtn}
+            onPress={() => router.push("/(tabs)/mapscreen")}
+          >
+            <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -455,6 +535,41 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     exploreBtnText: {
       color: white,
       fontSize: 16,
+      fontFamily: fonts.bold,
+    },
+    tabContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: cardBg,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 14,
+      marginHorizontal: 4,
+      borderRadius: isModern ? 16 : 12,
+      backgroundColor: isModern
+        ? theme.iconBg
+        : theme.isDark
+          ? "rgba(255, 255, 255, 0.05)"
+          : cardBgSecondary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    activeTab: {
+      borderColor: primary,
+      borderWidth: 2,
+    },
+    tabText: {
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      color: subTextColor,
+    },
+    activeTabText: {
+      color: white,
       fontFamily: fonts.bold,
     },
     lockContainer: {

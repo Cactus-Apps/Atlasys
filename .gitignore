@@ -41,3 +41,12 @@ yarn-error.*
 
 # VS Code
 .vscode/
+
+# Foglamp scan (contains edit token)
+.foglamp/
+
+# Foglamp local renderer (shell + embedded scan data)
+foglamp-local.py
+.shell.html
+.viewer.html
+.serve.log
