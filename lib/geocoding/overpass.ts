@@ -86,7 +86,10 @@ const OVERPASS_UA = `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "
 
 async function overpassPost(query: string, timeoutMs = 8000): Promise<any | null> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let settled = false;
+  const timer = setTimeout(() => {
+    if (!settled) controller.abort();
+  }, timeoutMs);
   try {
     const res = await fetch(OVERPASS_URL, {
       method: "POST",
@@ -97,11 +100,13 @@ async function overpassPost(query: string, timeoutMs = 8000): Promise<any | null
       body: `data=${encodeURIComponent(query)}`,
       signal: controller.signal,
     });
+    settled = true;
     clearTimeout(timer);
     if (!res.ok) return null;
     const text = await res.text();
     try { return JSON.parse(text); } catch { return null; }
   } catch {
+    settled = true;
     clearTimeout(timer);
     return null;
   }

@@ -9,7 +9,7 @@ import {
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
 import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
-import * as Speech from "expo-speech";
+import Tts from "@iternio/react-native-tts";
 
 import React, {
   useEffect,
@@ -30,6 +30,7 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { fonts } from "@/lib/fonts";
+import { fetchOsrmRoutes } from "@/lib/osrm";
 import { useTranslation } from "react-i18next";
 import i18n from "@/app/i18n";
 import {
@@ -55,13 +56,25 @@ function pointToSegmentDist(
 ): number {
   const dx = bx - ax;
   const dy = by - ay;
+  let cx: number;
+  let cy: number;
   const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
-  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * dx;
-  const cy = ay + t * dy;
-  return Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+  if (lenSq === 0) {
+    cx = ax;
+    cy = ay;
+  } else {
+    let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    cx = ax + t * dx;
+    cy = ay + t * dy;
+  }
+  // Umrechnung der Grad-Differenzen nach Metern (~1° lat = 111320 m,
+  // 1° lon = 111320 * cos(lat) m), für kleine Distanzen genau genug.
+  const lat = (ay + by) / 2;
+  const mPerDegLon = 111320 * Math.cos((lat * Math.PI) / 180);
+  const dLonM = (px - cx) * mPerDegLon;
+  const dLatM = (py - cy) * 111320;
+  return Math.hypot(dLonM, dLatM);
 }
 
 function findNearestPointOnRoute(
@@ -190,52 +203,11 @@ function getInstructionText(
   return name || t("Nav_instruction_continue");
 }
 
-function speechLanguage(lng: string): string[] {
-  if (lng === "de") return ["de-DE", "de", "deu-DE", "deu_DE"];
-  if (lng === "es") return ["es-ES", "es", "spa-ES", "spa_ES"];
-  return ["en-US", "en", "eng-US", "eng_US"];
+function speechLanguage(lng: string): string {
+  if (lng === "de") return "de-DE";
+  if (lng === "es") return "es-ES";
+  return "en-US";
 }
-
-// Modul-lokaler Cache für verfügbare TTS-Stimmen (einmalig abrufen).
-let cachedVoices: Speech.Voice[] | null = null;
-
-async function getSpeechVoices(): Promise<Speech.Voice[]> {
-  if (cachedVoices) return cachedVoices;
-  try {
-    cachedVoices = await Speech.getAvailableVoicesAsync();
-  } catch {
-    cachedVoices = [];
-  }
-  return cachedVoices;
-}
-
-function findBestVoice(
-  langCandidates: string[],
-  voices: Speech.Voice[],
-): string | undefined {
-  const lower = langCandidates
-    .map((c) => c.toLowerCase())
-    .sort((a, b) => b.length - a.length);
-  for (const candidate of lower) {
-    const hit =
-      voices.find((v) =>
-        v.language?.toLowerCase().replace("_", "-").startsWith(candidate),
-      ) ||
-      voices.find(
-        (v) =>
-          v.language?.toLowerCase().replace("_", "-").split("-")[0] ===
-          candidate.split("-")[0],
-      );
-    if (hit) return hit.identifier || hit.name || hit.language;
-  }
-  return undefined;
-}
-
-const OSRM_ENDPOINTS: Record<string, string> = {
-  driving: "https://routing.openstreetmap.de/routed-car",
-  cycling: "https://routing.openstreetmap.de/routed-bike",
-  walking: "https://routing.openstreetmap.de/routed-foot",
-};
 
 export default function NavigationScreen() {
   const router = useRouter();
@@ -281,7 +253,9 @@ export default function NavigationScreen() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [speechError, setSpeechError] = useState(false);
   const [speechErrorMsg, setSpeechErrorMsg] = useState("");
+  const [speechNoEngine, setSpeechNoEngine] = useState(false);
   const spokenStepId = useRef<number | null>(null);
+  const initPromise = useRef<Promise<boolean> | null>(null);
 
   const coords = useMemo(
     () => navRoute?.geometry?.coordinates || [],
@@ -290,9 +264,7 @@ export default function NavigationScreen() {
   const steps = useMemo(() => navRoute?.steps || [], [navRoute?.steps]);
   const currentStep = steps[currentStepIdx];
   const nextStep = steps[currentStepIdx + 1];
-  const destCoords = navRoute?.destinationCoords;
-
-  const mapOptions = useMemo(
+  const destCoords = navRoute?.destinationCoords;  const mapOptions = useMemo(
     () => ({
       style: mapStyle,
       center: coords[0] || [0, 0],
@@ -309,16 +281,7 @@ export default function NavigationScreen() {
       profile: "driving" | "cycling" | "walking",
     ) => {
       try {
-        const base = OSRM_ENDPOINTS[profile];
-        const url =
-          `${base}/route/v1/${profile}/` +
-          `${from[0]},${from[1]};${to[0]},${to[1]}` +
-          `?overview=full&alternatives=true&geometries=geojson&steps=true`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Route request failed: ${res.status}`);
-        const json = await res.json();
-        if (!json.routes?.length) return null;
-        return json.routes;
+        return await fetchOsrmRoutes(from, to, profile);
       } catch (e) {
         Sentry.captureException(e);
         return null;
@@ -356,102 +319,76 @@ export default function NavigationScreen() {
     setStopped(true);
     subRef.current?.remove();
     subRef.current = null;
-    Speech.stop();
+    Tts.stop();
     useAuthStore.getState().setNavRoute(null);
     router.back();
   }, [router]);
 
   const speak = useCallback(
-    (text: string, retries = 3, warmup = false) => {
+    async (text: string) => {
       if (!text || !voiceEnabled) return;
-      const attempt = (remaining: number) => {
-        let started = false;
-        const langCandidates = speechLanguage(i18n.language);
-        const options: Speech.SpeechOptions = {
-          rate: 0.95,
-          pitch: 1,
-          onError: (error) => {
-            const raw = String(error ?? "");
-            const msg =
-              error &&
-              (typeof error === "object") &&
-              "message" in (error as any)
-                ? String((error as any).message)
-                : raw;
-            console.warn("[Speech] onError:", error);
-            console.warn(`[Speech] Fehler: ${raw}`);
-            Sentry.captureException(
-              new Error(`Speech error: ${msg}`),
-            );
-            if (remaining > 0) {
-              setTimeout(() => attempt(remaining - 1), 400);
-            } else {
-              setSpeechError(true);
-              setSpeechErrorMsg(raw || msg);
-            }
-          },
-          onDone: () => {
-            started = true;
-            setSpeechError(false);
-            setSpeechErrorMsg("");
-          },
-        };
-        if (warmup) {
-          options.onStart = () => {
-            started = true;
-          };
-        }
-        getSpeechVoices()
-          .then((voices) => {
-            const voice = findBestVoice(langCandidates, voices);
-            if (voice) {
-              options.voice = voice;
-            } else if (voices.length > 0) {
-              // Stimmen vorhanden, aber kein Sprach-Match: tolerantesten
-              // Sprachcode verwenden.
-              options.language = langCandidates[langCandidates.length - 1];
-            }
-            // voices.length === 0: keine language/voice setzen – die
-            // Standardstimme des Geräts sprechen lassen (Samsung-TTS kompatibel).
+      try {
+        if (!initPromise.current) {
+          initPromise.current = (async () => {
             try {
-              Speech.speak(text, options);
-            } catch (e) {
-              const msg = String(e instanceof Error ? e.message : String(e));
-              console.warn(`[Speech] Sofort-Fehler: ${msg}`);
-              Sentry.captureException(e);
-              if (remaining > 0) {
-                setTimeout(() => attempt(remaining - 1), 400);
-              } else {
-                setSpeechError(true);
-                setSpeechErrorMsg(msg);
+              const ready = await Tts.getInitStatus();
+              if (!ready) throw new Error("not_ready");
+              try {
+                await Tts.setDucking(true);
+              } catch {
+                // Ducking ist optional – Fehler hier ignorieren.
               }
+              return true;
+            } catch {
+              return false;
             }
-          })
-          .catch((e) => {
-            const msg = String(e instanceof Error ? e.message : String(e));
-            console.warn(`[Speech] Voice-Laden-Fehler: ${msg}`);
-            Sentry.captureException(e);
-            if (remaining > 0) {
-              setTimeout(() => attempt(remaining - 1), 400);
-            } else {
-              setSpeechError(true);
-              setSpeechErrorMsg(msg);
-            }
-          });
-        // Android: erster speak wird oft während TTS-Init lautlos verworfen.
-        // Nur bei warmup: Falls onStart nie feuerte, erneut versuchen.
-        if (warmup) {
-          setTimeout(() => {
-            if (!started && remaining > 0) {
-              attempt(remaining - 1);
-            }
-          }, 1200);
+          })();
         }
-      };
-      attempt(retries);
+        const ready = await initPromise.current;
+        if (!ready) {
+          setSpeechError(true);
+          setSpeechNoEngine(true);
+          setSpeechErrorMsg("no_engine");
+          return;
+        }
+        await Tts.setDefaultLanguage(speechLanguage(i18n.language));
+        await Tts.stop();
+        await Tts.speak(text, { rate: 0.95 });
+      } catch (e) {
+        const err = e as Error;
+        console.warn("[Speech] Fehler:", err?.message ?? e);
+        Sentry.captureException(e);
+        const msg = err?.message ?? String(e);
+        setSpeechError(true);
+        setSpeechNoEngine(msg === "no_engine" || msg === "not_ready");
+        setSpeechErrorMsg(msg);
+      }
     },
-    [voiceEnabled, setSpeechError, setSpeechErrorMsg],
+    [
+      voiceEnabled,
+      setSpeechError,
+      setSpeechErrorMsg,
+      setSpeechNoEngine,
+    ],
   );
+
+  const installSpeechEngine = useCallback(async () => {
+    try {
+      setSpeechErrorMsg("");
+      const installed = await Tts.requestInstallEngine();
+      if (!installed) {
+        setSpeechErrorMsg(t("Nav_engine_install_failed"));
+      } else {
+        initPromise.current = null;
+        setSpeechNoEngine(false);
+        setSpeechError(false);
+      }
+    } catch (e) {
+      console.warn("[Speech] Engine-Installation fehlgeschlagen:", e);
+      Sentry.captureException(e);
+      setSpeechErrorMsg(t("Nav_engine_install_failed"));
+    }
+  }, [t, setSpeechError, setSpeechErrorMsg, setSpeechNoEngine]);
 
   const startNavLocationWatcher = useCallback(async () => {
     if (subRef.current || stopped) return;
@@ -646,13 +583,9 @@ export default function NavigationScreen() {
   }, [coords, mapStyle]);
 
   useEffect(() => {
-    getSpeechVoices();
-  }, []);
-
-  useEffect(() => {
     if (!navRoute || !steps.length) return;
     if (spokenStepId.current != null) return;
-    speak(`${t("Nav_start")}.`, 3, true);
+    speak(`${t("Nav_start")}.`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navRoute, steps]);
 
@@ -672,6 +605,9 @@ export default function NavigationScreen() {
 
   useEffect(() => {
     if (!arrived) return;
+    // speak() ist async: alle setState laufen nach await (Microtask), nie
+    // synchron im Effect-Body.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (showWelcomeHome) speak(t("Nav_welcome_home"));
     else speak(t("Nav_arrived"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -679,6 +615,7 @@ export default function NavigationScreen() {
 
   // Sprachausgabe: Neuberechnung
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (recalcNotice) speak(t("Nav_recalculating"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recalcNotice]);
@@ -688,7 +625,7 @@ export default function NavigationScreen() {
     return () => {
       subRef.current?.remove();
       subRef.current = null;
-      Speech.stop();
+      Tts.stop();
     };
   }, []);
 
@@ -864,12 +801,13 @@ export default function NavigationScreen() {
           <TouchableOpacity
             onPress={() => {
               if (voiceEnabled) {
-                Speech.stop();
+                Tts.stop();
                 setVoiceEnabled(false);
               } else {
                 setVoiceEnabled(true);
                 setSpeechError(false);
                 setSpeechErrorMsg("");
+                setSpeechNoEngine(false);
                 const stepText = currentStep
                   ? getInstructionText(currentStep, t)
                   : "";
@@ -1042,6 +980,22 @@ export default function NavigationScreen() {
               >
                 {speechErrorMsg}
               </Text>
+            )}
+            {speechNoEngine && (
+              <TouchableOpacity
+                onPress={installSpeechEngine}
+                style={[s.engineBtn, { backgroundColor: theme.primary || "#2563EB" }]}
+                accessibilityRole="button"
+              >
+                <Text
+                  style={[
+                    s.engineBtnText,
+                    { color: theme.white || "#fff" },
+                  ]}
+                >
+                  {t("Nav_engine_install")}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         </Animated.View>
@@ -1266,5 +1220,16 @@ const s = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     flex: 1,
+  },
+  engineBtn: {
+    alignSelf: "flex-start",
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  engineBtnText: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
   },
 });

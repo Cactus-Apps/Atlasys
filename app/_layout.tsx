@@ -38,6 +38,7 @@ function sentryBeforeSend(
     "kumi.systems",
     "nominatim.openstreetmap.org",
     "routing.openstreetmap.de",
+    "router.project-osrm.org",
     "Failed to check for update",
     "doesn't exist or isn't a directory",
     "Location request failed due to unsatisfied device settings",

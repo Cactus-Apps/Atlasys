@@ -637,6 +637,8 @@
   "Nav_voice_off": "Voice guidance off",
   "Nav_start": "Navigation started",
   "Nav_no_speech": "Voice guidance could not be started",
+  "Nav_engine_install": "Install speech engine",
+  "Nav_engine_install_failed": "Installation failed. Please enable a TTS engine manually in the system settings.",
   "Nav_replay": "Read instruction again",
   "Nav_disclaimer_title": "Navigation Disclaimer",
   "Nav_disclaimer_body": "Atlasys is designed to assist you with navigation, but it does not replace your own attention and judgement.\n\nRoad traffic can be unpredictable: always drive, cycle or walk attentively and follow the traffic rules of the country or region you are in. Never use the app in a way that distracts you from the road, and never navigate while under the influence of alcohol, drugs or medication.\n\nNavigation data, directions and map information may occasionally be inaccurate, incomplete or out of date. Atlasys and its developers accept no liability for any damages or losses resulting from incorrect navigation, getting lost, or any other use of the app.",

@@ -88,6 +88,33 @@ const HEADERS = {
 const PROXY_URL = process.env.EXPO_PUBLIC_OVERPASS_PROXY_URL;
 const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function overpassFetch(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<{ ok: boolean; status: number; text: string } | null> {
+  const controller = new AbortController();
+  let settled = false;
+  const timer = setTimeout(() => {
+    if (!settled) controller.abort();
+  }, timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    settled = true;
+    clearTimeout(timer);
+    const text = await res.text();
+    return { ok: res.ok, status: res.status, text };
+  } catch {
+    settled = true;
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 async function overpassQuery(
   query: string,
   options?: {
@@ -106,55 +133,78 @@ async function overpassQuery(
     finalQuery = query.replace(/{bbox}/g, bbox);
   }
 
+  // Proxy: ein Versuch (mit TTL-Cache). Fehler fallen auf die direkte API zurück.
   if (PROXY_URL) {
     try {
-      const res = await fetch(PROXY_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
+      const proxyRes = await overpassFetch(
+        PROXY_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${API_KEY}`,
+          },
+          body: JSON.stringify({
+            query: finalQuery,
+            ttl: options?.ttl ?? 86400,
+            city_name: options?.cityName,
+            lat: options?.lat,
+            lon: options?.lon,
+          }),
         },
-        body: JSON.stringify({
-          query: finalQuery,
-          ttl: options?.ttl ?? 86400,
-          city_name: options?.cityName,
-          lat: options?.lat,
-          lon: options?.lon,
-        }),
-      });
-      if (res.ok) {
-        const proxyText = await res.text();
+        12000,
+      );
+      if (proxyRes?.ok) {
         try {
-          return JSON.parse(proxyText);
+          return JSON.parse(proxyRes.text);
         } catch {
           console.warn(
             "Proxy JSON parse error, response starts with:",
-            proxyText.slice(0, 100),
+            proxyRes.text.slice(0, 100),
           );
         }
       }
     } catch {}
   }
 
-  try {
-    const res = await fetch(DIRECT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
+  // Direkte Overpass-API: mehrere Versuche mit Backoff, da die öffentliche
+  // Instanz häufig transient fehlschlägt (429/Timeout/OOM).
+  const MAX_DIRECT_ATTEMPTS = 3;
+  const backoff = [0, 400, 900];
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < MAX_DIRECT_ATTEMPTS; attempt++) {
+    if (attempt > 0) await delay(backoff[attempt] ?? 1000);
+    const res = await overpassFetch(
+      DIRECT_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
+        },
+        body: `data=${encodeURIComponent(finalQuery)}`,
       },
-      body: `data=${encodeURIComponent(finalQuery)}`,
-    });
-    if (!res.ok) return null;
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      return null;
+      15000,
+    );
+    if (!res) continue;
+    lastStatus = res.status;
+    if (res.ok) {
+      try {
+        return JSON.parse(res.text);
+      } catch {
+        continue;
+      }
     }
-  } catch {
-    return null;
+    // 429 (Rate-Limit): länger warten, dann erneut versuchen.
+    if (res.status === 429) await delay(1200);
   }
+
+  // Letzte Distingierung: Fehlercode protokollieren, damit Fehler #4/#7
+  // besser nachvollziehbar sind.
+  if (lastStatus >= 400) {
+    console.warn(`[overpass] direct API failed with status ${lastStatus}`);
+  }
+  return null;
 }
 
 function buildBbox(lat: number, lon: number, radiusKm: number): string {
@@ -354,7 +404,9 @@ export async function fetchTransitRoutes(
   `;
   const data = await overpassQuery(query, { lat, lon, radius: 3000 });
   if (!data?.elements) {
-    throw new Error("No response from Overpass API");
+    // Transienter Overpass-Ausfall – Zeige lieber "keine Routen" als einen
+    // Fehlerbanner. Nach den Retries in overpassQuery ist die API nicht erreichbar.
+    return [];
   }
   const rawRoutes: TransitRoute[] = data.elements
     .filter((el: any) => el.tags?.name || el.tags?.ref)
@@ -528,7 +580,16 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       out geom;
   `;
   try {
-    const data = await overpassQuery(query);
+    // Mehrfach fragen, falls Overpass transient eine leere Antwort liefert (#7).
+    let data: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await delay(500 * attempt);
+      const result = await overpassQuery(query);
+      if (result?.elements?.length) {
+        data = result;
+        break;
+      }
+    }
     if (!data?.elements?.length) {
       Sentry.captureMessage("fetchTransitRouteDetails: empty response", {
         extra: { osmId },

@@ -623,6 +623,8 @@
   "Nav_voice_off": "Guía por voz desactivada",
   "Nav_start": "Navegación iniciada",
   "Nav_no_speech": "No se pudo iniciar la guía por voz",
+  "Nav_engine_install": "Instalar motor de voz",
+  "Nav_engine_install_failed": "Instalación fallida. Activa un motor de TTS manualmente en la configuración del sistema.",
   "Nav_replay": "Leer instrucción de nuevo",
   "Nav_disclaimer_title": "Aviso de navegación",
   "Nav_disclaimer_body": "Atlasys está diseñado para ayudarle con la navegación, pero no sustituye su propia atención ni su criterio.\n\nEl tráfico puede ser imprevisible: conduzca, circule en bici o camine siempre con atención y respete las normas de tráfico del país o región en el que se encuentre. No utilice la aplicación de un modo que le distraiga de la carretera y nunca navegue bajo los efectos del alcohol, las drogas o los medicamentos.\n\nLa información de navegación, las indicaciones y los datos de mapas pueden ser en ocasiones inexactos, incompletos o desactualizados. Atlasys y sus desarrolladores no asumen responsabilidad alguna por daños derivados de una navegación incorrecta, pérdidas o cualquier otro uso de la aplicación.",

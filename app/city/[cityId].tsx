@@ -80,6 +80,7 @@ import {
   type CityTransitStop,
   type TransitRoute,
 } from "@/lib/geocoding/cityoverpass";
+import { safeFetchJson } from "@/lib/fetchJson";
 import {
   fetchPOIDetails,
   parseOpeningHours,
@@ -286,6 +287,7 @@ export default function CityScreen() {
   useEffect(() => {
     if (!cityName) return;
     const controller = new AbortController();
+    let finished = false;
     const headers = {
       "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
     };
@@ -298,8 +300,8 @@ export default function CityScreen() {
           `https://${wikiLang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(cityName)}&limit=1&format=json&origin=*`,
           { headers, signal: controller.signal },
         );
-        const searchData = await searchRes.json();
-        if (!searchData[1]?.length) {
+        const searchData = await safeFetchJson<[string, string[]]>(searchRes);
+        if (!searchData?.[1]?.length) {
           setLoadingArticle(false);
           return;
         }
@@ -309,10 +311,12 @@ export default function CityScreen() {
           `https://${wikiLang}.wikipedia.org/w/api.php?action=query&prop=extracts|pageprops&exintro&explaintext&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`,
           { headers, signal: controller.signal },
         );
-        const extractData = await extractRes.json();
-        const pages = extractData.query.pages;
+        const extractData = await safeFetchJson<{
+          query?: { pages?: Record<string, any> };
+        }>(extractRes);
+        const pages = extractData?.query?.pages ?? {};
         const pageId = Object.keys(pages)[0];
-        const extract = pages[pageId].extract || t("No_summary_available");
+        const extract = pages[pageId]?.extract || t("No_summary_available");
 
         let imageUrls: { previewUrl: string; fullUrl: string }[] = [];
         try {
@@ -322,16 +326,16 @@ export default function CityScreen() {
               `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
               { signal: controller.signal },
             );
-            const wdData = await wdRes.json();
-            const cat = wdData.entities?.[qid]?.sitelinks?.commonswiki?.title;
+            const wdData = await safeFetchJson(wdRes);
+            const cat = wdData?.entities?.[qid]?.sitelinks?.commonswiki?.title;
             if (cat) {
               const cmRes = await fetch(
                 `https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(cat)}&cmtype=file&cmlimit=20&format=json&origin=*`,
                 { headers, signal: controller.signal },
               );
-              const cmData = await cmRes.json();
+              const cmData = await safeFetchJson(cmRes);
               const imageTitles =
-                cmData.query?.categorymembers?.map((cm: any) => cm.title) || [];
+                cmData?.query?.categorymembers?.map((cm: any) => cm.title) || [];
 
               if (imageTitles.length > 0) {
                 const titlesQuery = imageTitles
@@ -341,8 +345,8 @@ export default function CityScreen() {
                   `https://${wikiLang}.wikipedia.org/w/api.php?action=query&titles=${titlesQuery}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=320&format=json&origin=*`,
                   { headers, signal: controller.signal },
                 );
-                const iiData = await iiRes.json();
-                if (iiData.query?.pages) {
+                const iiData = await safeFetchJson(iiRes);
+                if (iiData?.query?.pages) {
                   const isJunk = (url: string) => {
                     const lower = url.toLowerCase();
                     return [
@@ -388,12 +392,15 @@ export default function CityScreen() {
       } catch (e) {
         Sentry.captureException(e);
       } finally {
+        finished = true;
         if (!controller.signal.aborted) setLoadingArticle(false);
       }
     };
 
     fetchArticle();
-    return () => controller.abort();
+    return () => {
+      if (!finished) controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityName]);
 

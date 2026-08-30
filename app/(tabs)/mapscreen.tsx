@@ -78,6 +78,7 @@ import { useTranslation } from "react-i18next";
 import { Image as ExpoImage } from "expo-image";
 import { getOsmIdFromNominatim } from "@/lib/geocoding/overpass";
 import { reverseGeocodeAddress } from "@/lib/geocoding/geocoding";
+import { safeFetchJson } from "@/lib/fetchJson";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import {
   GestureHandlerRootView,
@@ -716,6 +717,7 @@ export default function MapScreen() {
 
     const controller = new AbortController();
 
+    let finished = false;
     const fetchWikipediaData = async () => {
       setLoading(true);
       setError(null);
@@ -728,8 +730,8 @@ export default function MapScreen() {
           `https://${wikiLang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(city.name)}&limit=1&format=json&origin=*`,
           { headers, signal: controller.signal },
         );
-        const searchData = await searchRes.json();
-        if (!searchData[1]?.length) {
+        const searchData = await safeFetchJson<[string, string[]]>(searchRes);
+        if (!searchData?.[1]?.length) {
           setError(t("Article_not_found"));
           setLoading(false);
           return;
@@ -755,10 +757,12 @@ export default function MapScreen() {
           { headers, signal: controller.signal },
         );
 
-        const extractData = await extractRes.json();
-        const pages = extractData.query.pages;
+        const extractData = await safeFetchJson<{
+          query?: { pages?: Record<string, any> };
+        }>(extractRes);
+        const pages = extractData?.query?.pages ?? {};
         const pageId = Object.keys(pages)[0];
-        const extract = pages[pageId].extract;
+        const extract = pages[pageId]?.extract;
 
         // 3. Images – try Commons category first
         let imageTitles: string[] = [];
@@ -769,16 +773,16 @@ export default function MapScreen() {
               `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
               { signal: controller.signal },
             );
-            const wdData = await wdRes.json();
-            const cat = wdData.entities?.[qid]?.sitelinks?.commonswiki?.title;
+            const wdData = await safeFetchJson(wdRes);
+            const cat = wdData?.entities?.[qid]?.sitelinks?.commonswiki?.title;
             if (cat) {
               const cmRes = await fetch(
                 `https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(cat)}&cmtype=file&cmlimit=50&format=json&origin=*`,
                 { headers, signal: controller.signal },
               );
-              const cmData = await cmRes.json();
+              const cmData = await safeFetchJson(cmRes);
               imageTitles =
-                cmData.query?.categorymembers?.map((cm: any) => cm.title) || [];
+                cmData?.query?.categorymembers?.map((cm: any) => cm.title) || [];
             }
           }
         } catch (error) {
@@ -790,9 +794,9 @@ export default function MapScreen() {
             `https://${wikiLang}.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`,
             { headers, signal: controller.signal },
           );
-          const imagesPropData = await imagesPropRes.json();
+          const imagesPropData = await safeFetchJson(imagesPropRes);
           imageTitles =
-            imagesPropData.query?.pages[pageId]?.images?.map(
+            imagesPropData?.query?.pages?.[pageId]?.images?.map(
               (img: any) => img.title,
             ) || [];
         }
@@ -894,7 +898,10 @@ export default function MapScreen() {
             }),
           ]);
           const [imagesInfoPreviewData, imagesInfoFullData] = await Promise.all(
-            [imagesInfoPreviewRes.json(), imagesInfoFullRes.json()],
+            [
+              safeFetchJson(imagesInfoPreviewRes),
+              safeFetchJson(imagesInfoFullRes),
+            ],
           );
 
           const mapInfos = (data: any) => {
@@ -950,6 +957,7 @@ export default function MapScreen() {
       } catch (error) {
         Sentry.captureException(error);
       } finally {
+        finished = true;
         if (!controller.signal.aborted) setLoading(false);
       }
     };
@@ -965,7 +973,7 @@ export default function MapScreen() {
     lastFetchCityKeyRef.current = cityKey;
     const wikiTimer = setTimeout(() => fetchWikipediaData());
     return () => {
-      controller.abort();
+      if (!finished) controller.abort();
       clearTimeout(wikiTimer);
     };
   }, [city?.name, city?.latitude, city?.longitude, i18n.language, t]);
@@ -1045,7 +1053,7 @@ export default function MapScreen() {
           setLoadingSearch(false);
           return;
         }
-        const json = await resp.json();
+        const json = (await safeFetchJson<{ results?: any[] }>(resp)) || {};
         const arr = (json.results || []).map((it: any) => ({
           id: it.id ?? `${it.latitude}-${it.longitude}`,
           city: it.name,

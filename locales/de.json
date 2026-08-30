@@ -644,6 +644,8 @@
   "Nav_voice_off": "Sprachausgabe aus",
   "Nav_start": "Navigation gestartet",
   "Nav_no_speech": "Sprachausgabe konnte nicht gestartet werden",
+  "Nav_engine_install": "Sprach-Engine installieren",
+  "Nav_engine_install_failed": "Installation fehlgeschlagen. Bitte TTS-Engine manuell in den Systemeinstellungen aktivieren.",
   "Nav_replay": "Anweisung erneut vorlesen",
   "Nav_disclaimer_title": "Navigations-Hinweis",
   "Nav_disclaimer_body": "Atlasys soll Ihnen bei der Navigation helfen, ersetzt aber nicht Ihre eigene Aufmerksamkeit und Ihr Urteilsvermögen.\n\nDer Straßenverkehr kann unvorhersehbar sein: Fahren, radeln oder gehen Sie stets aufmerksam und halten Sie sich an die Verkehrsregeln des Landes bzw. der Region, in der Sie sich befinden. Nutzen Sie die App niemals so, dass sie Sie vom Verkehr ablenkt, und navigieren Sie niemals unter dem Einfluss von Alkohol, Drogen oder Medikamenten.\n\nNavigationsdaten, Wegbeschreibungen und Karteninformationen können gelegentlich ungenau, unvollständig oder veraltet sein. Atlasys und seine Entwickler haften nicht für Schäden, die durch fehlerhafte Navigation, Verfahren oder sonstige Nutzung der App entstehen.",

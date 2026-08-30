@@ -12,6 +12,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
+import { fetchOsrmRoutes, type OsrmProfile } from "@/lib/osrm";
 import {
   Car,
   Bike,
@@ -193,35 +194,25 @@ export default function RouteSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endQuery, focusedField]);
 
-  const OSRM_ENDPOINTS: Record<Profile, string> = {
-    driving: "https://routing.openstreetmap.de/routed-car",
-    cycling: "https://routing.openstreetmap.de/routed-bike",
-    walking: "https://routing.openstreetmap.de/routed-foot",
-  };
-
   async function fetchRoute() {
     if (!start || !end) return;
     setLoading(true);
     setRouteError(null);
     try {
-      const base = OSRM_ENDPOINTS[profile];
-      const url =
-        `${base}/route/v1/${profile}/` +
-        `${start.coordinate[0]},${start.coordinate[1]};` +
-        `${end.coordinate[0]},${end.coordinate[1]}` +
-        `?overview=full&alternatives=true&geometries=geojson&steps=true`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Route request failed: ${res.status}`);
-      const json = await res.json();
-      if (!json.routes?.length) {
+      const routes = await fetchOsrmRoutes(
+        start.coordinate,
+        end.coordinate,
+        profile as OsrmProfile,
+      );
+      if (!routes?.length) {
         setRouteError(t("Route_not_found"));
         return;
       }
       setRouteInfo({
-        distance: json.routes[0].distance,
-        duration: json.routes[0].duration,
+        distance: routes[0].distance,
+        duration: routes[0].duration,
       });
-      onRouteReady(json.routes, profile);
+      onRouteReady(routes, profile);
     } catch (err: any) {
       Sentry.captureException(err);
       setRouteError(t("Route_error_load"));
