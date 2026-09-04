@@ -75,10 +75,10 @@
         "projectId": "753eb474-331e-49f0-a5a9-fa0d2431fe5e"
       }
     },
-    "runtimeVersion": "1",
+    "runtimeVersion": "2",
     "updates": {
       "url": "https://u.expo.dev/753eb474-331e-49f0-a5a9-fa0d2431fe5e"
     },
-    "owner": "atlasys127"
+    "owner": "helloworld127"
   }
 }
