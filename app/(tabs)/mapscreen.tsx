@@ -1469,6 +1469,78 @@ export default function MapScreen() {
     }
   };
 
+  const mapHandlersRef = useRef({
+    onMapClick,
+    handleMapTouchStart,
+    handleMapTouchMove,
+    handleMapTouchEnd,
+    updateBearing,
+  });
+  mapHandlersRef.current = {
+    onMapClick,
+    handleMapTouchStart,
+    handleMapTouchMove,
+    handleMapTouchEnd,
+    updateBearing,
+  };
+
+  const ensureGlobeRef = useRef<(typeof ensureGlobe) | null>(null);
+  ensureGlobeRef.current = ensureGlobe;
+
+  const pendingMove = useRef(false);
+  const handleMoveRef = useRef<(e: any) => void>(async () => {});
+  handleMoveRef.current = async (e: any) => {
+    if (e?.target?.getCenter) {
+      const c = await e.target.getCenter();
+      const z = await e.target.getZoom();
+      mapCenterRef.current = [c.lng, c.lat];
+      setMapPosition({
+        latitude: c.lat,
+        longitude: c.lng,
+        zoom: z,
+      });
+    }
+  };
+  const throttledMove = useCallback((e: any) => {
+    if (pendingMove.current) return;
+    pendingMove.current = true;
+    const run = () => {
+      pendingMove.current = false;
+      handleMoveRef.current(e);
+    };
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(run);
+    } else {
+      run();
+    }
+  }, []);
+
+  const mapOptions = useMemo(
+    () => ({
+      style: MapStyle,
+      center: initialCenter,
+      zoom: initialZoom.current,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [MapStyle, initialCenter[0], initialCenter[1], initialZoom.current],
+  );
+
+  const mapListeners = useMemo(
+    () => ({
+      click: { objectListener: (e: any) => mapHandlersRef.current.onMapClick(e) },
+      touchstart: { objectListener: (e: any) => mapHandlersRef.current.handleMapTouchStart(e) },
+      touchmove: { objectListener: (e: any) => mapHandlersRef.current.handleMapTouchMove(e) },
+      touchend: { objectListener: (e: any) => mapHandlersRef.current.handleMapTouchEnd(e) },
+      touchcancel: { objectListener: () => { longPressRef.current = null; } },
+      mount: { rnListener: () => ensureGlobeRef.current?.() },
+      rotate: { objectListener: () => mapHandlersRef.current.updateBearing() },
+      rotateend: { objectListener: () => mapHandlersRef.current.updateBearing() },
+      move: { objectListener: throttledMove },
+      load: { objectListener: () => setMapReady(true) },
+    }),
+    [throttledMove],
+  );
+
   const onBlur = () => {
     Keyboard.dismiss();
     setIsSearching(false);
@@ -1761,56 +1833,8 @@ export default function MapScreen() {
           )}
           <Map
             ref={mapRef}
-            options={{
-              style: MapStyle,
-              center: initialCenter,
-              zoom: initialZoom.current,
-            }}
-            listeners={{
-              click: {
-                objectListener: onMapClick,
-              },
-              touchstart: {
-                objectListener: handleMapTouchStart,
-              },
-              touchmove: {
-                objectListener: handleMapTouchMove,
-              },
-              touchend: {
-                objectListener: handleMapTouchEnd,
-              },
-              touchcancel: {
-                objectListener: () => {
-                  longPressRef.current = null;
-                },
-              },
-              mount: {
-                rnListener: () => {
-                  ensureGlobe();
-                },
-              },
-              rotate: {
-                objectListener: updateBearing,
-              },
-              rotateend: { objectListener: updateBearing },
-              move: {
-                objectListener: async (e: any) => {
-                  if (e?.target?.getCenter) {
-                    const c = await e.target.getCenter();
-                    const z = await e.target.getZoom();
-                    mapCenterRef.current = [c.lng, c.lat];
-                    setMapPosition({
-                      latitude: c.lat,
-                      longitude: c.lng,
-                      zoom: z,
-                    });
-                  }
-                },
-              },
-              load: {
-                objectListener: () => setMapReady(true),
-              },
-            }}
+            options={mapOptions}
+            listeners={mapListeners}
           />
           {!routeSheetOpen && (
             <Marker
