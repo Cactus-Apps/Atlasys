@@ -4,10 +4,10 @@ import { useRouter } from "expo-router";
 import {
   Bell,
   ChevronRight,
-  Download,
   HardDrive,
   Info,
   MapIcon,
+  MapPin,
   MessageCircleQuestionMark,
   SettingsIcon,
   UserIcon,
@@ -97,6 +97,19 @@ export function ProfileScreen() {
             color: theme.success,
             bg: theme.successLight,
             route: "/notifications",
+          },
+        ],
+      },
+      {
+        group: t("Profile_group_Live_Sharing"),
+        items: [
+          {
+            label: t("Profile_live_sharing"),
+            sub: t("Profile_live_sharing_sub"),
+            icon: MapPin,
+            color: theme.warningDark,
+            bg: theme.warningLight,
+            route: "/sharing",
           },
         ],
       },

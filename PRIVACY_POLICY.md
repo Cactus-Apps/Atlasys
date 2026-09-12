@@ -1,6 +1,6 @@
 # ATLASYS – PRIVACY POLICY
 
-Last updated: May 2026 · Version 1.1
+Last updated: September 2026 · Version 1.2
 Controller: Cactus Apps · cactus_apps@proton.me
 Open Source: github.com/Cactus-Apps/Atlasys
 
@@ -52,6 +52,48 @@ center on your device.
 
 Location permission is requested via the standard system prompt. You can revoke
 this permission at any time in your device settings.
+
+### 2a. LIVE LOCATION SHARING (FAMILY SHARING)
+
+Atlasys also offers an optional "live location sharing" feature for families.
+It is built so that we cannot see what is being shared — even if our database
+or servers were fully compromised:
+
+• **End-to-end encryption.** Coordinates are encrypted on the sender's device
+using established, audited cryptography (TweetNaCl: X25519 + XSalsa20-Poly1305
+with Ed25519 signatures). They can only be decrypted on the recipients'
+devices. We never hold decryption keys.
+
+• **No location database and no group database.** Shared positions travel as
+*ephemeral* realtime broadcast messages through our relay. Nothing is stored,
+there are no database rows, and messages are deleted by the system as they are
+delivered. "Position" and "sharing ended" messages are deliberately identical
+in size so that not even a passive observer can tell them apart.
+
+• **No server-visible membership.** The family roster (who belongs to a family
+and their device public keys) exists only on the involved devices. It is
+established out-of-band by scanning QR codes in person — the same model
+messenger apps use to link a device. Invite codes contain no material that
+could decrypt anything.
+
+• **No history, no timestamps.** We do not keep location history, and the app
+does not display any "seen X minutes ago" information. If a device goes
+offline, every other family device simply infers this from the absence of
+position signals and shows the last position without any time indication.
+
+• **Device protection while sharing.** While live sharing is active, the map
+view is gated behind biometric authentication (Face ID / fingerprint) and
+screenshots plus the app-switcher preview are blocked.
+
+• **Honest limitation.** A relay-based system cannot hide that *some* network
+traffic exists, at what time it occurs, or over which IP it flows.
+Infrastructure-level logs (load balancers, hosting providers, network
+operators) may therefore observe connection metadata — but they can never
+link that traffic to a person or to a location: channel names are unguessable
+secrets derived from the encryption key, and coordinates never appear in
+cleartext outside the participating devices. We deliberately describe this as
+"no server ever sees plaintext locations", not as "zero metadata" — no such
+claim is made.
 
 ## 3. LEGAL BASES (GDPR ART. 6)
 
@@ -108,6 +150,7 @@ Your IP address is used once to determine approximate country. Not stored.
 • We do not show ads.
 • We do not build a behavioral profile about you.
 • We do not share your location history with anyone.
+• We do not store, log, or retain shared live locations at any point.
 
 ## 5. RETENTION PERIODS
 
@@ -120,6 +163,10 @@ until you withdraw consent.
 • Crash reports (Sentry): Retained according to Sentry's own retention policy.
 • Local app data (offline maps, settings): Stored only on your device. Deleted
 when you uninstall the app or clear app data.
+• Live location sharing: Nothing is retained. Realtime broadcast messages are
+transient and are not stored; the family roster and device keys exist only in
+the device's secure keychain and are deleted when you leave a family or delete
+your account. No location data is ever written to our database.
 
 ## 6. INTERNATIONAL DATA TRANSFERS
 
@@ -180,4 +227,4 @@ Cactus Apps
 Email: cactus_apps@proton.me
 GitHub: github.com/Cactus-Apps/Atlasys
 
-##### Last updated: May 2026 · Version 1.1
+##### Last updated: September 2026 · Version 1.2
