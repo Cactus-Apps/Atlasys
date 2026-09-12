@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.8.2",
+    "version": "1.8.4",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -10,7 +10,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cactus-apps.Atlasys",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Face ID is used to unlock the live location view when location sharing is active."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -64,7 +67,14 @@
       "expo-image",
       "expo-sqlite",
       "@sentry/react-native",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kamera wird benötigt, um Familien-Pairing-Codes zu scannen."
+        }
+      ],
+      "expo-local-authentication"
     ],
     "experiments": {
       "typedRoutes": true
@@ -79,6 +89,6 @@
     "updates": {
       "url": "https://u.expo.dev/753eb474-331e-49f0-a5a9-fa0d2431fe5e"
     },
-    "owner": "helloworld127"
+    "owner": "atlasys127"
   }
 }

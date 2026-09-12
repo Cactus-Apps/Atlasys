@@ -1,6 +1,6 @@
 # ATLASYS – TERMS OF USE
 
-Effective: May 2026 · Version 1.1
+Effective: September 2026 · Version 1.2
 Provider: Cactus Apps · cactus_apps@proton.me
 Open Source: github.com/Cactus-Apps/Atlasys
 
@@ -75,6 +75,25 @@ or third-party infrastructure
 Creating an account is required. You are responsible for maintaining the confidentiality of
 your account credentials and for all activity that occurs under your account.
 You must provide accurate information when creating an account.
+
+### 5a. LIVE LOCATION SHARING
+
+Atlasys offers an optional live location sharing feature for people who know
+and trust each other (e.g. families). You may only share your live location
+with people who have consented to receive it, and you may only view the
+locations of others with their explicit consent.
+
+• Sharing is end-to-end encrypted and ephemeral: coordinates never leave the
+participating devices in a readable form, and no location is stored on our
+servers (see Privacy Policy §2a).
+• Protect your device: whoever gains access to your unlocked device while
+sharing is active can see the shared locations. Keeping your screen lock and
+biometric protection enabled is your responsibility.
+• Pairing is done via QR codes that must be scanned in person. Never forward
+screenshots of pairing codes; doing so may allow someone else to subscribe to
+your private channel.
+• Using the feature to monitor or track a person without their knowledge is a
+material violation of these Terms (see Section 4).
 
 ## 6. THIRD-PARTY SERVICES
 
@@ -175,4 +194,4 @@ Cactus Apps
 Email: cactus_apps@proton.me
 GitHub: github.com/Cactus-Apps/Atlasys
 
-Effective: May 2026 · Version 1.1
+Effective: September 2026 · Version 1.2
