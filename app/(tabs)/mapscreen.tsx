@@ -44,6 +44,7 @@ import {
   BedDouble,
   Sparkles,
   Landmark,
+  Lock,
   MapPin,
 } from "lucide-react-native";
 import React, {
@@ -114,6 +115,9 @@ import DropPinSheet, {
 } from "@/components/sheets_modal/DropPinSheet";
 import type { CustomPlace } from "@/lib/storage/zustand";
 import { CATEGORY_SVG_ICONS } from "@/lib/geocoding/places_categories";
+import { useSharingStore } from "@/lib/sharing/state";
+import { useShareLock } from "@/lib/sharing/appLock";
+import { sharingManager } from "@/lib/sharing/channel";
 
 const { width, height } = Dimensions.get("window");
 
@@ -123,6 +127,28 @@ export const darken = (hex: string, amount: number) => {
   const g = Math.max(0, parseInt(c.substring(2, 4), 16) * (1 - amount));
   const b = Math.max(0, parseInt(c.substring(4, 6), 16) * (1 - amount));
   return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+};
+
+const renderPeerMarker = (color: string, name: string, status: string) => {
+  const dim = status === "offline";
+  const ended = status === "ended";
+  const opacity = ended || dim ? (ended ? 0.85 : 0.6) : 1;
+  const border = ended ? `3px solid ${color}` : `2.5px solid #ffffff`;
+  const background = ended ? "#ffffff" : color;
+  return `
+<div style="display:flex; flex-direction:column; align-items:center; transform: translateY(-20px);">
+  <div style="
+    width:18px; height:18px; border-radius:50%;
+    background:${background};
+    border:${border};
+    opacity:${opacity};
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  "></div>
+  <div style="margin-top:2px; padding:1px 6px; background: rgba(0,0,0,0.55); color:#fff; font-size:11px; border-radius:8px; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+    ${name}
+  </div>
+</div>
+`;
 };
 
 type CityResult = {
@@ -281,6 +307,17 @@ export default function MapScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const sharingPeers = useSharingStore((s) => s.peers);
+  const sharingActive = useSharingStore((s) => s.active);
+  const { locked: sharingLocked, requestUnlock: unlockSharing } =
+    useShareLock();
+  const sharePeerMarkers = useMemo(
+    () =>
+      Object.values(sharingPeers).filter(
+        (p) => p.latitude != null && p.longitude != null,
+      ),
+    [sharingPeers],
+  );
   const { t, i18n } = useTranslation();
   const filters = useMemo(
     () =>
@@ -467,6 +504,11 @@ export default function MapScreen() {
 
   const StatusBarStyle: "dark" | "light" =
     currentThemeKey === "dark" ? "light" : "dark";
+
+  // Live location sharing
+  useEffect(() => {
+    void sharingManager.bootstrap();
+  }, []);
 
   // Location/GPS Stuff
 
@@ -782,7 +824,8 @@ export default function MapScreen() {
               );
               const cmData = await safeFetchJson(cmRes);
               imageTitles =
-                cmData?.query?.categorymembers?.map((cm: any) => cm.title) || [];
+                cmData?.query?.categorymembers?.map((cm: any) => cm.title) ||
+                [];
             }
           }
         } catch (error) {
@@ -1484,7 +1527,7 @@ export default function MapScreen() {
     updateBearing,
   };
 
-  const ensureGlobeRef = useRef<(typeof ensureGlobe) | null>(null);
+  const ensureGlobeRef = useRef<typeof ensureGlobe | null>(null);
   ensureGlobeRef.current = ensureGlobe;
 
   const pendingMove = useRef(false);
@@ -1527,14 +1570,30 @@ export default function MapScreen() {
 
   const mapListeners = useMemo(
     () => ({
-      click: { objectListener: (e: any) => mapHandlersRef.current.onMapClick(e) },
-      touchstart: { objectListener: (e: any) => mapHandlersRef.current.handleMapTouchStart(e) },
-      touchmove: { objectListener: (e: any) => mapHandlersRef.current.handleMapTouchMove(e) },
-      touchend: { objectListener: (e: any) => mapHandlersRef.current.handleMapTouchEnd(e) },
-      touchcancel: { objectListener: () => { longPressRef.current = null; } },
+      click: {
+        objectListener: (e: any) => mapHandlersRef.current.onMapClick(e),
+      },
+      touchstart: {
+        objectListener: (e: any) =>
+          mapHandlersRef.current.handleMapTouchStart(e),
+      },
+      touchmove: {
+        objectListener: (e: any) =>
+          mapHandlersRef.current.handleMapTouchMove(e),
+      },
+      touchend: {
+        objectListener: (e: any) => mapHandlersRef.current.handleMapTouchEnd(e),
+      },
+      touchcancel: {
+        objectListener: () => {
+          longPressRef.current = null;
+        },
+      },
       mount: { rnListener: () => ensureGlobeRef.current?.() },
       rotate: { objectListener: () => mapHandlersRef.current.updateBearing() },
-      rotateend: { objectListener: () => mapHandlersRef.current.updateBearing() },
+      rotateend: {
+        objectListener: () => mapHandlersRef.current.updateBearing(),
+      },
       move: { objectListener: throttledMove },
       load: { objectListener: () => setMapReady(true) },
     }),
@@ -1831,11 +1890,7 @@ export default function MapScreen() {
               </View>
             </>
           )}
-          <Map
-            ref={mapRef}
-            options={mapOptions}
-            listeners={mapListeners}
-          />
+          <Map ref={mapRef} options={mapOptions} listeners={mapListeners} />
           {!routeSheetOpen && (
             <Marker
               ref={markerRef}
@@ -1982,6 +2037,27 @@ export default function MapScreen() {
                         handleOpenCustomPlace(place);
                       }
                     },
+                  },
+                }}
+              />
+            ))}
+          {sharingActive &&
+            !sharingLocked &&
+            sharePeerMarkers.map((peer) => (
+              <Marker
+                key={`share-${peer.id}`}
+                options={{
+                  coordinate: [peer.longitude, peer.latitude],
+                  element: {
+                    innerHTML: renderPeerMarker(
+                      peer.status === "ended"
+                        ? "#6b7280"
+                        : peer.status === "offline"
+                          ? theme.subTextColor
+                          : theme.accentColor,
+                      peer.name ?? peer.id.slice(0, 8),
+                      peer.status,
+                    ),
                   },
                 }}
               />
@@ -2258,6 +2334,27 @@ export default function MapScreen() {
                     />
                   </View>
                 )}
+            </View>
+          )}
+
+          {sharingActive && sharingLocked && (
+            <Pressable
+              onPress={() => void unlockSharing()}
+              style={[styles.shareBadge, styles.shareBadgeLocked]}
+            >
+              <Lock size={14} color={theme.white} strokeWidth={2.5} />
+              <Text style={styles.shareBadgeText}>
+                {t("Sharing_unlock_locations")}
+              </Text>
+            </Pressable>
+          )}
+
+          {sharingActive && !sharingLocked && sharePeerMarkers.length > 0 && (
+            <View style={styles.shareBadge}>
+              <MapPin size={14} color={theme.white} strokeWidth={2.5} />
+              <Text style={styles.shareBadgeText}>
+                {t("Sharing_active_badge", { count: sharePeerMarkers.length })}
+              </Text>
             </View>
           )}
 
@@ -2988,6 +3085,27 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       left: 12,
       right: 12,
       zIndex: 50,
+    },
+    shareBadge: {
+      position: "absolute",
+      top: Platform.OS === "ios" ? 110 : 150,
+      left: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      zIndex: 100,
+    },
+    shareBadgeLocked: {
+      backgroundColor: theme.danger,
+    },
+    shareBadgeText: {
+      color: white,
+      fontSize: 13,
+      fontFamily: fonts.medium,
     },
     input: {
       flex: 1,

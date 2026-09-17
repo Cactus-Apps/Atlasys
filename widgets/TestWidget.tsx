@@ -17,11 +17,20 @@ export function TestWidget() {
     >
       <TextWidget
         text="Test Widget"
-        style={{ fontSize: 20, color: "#ffffff", fontWeight: "bold" }}
+        style={{
+          fontSize: 20,
+          color: "#ffffff",
+          fontFamily: "DMSans_700Bold",
+        }}
       />
       <TextWidget
         text="Atlasys"
-        style={{ fontSize: 14, color: "#9db8d9", marginTop: 4 }}
+        style={{
+          fontSize: 14,
+          color: "#9db8d9",
+          marginTop: 4,
+          fontFamily: "DMSans_400Regular",
+        }}
       />
     </FlexWidget>
   );

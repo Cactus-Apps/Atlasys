@@ -1,10 +1,5 @@
 import { MapIcon, Box, Download, Navigation } from "lucide-react-native";
-import React, {
-  memo,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import {
   View,
   TouchableOpacity,
@@ -28,6 +23,7 @@ const EDGE = 16;
 const TOP_GAP = 150;
 const BOTTOM_GAP = 110;
 const DOT = 14;
+const HORIZ_INDEX = 1;
 
 type Snap = { id: string; x: number; y: number };
 
@@ -43,7 +39,6 @@ function getSnaps(W: number, H: number): Snap[] {
     { id: "mid-left", x: EDGE, y: cy },
     { id: "mid-right", x: W - FAB_W - EDGE, y: cy },
     { id: "top-left", x: EDGE, y: TOP_GAP },
-    { id: "top-center", x: cx, y: TOP_GAP },
   ];
 }
 
@@ -77,18 +72,21 @@ function SnapDot({
   const style = useAnimatedStyle(() => {
     const isActive = active.value === index;
     return {
-      backgroundColor: withSpring(
-        isActive ? "#3B82F6" : "#ffffff",
-        { damping: 20, stiffness: 300 },
-      ),
-      borderColor: withSpring(
-        isActive ? "#ffffff" : "#64748B",
-        { damping: 20, stiffness: 300 },
-      ),
+      backgroundColor: withSpring(isActive ? "#3B82F6" : "#ffffff", {
+        damping: 20,
+        stiffness: 300,
+      }),
+      borderColor: withSpring(isActive ? "#ffffff" : "#64748B", {
+        damping: 20,
+        stiffness: 300,
+      }),
       opacity: withSpring(isActive ? 1 : 0.55, { damping: 20, stiffness: 300 }),
       transform: [
         {
-          scale: withSpring(isActive ? 1.35 : 1, { damping: 20, stiffness: 300 }),
+          scale: withSpring(isActive ? 1.35 : 1, {
+            damping: 20,
+            stiffness: 300,
+          }),
         },
       ],
     };
@@ -133,11 +131,17 @@ export default memo(function NavigationSideBar({
   const startX = useSharedValue(initX);
   const startY = useSharedValue(initY);
   const draggingSV = useSharedValue(0);
+  const horizontalSV = useSharedValue(0);
   const activeSnap = useSharedValue(2);
   const [isDragging, setIsDragging] = useState(false);
+  const [isHorizontal, setIsHorizontal] = useState(false);
 
   useEffect(() => {
-    const s = getSnaps(Wd, Hd)[nearestSnap(tx.value, ty.value, Wd, Hd)];
+    const idx = nearestSnap(tx.value, ty.value, Wd, Hd);
+    horizontalSV.value = idx === HORIZ_INDEX ? 1 : 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsHorizontal(idx === HORIZ_INDEX);
+    const s = getSnaps(Wd, Hd)[idx];
     tx.value = withSpring(s.x, { damping: 40, stiffness: 500 });
     ty.value = withSpring(s.y, { damping: 40, stiffness: 500 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,17 +154,32 @@ export default memo(function NavigationSideBar({
   const pan = Gesture.Pan()
     .minDistance(8)
     .onStart(() => {
+      const idx = nearestSnap(tx.value, ty.value, Wd, Hd);
       startX.value = tx.value;
       startY.value = ty.value;
       draggingSV.value = 1;
-      activeSnap.value = nearestSnap(tx.value, ty.value, Wd, Hd);
+      activeSnap.value = idx;
+      // eslint-disable-next-line react-hooks/immutability
+      horizontalSV.value = idx === HORIZ_INDEX ? 1 : 0;
+      runOnJS(setIsHorizontal)(idx === HORIZ_INDEX);
       runOnJS(setIsDragging)(true);
     })
     .onUpdate((e) => {
+      const horiz = horizontalSV.value === 1;
+      const offX = horiz ? (FAB_H - FAB_W) / 2 : 0;
+      const offY = horiz ? FAB_H - FAB_W : 0;
       // eslint-disable-next-line react-hooks/immutability
-      tx.value = clamp(startX.value + e.translationX, 0, Wd - FAB_W);
+      tx.value = clamp(
+        startX.value + e.translationX,
+        offX,
+        Wd - (horiz ? FAB_H : FAB_W) + offX,
+      );
       // eslint-disable-next-line react-hooks/immutability
-      ty.value = clamp(startY.value + e.translationY, 0, Hd - FAB_H);
+      ty.value = clamp(
+        startY.value + e.translationY,
+        -offY,
+        Hd - (horiz ? FAB_W : FAB_H) - offY,
+      );
       activeSnap.value = nearestSnap(tx.value, ty.value, Wd, Hd);
     })
     .onEnd(() => {
@@ -172,17 +191,27 @@ export default memo(function NavigationSideBar({
       ty.value = withSpring(s.y, { damping: 30, stiffness: 400, mass: 0.7 });
       draggingSV.value = 0;
       activeSnap.value = -1;
+      // eslint-disable-next-line react-hooks/immutability
+      horizontalSV.value = idx === HORIZ_INDEX ? 1 : 0;
       runOnJS(savePos)(s.x, s.y);
+      runOnJS(setIsHorizontal)(idx === HORIZ_INDEX);
       runOnJS(setIsDragging)(false);
       runOnJS(Haptics.selectionAsync)();
     });
 
-  const fabStyle = useAnimatedStyle(() => ({
-    left: tx.value,
-    top: ty.value,
-    opacity: draggingSV.value ? 0.92 : 1,
-    transform: [{ scale: draggingSV.value ? 0.78 : 1 }],
-  }));
+  const fabStyle = useAnimatedStyle(() => {
+    const horiz = isHorizontal;
+    const offX = horiz ? (FAB_H - FAB_W) / 2 : 0;
+    const offY = horiz ? FAB_H - FAB_W : 0;
+    return {
+      left: tx.value - offX,
+      top: ty.value + offY,
+      width: horiz ? FAB_H : FAB_W,
+      height: horiz ? FAB_W : FAB_H,
+      opacity: draggingSV.value ? 0.92 : 1,
+      transform: [{ scale: draggingSV.value ? 0.78 : 1 }],
+    };
+  }, [isHorizontal]);
 
   return (
     <>
@@ -202,7 +231,7 @@ export default memo(function NavigationSideBar({
         </View>
       )}
       <GestureDetector gesture={pan}>
-        <Animated.View style={[s.fab, fabStyle]}>
+        <Animated.View style={[s.fab, isHorizontal && s.row, fabStyle]}>
           {[
             {
               icon: <Navigation color="#1E293B" size={22} />,
@@ -212,7 +241,10 @@ export default memo(function NavigationSideBar({
                 setRouteEnd(null);
                 setRouteStart(
                   markerPos
-                    ? { label: i18n.t("Poi_my_location"), coordinate: markerPos }
+                    ? {
+                        label: i18n.t("Poi_my_location"),
+                        coordinate: markerPos,
+                      }
                     : null,
                 );
                 setRouteSheetOpen(true);
@@ -233,11 +265,15 @@ export default memo(function NavigationSideBar({
             },
           ].map((item, idx) => (
             <React.Fragment key={idx}>
-              {item.divider && <View style={s.divider} />}
+              {item.divider && (
+                <View style={isHorizontal ? s.dividerV : s.divider} />
+              )}
               <TouchableOpacity onPress={item.onPress} style={s.btn}>
                 {item.icon}
               </TouchableOpacity>
-              {idx < 3 && !item.divider && <View style={s.hairline} />}
+              {idx < 3 && !item.divider && (
+                <View style={isHorizontal ? s.hairlineV : s.hairline} />
+              )}
             </React.Fragment>
           ))}
         </Animated.View>
@@ -256,15 +292,16 @@ const s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
     overflow: "hidden",
-    zIndex: 90,
+    zIndex: 0,
   },
+  row: { flexDirection: "row" },
   snapLayer: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 80,
+    zIndex: 0,
   },
   dotSlot: {
     position: "absolute",
@@ -290,5 +327,7 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   divider: { height: 1, backgroundColor: "#F1F5F9" },
+  dividerV: { width: 1, backgroundColor: "#F1F5F9" },
   hairline: { height: StyleSheet.hairlineWidth, backgroundColor: "#F1F5F9" },
+  hairlineV: { width: StyleSheet.hairlineWidth, backgroundColor: "#F1F5F9" },
 });

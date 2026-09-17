@@ -790,5 +790,6 @@
   "Sharing_status_ended": "finalizado",
   "Sharing_status_unknown": "–",
   "Sharing_active_badge": "{{count}} ubicación en vivo",
-  "Sharing_active_badge_other": "{{count}} ubicaciones en vivo"
+  "Sharing_active_badge_other": "{{count}} ubicaciones en vivo",
+  "Sharing_unlock_locations": "Desbloquear ubicaciones en vivo"
 }

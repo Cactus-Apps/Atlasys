@@ -804,5 +804,6 @@
   "Sharing_status_ended": "ended",
   "Sharing_status_unknown": "–",
   "Sharing_active_badge": "{{count}} live location",
-  "Sharing_active_badge_other": "{{count}} live locations"
+  "Sharing_active_badge_other": "{{count}} live locations",
+  "Sharing_unlock_locations": "Unlock live locations"
 }

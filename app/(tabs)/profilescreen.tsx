@@ -90,18 +90,10 @@ export function ProfileScreen() {
             bg: theme.purpleLight,
             route: "/settings",
           },
-          {
-            label: t("Profile_notifications"),
-            sub: t("Profile_notifications_sub"),
-            icon: Bell,
-            color: theme.success,
-            bg: theme.successLight,
-            route: "/notifications",
-          },
         ],
       },
       {
-        group: t("Profile_group_Live_Sharing"),
+        group: t("Profile_group_Tools"),
         items: [
           {
             label: t("Profile_live_sharing"),
@@ -111,11 +103,6 @@ export function ProfileScreen() {
             bg: theme.warningLight,
             route: "/sharing",
           },
-        ],
-      },
-      {
-        group: t("Profile_group_Storage"),
-        items: [
           {
             label: t("Profile_storage"),
             sub: t("Profile_storage_sub"),
@@ -124,11 +111,6 @@ export function ProfileScreen() {
             bg: theme.infoLight,
             route: "/Storage",
           },
-        ],
-      },
-      {
-        group: t("Profile_group_Tools"),
-        items: [
           {
             label: t("Profile_just_map"),
             sub: t("Profile_just_map_sub"),

@@ -811,5 +811,6 @@
   "Sharing_status_ended": "beendet",
   "Sharing_status_unknown": "–",
   "Sharing_active_badge": "{{count}} Live-Standort",
-  "Sharing_active_badge_other": "{{count}} Live-Standorte"
+  "Sharing_active_badge_other": "{{count}} Live-Standorte",
+  "Sharing_unlock_locations": "Live-Standorte entsperren"
 }

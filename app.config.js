@@ -8,6 +8,14 @@ module.exports = ({ config }) => ({
     [
       "react-native-android-widget/app.plugin",
       {
+        fonts: [
+          "./assets/fonts/DMSans_400Regular.ttf",
+          "./assets/fonts/DMSans_500Medium.ttf",
+          "./assets/fonts/DMSans_600SemiBold.ttf",
+          "./assets/fonts/DMSans_700Bold.ttf",
+          "./assets/fonts/Lora_600SemiBold.ttf",
+          "./assets/fonts/Lora_700Bold.ttf",
+        ],
         widgets: [
           {
             name: "TestWidget",

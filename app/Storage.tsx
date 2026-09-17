@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-} from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import * as Sentry from "@sentry/react-native";
 import {
@@ -399,19 +393,17 @@ export default function Storage() {
         .getState()
         .importCustomPlaces(places);
       const skipSuffix =
-        errors > 0
-          ? t("Backup_imported_skip", { count: errors })
-          : "";
+        errors > 0 ? t("Backup_imported_skip", { count: errors }) : "";
       setAlertBox({
-        message:
-          t("Backup_imported", { added, updated }) + skipSuffix,
+        message: t("Backup_imported", { added, updated }) + skipSuffix,
       });
     } catch (err) {
       Sentry.captureException(err);
       setAlertBox({
-        message: err instanceof BackupTooLargeError
-          ? t("Backup_too_large")
-          : t("Backup_error"),
+        message:
+          err instanceof BackupTooLargeError
+            ? t("Backup_too_large")
+            : t("Backup_error"),
       });
     } finally {
       setBackupBusy(false);
@@ -672,13 +664,6 @@ export default function Storage() {
         contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 40 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 8 }}>
-            <BackupCard
-              count={customCount}
-              busy={backupBusy}
-              onExport={handleExport}
-              onImport={handleImport}
-            />
-
             <View
               style={{
                 backgroundColor: cardBg,
@@ -724,7 +709,10 @@ export default function Storage() {
                       .reduce((s, m) => s + m.tileCount, 0)
                       .toLocaleString(),
                   },
-                  { label: t("Storage_size"), value: formatSize(totalUsedBytes) },
+                  {
+                    label: t("Storage_size"),
+                    value: formatSize(totalUsedBytes),
+                  },
                 ].map((stat, i) => (
                   <View key={i} style={{ flex: 1, alignItems: "center" }}>
                     <Text
@@ -751,6 +739,12 @@ export default function Storage() {
                 ))}
               </View>
             </View>
+            <BackupCard
+              count={customCount}
+              busy={backupBusy}
+              onExport={handleExport}
+              onImport={handleImport}
+            />
             <Text
               style={{
                 fontSize: 11,

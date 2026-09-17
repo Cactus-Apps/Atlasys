@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import QRCode from "react-native-qrcode-svg";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -40,16 +41,21 @@ import {
   parseQrContent,
   type IdentityPayload,
 } from "@/lib/sharing/qr";
+import {
+  Field,
+  Header,
+  NoticeBox,
+} from "@/components/sharing/sharing-ui-blocks";
 
 type Route =
   | { name: "landing" }
-  | { name: "identity" }
-  | { name: "admin-pending" }
-  | { name: "scan-identity" }
-  | { name: "confirm-member"; member: IdentityPayload }
+  | { name: "identity" } // set an id if not done bevor
+  | { name: "admin-pending" } // host a family
+  | { name: "scan-identity" } // scan an id
+  | { name: "confirm-member"; member: IdentityPayload } // confirm
   | { name: "invite"; member: IdentityPayload; memberName: string }
   | { name: "scan-invite" }
-  | { name: "joined" };
+  | { name: "joined" }; // in a family
 
 const FAILED = "DECRYPT_FAILED";
 
@@ -67,7 +73,10 @@ export default function SharingScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [identityQr, setIdentityQr] = useState<string | null>(null);
-  const [inviteQr, setInviteQr] = useState<{ value: string; memberName: string } | null>(null);
+  const [inviteQr, setInviteQr] = useState<{
+    value: string;
+    memberName: string;
+  } | null>(null);
   const processingRef = useRef(false);
 
   const active = useSharingStore((s) => s.active);
@@ -84,7 +93,11 @@ export default function SharingScreen() {
       const loaded = await loadSession();
       if (loaded) {
         setSession(loaded);
-        setRoute(loaded.isAdmin && loaded.members.length === 0 ? { name: "admin-pending" } : { name: "joined" });
+        setRoute(
+          loaded.isAdmin && loaded.members.length === 0
+            ? { name: "admin-pending" }
+            : { name: "joined" },
+        );
       }
     };
     void boot();
@@ -97,6 +110,7 @@ export default function SharingScreen() {
     setRoute({ name: "landing" });
   };
 
+  // create a family with an initail session
   const createFamily = async () => {
     setBusy(true);
     setError(null);
@@ -164,7 +178,9 @@ export default function SharingScreen() {
         },
       });
       const memberId = route.member.k.slice(-16);
-      const already = session.members.some((m) => m.signPublicKey === route.member.k);
+      const already = session.members.some(
+        (m) => m.signPublicKey === route.member.k,
+      );
       const members = already
         ? session.members
         : [
@@ -179,7 +195,10 @@ export default function SharingScreen() {
       const updated = { ...session, members };
       await saveSession(updated);
       setSession(updated);
-      setInviteQr({ value: inviteValue, memberName: memberName || t("Sharing_member_default") });
+      setInviteQr({
+        value: inviteValue,
+        memberName: memberName || t("Sharing_member_default"),
+      });
       setRoute({ name: "invite", member: route.member, memberName });
     } catch {
       setError("invite-failed");
@@ -267,7 +286,6 @@ export default function SharingScreen() {
     }
   };
 
-  // ── camera scan handler ──────────────────────────────────────────────────
   const onBarcode = ({ data }: { data: string }) => {
     if (processingRef.current) return;
     processingRef.current = true;
@@ -288,77 +306,99 @@ export default function SharingScreen() {
 
   if (route.name === "landing" || route.name === "identity") {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
-        <Header title={t("Sharing_title")} onBack={() => router.canGoBack() ? router.back() : router.navigate("/")} />
-        <Text style={styles.paragraph}>{t("Sharing_intro")}</Text>
+        <Header
+          title={t("Sharing_title")}
+          onBack={() =>
+            router.canGoBack() ? router.back() : router.navigate("/")
+          }
+        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+        >
+          <Text style={styles.paragraph}>{t("Sharing_intro")}</Text>
 
-        <Field label={t("Sharing_my_name")}>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder={t("Sharing_name_placeholder")}
-            placeholderTextColor={theme.subTextColor}
-          />
-        </Field>
+          <Field label={t("Sharing_my_name")}>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder={t("Sharing_name_placeholder")}
+              placeholderTextColor={theme.subTextColor}
+            />
+          </Field>
 
-        {route.name === "landing" ? (
-          <>
-            <Pressable
-              style={[styles.primaryBtn, busy && styles.disabled]}
-              disabled={busy}
-              onPress={() => void createFamily()}
-            >
-              {busy ? (
-                <ActivityIndicator color={theme.white} />
+          {route.name === "landing" ? (
+            <>
+              <Pressable
+                style={[styles.primaryBtn, busy && styles.disabled]}
+                disabled={busy}
+                onPress={() => void createFamily()}
+              >
+                {busy ? (
+                  <ActivityIndicator color={theme.white} />
+                ) : (
+                  <ShieldCheck size={18} color={theme.white} />
+                )}
+                <Text style={styles.primaryBtnText}>
+                  {t("Sharing_create_family")}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.secondaryBtn, busy && styles.disabled]}
+                disabled={busy}
+                onPress={() => void showIdentity()}
+              >
+                <ScanLine size={18} color={theme.accentColor} />
+                <Text style={styles.secondaryBtnText}>
+                  {t("Sharing_show_identity")}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.secondaryBtn, busy && styles.disabled]}
+                disabled={busy}
+                onPress={() => {
+                  if (!permission?.granted) void requestPermission();
+                  setRoute({ name: "scan-invite" });
+                }}
+              >
+                <ScanLine size={18} color={theme.accentColor} />
+                <Text style={styles.secondaryBtnText}>
+                  {t("Sharing_scan_invite")}
+                </Text>
+              </Pressable>
+
+              <NoticeBox text={t("Sharing_scan_in_person")} />
+            </>
+          ) : (
+            <>
+              <Text style={styles.secondaryHeadline}>
+                {t("Sharing_my_identity_title")}
+              </Text>
+              <Text style={styles.paragraph}>
+                {t("Sharing_my_identity_hint")}
+              </Text>
+              {identityQr ? (
+                <View style={styles.qrCard}>
+                  <QRCode value={identityQr} size={220} />
+                </View>
               ) : (
-                <ShieldCheck size={18} color={theme.white} />
+                <Text style={styles.muted}>
+                  {t("Sharing_enter_name_first")}
+                </Text>
               )}
-              <Text style={styles.primaryBtnText}>{t("Sharing_create_family")}</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.secondaryBtn, busy && styles.disabled]}
-              disabled={busy}
-              onPress={() => void showIdentity()}
-            >
-              <ScanLine size={18} color={theme.accentColor} />
-              <Text style={styles.secondaryBtnText}>{t("Sharing_show_identity")}</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.secondaryBtn, busy && styles.disabled]}
-              disabled={busy}
-              onPress={() => {
-                if (!permission?.granted) void requestPermission();
-                setRoute({ name: "scan-invite" });
-              }}
-            >
-              <ScanLine size={18} color={theme.accentColor} />
-              <Text style={styles.secondaryBtnText}>{t("Sharing_scan_invite")}</Text>
-            </Pressable>
-
-            <NoticeBox text={t("Sharing_scan_in_person")} />
-          </>
-        ) : (
-          <>
-            <Text style={styles.secondaryHeadline}>{t("Sharing_my_identity_title")}</Text>
-            <Text style={styles.paragraph}>{t("Sharing_my_identity_hint")}</Text>
-            {identityQr ? (
-              <View style={styles.qrCard}>
-                <QRCode value={identityQr} size={220} />
-              </View>
-            ) : (
-              <Text style={styles.muted}>{t("Sharing_enter_name_first")}</Text>
-            )}
-            <Pressable style={styles.secondaryBtn} onPress={goLanding}>
-              <X size={18} color={theme.accentColor} />
-              <Text style={styles.secondaryBtnText}>{t("Common_back")}</Text>
-            </Pressable>
-          </>
-        )}
-      </ScrollView>
+              <Pressable style={styles.secondaryBtn} onPress={goLanding}>
+                <X size={18} color={theme.accentColor} />
+                <Text style={styles.secondaryBtnText}>{t("Common_back")}</Text>
+              </Pressable>
+            </>
+          )}
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -370,14 +410,20 @@ export default function SharingScreen() {
           <Pressable
             onPress={() => {
               processingRef.current = false;
-              setRoute(route.name === "scan-identity" ? { name: "admin-pending" } : { name: "landing" });
+              setRoute(
+                route.name === "scan-identity"
+                  ? { name: "admin-pending" }
+                  : { name: "landing" },
+              );
             }}
             style={styles.cameraClose}
           >
             <X size={22} color="#fff" />
           </Pressable>
           <Text style={styles.cameraTitle}>
-            {route.name === "scan-identity" ? t("Sharing_scan_identity") : t("Sharing_scan_invite")}
+            {route.name === "scan-identity"
+              ? t("Sharing_scan_identity")
+              : t("Sharing_scan_invite")}
           </Text>
         </View>
         {permission?.granted ? (
@@ -389,17 +435,23 @@ export default function SharingScreen() {
           />
         ) : (
           <View style={styles.cameraPrompt}>
-            <Text style={styles.cameraPromptText}>{t("Sharing_camera_permission")}</Text>
+            <Text style={styles.cameraPromptText}>
+              {t("Sharing_camera_permission")}
+            </Text>
             <Pressable
               style={styles.primaryBtn}
               onPress={() => void requestPermission()}
             >
-              <Text style={styles.primaryBtnText}>{t("Sharing_grant_camera")}</Text>
+              <Text style={styles.primaryBtnText}>
+                {t("Sharing_grant_camera")}
+              </Text>
             </Pressable>
           </View>
         )}
         <View style={styles.cameraHint}>
-          <Text style={styles.cameraHintText}>{t("Sharing_scan_in_person")}</Text>
+          <Text style={styles.cameraHintText}>
+            {t("Sharing_scan_in_person")}
+          </Text>
         </View>
       </View>
     );
@@ -407,189 +459,196 @@ export default function SharingScreen() {
 
   if (route.name === "confirm-member") {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
         <Header
           title={t("Sharing_confirm_member")}
           onBack={() => setRoute({ name: "admin-pending" })}
         />
-        <Text style={styles.paragraph}>
-          {t("Sharing_confirm_member_hint", {
-            member: route.member.n || route.member.k.slice(-8),
-          })}
-        </Text>
-        <Field label={t("Sharing_member_name")}>
-          <TextInput
-            style={styles.input}
-            value={memberName}
-            onChangeText={setMemberName}
-            placeholder={t("Sharing_name_placeholder")}
-            placeholderTextColor={theme.subTextColor}
-          />
-        </Field>
-        {error && <Text style={styles.errorText}>{t(`Sharing_error_${error}`)}</Text>}
-        <Pressable
-          style={[styles.primaryBtn, busy && styles.disabled]}
-          disabled={busy}
-          onPress={() => void createInvite()}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
         >
-          {busy ? <ActivityIndicator color={theme.white} /> : <Plus size={18} color={theme.white} />}
-          <Text style={styles.primaryBtnText}>{t("Sharing_create_invite")}</Text>
-        </Pressable>
-        <Pressable style={styles.secondaryBtn} onPress={() => setRoute({ name: "admin-pending" })}>
-          <X size={18} color={theme.accentColor} />
-          <Text style={styles.secondaryBtnText}>{t("Common_cancel")}</Text>
-        </Pressable>
-      </ScrollView>
+          <Text style={styles.paragraph}>
+            {t("Sharing_confirm_member_hint", {
+              member: route.member.n || route.member.k.slice(-8),
+            })}
+          </Text>
+          <Field label={t("Sharing_member_name")}>
+            <TextInput
+              style={styles.input}
+              value={memberName}
+              onChangeText={setMemberName}
+              placeholder={t("Sharing_name_placeholder")}
+              placeholderTextColor={theme.subTextColor}
+            />
+          </Field>
+          {error && (
+            <Text style={styles.errorText}>{t(`Sharing_error_${error}`)}</Text>
+          )}
+          <Pressable
+            style={[styles.primaryBtn, busy && styles.disabled]}
+            disabled={busy}
+            onPress={() => void createInvite()}
+          >
+            {busy ? (
+              <ActivityIndicator color={theme.white} />
+            ) : (
+              <Plus size={18} color={theme.white} />
+            )}
+            <Text style={styles.primaryBtnText}>
+              {t("Sharing_create_invite")}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.secondaryBtn}
+            onPress={() => setRoute({ name: "admin-pending" })}
+          >
+            <X size={18} color={theme.accentColor} />
+            <Text style={styles.secondaryBtnText}>{t("Common_cancel")}</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   if (route.name === "invite" && inviteQr) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
         <Header title={t("Sharing_invite_title")} onBack={goLanding} />
-        <Text style={styles.paragraph}>{t("Sharing_invite_hint")}</Text>
-        <View style={styles.qrCard}>
-          <QRCode value={inviteQr.value} size={220} />
-        </View>
-        <Pressable style={styles.secondaryBtn} onPress={() => setRoute({ name: "joined" })}>
-          <Text style={styles.secondaryBtnText}>{t("Common_done")}</Text>
-        </Pressable>
-      </ScrollView>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+        >
+          <Text style={styles.paragraph}>{t("Sharing_invite_hint")}</Text>
+          <View style={styles.qrCard}>
+            <QRCode value={inviteQr.value} size={220} />
+          </View>
+          <Pressable
+            style={styles.secondaryBtn}
+            onPress={() => setRoute({ name: "joined" })}
+          >
+            <Text style={styles.secondaryBtnText}>{t("Common_done")}</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
-  // admin-pending (admin, no members yet) or joined (admin w/ members or member)
   const adminPending = route.name === "admin-pending";
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
-      <Header title={t("Sharing_title")} onBack={() => router.canGoBack() ? router.back() : router.navigate("/")} />
-
-      <View style={styles.stateCard}>
-        <View style={[styles.stateDot, { backgroundColor: active ? theme.accentColor : theme.subTextColor }]} />
-        <Text style={styles.stateText}>
-          {active ? t("Sharing_state_active") : t("Sharing_state_inactive")}
-        </Text>
-      </View>
-
-      <View style={styles.rowCard}>
-        <View style={styles.rowCardText}>
-          <Text style={styles.rowCardTitle}>{t("Sharing_toggle_title")}</Text>
-          <Text style={styles.rowCardSub}>
-            {sending ? t("Sharing_toggle_on_sub") : t("Sharing_toggle_off_sub")}
+      <Header
+        title={t("Sharing_title")}
+        onBack={() => router.navigate("/profilescreen")}
+      />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={styles.stateCard}>
+          <View
+            style={[
+              styles.stateDot,
+              {
+                backgroundColor: active
+                  ? theme.accentColor
+                  : theme.subTextColor,
+              },
+            ]}
+          />
+          <Text style={styles.stateText}>
+            {active ? t("Sharing_state_active") : t("Sharing_state_inactive")}
           </Text>
         </View>
-        <Switch
-          value={active}
-          disabled={busy}
-          onValueChange={() => void toggleSharing()}
-          trackColor={{ false: theme.borderColor, true: theme.accentColor }}
-          thumbColor="#fff"
-        />
-      </View>
 
-      {error && <Text style={styles.errorText}>{t(`Sharing_error_${error}`)}</Text>}
-
-      {adminPending && (
-        <Pressable
-          style={[styles.secondaryBtn, busy && styles.disabled]}
-          disabled={busy}
-          onPress={() => {
-            if (!permission?.granted) void requestPermission();
-            setRoute({ name: "scan-identity" });
-          }}
-        >
-          <Plus size={18} color={theme.accentColor} />
-          <Text style={styles.secondaryBtnText}>{t("Sharing_add_member")}</Text>
-        </Pressable>
-      )}
-
-      {!adminPending && (
-        <>
-          <Text style={styles.secondaryHeadline}>{t("Sharing_members_title")}</Text>
-          <View style={styles.membersCard}>
-            <MemberRow
-              name={session?.adminName ?? t("Sharing_admin_label")}
-              peer={peers[session?.adminSignPublicKey.slice(-16) ?? ""]}
-              isAdmin
-            />
-            {(session?.members ?? []).map((m) => {
-              const peer = peers[m.id];
-              return (
-                <MemberRow key={m.id} name={m.name ?? m.id.slice(0, 8)} peer={peer} />
-              );
-            })}
+        <View style={styles.rowCard}>
+          <View style={styles.rowCardText}>
+            <Text style={styles.rowCardTitle}>{t("Sharing_toggle_title")}</Text>
+            <Text style={styles.rowCardSub}>
+              {sending
+                ? t("Sharing_toggle_on_sub")
+                : t("Sharing_toggle_off_sub")}
+            </Text>
           </View>
-          {isAdmin && (
-            <Pressable
-              style={[styles.secondaryBtn, busy && styles.disabled]}
-              disabled={busy}
-              onPress={() => {
-                if (!permission?.granted) void requestPermission();
-                setRoute({ name: "scan-identity" });
-              }}
-            >
-              <Plus size={18} color={theme.accentColor} />
-              <Text style={styles.secondaryBtnText}>{t("Sharing_add_member")}</Text>
-            </Pressable>
-          )}
-          <Pressable style={[styles.dangerBtn, busy && styles.disabled]} disabled={busy} onPress={() => void leaveFamily()}>
-            <Text style={styles.dangerBtnText}>{t("Sharing_leave_family")}</Text>
+          <Switch
+            value={active}
+            disabled={busy}
+            onValueChange={() => void toggleSharing()}
+            trackColor={{ false: theme.borderColor, true: theme.accentColor }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        {error && (
+          <Text style={styles.errorText}>{t(`Sharing_error_${error}`)}</Text>
+        )}
+
+        {adminPending && (
+          <Pressable
+            style={[styles.secondaryBtn, busy && styles.disabled]}
+            disabled={busy}
+            onPress={() => {
+              if (!permission?.granted) void requestPermission();
+              setRoute({ name: "scan-identity" });
+            }}
+          >
+            <Plus size={18} color={theme.accentColor} />
+            <Text style={styles.secondaryBtnText}>
+              {t("Sharing_add_member")}
+            </Text>
           </Pressable>
-        </>
-      )}
-    </ScrollView>
-  );
-}
+        )}
 
-// ── small building blocks -----------------------------------------------------
+        {!adminPending && (
+          <>
+            <Text style={styles.secondaryHeadline}>
+              {t("Sharing_members_title")}
+            </Text>
+            <View style={styles.membersCard}>
+              <MemberRow
+                name={session?.adminName ?? t("Sharing_admin_label")}
+                peer={peers[session?.adminSignPublicKey.slice(-16) ?? ""]}
+                isAdmin
+              />
+              {(session?.members ?? []).map((m) => {
+                const peer = peers[m.id];
+                return (
+                  <MemberRow
+                    key={m.id}
+                    name={m.name ?? m.id.slice(0, 8)}
+                    peer={peer}
+                  />
+                );
+              })}
+            </View>
+            {isAdmin && (
+              <Pressable
+                style={[styles.secondaryBtn, busy && styles.disabled]}
+                disabled={busy}
+                onPress={() => {
+                  if (!permission?.granted) void requestPermission();
+                  setRoute({ name: "scan-identity" });
+                }}
+              >
+                <Plus size={18} color={theme.accentColor} />
+                <Text style={styles.secondaryBtnText}>
+                  {t("Sharing_add_member")}
+                </Text>
+              </Pressable>
+            )}
+          </>
+        )}
 
-function Header({ title, onBack }: { title: string; onBack: () => void }) {
-  const theme = useAppTheme();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-      <Text style={{ fontFamily: fonts.displayBold, fontSize: 24, color: theme.textColor, flex: 1 }}>
-        {title}
-      </Text>
-      <Pressable onPress={onBack} hitSlop={8}>
-        <X size={22} color={theme.subTextColor} />
-      </Pressable>
-    </View>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  const theme = useAppTheme();
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontFamily: fonts.semibold, fontSize: 13, color: theme.subTextColor, marginBottom: 8 }}>
-        {label}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
-function NoticeBox({ text }: { text: string }) {
-  const theme = useAppTheme();
-  return (
-    <View
-      style={{
-        marginTop: 16,
-        padding: 14,
-        borderRadius: 14,
-        backgroundColor: theme.infoLight,
-        borderLeftWidth: 3,
-        borderLeftColor: theme.info,
-      }}
-    >
-      <Text style={{ fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: theme.textColor }}>
-        {text}
-      </Text>
-    </View>
+        <Pressable
+          style={[styles.dangerBtn, busy && styles.disabled]}
+          disabled={busy}
+          onPress={() => void leaveFamily()}
+        >
+          <Text style={styles.dangerBtnText}>{t("Sharing_leave_family")}</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -613,10 +672,15 @@ function MemberRow({
         : status === "ended"
           ? t("Sharing_status_ended")
           : t("Sharing_status_unknown");
-  const color =
-    status === "online" ? theme.success : theme.subTextColor;
+  const color = status === "online" ? theme.success : theme.subTextColor;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12 }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 12,
+      }}
+    >
       <MapPin size={16} color={theme.accentColor} />
       <Text
         style={{
@@ -640,7 +704,8 @@ function MemberRow({
 const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg },
-    content: { padding: 20, paddingTop: 70, paddingBottom: 40 },
+    scroll: { flex: 1 },
+    content: { padding: 20, paddingBottom: 40 },
     paragraph: {
       fontFamily: fonts.regular,
       fontSize: 14,
@@ -648,7 +713,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       color: theme.subTextColor,
       marginBottom: 18,
     },
-    muted: { fontFamily: fonts.regular, fontSize: 13, color: theme.subTextColor, marginBottom: 16 },
+    muted: {
+      fontFamily: fonts.regular,
+      fontSize: 13,
+      color: theme.subTextColor,
+      marginBottom: 16,
+    },
     secondaryHeadline: {
       fontFamily: fonts.semibold,
       fontSize: 13,
@@ -695,7 +765,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       marginBottom: 12,
       backgroundColor: theme.cardBg,
     },
-    secondaryBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: theme.accentColor },
+    secondaryBtnText: {
+      fontFamily: fonts.semibold,
+      fontSize: 15,
+      color: theme.accentColor,
+    },
     dangerBtn: {
       borderWidth: 1,
       borderColor: theme.dangerLight,
@@ -705,7 +779,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       backgroundColor: theme.dangerLight,
       marginTop: 8,
     },
-    dangerBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: theme.danger },
+    dangerBtnText: {
+      fontFamily: fonts.semibold,
+      fontSize: 15,
+      color: theme.danger,
+    },
     disabled: { opacity: 0.6 },
     qrCard: {
       alignItems: "center",
@@ -750,8 +828,17 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       marginBottom: 14,
     },
     rowCardText: { flex: 1, paddingRight: 12 },
-    rowCardTitle: { fontFamily: fonts.semibold, fontSize: 16, color: theme.textColor, marginBottom: 2 },
-    rowCardSub: { fontFamily: fonts.regular, fontSize: 13, color: theme.subTextColor },
+    rowCardTitle: {
+      fontFamily: fonts.semibold,
+      fontSize: 16,
+      color: theme.textColor,
+      marginBottom: 2,
+    },
+    rowCardSub: {
+      fontFamily: fonts.regular,
+      fontSize: 13,
+      color: theme.subTextColor,
+    },
     membersCard: {
       borderRadius: 16,
       paddingHorizontal: 16,

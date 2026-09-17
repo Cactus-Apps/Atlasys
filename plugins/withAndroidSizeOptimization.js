@@ -4,7 +4,7 @@ const path = require("path");
 
 const PROPS_TO_SET = {
   reactNativeArchitectures: "armeabi-v7a,arm64-v8a",
-  newArchEnabled: "false",
+  newArchEnabled: "true",
   "android.enableMinifyInReleaseBuilds": "true",
   "android.enableShrinkResourcesInReleaseBuilds": "true",
 };

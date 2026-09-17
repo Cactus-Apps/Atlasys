@@ -16,8 +16,8 @@ function withAndroidBuildOptimizations(config) {
     // Reduce ABIs: remove x86 and x86_64
     setProp(props, "reactNativeArchitectures", "armeabi-v7a,arm64-v8a");
 
-    // Disable New Architecture
-    setProp(props, "newArchEnabled", "false");
+    // New Architecture is mandatory since React Native 0.82
+    setProp(props, "newArchEnabled", "true");
 
     // Enable R8 minification
     setProp(props, "android.enableMinifyInReleaseBuilds", "true");
