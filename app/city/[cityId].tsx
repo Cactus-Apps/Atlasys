@@ -324,7 +324,7 @@ export default function CityScreen() {
           if (qid) {
             const wdRes = await fetch(
               `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
-              { signal: controller.signal },
+              { headers, signal: controller.signal },
             );
             const wdData = await safeFetchJson(wdRes);
             const cat = wdData?.entities?.[qid]?.sitelinks?.commonswiki?.title;
@@ -360,7 +360,8 @@ export default function CityScreen() {
                   };
                   Object.values(iiData.query.pages).forEach((p: any) => {
                     const info = p.imageinfo?.[0];
-                    const canonical = info?.thumburl || info?.url;
+                    const raw = info?.thumburl || info?.url;
+                    const canonical = raw ? raw.split("?")[0].split("#")[0] : raw;
                     if (
                       canonical &&
                       !isJunk(canonical) &&
@@ -368,9 +369,10 @@ export default function CityScreen() {
                         canonical.endsWith(".png") ||
                         canonical.endsWith(".jpeg"))
                     ) {
+                      const clean = raw.split("?")[0].split("#")[0];
                       imageUrls.push({
-                        previewUrl: info.thumburl || info.url,
-                        fullUrl: info.thumburl || info.url,
+                        previewUrl: clean,
+                        fullUrl: clean,
                       });
                     }
                   });

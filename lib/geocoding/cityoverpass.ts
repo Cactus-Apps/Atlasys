@@ -757,7 +757,7 @@ export async function fetchPOIWikiImage(
       if (thumburl) return thumburl;
 
       if (url) {
-        const lower = url.toLowerCase();
+        const lower = url.toLowerCase().split("?")[0].split("#")[0];
         if (
           lower.endsWith(".jpg") ||
           lower.endsWith(".jpeg") ||
@@ -862,6 +862,7 @@ export async function fetchWikipediaArticle(
       try {
         const wdRes = await fetch(
           `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
+          { headers },
         );
         const wdData = await safeJson(wdRes);
         const cat = wdData.entities?.[qid]?.sitelinks?.commonswiki?.title;

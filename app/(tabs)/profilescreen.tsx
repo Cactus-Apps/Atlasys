@@ -239,7 +239,7 @@ export function ProfileScreen() {
         <View style={styles.footer}>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => router.navigate("/settings")}
+            onPress={() => router.navigate("/test")}
           >
             <Text style={styles.footerText}>Version {version} • Atlasys </Text>
           </TouchableOpacity>

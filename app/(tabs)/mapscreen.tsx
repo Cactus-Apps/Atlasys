@@ -129,6 +129,15 @@ export const darken = (hex: string, amount: number) => {
   return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 };
 
+const isAbortError = (error: any) =>
+  error?.name === "AbortError" || error?.message === "Aborted";
+
+// Wikimedia imageinfo URLs now carry tracking params, e.g.
+// ".../File.jpg?utm_source=...&utm_campaign=imageinfo". Strip them before
+// checking the file extension, otherwise every image looks like it has none.
+const stripUrlQuery = (url?: string) =>
+  url ? url.split("?")[0].split("#")[0] : url;
+
 const renderPeerMarker = (color: string, name: string, status: string) => {
   const dim = status === "offline";
   const ended = status === "ended";
@@ -247,8 +256,7 @@ export default function MapScreen() {
     selectedRef.current = s;
   };
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const lastFetchTimeRef = useRef(0);
-  const lastFetchCityKeyRef = useRef("");
+  const wikiRunIdRef = useRef(0);
   const [query, setQuery] = useState("");
   const isPlaceSaved = useAuthStore((s) => s.isPlaceSaved);
   const removePlace = useAuthStore((s) => s.removePlace);
@@ -753,13 +761,16 @@ export default function MapScreen() {
     if (!city?.name) return;
 
     const headers = {
-      "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+      "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "anonymous"})`,
       Accept: "application/json",
     };
 
     const controller = new AbortController();
+    const runId = ++wikiRunIdRef.current;
+    let cancelled = false;
+    const isCurrent = () => !cancelled && runId === wikiRunIdRef.current;
+    let articlePublished = false;
 
-    let finished = false;
     const fetchWikipediaData = async () => {
       setLoading(true);
       setError(null);
@@ -773,9 +784,9 @@ export default function MapScreen() {
           { headers, signal: controller.signal },
         );
         const searchData = await safeFetchJson<[string, string[]]>(searchRes);
+        if (!isCurrent()) return;
         if (!searchData?.[1]?.length) {
           setError(t("Article_not_found"));
-          setLoading(false);
           return;
         }
         const pageTitle = searchData[1][0];
@@ -802,9 +813,20 @@ export default function MapScreen() {
         const extractData = await safeFetchJson<{
           query?: { pages?: Record<string, any> };
         }>(extractRes);
+        if (!isCurrent()) return;
         const pages = extractData?.query?.pages ?? {};
         const pageId = Object.keys(pages)[0];
         const extract = pages[pageId]?.extract;
+
+        // Publish the text immediately so a failure in the image pipeline
+        // below can never leave the Wikipedia section empty.
+        setArticle({
+          title: pageTitle,
+          extract: extract || t("No_summary_available"),
+          thumbnail: null,
+          images: [],
+        });
+        articlePublished = true;
 
         // 3. Images – try Commons category first
         let imageTitles: string[] = [];
@@ -813,7 +835,7 @@ export default function MapScreen() {
           if (qid) {
             const wdRes = await fetch(
               `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`,
-              { signal: controller.signal },
+              { headers, signal: controller.signal },
             );
             const wdData = await safeFetchJson(wdRes);
             const cat = wdData?.entities?.[qid]?.sitelinks?.commonswiki?.title;
@@ -964,7 +986,7 @@ export default function MapScreen() {
           imageTitles.forEach((title: string) => {
             const p = previewMap[title];
             const f = fullMap[title];
-            const canonicalUrl = f?.url ?? p?.url;
+            const canonicalUrl = stripUrlQuery(f?.url ?? p?.url);
             if (
               !canonicalUrl ||
               isJunk(canonicalUrl) ||
@@ -976,8 +998,8 @@ export default function MapScreen() {
             ) {
               return;
             }
-            const previewUrl = p?.thumburl || p?.url;
-            const fullUrl = f?.thumburl || f?.url || previewUrl;
+            const previewUrl = stripUrlQuery(p?.thumburl || p?.url);
+            const fullUrl = stripUrlQuery(f?.thumburl || f?.url || previewUrl);
             if (previewUrl && fullUrl) imageUrls.push({ previewUrl, fullUrl });
           });
         }
@@ -989,7 +1011,7 @@ export default function MapScreen() {
         const finalThumbnail =
           preferredImage?.previewUrl ?? imageUrls[0]?.previewUrl ?? null;
 
-        if (controller.signal.aborted) return;
+        if (!isCurrent()) return;
 
         setArticle({
           title: pageTitle,
@@ -998,25 +1020,19 @@ export default function MapScreen() {
           images: imageUrls,
         });
       } catch (error) {
-        Sentry.captureException(error);
+        if (!isAbortError(error)) Sentry.captureException(error);
+        if (isCurrent() && !articlePublished) setError(t("Article_not_found"));
       } finally {
-        finished = true;
-        if (!controller.signal.aborted) setLoading(false);
+        if (isCurrent()) setLoading(false);
       }
     };
 
-    const now = Date.now();
-    const cityKey = `${city?.name}|${city?.latitude}|${city?.longitude}`;
-    if (
-      cityKey === lastFetchCityKeyRef.current &&
-      now - lastFetchTimeRef.current < 3000
-    )
-      return;
-    lastFetchTimeRef.current = now;
-    lastFetchCityKeyRef.current = cityKey;
-    const wikiTimer = setTimeout(() => fetchWikipediaData());
+    const wikiTimer = setTimeout(() => {
+      if (isCurrent()) fetchWikipediaData();
+    });
     return () => {
-      if (!finished) controller.abort();
+      cancelled = true;
+      controller.abort();
       clearTimeout(wikiTimer);
     };
   }, [city?.name, city?.latitude, city?.longitude, i18n.language, t]);
@@ -1045,7 +1061,7 @@ export default function MapScreen() {
 
     fetch(url, {
       headers: {
-        "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+        "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "anonymous"})`,
       },
     })
       .then((res) => {
@@ -1766,7 +1782,7 @@ export default function MapScreen() {
                         {
                           headers: {
                             "Accept-Language": i18n.language || "en",
-                            "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL!})`,
+                            "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "anonymous"})`,
                           },
                         },
                       );

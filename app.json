@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.8.5",
+    "version": "1.8.6",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -71,7 +71,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Kamera wird benötigt, um Familien-Pairing-Codes zu scannen."
+          "cameraPermission": "Camera permission is required to scan family pairing codes."
         }
       ],
       "expo-local-authentication"
@@ -89,6 +89,6 @@
     "updates": {
       "url": "https://u.expo.dev/753eb474-331e-49f0-a5a9-fa0d2431fe5e"
     },
-    "owner": "atlasys127"
+    "owner": "helloworld127"
   }
 }
