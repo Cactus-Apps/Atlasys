@@ -8,18 +8,16 @@ import { useEffect, useState } from "react";
 import AnimatedSplash from "@/components/overlays/SplashScreen";
 import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
-import { AppState, Platform, useColorScheme } from "react-native";
+import { AppState, useColorScheme } from "react-native";
 import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
 import { PostHogProvider } from "posthog-react-native";
 import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
 import { configureNotificationChannels } from "@/lib/storage/notifications";
+import { SharingKillSwitchMonitor } from "@/components/overlays/SharingKillSwitchMonitor";
 
-if (Platform.OS === "android") {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require("../widgets/task-handler");
-}
+
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
@@ -240,6 +238,7 @@ function AppBootstrap() {
   return (
     <>
       <Slot />
+      <SharingKillSwitchMonitor />
       {!animationDone && (
         <AnimatedSplash onFinish={() => setAnimationDone(true)} />
       )}

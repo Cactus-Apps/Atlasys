@@ -210,7 +210,10 @@ export function sealShareMessage(
   const wire = new Uint8Array(WIRE_SIZE);
   wire[0] = 1; // framing version
   const dv = new DataView(wire.buffer);
-  dv.setUint16(1, epoch & 0xffff, false);
+  if (!Number.isInteger(epoch) || epoch < 1 || epoch > 0xffff) {
+    throw new Error(ShareCryptoError.BAD_EPOCH);
+  }
+  dv.setUint16(1, epoch, false);
   wire.set(nonce, 3);
   wire.set(cipher, WIRE_HEADER_SIZE);
   return wire;
@@ -237,7 +240,7 @@ export function openShareMessage(
   if (wire[0] !== 1) throw new Error(ShareCryptoError.BAD_VERSION);
   const dv = new DataView(wire.buffer, wire.byteOffset, wire.byteLength);
   const wireEpoch = dv.getUint16(1, false);
-  if (wireEpoch !== epoch) throw new Error(ShareCryptoError.BAD_EPOCH);
+  if (wireEpoch !== epoch || epoch < 1) throw new Error(ShareCryptoError.BAD_EPOCH);
 
   const nonce = wire.subarray(3, 3 + NONCE_SIZE);
   const cipher = wire.subarray(WIRE_HEADER_SIZE);

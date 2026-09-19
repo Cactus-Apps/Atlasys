@@ -1,5 +1,10 @@
 import * as SecureStore from "expo-secure-store";
-import { generateDeviceIdentity, type DeviceIdentity } from "./crypto";
+import {
+  generateDeviceIdentity,
+  randomBytesBase64,
+  deriveChannelName,
+  type DeviceIdentity,
+} from "./crypto";
 
 const SS = "atlasys.sharing.v1.";
 
@@ -70,7 +75,20 @@ export async function getIdentity(): Promise<IdentityWithMeta | undefined> {
 // Session (family + DEK + roster)
 
 export async function loadSession(): Promise<ShareSession | undefined> {
-  return getJSON<ShareSession>(SS_SESSION);
+  const session = await getJSON<ShareSession>(SS_SESSION);
+  if (!session) return undefined;
+  // The epoch is a small rotation counter (1..65535) that fits the u16 wire
+  // field. Sessions that predate rotation carried Date.now() there and could
+  // never be opened across devices; drop them so the user starts fresh.
+  if (
+    !Number.isInteger(session.epoch) ||
+    session.epoch < 1 ||
+    session.epoch > 0xffff
+  ) {
+    await clearSession();
+    return undefined;
+  }
+  return session;
 }
 
 export async function saveSession(session: ShareSession): Promise<void> {
@@ -81,6 +99,32 @@ export async function clearSession(): Promise<void> {
   await SecureStore.deleteItemAsync(SS_SESSION);
   await SecureStore.deleteItemAsync(SS_COUNTER_SENT);
   await SecureStore.deleteItemAsync(SS_COUNTER_RECV);
+}
+
+/**
+ * Rotate the family DEK: new key, bumped epoch, derived new channel name and
+ * an empty roster. Every remaining member must be paired again (admin-only).
+ * Forward secrecy: old DEK/channel holders (including removed members and the
+ * server relay) cannot decrypt or join the new channel.
+ */
+export async function rotateSession(
+  session: ShareSession,
+): Promise<ShareSession> {
+  const dek = randomBytesBase64(32);
+  const channelName = await deriveChannelName(session.familyId, dek);
+  const next: ShareSession = {
+    ...session,
+    epoch: session.epoch + 1,
+    dek,
+    channelName,
+    active: false,
+    members: [],
+  };
+  if (next.epoch > 0xffff) {
+    throw new Error("epoch-exhausted");
+  }
+  await saveSession(next);
+  return next;
 }
 
 // Anti-replay counters (persistent across restarts)

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.8.6",
+    "version": "1.8.7",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -22,7 +22,7 @@
         "backgroundColor": "#DDDDDD"
       },
       "package": "com.cactus_apps.Atlasys",
-      "versionCode": 35,
+      "versionCode": 36,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
@@ -74,7 +74,17 @@
           "cameraPermission": "Camera permission is required to scan family pairing codes."
         }
       ],
-      "expo-local-authentication"
+      "expo-local-authentication",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Atlasys uses location so your family can see where you are while live sharing is active.",
+          "locationAlwaysAndWhenInUsePermission": "Atlasys uses background location so your family can keep seeing your position after you leave the app.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

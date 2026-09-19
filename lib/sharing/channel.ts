@@ -9,9 +9,17 @@ import {
   wireFromBase64,
   MSG_END,
 } from "./crypto";
+import { fetchSharingConfig } from "./killSwitch";
+import {
+  registerBackgroundLocationHandler,
+  clearBackgroundLocationHandler,
+  startShareLocationTask,
+  stopShareLocationTask,
+} from "./background";
 import {
   loadSession,
   saveSession,
+  rotateSession,
   getOrCreateIdentity,
   type ShareSession,
   type IdentityWithMeta,
@@ -24,6 +32,7 @@ const LOCATION_TIME_INTERVAL_MS = 5_000;
 const LOCATION_DISTANCE_INTERVAL_M = 10;
 const HEARTBEAT_SCAN_MS = 2_000;
 const OFFLINE_THRESHOLD_MS = 25_000;
+const KILL_SWITCH_POLL_MS = 30_000;
 
 function shortIdOf(signPublicKeyB64: string): string {
   return signPublicKeyB64.slice(-16);
@@ -41,6 +50,8 @@ class ShareChannelManager {
   private lastLocation: Location.LocationObject | null = null;
   private peerMeta = new Map<string, PeerMeta>();
   private running = false;
+  private killPollTimer: ReturnType<typeof setInterval> | null = null;
+  private killPollInstalled = false;
 
   isRunning(): boolean {
     return this.running;
@@ -63,8 +74,56 @@ class ShareChannelManager {
     }
   }
 
-  async start(session: ShareSession, sending: boolean): Promise<void> {
+  /**
+   * Enforce the remote kill switch. FAIL-OPEN: sharing keeps working unless
+   * the config row explicitly says `enabled = false`. If it is disabled while
+   * a share is active, we stop it (sending an END), deactivate the session and
+   * flag the app so it can notify the user.
+   */
+  async refreshKillSwitch(): Promise<boolean> {
+    const cfg = await fetchSharingConfig();
+    const store = useSharingStore.getState();
+    if (cfg.enabled) {
+      store.setDisabled(null, null);
+      return true;
+    }
+    store.setDisabled(cfg.reason, cfg.message);
+    if (this.running) {
+      store.setKilledWhileActive(true);
+      await this.stopSharing();
+    }
+    return false;
+  }
+
+  /** Passive polling: only fetches while a share is active. Returns cleanup. */
+  startKillSwitchPolling(): () => void {
+    if (this.killPollInstalled) return () => {};
+    this.killPollInstalled = true;
+    this.killPollTimer = setInterval(() => {
+      if (useSharingStore.getState().active) {
+        void this.refreshKillSwitch();
+      }
+    }, KILL_SWITCH_POLL_MS);
+    return () => {
+      if (this.killPollTimer) {
+        clearInterval(this.killPollTimer);
+        this.killPollTimer = null;
+      }
+      this.killPollInstalled = false;
+    };
+  }
+
+  async start(
+    session: ShareSession,
+    sending: boolean,
+    notification?: { title: string; body: string },
+  ): Promise<void> {
     this.stop();
+    await this.refreshKillSwitch();
+    if (useSharingStore.getState().disabledReason) {
+      useSharingStore.getState().setLastError("feature-disabled");
+      return;
+    }
     this.session = session;
     this.running = true;
 
@@ -110,7 +169,7 @@ class ShareChannelManager {
     this.channel = channel;
 
     if (sending) {
-      await this.startSending();
+      await this.startSending(notification);
     }
 
     this.heartbeatTimer = setInterval(() => {
@@ -118,7 +177,10 @@ class ShareChannelManager {
     }, HEARTBEAT_SCAN_MS);
   }
 
-  async startSending(): Promise<void> {
+  async startSending(notification?: {
+    title: string;
+    body: string;
+  }): Promise<void> {
     const store = useSharingStore.getState();
     store.setSending(true);
 
@@ -129,35 +191,70 @@ class ShareChannelManager {
       return;
     }
 
+    let backgroundGranted = false;
     try {
-      this.locationWatcher = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: LOCATION_TIME_INTERVAL_MS,
-          distanceInterval: LOCATION_DISTANCE_INTERVAL_M,
-        },
-        (loc) => {
-          this.lastLocation = loc;
-        },
-      );
+      const bg = await Location.requestBackgroundPermissionsAsync();
+      backgroundGranted = bg.status === "granted";
     } catch {
-      store.setLastError("location-watch-failed");
-      store.setSending(false);
-      this.sendTimer && clearInterval(this.sendTimer);
-      return;
+      backgroundGranted = false;
+    }
+
+    try {
+      registerBackgroundLocationHandler((loc) => {
+        this.lastLocation = loc;
+        void this.publishPosition();
+      });
+      await startShareLocationTask({
+        accuracy: Location.Accuracy.Balanced,
+        minimumUpdateMs: LOCATION_TIME_INTERVAL_MS,
+        distanceMeters: LOCATION_DISTANCE_INTERVAL_M,
+        notificationTitle:
+          notification?.title ?? "ShareLocationNotificationTitle",
+        notificationBody: notification?.body ?? "ShareLocationNotificationBody",
+      });
+    } catch {
+      clearBackgroundLocationHandler();
+      try {
+        this.locationWatcher = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: LOCATION_TIME_INTERVAL_MS,
+            distanceInterval: LOCATION_DISTANCE_INTERVAL_M,
+          },
+          (loc) => {
+            this.lastLocation = loc;
+          },
+        );
+      } catch {
+        store.setLastError("location-watch-failed");
+        store.setSending(false);
+        this.sendTimer && clearInterval(this.sendTimer);
+        return;
+      }
     }
 
     this.sendTimer = setInterval(() => {
       void this.publishPosition();
     }, SEND_INTERVAL_MS);
     void this.publishPosition();
+
+    if (!backgroundGranted) {
+      store.setLastError("background-location-denied");
+    }
   }
+
+  private lastPublishedAt = 0;
 
   private async publishPosition(): Promise<void> {
     const session = this.session;
     const identity = this.identity;
     if (!session || !identity || !this.channel) return;
     if (!this.lastLocation?.coords) return;
+
+    // Throttle so the background task and the timer never double-send bursts.
+    const now = Date.now();
+    if (now - this.lastPublishedAt < 6_000) return;
+    this.lastPublishedAt = now;
 
     const counter = await bumpSentCounter(session.epoch);
     const wire = sealShareMessage(
@@ -278,12 +375,28 @@ class ShareChannelManager {
     useSharingStore.getState().setSending(false);
   }
 
+  /**
+   * Rotate the family DEK (admin only). Stops sharing, bumps the epoch, swaps
+   * the key + channel and clears the roster. Forward secrecy: everyone must be
+   * paired again, so a removed member can neither join the new channel nor
+   * decrypt anything sent after the rotation.
+   */
+  async rotate(): Promise<void> {
+    const current = this.session;
+    if (!current || !current.isAdmin) return;
+    await this.stopSharing();
+    const next = await rotateSession(current);
+    this.session = next;
+  }
+
   stop(): void {
     this.running = false;
     if (this.locationWatcher) {
       this.locationWatcher.remove();
       this.locationWatcher = null;
     }
+    clearBackgroundLocationHandler();
+    void stopShareLocationTask();
     if (this.sendTimer) {
       clearInterval(this.sendTimer);
       this.sendTimer = null;

@@ -14,7 +14,7 @@ import {
   StatusBar,
 } from "react-native";
 
-const PRIVACY_SECTION_COUNT = 11;
+const PRIVACY_SECTION_KEYS = ["0", "1", "2", "2a", "3", "4", "5", "6", "7", "8", "9", "10"];
 
 export default function Privacy_Policy() {
   const { t } = useTranslation();
@@ -23,9 +23,9 @@ export default function Privacy_Policy() {
 
   const sections = useMemo(
     () =>
-      Array.from({ length: PRIVACY_SECTION_COUNT }, (_, i) => ({
-        title: t(`PP_${i}_title`),
-        content: t(`PP_${i}_content`),
+      PRIVACY_SECTION_KEYS.map((key) => ({
+        title: t(`PP_${key}_title`),
+        content: t(`PP_${key}_content`),
       })),
     [t],
   );

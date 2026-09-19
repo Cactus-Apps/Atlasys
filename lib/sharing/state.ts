@@ -6,6 +6,8 @@ import { create } from "zustand";
 
 export type PeerStatus = "online" | "offline" | "ended";
 
+export type KillSwitchReason = "safety" | "maintenance";
+
 export type SharedPeer = {
   id: string;
   name?: string;
@@ -23,11 +25,18 @@ type SharingStore = {
   peers: Record<string, SharedPeer>;
   lastError: string | null;
 
+  // Remote (Supabase app_config) kill switch
+  disabledReason: KillSwitchReason | null;
+  disabledMessage: string | null;
+  killedWhileActive: boolean;
+
   setSessionLoaded: (value: boolean) => void;
   setIsAdmin: (value: boolean) => void;
   setActive: (value: boolean) => void;
   setSending: (value: boolean) => void;
   setLastError: (message: string | null) => void;
+  setDisabled: (reason: KillSwitchReason | null, message: string | null) => void;
+  setKilledWhileActive: (value: boolean) => void;
   upsertPosition: (
     peerId: string,
     name: string | undefined,
@@ -47,6 +56,9 @@ const initialState = {
   sending: false,
   peers: {},
   lastError: null,
+  disabledReason: null,
+  disabledMessage: null,
+  killedWhileActive: false,
 };
 
 export const useSharingStore = create<SharingStore>()((set, get) => ({
@@ -57,6 +69,9 @@ export const useSharingStore = create<SharingStore>()((set, get) => ({
   setActive: (value) => set({ active: value, sending: value }),
   setSending: (value) => set({ sending: value }),
   setLastError: (message) => set({ lastError: message }),
+  setDisabled: (reason, message) =>
+    set({ disabledReason: reason, disabledMessage: message }),
+  setKilledWhileActive: (value) => set({ killedWhileActive: value }),
 
   upsertPosition: (peerId, name, latitude, longitude, accuracyMeters) =>
     set((state) => ({
@@ -99,7 +114,14 @@ export const useSharingStore = create<SharingStore>()((set, get) => ({
       };
     }),
 
-  reset: () => set({ ...initialState }),
+  reset: () =>
+    set({
+      ...initialState,
+      // Kill-switch state reflects the remote config and survives leaveFamily.
+      disabledReason: get().disabledReason,
+      disabledMessage: get().disabledMessage,
+      killedWhileActive: get().killedWhileActive,
+    }),
 }));
 
 export function hasActiveShare(): boolean {

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   Pressable,
   ScrollView,
   StatusBar,
@@ -42,6 +44,10 @@ import {
   type IdentityPayload,
 } from "@/lib/sharing/qr";
 import {
+  killSwitchText,
+  SUPPORT_EMAIL,
+} from "@/lib/sharing/killSwitch";
+import {
   Field,
   Header,
   NoticeBox,
@@ -79,9 +85,13 @@ export default function SharingScreen() {
   } | null>(null);
   const processingRef = useRef(false);
 
-  const active = useSharingStore((s) => s.active);
+const active = useSharingStore((s) => s.active);
   const isAdmin = useSharingStore((s) => s.isAdmin);
   const sending = useSharingStore((s) => s.sending);
+  const disabledReason = useSharingStore((s) => s.disabledReason);
+  const disabledMessage = useSharingStore((s) => s.disabledMessage);
+
+  const [rotated, setRotated] = useState(false);
 
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -93,12 +103,9 @@ export default function SharingScreen() {
       const loaded = await loadSession();
       if (loaded) {
         setSession(loaded);
-        setRoute(
-          loaded.isAdmin && loaded.members.length === 0
-            ? { name: "admin-pending" }
-            : { name: "joined" },
-        );
+        setRoute(loaded.isAdmin && loaded.members.length === 0 ? { name: "admin-pending" } : { name: "joined" });
       }
+      void sharingManager.refreshKillSwitch();
     };
     void boot();
   }, []);
@@ -120,7 +127,7 @@ export default function SharingScreen() {
       const dek = randomBytesBase64(32);
       const channelName = await deriveChannelName(familyId, dek);
       const session: ShareSession = {
-        epoch: Date.now(),
+        epoch: 1,
         familyId,
         dek,
         channelName,
@@ -230,7 +237,7 @@ export default function SharingScreen() {
       const dekB64 = encodeBase64(dek);
       const channelName = await deriveChannelName(parsed.data.f, dekB64);
       const created = {
-        epoch: Date.now(),
+        epoch: 1,
         familyId: parsed.data.f,
         dek: dekB64,
         channelName,
@@ -260,7 +267,10 @@ export default function SharingScreen() {
       } else {
         const session = await loadSession();
         if (!session) throw new Error(FAILED);
-        await sharingManager.start(session, true);
+        await sharingManager.start(session, true, {
+          title: t("Sharing_bg_notif_title"),
+          body: t("Sharing_bg_notif_body"),
+        });
       }
     } catch {
       setError("toggle-failed");
@@ -286,6 +296,48 @@ export default function SharingScreen() {
     }
   };
 
+  const confirmRotate = (removingName?: string) => {
+    const removing = Boolean(removingName);
+    Alert.alert(
+      removing
+        ? t("Sharing_member_remove_title")
+        : t("Sharing_rotate_title"),
+      removing
+        ? t("Sharing_member_remove_body", { member: removingName })
+        : t("Sharing_rotate_body"),
+      [
+        { text: t("Common_cancel"), style: "cancel" },
+        {
+          text: removing
+            ? t("Sharing_member_remove_confirm_btn")
+            : t("Sharing_rotate_confirm_btn"),
+          style: "destructive",
+          onPress: () => void performRotate(),
+        },
+      ],
+    );
+  };
+
+  const performRotate = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await sharingManager.rotate();
+      const next = await loadSession();
+      setSession(next ?? null);
+      setRotated(true);
+      setRoute({ name: "admin-pending" });
+    } catch {
+      setError("rotate-failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const contactSupport = () => {
+    void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+  };
+
   const onBarcode = ({ data }: { data: string }) => {
     if (processingRef.current) return;
     processingRef.current = true;
@@ -303,6 +355,52 @@ export default function SharingScreen() {
       }, 800);
     }
   };
+
+  if (disabledReason) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} />
+        <Header
+          title={t("Sharing_title")}
+          onBack={() =>
+            router.canGoBack() ? router.back() : router.navigate("/profilescreen")
+          }
+        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.disabledCard}>
+            <ShieldCheck size={26} color={theme.warningDark} />
+            <Text style={styles.disabledTitle}>
+              {t("Sharing_disabled_title")}
+            </Text>
+            <Text style={styles.paragraph}>
+              {killSwitchText(t, disabledReason, disabledMessage)}
+            </Text>
+          </View>
+          <Pressable
+            style={[styles.primaryBtn, busy && styles.disabled]}
+            disabled={busy}
+            onPress={contactSupport}
+          >
+            <Text style={styles.primaryBtnText}>
+              {t("Sharing_support_contact")}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.secondaryBtn}
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.navigate("/profilescreen")
+            }
+          >
+            <X size={18} color={theme.accentColor} />
+            <Text style={styles.secondaryBtnText}>{t("Common_back")}</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   if (route.name === "landing" || route.name === "identity") {
     return (
@@ -584,122 +682,170 @@ export default function SharingScreen() {
           <Text style={styles.errorText}>{t(`Sharing_error_${error}`)}</Text>
         )}
 
-        {adminPending && (
-          <Pressable
-            style={[styles.secondaryBtn, busy && styles.disabled]}
-            disabled={busy}
-            onPress={() => {
-              if (!permission?.granted) void requestPermission();
-              setRoute({ name: "scan-identity" });
-            }}
-          >
-            <Plus size={18} color={theme.accentColor} />
-            <Text style={styles.secondaryBtnText}>
-              {t("Sharing_add_member")}
-            </Text>
-          </Pressable>
-        )}
+{rotated && (
+                  <NoticeBox text={t("Sharing_rotate_done")} />
+                )}
+                {adminPending && (
+                  <Pressable
+                    style={[styles.secondaryBtn, busy && styles.disabled]}
+                    disabled={busy}
+                    onPress={() => {
+                      if (!permission?.granted) void requestPermission();
+                      setRoute({ name: "scan-identity" });
+                    }}
+                  >
+                    <Plus size={18} color={theme.accentColor} />
+                    <Text style={styles.secondaryBtnText}>
+                      {t("Sharing_add_member")}
+                    </Text>
+                  </Pressable>
+                )}
 
-        {!adminPending && (
-          <>
-            <Text style={styles.secondaryHeadline}>
-              {t("Sharing_members_title")}
-            </Text>
-            <View style={styles.membersCard}>
-              <MemberRow
-                name={session?.adminName ?? t("Sharing_admin_label")}
-                peer={peers[session?.adminSignPublicKey.slice(-16) ?? ""]}
-                isAdmin
-              />
-              {(session?.members ?? []).map((m) => {
-                const peer = peers[m.id];
-                return (
-                  <MemberRow
-                    key={m.id}
-                    name={m.name ?? m.id.slice(0, 8)}
-                    peer={peer}
-                  />
-                );
-              })}
-            </View>
-            {isAdmin && (
-              <Pressable
-                style={[styles.secondaryBtn, busy && styles.disabled]}
-                disabled={busy}
-                onPress={() => {
-                  if (!permission?.granted) void requestPermission();
-                  setRoute({ name: "scan-identity" });
+                {!adminPending && (
+                  <>
+                    <Text style={styles.secondaryHeadline}>
+                      {t("Sharing_members_title")}
+                    </Text>
+                    <View style={styles.membersCard}>
+                      <MemberRow
+                        name={session?.adminName ?? t("Sharing_admin_label")}
+                        peer={peers[session?.adminSignPublicKey.slice(-16) ?? ""]}
+                        isAdmin
+                      />
+                      {(session?.members ?? []).map((m) => {
+                        const peer = peers[m.id];
+                        return (
+                          <MemberRow
+                            key={m.id}
+                            name={m.name ?? m.id.slice(0, 8)}
+                            peer={peer}
+                            adminControls={isAdmin}
+                            onRemove={() => confirmRotate(m.name ?? m.id.slice(0, 8))}
+                          />
+                        );
+                      })}
+                    </View>
+                    {isAdmin && (
+                      <Pressable
+                        style={[styles.secondaryBtn, busy && styles.disabled]}
+                        disabled={busy}
+                        onPress={() => {
+                          if (!permission?.granted) void requestPermission();
+                          setRoute({ name: "scan-identity" });
+                        }}
+                      >
+                        <Plus size={18} color={theme.accentColor} />
+                        <Text style={styles.secondaryBtnText}>
+                          {t("Sharing_add_member")}
+                        </Text>
+                      </Pressable>
+                    )}
+                    {isAdmin && (
+                      <Pressable
+                        style={[styles.rotateBtn, busy && styles.disabled]}
+                        disabled={busy}
+                        onPress={() => confirmRotate()}
+                      >
+                        <Text style={styles.rotateBtnText}>
+                          {t("Sharing_rotate_key")}
+                        </Text>
+                      </Pressable>
+                    )}
+                    {isAdmin && (
+                      <Text style={styles.rotateHint}>
+                        {t("Sharing_rotate_key_hint")}
+                      </Text>
+                    )}
+                  </>
+                )}
+
+                <Pressable
+                  style={[styles.dangerBtn, busy && styles.disabled]}
+                  disabled={busy}
+                  onPress={() => void leaveFamily()}
+                >
+                  <Text style={styles.dangerBtnText}>{t("Sharing_leave_family")}</Text>
+                </Pressable>
+              </ScrollView>
+            </SafeAreaView>
+          );
+        }
+
+        function MemberRow({
+          name,
+          peer,
+          isAdmin,
+          adminControls,
+          onRemove,
+        }: {
+          name: string;
+          peer?: { status?: string };
+          isAdmin?: boolean;
+          adminControls?: boolean;
+          onRemove?: () => void;
+        }) {
+          const { t } = useTranslation();
+          const theme = useAppTheme();
+          const status = peer?.status ?? "unknown";
+          const label =
+            status === "online"
+              ? t("Sharing_status_online")
+              : status === "offline"
+                ? t("Sharing_status_offline")
+                : status === "ended"
+                  ? t("Sharing_status_ended")
+                  : t("Sharing_status_unknown");
+          const color = status === "online" ? theme.success : theme.subTextColor;
+          return (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 12,
+              }}
+            >
+              <MapPin size={16} color={theme.accentColor} />
+              <Text
+                style={{
+                  flex: 1,
+                  marginLeft: 10,
+                  fontFamily: fonts.medium,
+                  fontSize: 15,
+                  color: theme.textColor,
                 }}
               >
-                <Plus size={18} color={theme.accentColor} />
-                <Text style={styles.secondaryBtnText}>
-                  {t("Sharing_add_member")}
-                </Text>
-              </Pressable>
-            )}
-          </>
-        )}
-
-        <Pressable
-          style={[styles.dangerBtn, busy && styles.disabled]}
-          disabled={busy}
-          onPress={() => void leaveFamily()}
-        >
-          <Text style={styles.dangerBtnText}>{t("Sharing_leave_family")}</Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function MemberRow({
-  name,
-  peer,
-  isAdmin,
-}: {
-  name: string;
-  peer?: { status?: string };
-  isAdmin?: boolean;
-}) {
-  const { t } = useTranslation();
-  const theme = useAppTheme();
-  const status = peer?.status ?? "unknown";
-  const label =
-    status === "online"
-      ? t("Sharing_status_online")
-      : status === "offline"
-        ? t("Sharing_status_offline")
-        : status === "ended"
-          ? t("Sharing_status_ended")
-          : t("Sharing_status_unknown");
-  const color = status === "online" ? theme.success : theme.subTextColor;
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-      }}
-    >
-      <MapPin size={16} color={theme.accentColor} />
-      <Text
-        style={{
-          flex: 1,
-          marginLeft: 10,
-          fontFamily: fonts.medium,
-          fontSize: 15,
-          color: theme.textColor,
-        }}
-      >
-        {name}
-        {isAdmin ? ` · ${t("Sharing_admin_label")}` : ""}
-      </Text>
-      <Text style={{ fontFamily: fonts.regular, fontSize: 12, color }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
+                {name}
+                {isAdmin ? ` · ${t("Sharing_admin_label")}` : ""}
+              </Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 12, color }}>
+                {label}
+              </Text>
+              {adminControls && onRemove && (
+                <Pressable
+                  onPress={onRemove}
+                  style={{
+                    marginLeft: 10,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: theme.dangerLight,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.medium,
+                      fontSize: 11,
+                      color: theme.danger,
+                    }}
+                  >
+                    {t("Sharing_member_remove_btn")}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          );
+        }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
   StyleSheet.create({
@@ -783,6 +929,45 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) =>
       fontFamily: fonts.semibold,
       fontSize: 15,
       color: theme.danger,
+    },
+    rotateBtn: {
+      borderWidth: 1,
+      borderColor: theme.warningDark,
+      borderRadius: 16,
+      paddingVertical: 13,
+      alignItems: "center",
+      backgroundColor: theme.warningLight,
+      marginTop: 8,
+    },
+    rotateBtnText: {
+      fontFamily: fonts.semibold,
+      fontSize: 14,
+      color: theme.warningDark,
+    },
+    rotateHint: {
+      fontFamily: fonts.regular,
+      fontSize: 12,
+      color: theme.subTextColor,
+      textAlign: "center",
+      marginTop: 6,
+      paddingHorizontal: 8,
+      lineHeight: 16,
+    },
+    disabledCard: {
+      alignItems: "center",
+      padding: 20,
+      borderRadius: 18,
+      backgroundColor: theme.warningLight,
+      borderWidth: 1,
+      borderColor: theme.warningDark,
+      marginBottom: 18,
+    },
+    disabledTitle: {
+      fontFamily: fonts.bold,
+      fontSize: 16,
+      color: theme.textColor,
+      marginTop: 8,
+      marginBottom: 6,
     },
     disabled: { opacity: 0.6 },
     qrCard: {

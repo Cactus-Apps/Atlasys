@@ -21,7 +21,7 @@ import { fonts } from "@/lib/fonts";
 type Props = {
   state: any;
   descriptors: any;
-  navigation: any;
+  navigation?: any;
   colorScheme?: "light" | "dark" | null;
 };
 
@@ -94,13 +94,14 @@ function TabBarNewInner({ state, descriptors, navigation }: Props) {
         const label = options.title ?? route.name;
 
         const color = isFocused ? theme.accentColor : theme.subTextColor;
+        const nav = navigation ?? descriptors[route.key]?.navigation;
 
         return (
           <TouchableOpacity
             key={route.key}
             style={styles.tab}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate(route.name)}
+            onPress={() => nav?.navigate(route.name)}
           >
             {getIcon(route.name, color, 25)}
             <Text style={[styles.label, { color }]}>{label}</Text>

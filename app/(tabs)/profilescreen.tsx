@@ -2,6 +2,15 @@ import { Avatar } from "@avatune/react-native";
 import nevmstasTheme from "@avatune/nevmstas-theme/react-native";
 import { useRouter } from "expo-router";
 import {
+  Alert,
+  Linking,
+  StyleSheet,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
   Bell,
   ChevronRight,
   HardDrive,
@@ -15,13 +24,6 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  StyleSheet,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import { supabase } from "@/lib/auth/supabase";
 import {
   GestureHandlerRootView,
@@ -32,6 +34,8 @@ import * as Application from "expo-application";
 import { UpdateBanner } from "@/components/overlays/UpdateBanner";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { fonts } from "@/lib/fonts";
+import { useSharingStore } from "@/lib/sharing/state";
+import { killSwitchText, SUPPORT_EMAIL } from "@/lib/sharing/killSwitch";
 
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -41,6 +45,28 @@ export function ProfileScreen() {
   const styles = useMemo(() => getStyles(theme), [theme]);
   const version = Application.nativeApplicationVersion;
   const avatarConfig = useAuthStore((s) => s.avatarConfig);
+  const sharingDisabledReason = useSharingStore((s) => s.disabledReason);
+  const sharingDisabledMessage = useSharingStore((s) => s.disabledMessage);
+
+  const openSharing = () => {
+    if (sharingDisabledReason) {
+      Alert.alert(
+        t("Sharing_disabled_title"),
+        killSwitchText(t, sharingDisabledReason, sharingDisabledMessage),
+        [
+          {
+            text: t("Sharing_support_contact"),
+            onPress: () => {
+              void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+            },
+          },
+          { text: t("Common_ok"), style: "cancel" },
+        ],
+      );
+      return;
+    }
+    router.navigate("/sharing");
+  };
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -97,7 +123,9 @@ export function ProfileScreen() {
         items: [
           {
             label: t("Profile_live_sharing"),
-            sub: t("Profile_live_sharing_sub"),
+            sub: sharingDisabledReason
+              ? t("Profile_live_sharing_sub_disabled")
+              : t("Profile_live_sharing_sub"),
             icon: MapPin,
             color: theme.warningDark,
             bg: theme.warningLight,
@@ -143,7 +171,7 @@ export function ProfileScreen() {
         ],
       },
     ],
-    [t, theme],
+    [t, theme, sharingDisabledReason],
   );
 
   return (
@@ -196,7 +224,11 @@ export function ProfileScreen() {
                     <TouchableOpacity
                       style={styles.menuItem}
                       activeOpacity={0.7}
-                      onPress={() => router.navigate(item.route as any)}
+                      onPress={() =>
+                        item.route === "/sharing"
+                          ? openSharing()
+                          : router.navigate(item.route as any)
+                      }
                     >
                       <View
                         style={[
@@ -382,6 +414,10 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     footer: {
       alignItems: "center",
       marginTop: 10,
+    },
+    footerLink: {
+      marginTop: 12,
+      padding: 8,
     },
     footerText: {
       fontFamily: fonts.medium,

@@ -85,6 +85,19 @@ position signals and shows the last position without any time indication.
 view is gated behind biometric authentication (Face ID / fingerprint) and
 screenshots plus the app-switcher preview are blocked.
 
+• **Remote safety switch.** We can temporarily disable live location sharing
+for all users through an operator-only configuration flag (a "kill switch").
+This does not give us any ability to read locations — it only stops the feature
+until the flag is cleared. When the switch is pulled, active shares are ended
+and affected users are informed inside the app with a notice that explains why
+and how to contact support.
+
+• **Background delivery.** While a share is active, the app may run an
+Android foreground-service notification and an iOS background-location
+indicator so that encrypted positions keep flowing after the app leaves the
+foreground. That notice only states that sharing is active — coordinates
+never appear in it, and you can stop sharing at any time to remove it.
+
 • **Honest limitation.** A relay-based system cannot hide that *some* network
 traffic exists, at what time it occurs, or over which IP it flows.
 Infrastructure-level logs (load balancers, hosting providers, network
