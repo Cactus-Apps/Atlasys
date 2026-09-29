@@ -58,12 +58,16 @@ cd Atlasys
 
 # Install dependencies
 npm install
+# and maybe
+npm run postinstall
 
 # Copy the environment template and fill in your values
 cp .env.example .env.local
 
 # Start the development server
 npx expo start
+# or
+npm start
 ```
 
 ### Environment Variables
@@ -82,19 +86,29 @@ See `.env.example` for the full list.
 ```
 Atlasys/
 ├── app/                  # Expo Router screens
-│   ├── (tabs)/           # Main tab screens
 │   ├── auth/             # Auth screens
+│   ├── (tabs)/           # Main tab screens
 │   ├── (legal)/          # Privacy policy, Terms of Use
-│   └── onboarding.tsx    # Onboarding flow
+│   └── screens           # Main App Screens
 ├── assets/               # Assets for android
 │   ├── animations/       # Animations
+│   ├── fonts/            # The fonts used
+│   ├── map/              # Map styles
 │   └── images/           # Icons, Previews
 ├── components/           # Reusable UI components
-│   └── sheets_modal/     # Bottom sheets and modals
+│   ├── auth/             # Auth screen components
+│   ├── city/             # CityMap components
+│   ├── sharing/          # components for location sharing
+│   ├── tab-bars/         # tab bar styles
+│   ├── sheets_modal/     # Bottom sheets and modals
 │   ├── overlays/         # Littel ui components
 │   └── auth/             # UI components for auth
 ├── lib/                  # Business logic and utilities
 │   ├── auth/             # Supabase auth context
+│   ├── avatar/           # Avatar utils
+│   ├── hooks/            # Hooks & Modals
+│   ├── navigation/       # Navigation logic
+│   ├── sharing/          # Location sharing hooks
 │   ├── config/           # Posthig config
 │   ├── geocoding/        # Geocoding-logic and utilities
 │   ├── logs/             # Map logs
@@ -102,7 +116,8 @@ Atlasys/
 │   ├── update/           # Update logic, hooks
 │   └── theme.ts          # Theme tokens
 ├── locals/               # Translation files
-└── utils/                # External API wrappers
+├── plugins/              # Build optimisations
+└── scripts/              # scripts and packets patches
 ```
 
 ---
