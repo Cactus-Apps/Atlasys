@@ -43,7 +43,13 @@ export function SharingKillSwitchMonitor() {
             void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
           },
         },
-        { text: t("Common_ok"), style: "cancel" },
+        {
+          text: t("Common_ok"),
+          style: "cancel",
+          onPress: () => {
+            shownRef.current = false;
+          },
+        },
       ],
     );
   }, [killed, reason, message, t]);

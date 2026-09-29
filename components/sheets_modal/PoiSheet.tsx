@@ -22,6 +22,8 @@ import {
   ChefHat,
   Star,
   Info,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/lib/theme";
@@ -32,6 +34,9 @@ import {
   parseOpeningHours,
   OverpassPOIDetails,
 } from "@/lib/geocoding/overpass";
+import { fetchPOIWikiImage } from "@/lib/geocoding/cityoverpass";
+import { useAuthStore } from "@/lib/storage/zustand";
+import { deleteCachedThumbnail } from "@/lib/storage/thumbnailCache";
 
 type SelectedPoi = {
   name: string;
@@ -146,6 +151,67 @@ export default function PoiSheet({
     return () => { cancelled = true; };
   }, [selectedPoi, selectedPoi?.osm_id, selectedPoi?.lat, selectedPoi?.lon]);
 
+  const addPoi = useAuthStore((s) => s.addPoi);
+  const removePoi = useAuthStore((s) => s.removePoi);
+  const poiSaved = useAuthStore((s) =>
+    selectedPoi
+      ? s.savedPois.some((p) => p.osmId === selectedPoi.osm_id)
+      : false,
+  );
+  const crowdedActions = !!details?.phone || !!details?.website;
+
+  const togglePoiSave = async () => {
+    if (!selectedPoi || selectedPoi.osm_id <= 0) return;
+    const osmId = selectedPoi.osm_id;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (poiSaved) {
+      const saved = useAuthStore.getState().savedPois.find(
+        (p) => p.osmId === osmId,
+      );
+      removePoi(osmId);
+      deleteCachedThumbnail(`poi-${osmId}`, saved?.image || undefined);
+      return;
+    }
+
+    let detail = details;
+    if (!detail) {
+      try {
+        detail = await fetchPOIDetails(
+          osmId,
+          selectedPoi.osm_type,
+          2,
+          selectedPoi.name,
+          selectedPoi.lat,
+          selectedPoi.lon,
+        );
+      } catch {
+        detail = null;
+      }
+    }
+
+    let image: string | null = null;
+    try {
+      image = await fetchPOIWikiImage(detail?.wikidata, detail?.wikipedia);
+    } catch {
+      image = null;
+    }
+
+    addPoi({
+      osmId,
+      osmType: selectedPoi.osm_type,
+      name: selectedPoi.name,
+      category: selectedPoi.type || "",
+      subclass: selectedPoi.subclass || "",
+      latitude: selectedPoi.lat,
+      longitude: selectedPoi.lon,
+      image,
+      openingHours: detail?.openingHours || null,
+      description: detail?.description || null,
+      website: detail?.website || null,
+    });
+  };
+
   // Always render BottomSheet (hidden at index=-1) so the ref stays valid
   return (
     <BottomSheet
@@ -242,6 +308,28 @@ export default function PoiSheet({
                 <Text style={s.primaryBtnText}>{t("Poi_start_route")}</Text>
               </TouchableOpacity>
 
+              {!crowdedActions && (
+                <TouchableOpacity
+                  onPress={togglePoiSave}
+                  disabled={selectedPoi.osm_id <= 0}
+                  style={[
+                    s.iconBtn,
+                    {
+                      backgroundColor: poiSaved
+                        ? theme.primary + "22"
+                        : theme.cardBgSecondary,
+                      opacity: selectedPoi.osm_id <= 0 ? 0.4 : 1,
+                    },
+                  ]}
+                >
+                  {poiSaved ? (
+                    <BookmarkCheck color={theme.primary} size={20} />
+                  ) : (
+                    <Bookmark color={theme.primary} size={20} />
+                  )}
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 onPress={async () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -279,6 +367,31 @@ export default function PoiSheet({
                 </TouchableOpacity>
               )}
             </View>
+
+            {crowdedActions && (
+              <TouchableOpacity
+                onPress={togglePoiSave}
+                disabled={selectedPoi.osm_id <= 0}
+                style={[
+                  s.saveBtn,
+                  {
+                    backgroundColor: poiSaved
+                      ? theme.primary + "22"
+                      : theme.cardBgSecondary,
+                    opacity: selectedPoi.osm_id <= 0 ? 0.4 : 1,
+                  },
+                ]}
+              >
+                {poiSaved ? (
+                  <BookmarkCheck color={theme.primary} size={20} />
+                ) : (
+                  <Bookmark color={theme.primary} size={20} />
+                )}
+                <Text style={[s.saveBtnText, { color: theme.primary }]}>
+                  {poiSaved ? t("Poi_saved") : t("Poi_save")}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <View style={[s.divider, { backgroundColor: theme.borderColor }]} />
 
@@ -519,6 +632,20 @@ const s = StyleSheet.create({
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    height: 48,
+    borderRadius: 14,
+  },
+  saveBtnText: {
+    fontSize: 15,
+    fontFamily: fonts.semibold,
   },
   divider: {
     height: 1,

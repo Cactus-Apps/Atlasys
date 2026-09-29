@@ -11,6 +11,8 @@ import * as Sentry from "@sentry/react-native";
 import {
   ArrowLeft,
   Heart,
+  Bookmark,
+  BookmarkCheck,
   MapPin,
   Bus,
   Info,
@@ -95,6 +97,7 @@ import BottomPanel, {
 import { StopToast } from "@/components/overlays/StopToast";
 import { fonts } from "@/lib/fonts";
 import CityLoadingSkeleton from "@/components/city/CityLoadingSkeleton";
+import { deleteCachedThumbnail } from "@/lib/storage/thumbnailCache";
 
 type TabName = "discover" | "transit" | "info";
 
@@ -178,6 +181,11 @@ export default function CityScreen() {
   const [hoursExpanded, setHoursExpanded] = useState(false);
   const addPlace = useAuthStore((s) => s.addPlace);
   const removePlace = useAuthStore((s) => s.removePlace);
+  const addPoi = useAuthStore((s) => s.addPoi);
+  const removePoi = useAuthStore((s) => s.removePoi);
+  const poiSaved = useAuthStore((s) =>
+    selectedPOI ? s.savedPois.some((p) => p.osmId === selectedPOI.osmId) : false,
+  );
 
   const poiDetailsCache = useRef<Record<number, OverpassPOIDetails>>({});
   const splitPosition = useSharedValue(0.5);
@@ -430,6 +438,31 @@ export default function CityScreen() {
       setLocalSaved(false);
       removePlace(cityName);
     }
+  };
+
+  const togglePoiSave = () => {
+    if (!selectedPOI) return;
+    const poi = selectedPOI;
+    if (poiSaved) {
+      removePoi(poi.osmId);
+      deleteCachedThumbnail(`poi-${poi.osmId}`, poi.image || undefined);
+    } else {
+      addPoi({
+        osmId: poi.osmId,
+        osmType: poi.osmType,
+        name: poi.name,
+        category: poi.category || "",
+        subclass: poi.subtype || "",
+        latitude: poi.lat,
+        longitude: poi.lon,
+        image: poi.image || null,
+        openingHours:
+          poiDetails?.openingHours || poi.openingHours || null,
+        description: poiDetails?.description || poi.description || null,
+        website: poiDetails?.website || poi.website || null,
+      });
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   const retryPOI = useCallback(() => {
@@ -781,6 +814,19 @@ export default function CityScreen() {
               <Globe color={theme.info} size={20} />
             </TouchableOpacity>
           )}
+          <TouchableOpacity
+            onPress={togglePoiSave}
+            style={[
+              styles.poiIconBtn,
+              { backgroundColor: poiSaved ? theme.primary + "22" : theme.cardBgSecondary },
+            ]}
+          >
+            {poiSaved ? (
+              <BookmarkCheck color={theme.primary} size={20} />
+            ) : (
+              <Bookmark color={theme.primary} size={20} />
+            )}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={async () => {
               await Share.share({

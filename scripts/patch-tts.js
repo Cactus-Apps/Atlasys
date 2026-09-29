@@ -15,7 +15,8 @@ if (!fs.existsSync(file)) {
   process.exit(0);
 }
 
-const MARKER = "/* ATLASYS_PATCHED: react-native never exported NativeModule */";
+const MARKER =
+  "/* ATLASYS_PATCHED: react-native never exported NativeModule */";
 
 let src = fs.readFileSync(file, "utf8");
 if (src.includes(MARKER)) {
@@ -23,8 +24,16 @@ if (src.includes(MARKER)) {
   process.exit(0);
 }
 
+const importSource =
+  "import { NativeModules, NativeEventEmitter, Platform, EmitterSubscription, NativeModule } from 'react-native';";
+const listenerSource = "return this.addListener(type, handler);";
+
+if (!src.includes(importSource) || !src.includes(listenerSource)) {
+  throw new Error("patch-tts: expected source patterns were not found");
+}
+
 src = src.replace(
-  "import { NativeModules, NativeEventEmitter, Platform, EmitterSubscription, NativeModule } from 'react-native';",
+  importSource,
   [
     "import { NativeModules, NativeEventEmitter, Platform, EmitterSubscription } from 'react-native';",
     MARKER,

@@ -1,5 +1,6 @@
 import * as LocalAuthentication from "expo-local-authentication";
 import * as ScreenCapture from "expo-screen-capture";
+import { useIsFocused } from "expo-router";
 import { AppState } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import { useSharingStore } from "./state";
@@ -29,14 +30,42 @@ export async function promptBiometricUnlock(): Promise<boolean> {
   }
 }
 
-async function syncScreenCapture(active: boolean): Promise<void> {
-  try {
-    if (active) {
-      await ScreenCapture.preventScreenCaptureAsync(SCREEN_CAPTURE_KEY);
-    } else {
-      await ScreenCapture.allowScreenCaptureAsync(SCREEN_CAPTURE_KEY);
+const blockRequests = new Set<symbol>();
+let appliedBlocked: boolean | null = null;
+
+function applyScreenCapture(blocked: boolean): void {
+  if (appliedBlocked === blocked) return;
+  appliedBlocked = blocked;
+  void (async () => {
+    try {
+      if (blocked) {
+        await ScreenCapture.preventScreenCaptureAsync(SCREEN_CAPTURE_KEY);
+      } else {
+        await ScreenCapture.allowScreenCaptureAsync(SCREEN_CAPTURE_KEY);
+      }
+    } catch {
+      appliedBlocked = null;
     }
-  } catch {}
+  })();
+}
+
+function setBlockRequest(token: symbol, blocked: boolean): void {
+  if (blocked) {
+    blockRequests.add(token);
+  } else {
+    blockRequests.delete(token);
+  }
+  applyScreenCapture(blockRequests.size > 0);
+}
+
+function useScreenCaptureGuard(block: boolean): void {
+  const focused = useIsFocused();
+  const [token] = useState(() => Symbol("screen-capture"));
+
+  useEffect(() => {
+    setBlockRequest(token, block && focused);
+    return () => setBlockRequest(token, false);
+  }, [block, focused, token]);
 }
 
 export function useIsShareActive(): boolean {
@@ -49,27 +78,15 @@ export function useShareLock(): {
   requestUnlock: () => Promise<boolean>;
 } {
   const active = useSharingStore((s) => s.active);
-  const [locked, setLocked] = useState<boolean>(false);
+  const unlocked = useSharingStore((s) => s.unlocked);
+  const locked = active && !unlocked;
 
-  useEffect(() => {
-    if (active) {
-      setLocked(true);
-    } else {
-      setLocked(false);
-    }
-  }, [active]);
-
-  useEffect(() => {
-    void syncScreenCapture(active);
-    return () => {
-      void syncScreenCapture(false);
-    };
-  }, [active]);
+  useScreenCaptureGuard(active);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
       if (next !== "active") {
-        setLocked(true);
+        useSharingStore.getState().setUnlocked(false);
       }
     });
     return () => sub.remove();
@@ -77,9 +94,12 @@ export function useShareLock(): {
 
   const requestUnlock = useCallback(async () => {
     const ok = await promptBiometricUnlock();
-    if (ok) setLocked(false);
+    if (ok) useSharingStore.getState().setUnlocked(true);
     return ok;
   }, []);
 
   return { locked, enabled: active, requestUnlock };
+}
+export function useFamilyScreenCaptureGuard(): void {
+  useScreenCaptureGuard(true);
 }

@@ -20,6 +20,7 @@ import {
   MapPin,
   Navigation,
   ArrowLeftRight,
+  Plus,
   X,
 } from "lucide-react-native";
 import * as Sentry from "@sentry/react-native";
@@ -35,20 +36,33 @@ type RoutePoint = {
   coordinate: [number, number];
   isHome?: boolean;
 };
+
+export type RouteStop = {
+  label: string;
+  coordinate?: [number, number];
+  isHome?: boolean;
+};
 type Profile = "driving" | "cycling" | "walking";
+type FieldName = "start" | "end" | "stop";
 
 interface Props {
   open: boolean;
   start: RoutePoint | null;
   end: RoutePoint | null;
+  stops: RouteStop[];
   onClose: () => void;
   onPickStart: () => void;
   onPickEnd: () => void;
+  onPickStop: (index: number) => void;
   onSwap: () => void;
   onRouteReady: (routes: any[], profile: Profile) => void;
-  pickMode: "start" | "end" | null;
+  pickMode: FieldName | null;
+  pickStopIndex: number | null;
   onSetStart: (point: RoutePoint) => void;
   onSetEnd: (point: RoutePoint) => void;
+  onSetStop: (index: number, point: RoutePoint) => void;
+  onAddStop: () => void;
+  onRemoveStop: (index: number) => void;
   onStartNavigation: () => void;
   customPlaces: CustomPlace[];
 }
@@ -71,14 +85,20 @@ export default function RouteSheet({
   open,
   start,
   end,
+  stops,
   onClose,
   onPickStart,
   onPickEnd,
+  onPickStop,
   onSwap,
   onRouteReady,
   pickMode,
+  pickStopIndex,
   onSetStart,
   onSetEnd,
+  onSetStop,
+  onAddStop,
+  onRemoveStop,
   onStartNavigation,
   customPlaces,
 }: Props) {
@@ -110,9 +130,11 @@ export default function RouteSheet({
   const [endResults, setEndResults] = useState<SearchResult[]>([]);
   const [searchingStart, setSearchingStart] = useState(false);
   const [searchingEnd, setSearchingEnd] = useState(false);
-  const [focusedField, setFocusedField] = useState<"start" | "end" | null>(
-    null,
-  );
+  const [focusedField, setFocusedField] = useState<FieldName | null>(null);
+  const [stopQueries, setStopQueries] = useState<string[]>([]);
+  const [stopResults, setStopResults] = useState<SearchResult[][]>([]);
+  const [stopSearching, setStopSearching] = useState<boolean[]>([]);
+  const [focusedStopIndex, setFocusedStopIndex] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -139,6 +161,53 @@ export default function RouteSheet({
       return () => clearTimeout(timer);
     }
   }, [end]);
+
+  // Keep stop-local search state in sync with committed stops
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStopQueries((prev) => {
+        const next = [...prev];
+        for (let i = 0; i < stops.length; i++) {
+          if (i >= next.length) next.push(stops[i].label);
+          else if (stops[i].label) next[i] = stops[i].label;
+        }
+        return next.slice(0, stops.length);
+      });
+      setStopResults((prev) => {
+        const next = [...prev];
+        while (next.length < stops.length) next.push([]);
+        return next.slice(0, stops.length);
+      });
+      setStopSearching((prev) => {
+        const next = [...prev];
+        while (next.length < stops.length) next.push(false);
+        return next.slice(0, stops.length);
+      });
+    });
+    return () => clearTimeout(timer);
+  }, [stops]);
+
+  const setStopQuery = (i: number, v: string) =>
+    setStopQueries((prev) => {
+      const next = [...prev];
+      while (next.length <= i) next.push("");
+      next[i] = v;
+      return next;
+    });
+  const setStopResultsAt = (i: number, v: SearchResult[]) =>
+    setStopResults((prev) => {
+      const next = [...prev];
+      while (next.length <= i) next.push([]);
+      next[i] = v;
+      return next;
+    });
+  const setStopSearchingAt = (i: number, v: boolean) =>
+    setStopSearching((prev) => {
+      const next = [...prev];
+      while (next.length <= i) next.push(false);
+      next[i] = v;
+      return next;
+    });
 
   // Nominatim search
   const searchNominatim = async (query: string): Promise<SearchResult[]> => {
@@ -194,15 +263,36 @@ export default function RouteSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endQuery, focusedField]);
 
+  useEffect(() => {
+    if (focusedField !== "stop") return;
+    const q = stopQueries[focusedStopIndex] ?? "";
+    if (!q || q.length < 2) {
+      const timer = setTimeout(() => setStopResultsAt(focusedStopIndex, []));
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(async () => {
+      setStopSearchingAt(focusedStopIndex, true);
+      const results = await searchNominatim(q);
+      setStopResultsAt(focusedStopIndex, results);
+      setStopSearchingAt(focusedStopIndex, false);
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedField, focusedStopIndex, stopQueries]);
+
   async function fetchRoute() {
     if (!start || !end) return;
     setLoading(true);
     setRouteError(null);
     try {
+      const waypoints = stops
+        .filter((st): st is RoutePoint => Boolean(st.coordinate))
+        .map((st) => st.coordinate);
       const routes = await fetchOsrmRoutes(
         start.coordinate,
         end.coordinate,
         profile as OsrmProfile,
+        waypoints,
       );
       if (!routes?.length) {
         setRouteError(t("Route_not_found"));
@@ -229,9 +319,12 @@ export default function RouteSheet({
     const timer = setTimeout(() => fetchRoute(), 100);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start, end, profile]);
+  }, [start, end, profile, stops]);
 
-  const selectResult = (result: SearchResult, field: "start" | "end") => {
+  const selectResult = (
+    result: SearchResult,
+    field: "start" | "end" | "stop",
+  ) => {
     const point: RoutePoint = {
       label: result.display_name.split(",").slice(0, 2).join(", "),
       coordinate: [parseFloat(result.lon), parseFloat(result.lat)],
@@ -240,15 +333,22 @@ export default function RouteSheet({
       onSetStart(point);
       setStartQuery(point.label);
       setStartResults([]);
-    } else {
+    } else if (field === "end") {
       onSetEnd(point);
       setEndQuery(point.label);
       setEndResults([]);
+    } else {
+      onSetStop(focusedStopIndex, point);
+      setStopQuery(focusedStopIndex, point.label);
+      setStopResultsAt(focusedStopIndex, []);
     }
     setFocusedField(null);
   };
 
-  const selectMarker = (marker: CustomPlace, field: "start" | "end") => {
+  const selectMarker = (
+    marker: CustomPlace,
+    field: "start" | "end" | "stop",
+  ) => {
     const point: RoutePoint = {
       label: marker.name || marker.address || "Marker",
       coordinate: [marker.longitude, marker.latitude],
@@ -258,10 +358,14 @@ export default function RouteSheet({
       onSetStart(point);
       setStartQuery(point.label);
       setStartResults([]);
-    } else {
+    } else if (field === "end") {
       onSetEnd(point);
       setEndQuery(point.label);
       setEndResults([]);
+    } else {
+      onSetStop(focusedStopIndex, point);
+      setStopQuery(focusedStopIndex, point.label);
+      setStopResultsAt(focusedStopIndex, []);
     }
     setFocusedField(null);
   };
@@ -298,7 +402,7 @@ export default function RouteSheet({
 
   const renderMarkerSuggestionItem = (
     marker: CustomPlace,
-    field: "start" | "end",
+    field: "start" | "end" | "stop",
   ) => {
     const metaKey = markerKey(marker);
     const color = placeCategoryColor(metaKey);
@@ -331,10 +435,25 @@ export default function RouteSheet({
     );
   };
 
-  const renderMarkerSuggestions = (field: "start" | "end") => {
-    const query = field === "start" ? startQuery : endQuery;
-    const searching = field === "start" ? searchingStart : searchingEnd;
-    const results = field === "start" ? startResults : endResults;
+  const renderMarkerSuggestions = (field: "start" | "end" | "stop") => {
+    const query =
+      field === "start"
+        ? startQuery
+        : field === "end"
+          ? endQuery
+          : (stopQueries[focusedStopIndex] ?? "");
+    const searching =
+      field === "start"
+        ? searchingStart
+        : field === "end"
+          ? searchingEnd
+          : (stopSearching[focusedStopIndex] ?? false);
+    const results =
+      field === "start"
+        ? startResults
+        : field === "end"
+          ? endResults
+          : (stopResults[focusedStopIndex] ?? []);
     if (focusedField !== field) return null;
 
     if (!query || query.trim().length < 2) {
@@ -488,11 +607,75 @@ export default function RouteSheet({
           {/* Start suggestions */}
           {renderMarkerSuggestions("start")}
 
-          {/* Connector + Swap */}
+          {/* Intermediate stops */}
+          {stops.map((_stop, index) => (
+            <React.Fragment key={index}>
+              <View
+                style={[
+                  s.fieldWrapper,
+                  s.stopField,
+                  focusedField === "stop" &&
+                    focusedStopIndex === index &&
+                    s.fieldWrapperActive,
+                ]}
+              >
+                <View style={[s.dot, { backgroundColor: theme.warning }]} />
+                <BottomSheetTextInput
+                  style={s.fieldInput}
+                  placeholder={t("Route_placeholder_stop")}
+                  placeholderTextColor={theme.subTextColor}
+                  value={stopQueries[index] ?? ""}
+                  onChangeText={(v) => setStopQuery(index, v)}
+                  onFocus={() => {
+                    setFocusedField("stop");
+                    setFocusedStopIndex(index);
+                  }}
+                />
+                {stopSearching[index] ? (
+                  <ActivityIndicator size="small" color={theme.subTextColor} />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFocusedField("stop");
+                      setFocusedStopIndex(index);
+                      sheetRef.current?.snapToIndex(0);
+                      onPickStop(index);
+                    }}
+                  >
+                    <MapPin
+                      size={16}
+                      color={
+                        pickMode === "stop" && pickStopIndex === index
+                          ? theme.primary
+                          : theme.subTextColor
+                      }
+                    />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => onRemoveStop(index)}
+                  accessibilityLabel={t("Route_remove_stop")}
+                >
+                  <X size={16} color={theme.subTextColor} />
+                </TouchableOpacity>
+              </View>
+              {focusedStopIndex === index &&
+                renderMarkerSuggestions("stop")}
+            </React.Fragment>
+          ))}
+
+          {/* Connector + Swap + Add stop */}
           <View style={s.connectorRow}>
             <View style={s.connectorLine} />
             <TouchableOpacity onPress={onSwap} style={s.swapBtn}>
               <ArrowLeftRight size={16} color={theme.subTextColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onAddStop}
+              style={s.addBtn}
+              accessibilityLabel={t("Route_add_stop")}
+            >
+              <Plus size={18} color={theme.white} />
             </TouchableOpacity>
           </View>
 
@@ -540,7 +723,9 @@ export default function RouteSheet({
             <Text style={s.pickHintText}>
               {pickMode === "start"
                 ? t("Route_pick_map_tap_hint_start")
-                : t("Route_pick_map_tap_hint_end")}
+                : pickMode === "end"
+                  ? t("Route_pick_map_tap_hint_end")
+                  : t("Route_pick_map_tap_hint_stop")}
             </Text>
           </View>
         )}
@@ -709,6 +894,12 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderRadius: 20,
       padding: 6,
     },
+    addBtn: {
+      backgroundColor: primary,
+      borderRadius: 20,
+      padding: 6,
+    },
+    stopField: { marginTop: 4 },
     suggestBox: {
       backgroundColor: cardBg,
       borderRadius: isModern ? 18 : 12,

@@ -32,9 +32,12 @@ export default function Privacy_Policy() {
 
   const params = useLocalSearchParams<{ from?: string }>();
   const fromConsent = params.from === "consent";
+  const fromReconsent = params.from === "reconsent";
 
   const handleBack = () => {
-    if (fromConsent) {
+    if (fromReconsent) {
+      router.replace("/consent");
+    } else if (fromConsent) {
       router.replace({
         pathname: "/onboarding",
         params: { showConsent: "true" },

@@ -3,13 +3,16 @@ import * as Sentry from "@sentry/react-native";
 export type OsrmProfile = "driving" | "cycling" | "walking";
 
 /**
- * OSRM-Server sind öffentliche Community-Instanzen und liefern gelegentlich
- * 400/500/Timeout. Für jedes Profil gibt es daher zwei Endpoints (primär +
- * Fallback); jeder wird bei einem Fehlschlag einmal wiederholt, bevor der
- * nächste Server versucht wird. Erst wenn alle fehlschlagen, ist das Ergebnis
- * `null` (Fehler #5).
+ * OSRM servers are public community instances and occasionally return
+ * 400/500/Timeout. Therefore, there are two endpoints for each profile (primary +
+ * fallback); each is retried once in case of failure before the
+ * next server is attempted. Only if all fail is the result
+ * `null` (Error #5).
  */
-export const OSRM_ENDPOINTS: Record<OsrmProfile, { primary: string; fallback: string }> = {
+export const OSRM_ENDPOINTS: Record<
+  OsrmProfile,
+  { primary: string; fallback: string }
+> = {
   driving: {
     primary: "https://routing.openstreetmap.de/routed-car",
     fallback: "https://router.project-osrm.org",
@@ -28,14 +31,21 @@ export async function fetchOsrmRoutes(
   from: [number, number],
   to: [number, number],
   profile: OsrmProfile,
+  waypoints: [number, number][] = [],
 ): Promise<any[] | null> {
-  const servers = [OSRM_ENDPOINTS[profile].primary, OSRM_ENDPOINTS[profile].fallback];
+  const servers = [
+    OSRM_ENDPOINTS[profile].primary,
+    OSRM_ENDPOINTS[profile].fallback,
+  ];
+  const coordinates = [from, ...waypoints, to]
+    .map((c) => `${c[0]},${c[1]}`)
+    .join(";");
 
   for (const server of servers) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const url =
         `${server}/route/v1/${profile}/` +
-        `${from[0]},${from[1]};${to[0]},${to[1]}` +
+        `${coordinates}` +
         `?overview=full&alternatives=true&geometries=geojson&steps=true`;
       try {
         const res = await fetch(url);

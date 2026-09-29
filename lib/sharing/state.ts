@@ -22,6 +22,7 @@ type SharingStore = {
   isAdmin: boolean;
   active: boolean;
   sending: boolean;
+  unlocked: boolean;
   peers: Record<string, SharedPeer>;
   lastError: string | null;
 
@@ -34,8 +35,12 @@ type SharingStore = {
   setIsAdmin: (value: boolean) => void;
   setActive: (value: boolean) => void;
   setSending: (value: boolean) => void;
+  setUnlocked: (value: boolean) => void;
   setLastError: (message: string | null) => void;
-  setDisabled: (reason: KillSwitchReason | null, message: string | null) => void;
+  setDisabled: (
+    reason: KillSwitchReason | null,
+    message: string | null,
+  ) => void;
   setKilledWhileActive: (value: boolean) => void;
   upsertPosition: (
     peerId: string,
@@ -54,6 +59,7 @@ const initialState = {
   isAdmin: false,
   active: false,
   sending: false,
+  unlocked: false,
   peers: {},
   lastError: null,
   disabledReason: null,
@@ -66,8 +72,14 @@ export const useSharingStore = create<SharingStore>()((set, get) => ({
 
   setSessionLoaded: (value) => set({ sessionLoaded: value }),
   setIsAdmin: (value) => set({ isAdmin: value }),
-  setActive: (value) => set({ active: value, sending: value }),
+  setActive: (value) =>
+    set((state) => ({
+      active: value,
+      sending: value,
+      unlocked: value ? state.unlocked : false,
+    })),
   setSending: (value) => set({ sending: value }),
+  setUnlocked: (value) => set({ unlocked: value }),
   setLastError: (message) => set({ lastError: message }),
   setDisabled: (reason, message) =>
     set({ disabledReason: reason, disabledMessage: message }),

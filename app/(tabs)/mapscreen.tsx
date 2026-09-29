@@ -93,7 +93,9 @@ import MapStyleSheet, {
 } from "@/components/sheets_modal/MapStyleSheet";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import RouteSheet from "@/components/sheets_modal/RouteSheet";
+import RouteSheet, {
+  type RouteStop,
+} from "@/components/sheets_modal/RouteSheet";
 import DownloadSheet from "@/components/sheets_modal/DownloadSheet";
 import FilterModal from "@/components/sheets_modal/FilterModal";
 import { useAuthStore } from "@/lib/storage/zustand";
@@ -138,6 +140,15 @@ const isAbortError = (error: any) =>
 const stripUrlQuery = (url?: string) =>
   url ? url.split("?")[0].split("#")[0] : url;
 
+const escapeHtml = (value: string) =>
+  value.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ]!,
+  );
+
 const renderPeerMarker = (color: string, name: string, status: string) => {
   const dim = status === "offline";
   const ended = status === "ended";
@@ -154,7 +165,7 @@ const renderPeerMarker = (color: string, name: string, status: string) => {
     box-shadow: 0 2px 6px rgba(0,0,0,0.35);
   "></div>
   <div style="margin-top:2px; padding:1px 6px; background: rgba(0,0,0,0.55); color:#fff; font-size:11px; border-radius:8px; max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-    ${name}
+    ${escapeHtml(name)}
   </div>
 </div>
 `;
@@ -356,8 +367,8 @@ export default function MapScreen() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const activeFilterRef = useRef<string | null>(null);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const routePickModeRef = useRef<"start" | "end" | null>(null);
-  const setPickMode = (mode: "start" | "end" | null) => {
+  const routePickModeRef = useRef<"start" | "end" | "stop" | null>(null);
+  const setPickMode = (mode: "start" | "end" | "stop" | null) => {
     routePickModeRef.current = mode;
     setRoutePickMode(mode);
   };
@@ -366,9 +377,12 @@ export default function MapScreen() {
   const [navDisclaimerOpen, setNavDisclaimerOpen] = useState(false);
   const [routeStart, setRouteStart] = useState<RoutePoint | null>(null);
   const [routeEnd, setRouteEnd] = useState<RoutePoint | null>(null);
-  const [routePickMode, setRoutePickMode] = useState<"start" | "end" | null>(
-    null,
-  );
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([]);
+  const [pickStopIndex, setPickStopIndex] = useState<number | null>(null);
+  const pickStopIndexRef = useRef<number | null>(null);
+  const [routePickMode, setRoutePickMode] = useState<
+    "start" | "end" | "stop" | null
+  >(null);
   const setMapPosition = useAuthStore((s) => s.setMapPosition);
   const initialZoom = useRef(5);
   const [mapStyleSheetOpen, setMapStyleSheetOpen] = useState(false);
@@ -380,7 +394,7 @@ export default function MapScreen() {
   const [drawMode, setDrawMode] = useState(false);
   const lastBearingRef = useRef(0);
   const localSaved = isPlaceSaved(city?.name ?? "");
-  const didHandleParams = useRef(false);
+  const handledParamsSig = useRef<string | null>(null);
 
   const [drawBounds, setDrawBounds] = useState<{
     nw: [number, number];
@@ -394,11 +408,20 @@ export default function MapScreen() {
 
   const searchBarVisible = !drawMode && !routePickMode;
 
-  const { destLat, destLon, destName } = useLocalSearchParams<{
-    destLat: string;
-    destLon: string;
-    destName: string;
-  }>();
+  const { destLat, destLon, destName, poiName, poiLat, poiLon, poiType, poiSubclass, poiOsmId, poiOsmType, handledAt } =
+    useLocalSearchParams<{
+      destLat: string;
+      destLon: string;
+      destName: string;
+      poiName: string;
+      poiLat: string;
+      poiLon: string;
+      poiType: string;
+      poiSubclass: string;
+      poiOsmId: string;
+      poiOsmType: string;
+      handledAt: string;
+    }>();
 
   const handleSetFilter = (filterId: string | null) => {
     activeFilterRef.current = filterId;
@@ -718,11 +741,16 @@ export default function MapScreen() {
   };
 
   useEffect(() => {
-    if (!destLat || !destLon || !destName) return;
-    if (didHandleParams.current) return;
+    const hasDest = !!destLat && !!destLon && !!destName;
+    const hasPoi = !!poiOsmId && !!poiLat && !!poiLon && !!poiName;
+    if (!hasDest && !hasPoi) return;
 
-    const lat = parseFloat(destLat);
-    const lon = parseFloat(destLon);
+    const sig =
+      `${destLat}|${destLon}|${destName}|${poiOsmId}|${poiLat}|${poiLon}|${poiName}|${handledAt}`;
+    if (handledParamsSig.current === sig) return;
+
+    const dLat = parseFloat(poiLat || destLat);
+    const dLon = parseFloat(poiLon || destLon);
 
     const tryNavigate = () => {
       if (!mapRef.current) {
@@ -730,31 +758,38 @@ export default function MapScreen() {
         return;
       }
 
-      didHandleParams.current = true;
+      handledParamsSig.current = sig;
 
       mapRef.current.flyTo({
-        center: [lon, lat],
-        zoom: 12,
+        center: [dLon, dLat],
+        zoom: hasPoi ? 17 : 12,
         duration: 1500,
       });
 
       setTimeout(() => {
-        selectCity({
-          name: destName,
-          latitude: lat,
-          longitude: lon,
-        });
+        if (hasPoi) {
+          sheetRef.current?.close();
+          setSelectedPoi({
+            name: poiName,
+            type: poiType || "",
+            subclass: poiSubclass || "",
+            osm_id: parseInt(poiOsmId, 10) || 0,
+            osm_type: poiOsmType || "",
+            lat: dLat,
+            lon: dLon,
+          });
+        } else {
+          selectCity({
+            name: destName,
+            latitude: dLat,
+            longitude: dLon,
+          });
+        }
       }, 1600);
     };
 
     setTimeout(tryNavigate, 500);
-  }, [destLat, destLon, destName]);
-
-  useEffect(() => {
-    return () => {
-      didHandleParams.current = false;
-    };
-  }, []);
+  }, [destLat, destLon, destName, poiOsmId, poiLat, poiLon, poiName, poiType, poiSubclass, poiOsmType, handledAt]);
 
   // Wikipedia logic
   useEffect(() => {
@@ -1480,6 +1515,7 @@ export default function MapScreen() {
   const handleRouteToCustomPlace = (lat: number, lon: number, name: string) => {
     setRoute(null);
     setDistanceInfo(null);
+    setRouteStops([]);
     setRouteStart(
       markerPos ? { label: t("Poi_my_location"), coordinate: markerPos } : null,
     );
@@ -1757,7 +1793,9 @@ export default function MapScreen() {
                   >
                     {routePickMode === "start"
                       ? t("Route_pick_start_title")
-                      : t("Route_pick_end_title")}
+                      : routePickMode === "end"
+                        ? t("Route_pick_end_title")
+                        : t("Route_pick_stop_title")}
                   </Text>
                   <Text
                     style={{
@@ -1797,7 +1835,16 @@ export default function MapScreen() {
 
                     const point: RoutePoint = { label, coordinate: [lng, lat] };
                     if (routePickMode === "start") setRouteStart(point);
-                    else setRouteEnd(point);
+                    else if (routePickMode === "end") setRouteEnd(point);
+                    else if (
+                      routePickMode === "stop" &&
+                      pickStopIndexRef.current != null
+                    )
+                      setRouteStops((prev) => {
+                        const next = [...prev];
+                        next[pickStopIndexRef.current!] = point;
+                        return next;
+                      });
                     setPickMode(null);
                   }}
                   style={{
@@ -1849,7 +1896,9 @@ export default function MapScreen() {
                         id={
                           routePickMode === "start"
                             ? "pickGradStart"
-                            : "pickGradEnd"
+                            : routePickMode === "end"
+                              ? "pickGradEnd"
+                              : "pickGradStop"
                         }
                         cx="50%"
                         cy="35%"
@@ -1860,7 +1909,9 @@ export default function MapScreen() {
                           stopColor={
                             routePickMode === "start"
                               ? theme.success
-                              : theme.danger
+                              : routePickMode === "end"
+                                ? theme.danger
+                                : theme.warning
                           }
                         />
                         <Stop
@@ -1868,7 +1919,9 @@ export default function MapScreen() {
                           stopColor={
                             routePickMode === "start"
                               ? theme.successDark
-                              : theme.dangerDark
+                              : routePickMode === "end"
+                                ? theme.dangerDark
+                                : theme.warningDark
                           }
                         />
                       </RadialGradient>
@@ -1877,7 +1930,7 @@ export default function MapScreen() {
                       cx="20"
                       cy="20"
                       r="20"
-                      fill={`url(#${routePickMode === "start" ? "pickGradStart" : "pickGradEnd"})`}
+                      fill={`url(#${routePickMode === "start" ? "pickGradStart" : routePickMode === "end" ? "pickGradEnd" : "pickGradStop"})`}
                     />
                     <Circle cx="20" cy="20" r="5" fill="white" opacity="0.9" />
                   </Svg>
@@ -1889,7 +1942,9 @@ export default function MapScreen() {
                     backgroundColor:
                       routePickMode === "start"
                         ? theme.successDark
-                        : theme.dangerDark,
+                        : routePickMode === "end"
+                          ? theme.dangerDark
+                          : theme.warningDark,
                     borderBottomLeftRadius: 2,
                     borderBottomRightRadius: 2,
                   }}
@@ -2020,6 +2075,35 @@ export default function MapScreen() {
                 },
               }}
             />
+          )}
+          {routeStops.map(
+            (stop, index) =>
+              stop?.coordinate && (
+                <Marker
+                  key={`route-stop-${index}`}
+                  options={{
+                    coordinate: stop.coordinate,
+                    element: {
+                      innerHTML: `
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <div style="width:40px; height:40px; border-radius:50%; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+              <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="stopGrad" cx="50%" cy="35%" r="60%">
+                    <stop offset="0%" stop-color="#FBBF24"/>
+                    <stop offset="100%" stop-color="#D97706"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="20" cy="20" r="20" fill="url(#stopGrad)"/>
+                <circle cx="20" cy="20" r="5" fill="white" opacity="0.9"/>
+              </svg>
+            </div>
+          </div>
+        `,
+                    },
+                  }}
+                />
+              ),
           )}
           {!drawMode &&
             customPlaces.map((place) => (
@@ -2495,6 +2579,7 @@ export default function MapScreen() {
             onRouteStart={(start, end) => {
               setRoute(null);
               setDistanceInfo(null);
+              setRouteStops([]);
               setRouteStart(start);
               setRouteEnd(end);
               setRouteSheetOpen(true);
@@ -2588,6 +2673,7 @@ export default function MapScreen() {
                       <View style={styles.headerActions}>
                         <TouchableOpacity
                           onPress={() => {
+                            setRouteStops([]);
                             setRouteStart(
                               markerPos
                                 ? {
@@ -2870,17 +2956,33 @@ export default function MapScreen() {
             open={routeSheetOpen}
             start={routeStart}
             end={routeEnd}
+            stops={routeStops}
             pickMode={routePickMode}
+            pickStopIndex={pickStopIndex}
             onClose={() => {
               setRouteSheetOpen(false);
               setPickMode(null);
+              setPickStopIndex(null);
+              pickStopIndexRef.current = null;
               setRouteStart(null);
               setRouteEnd(null);
+              setRouteStops([]);
               setRoute(null);
               setDistanceInfo(null);
             }}
             onPickStart={() => setPickMode("start")}
             onPickEnd={() => setPickMode("end")}
+            onPickStop={(index) => {
+              setPickStopIndex(index);
+              pickStopIndexRef.current = index;
+              setPickMode("stop");
+            }}
+            onAddStop={() =>
+              setRouteStops((prev) => [...prev, { label: "" }])
+            }
+            onRemoveStop={(index) =>
+              setRouteStops((prev) => prev.filter((_, i) => i !== index))
+            }
             onSwap={() => {
               const tmp = routeStart;
               setRouteStart(routeEnd);
@@ -2888,6 +2990,13 @@ export default function MapScreen() {
             }}
             onSetStart={(point) => setRouteStart(point)}
             onSetEnd={(point) => setRouteEnd(point)}
+            onSetStop={(index, point) =>
+              setRouteStops((prev) => {
+                const next = [...prev];
+                next[index] = point;
+                return next;
+              })
+            }
             customPlaces={customPlaces}
             onRouteReady={async (routes, p) => {
               setRoute(routes);

@@ -26,6 +26,13 @@ export class BackupTooLargeError extends Error {
   }
 }
 
+export class BackupFormatError extends Error {
+  constructor() {
+    super("backup-wrong-format");
+    this.name = "BackupFormatError";
+  }
+}
+
 export async function exportMarkersToFile(
   places: CustomPlace[],
 ): Promise<{ uri: string; fileName: string }> {
@@ -64,6 +71,7 @@ export async function exportMarkersToFile(
 export async function importMarkersFromFile(): Promise<{
   places: Omit<CustomPlace, "id" | "addedAt">[];
   errors: number;
+  truncatedAt: number | null;
   canceled: boolean;
 }> {
   const result = await DocumentPicker.getDocumentAsync({
@@ -72,13 +80,13 @@ export async function importMarkersFromFile(): Promise<{
     multiple: false,
   });
   if (result.canceled || !result.assets?.[0]?.uri) {
-    return { places: [], errors: 0, canceled: true };
+    return { places: [], errors: 0, truncatedAt: null, canceled: true };
   }
   const asset = result.assets[0];
   const isAtlys =
     asset.name != null && asset.name.toLowerCase().endsWith(MARKER_BACKUP_EXT);
   if (!isAtlys) {
-    return { places: [], errors: 0, canceled: true };
+    throw new BackupFormatError();
   }
   if (asset.size != null && asset.size > MAX_BACKUP_SIZE) {
     throw new BackupTooLargeError();
@@ -88,7 +96,7 @@ export async function importMarkersFromFile(): Promise<{
       encoding: "utf8",
     });
     if (!text.includes(MARKER_BACKUP_HEADER)) {
-      return { places: [], errors: 0, canceled: true };
+      throw new BackupFormatError();
     }
     const parsed = parseMarkers(text);
     return {
@@ -106,10 +114,11 @@ export async function importMarkersFromFile(): Promise<{
         longitude: it.longitude,
       })),
       errors: parsed.errors,
+      truncatedAt: parsed.truncatedAt,
       canceled: false,
     };
   } catch (e) {
-    Sentry.captureException(e);
+    if (!(e instanceof BackupFormatError)) Sentry.captureException(e);
     throw e;
   }
 }

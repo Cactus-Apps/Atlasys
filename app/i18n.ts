@@ -12,8 +12,8 @@ const LANGUAGE_KEY = "userLanguage";
  * Resolves when default i18n init and persisted language restore have finished.
  * Gate the root UI on this so the first paint does not show raw translation keys.
  */
+// eslint-disable-next-line import/no-named-as-default-member
 export const i18nReady = i18n
-  // eslint-disable-next-line import/no-named-as-default-member
   .use(initReactI18next)
   .init({
     resources: {
@@ -37,7 +37,7 @@ export function ensureTranslationsLoaded() {
   return i18nReady;
 }
 
-const storeLanguage = async (lng) => {
+const storeLanguage = async (lng: any) => {
   try {
     await AsyncStorage.setItem(LANGUAGE_KEY, lng);
   } catch (err) {
@@ -57,7 +57,7 @@ const loadLanguage = async () => {
   }
 };
 
-const changeLanguage = async (lng) => {
+const changeLanguage = async (lng: any) => {
   // eslint-disable-next-line import/no-named-as-default-member
   await i18n.changeLanguage(lng);
   await storeLanguage(lng);

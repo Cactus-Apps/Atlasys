@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Share,
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,6 +19,7 @@ import {
   Bookmark,
   ExternalLinkIcon,
   Building2,
+  Globe,
 } from "lucide-react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
 import { useRouter } from "expo-router";
@@ -31,6 +33,15 @@ import {
   placeCategoryLabel,
   placeCategoryMeta,
 } from "@/components/sheets_modal/DropPinSheet";
+import {
+  WIKI_IMAGE_HEADERS,
+  cacheThumbnail,
+  deleteCachedThumbnail,
+  getCachedThumbnailUri,
+  sweepThumbnailCache,
+} from "@/lib/storage/thumbnailCache";
+import { parseOpeningHours } from "@/lib/geocoding/overpass";
+import { getPOIIcon, poiBgColor, poiColor } from "@/lib/geocoding/poiIcons";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
@@ -45,8 +56,77 @@ export default function SavedScreen() {
 
   const savedPlaces = useAuthStore((state) => state.savedPlaces);
   const removePlace = useAuthStore((state) => state.removePlace);
+  const savedPois = useAuthStore((state) => state.savedPois);
+  const removePoi = useAuthStore((state) => state.removePoi);
   const customPlaces = useAuthStore((state) => state.customPlaces);
   const removeCustomPlace = useAuthStore((state) => state.removeCustomPlace);
+
+  const poiCacheKey = (osmId: number) => `poi-${osmId}`;
+  const navNonceRef = useRef(0);
+
+  const [thumbCacheState, setThumbCacheState] = useState<
+    Record<string, string>
+  >({});
+  const [poiThumbCache, setPoiThumbCache] = useState<Record<string, string>>(
+    {},
+  );
+
+  const cachedThumbnails = (() => {
+    const names = new Set(savedPlaces.map((p) => p.name));
+    const filtered: Record<string, string> = {};
+    for (const [key, val] of Object.entries(thumbCacheState)) {
+      if (names.has(key)) filtered[key] = val;
+    }
+    return filtered;
+  })();
+
+  const cachedPoiThumbs = (() => {
+    const names = new Set(savedPois.map((p) => poiCacheKey(p.osmId)));
+    const filtered: Record<string, string> = {};
+    for (const [key, val] of Object.entries(poiThumbCache)) {
+      if (names.has(key)) filtered[key] = val;
+    }
+    return filtered;
+  })();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const placesWithThumbnail = savedPlaces.filter((p) => !!p.thumbnail);
+    const poisWithImage = savedPois.filter((p) => !!p.image);
+    sweepThumbnailCache([
+      ...savedPlaces,
+      ...savedPois.map((p) => ({
+        name: poiCacheKey(p.osmId),
+        thumbnail: p.image,
+      })),
+    ]);
+
+    if (placesWithThumbnail.length === 0 && poisWithImage.length === 0) return;
+
+    (async () => {
+      const results: Record<string, string> = {};
+      const poiResults: Record<string, string> = {};
+      await Promise.all([
+        ...placesWithThumbnail.map(async (place) => {
+          const uri = await cacheThumbnail(place.name, place.thumbnail!);
+          if (uri) results[place.name] = uri;
+        }),
+        ...poisWithImage.map(async (poi) => {
+          const uri = await cacheThumbnail(poiCacheKey(poi.osmId), poi.image!);
+          if (uri) poiResults[poiCacheKey(poi.osmId)] = uri;
+        }),
+      ]);
+      if (!cancelled) {
+        setThumbCacheState((prev) => ({ ...prev, ...results }));
+        setPoiThumbCache((prev) => ({ ...prev, ...poiResults }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [savedPlaces, savedPois]);
 
   const handleRemoveMarker = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -65,9 +145,15 @@ export default function SavedScreen() {
     });
   };
 
-  const handleRemove = (name: string) => {
+  const handleRemove = (item: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    removePlace(name);
+    removePlace(item.name);
+    deleteCachedThumbnail(item.name, item.thumbnail ?? undefined);
+    setThumbCacheState((prev) => {
+      const next = { ...prev };
+      delete next[item.name];
+      return next;
+    });
   };
 
   const handleNavigate = (place: any) => {
@@ -116,8 +202,40 @@ export default function SavedScreen() {
     }
   };
 
+  const handlePoiNavigate = (poi: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({
+      pathname: "/(tabs)/mapscreen",
+      params: {
+        poiName: poi.name,
+        poiLat: String(poi.latitude),
+        poiLon: String(poi.longitude),
+        poiType: poi.category || "",
+        poiSubclass: poi.subclass || "",
+        poiOsmId: String(poi.osmId),
+        poiOsmType: poi.osmType || "",
+        handledAt: String(navNonceRef.current++),
+      },
+    });
+  };
+
+  const handleRemovePoi = (poi: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    removePoi(poi.osmId);
+    deleteCachedThumbnail(poiCacheKey(poi.osmId), poi.image || undefined);
+    setPoiThumbCache((prev) => {
+      const next = { ...prev };
+      delete next[poiCacheKey(poi.osmId)];
+      return next;
+    });
+  };
+
   const renderItem = ({ item, index }: { item: any; index: number }) => {
-    const hasThumbnail = !!item.thumbnail;
+    const localThumb = item.thumbnail
+      ? (cachedThumbnails[item.name] ??
+        getCachedThumbnailUri(item.name, item.thumbnail))
+      : null;
+    const hasThumbnail = !!localThumb || !!item.thumbnail;
 
     const nameContent = (
       <View style={styles.textContainer}>
@@ -177,17 +295,18 @@ export default function SavedScreen() {
       </View>
     );
 
-  return (
+    return (
       <Animated.View
         entering={FadeInDown.delay(index * 100).springify()}
         style={styles.card}
       >
-        {item.thumbnail ? (
+        {localThumb || item.thumbnail ? (
           <ImageBackground
-            source={{
-              uri: item.thumbnail,
-              headers: { Referer: "https://en.wikipedia.org/" },
-            }}
+            source={
+              localThumb
+                ? { uri: localThumb }
+                : { uri: item.thumbnail, headers: WIKI_IMAGE_HEADERS }
+            }
             style={styles.cardBackground}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -200,7 +319,7 @@ export default function SavedScreen() {
                   style={styles.removeButton}
                   onPress={(e) => {
                     e.stopPropagation();
-                    handleRemove(item.name);
+                    handleRemove(item);
                   }}
                 >
                   <Trash2 size={18} color={theme.danger} />
@@ -219,7 +338,7 @@ export default function SavedScreen() {
                 style={styles.removeButton}
                 onPress={(e) => {
                   e.stopPropagation();
-                  handleRemove(item.name);
+                  handleRemove(item);
                 }}
               >
                 <Trash2 size={18} color={theme.danger} />
@@ -233,13 +352,7 @@ export default function SavedScreen() {
     );
   };
 
-  const renderMarkerItem = ({
-    item,
-    index,
-  }: {
-    item: any;
-    index: number;
-  }) => {
+  const renderMarkerItem = ({ item, index }: { item: any; index: number }) => {
     const isCustom = item.category === "custom";
     const metaKey = isCustom ? item.categoryIcon : item.category;
     const meta = placeCategoryMeta(metaKey);
@@ -254,9 +367,7 @@ export default function SavedScreen() {
         entering={FadeInDown.delay(index * 80).springify()}
         style={styles.markerCard}
       >
-        <View
-          style={[styles.markerIcon, { backgroundColor: color + "20" }]}
-        >
+        <View style={[styles.markerIcon, { backgroundColor: color + "20" }]}>
           {Icon && <Icon size={22} color={color} />}
         </View>
         <View style={styles.markerInfo}>
@@ -264,7 +375,9 @@ export default function SavedScreen() {
             {item.name || item.address || t("Place_default_name")}
           </Text>
           <View style={styles.markerMetaRow}>
-            <View style={[styles.markerCatTag, { backgroundColor: color + "18" }]}>
+            <View
+              style={[styles.markerCatTag, { backgroundColor: color + "18" }]}
+            >
               <Text style={[styles.markerCatText, { color }]} numberOfLines={1}>
                 {label}
               </Text>
@@ -294,13 +407,127 @@ export default function SavedScreen() {
     );
   };
 
+  const renderPoiItem = ({ item, index }: { item: any; index: number }) => {
+    const key = poiCacheKey(item.osmId);
+    const localThumb = item.image
+      ? (cachedPoiThumbs[key] ?? getCachedThumbnailUri(key, item.image))
+      : null;
+    const hasImage = !!localThumb || !!item.image;
+    const cat = item.category || item.subclass || "";
+    const Icon = getPOIIcon(cat);
+    const color = poiColor(cat);
+    const bgColor = poiBgColor(cat);
+    const openStatus = item.openingHours
+      ? parseOpeningHours(item.openingHours)
+      : null;
+
+    return (
+      <Animated.View
+        entering={FadeInDown.delay(index * 80).springify()}
+        style={styles.poiCard}
+      >
+        {hasImage ? (
+          <ImageBackground
+            source={
+              localThumb
+                ? { uri: localThumb }
+                : { uri: item.image, headers: WIKI_IMAGE_HEADERS }
+            }
+            style={styles.poiImageHeader}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+          ></ImageBackground>
+        ) : (
+          <View style={[styles.poiPlaceholder, { backgroundColor: bgColor }]}>
+            <Icon size={44} color={color} strokeWidth={1.75} />
+          </View>
+        )}
+
+        <View style={styles.poiBody}>
+          <Text style={styles.poiName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <View style={styles.poiMetaRow}>
+            <View style={[styles.poiCatTag, { backgroundColor: color + "18" }]}>
+              <Text style={[styles.poiCatText, { color }]} numberOfLines={1}>
+                {item.subclass || item.category}
+              </Text>
+            </View>
+            {openStatus && (
+              <View
+                style={[
+                  styles.poiStatusTag,
+                  { backgroundColor: openStatus.color + "20" },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.poiStatusDot,
+                    { backgroundColor: openStatus.color },
+                  ]}
+                />
+                <Text
+                  style={[styles.poiStatusText, { color: openStatus.color }]}
+                  numberOfLines={1}
+                >
+                  {openStatus.label}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.poiActionsRow}>
+            <TouchableOpacity
+              style={[
+                styles.poiActionBtnPrimary,
+                { backgroundColor: theme.primary },
+              ]}
+              onPress={() => handlePoiNavigate(item)}
+            >
+              <MapPin size={18} color={theme.white} />
+              <Text style={styles.poiActionBtnPrimaryText}>
+                {t("Show_on_map")}
+              </Text>
+            </TouchableOpacity>
+            {!!item.website && (
+              <TouchableOpacity
+                style={styles.poiActionBtn}
+                onPress={() =>
+                  Linking.openURL(
+                    item.website.startsWith("http")
+                      ? item.website
+                      : `https://${item.website}`,
+                  )
+                }
+              >
+                <Globe size={18} color={theme.info} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.poiActionBtn}
+              onPress={() => handleRemovePoi(item)}
+            >
+              <Trash2 size={18} color={theme.danger} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style={statusBarTheme} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t("Saved_Places")}</Text>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{savedPlaces.length}</Text>
+          <Text style={styles.badgeText}>
+            {activeTab === "cities"
+              ? savedPlaces.length
+              : activeTab === "places"
+                ? savedPois.length
+                : customPlaces.length}
+          </Text>
         </View>
       </View>
 
@@ -376,19 +603,32 @@ export default function SavedScreen() {
       )}
 
       {activeTab === "places" && (
-        <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconCircle}>
-            <MapPin size={48} color={theme.chevronColor} strokeWidth={1.5} />
-          </View>
-          <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
-          <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
-          <TouchableOpacity
-            style={styles.exploreBtn}
-            onPress={() => router.push("/(tabs)/mapscreen")}
-          >
-            <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
-          </TouchableOpacity>
-        </View>
+        <FlatList
+          data={savedPois}
+          renderItem={renderPoiItem}
+          keyExtractor={(item) => String(item.osmId)}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <MapPin
+                  size={48}
+                  color={theme.chevronColor}
+                  strokeWidth={1.5}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>{t("No_saved_places")}</Text>
+              <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
+              <TouchableOpacity
+                style={styles.exploreBtn}
+                onPress={() => router.push("/(tabs)/mapscreen")}
+              >
+                <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
       )}
 
       {activeTab === "markers" && (
@@ -401,7 +641,11 @@ export default function SavedScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
-                <MapPin size={48} color={theme.chevronColor} strokeWidth={1.5} />
+                <MapPin
+                  size={48}
+                  color={theme.chevronColor}
+                  strokeWidth={1.5}
+                />
               </View>
               <Text style={styles.emptyTitle}>{t("No_saved_markers")}</Text>
               <Text style={styles.emptySub}>{t("Add_markers_hint")}</Text>
@@ -788,6 +1032,115 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     markerActionBtn: {
       width: 38,
       height: 38,
+      borderRadius: isModern ? 12 : 10,
+      backgroundColor: theme.iconBg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    poiCard: {
+      backgroundColor: cardBg,
+      borderRadius: isModern ? 24 : 18,
+      marginBottom: 16,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: borderColor,
+      shadowColor: theme.black,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isModern ? (theme.isDark ? 0 : 0.06) : 0.05,
+      shadowRadius: isModern ? 14 : 10,
+      elevation: isModern ? 3 : 2,
+    },
+    poiImageHeader: {
+      width: "100%",
+      height: 180,
+    },
+    poiImageOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.25)",
+      padding: 12,
+      alignItems: "flex-end",
+    },
+    poiPlaceholder: {
+      height: 150,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    poiPlaceholderRemove: {
+      position: "absolute",
+      top: 12,
+      right: 12,
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    poiBody: {
+      padding: 14,
+      gap: 8,
+    },
+    poiName: {
+      fontSize: 16,
+      fontFamily: fonts.bold,
+      color: textColor,
+    },
+    poiMetaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      flexWrap: "wrap",
+    },
+    poiCatTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 20,
+      maxWidth: "55%",
+    },
+    poiCatText: {
+      fontSize: 11,
+      fontFamily: fonts.bold,
+    },
+    poiStatusTag: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 20,
+    },
+    poiStatusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    poiStatusText: {
+      fontSize: 11,
+      fontFamily: fonts.bold,
+    },
+    poiActionsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 2,
+    },
+    poiActionBtnPrimary: {
+      flex: 1,
+      height: 40,
+      flexDirection: "row",
+      gap: 8,
+      borderRadius: isModern ? 14 : 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    poiActionBtnPrimaryText: {
+      color: white,
+      fontSize: 14,
+      fontFamily: fonts.bold,
+    },
+    poiActionBtn: {
+      width: 40,
+      height: 40,
       borderRadius: isModern ? 12 : 10,
       backgroundColor: theme.iconBg,
       alignItems: "center",

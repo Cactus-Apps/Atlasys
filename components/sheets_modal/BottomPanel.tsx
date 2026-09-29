@@ -36,7 +36,7 @@ export default function BottomPanel({ children, splitPosition }: Props) {
       stiffness: 900,
       overshootClamping: true,
     });
-  }, []);
+  }, [splitPosition]);
 
   const panGesture = Gesture.Pan()
     .onStart(() => {

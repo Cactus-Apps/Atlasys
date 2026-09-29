@@ -22,6 +22,7 @@ import { useAuthStore } from "@/lib/storage/zustand";
 import {
   exportMarkersToFile,
   importMarkersFromFile,
+  BackupFormatError,
   BackupTooLargeError,
 } from "@/lib/storage/markerBackupFile";
 
@@ -383,7 +384,8 @@ export default function Storage() {
     if (backupBusy) return;
     try {
       setBackupBusy(true);
-      const { places, errors, canceled } = await importMarkersFromFile();
+      const { places, errors, truncatedAt, canceled } =
+        await importMarkersFromFile();
       if (canceled) return;
       if (places.length === 0) {
         setAlertBox({ message: t("Backup_error") });
@@ -394,16 +396,23 @@ export default function Storage() {
         .importCustomPlaces(places);
       const skipSuffix =
         errors > 0 ? t("Backup_imported_skip", { count: errors }) : "";
+      const capSuffix =
+        truncatedAt != null
+          ? t("Backup_imported_cap", { count: truncatedAt })
+          : "";
       setAlertBox({
-        message: t("Backup_imported", { added, updated }) + skipSuffix,
+        message:
+          t("Backup_imported", { added, updated }) + skipSuffix + capSuffix,
       });
     } catch (err) {
       Sentry.captureException(err);
       setAlertBox({
         message:
-          err instanceof BackupTooLargeError
-            ? t("Backup_too_large")
-            : t("Backup_error"),
+          err instanceof BackupFormatError
+            ? t("Backup_wrong_format")
+            : err instanceof BackupTooLargeError
+              ? t("Backup_too_large")
+              : t("Backup_error"),
       });
     } finally {
       setBackupBusy(false);

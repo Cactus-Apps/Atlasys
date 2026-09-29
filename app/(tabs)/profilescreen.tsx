@@ -2,8 +2,8 @@ import { Avatar } from "@avatune/react-native";
 import nevmstasTheme from "@avatune/nevmstas-theme/react-native";
 import { useRouter } from "expo-router";
 import {
-  Alert,
   Linking,
+  Modal,
   StyleSheet,
   StatusBar,
   Text,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import {
-  Bell,
+  OctagonAlert,
   ChevronRight,
   HardDrive,
   Info,
@@ -41,6 +41,7 @@ export function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState<string | undefined>("");
+  const [sharingDisabledModal, setSharingDisabledModal] = useState(false);
   const theme = useAppTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const version = Application.nativeApplicationVersion;
@@ -50,19 +51,7 @@ export function ProfileScreen() {
 
   const openSharing = () => {
     if (sharingDisabledReason) {
-      Alert.alert(
-        t("Sharing_disabled_title"),
-        killSwitchText(t, sharingDisabledReason, sharingDisabledMessage),
-        [
-          {
-            text: t("Sharing_support_contact"),
-            onPress: () => {
-              void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
-            },
-          },
-          { text: t("Common_ok"), style: "cancel" },
-        ],
-      );
+      setSharingDisabledModal(true);
       return;
     }
     router.navigate("/sharing");
@@ -93,6 +82,7 @@ export function ProfileScreen() {
       icon: any;
       color: string;
       bg: string;
+      bgDark: string;
       route: string;
     }[];
   }[] = useMemo(
@@ -104,16 +94,18 @@ export function ProfileScreen() {
             label: t("Profile_edit_profile"),
             sub: t("Profile_edit_profile_sub"),
             icon: UserRound,
-            color: theme.primary,
-            bg: theme.primaryLight,
+            color: theme.white,
+            bg: "rgba(226, 220, 220, 0.58)",
+            bgDark: "rgba(255,255,255,0.05)",
             route: "/account",
           },
           {
             label: t("Profile_privacy_settings"),
             sub: t("Profile_privacy_settings_sub"),
             icon: SettingsIcon,
-            color: theme.purple,
-            bg: theme.purpleLight,
+            color: theme.white,
+            bg: "rgba(226, 220, 220, 0.58)",
+            bgDark: "rgba(255,255,255,0.05)",
             route: "/settings",
           },
         ],
@@ -126,25 +118,32 @@ export function ProfileScreen() {
             sub: sharingDisabledReason
               ? t("Profile_live_sharing_sub_disabled")
               : t("Profile_live_sharing_sub"),
-            icon: MapPin,
-            color: theme.warningDark,
-            bg: theme.warningLight,
+            icon: sharingDisabledReason ? OctagonAlert : MapPin,
+            color: theme.white,
+            bg: sharingDisabledReason
+              ? theme.danger
+              : "rgba(226, 220, 220, 0.58)",
+            bgDark: sharingDisabledReason
+              ? theme.dangerDark
+              : "rgba(255,255,255,0.05)",
             route: "/sharing",
           },
           {
             label: t("Profile_storage"),
             sub: t("Profile_storage_sub"),
             icon: HardDrive,
-            color: theme.info,
-            bg: theme.infoLight,
+            color: theme.white,
+            bg: "rgba(226, 220, 220, 0.58)",
+            bgDark: "rgba(255,255,255,0.05)",
             route: "/Storage",
           },
           {
             label: t("Profile_just_map"),
             sub: t("Profile_just_map_sub"),
             icon: MapIcon,
-            color: theme.success,
-            bg: theme.successLight,
+            color: theme.white,
+            bg: "rgba(226, 220, 220, 0.58)",
+            bgDark: "rgba(255,255,255,0.05)",
             route: "/just_map",
           },
         ],
@@ -156,16 +155,18 @@ export function ProfileScreen() {
             label: t("Help_and_Feedback"),
             sub: t("Profile_help_sub"),
             icon: MessageCircleQuestionMark,
-            color: theme.warningDark,
-            bg: theme.warningLight,
+            color: theme.white,
+            bg: "rgba(226, 220, 220, 0.58)",
+            bgDark: "rgba(255,255,255,0.05)",
             route: "/help_feedback",
           },
           {
             label: t("Info"),
             sub: t("Profile_info_sub"),
             icon: Info,
-            color: theme.info,
-            bg: theme.infoLight,
+            color: theme.white,
+            bg: "rgba(226, 220, 220, 0.58)",
+            bgDark: "rgba(255,255,255,0.05)",
             route: "/info",
           },
         ],
@@ -235,13 +236,13 @@ export function ProfileScreen() {
                           styles.iconContainer,
                           {
                             backgroundColor: theme.isDark
-                              ? "rgba(255,255,255,0.05)"
+                              ? item.bgDark
                               : item.bg,
                           },
                         ]}
                       >
                         <item.icon
-                          color={theme.white}
+                          color={theme.isDark ? item.color : theme.black}
                           size={22}
                           strokeWidth={2.5}
                         />
@@ -269,14 +270,49 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => router.navigate("/test")}
-          >
-            <Text style={styles.footerText}>Version {version} • Atlasys </Text>
-          </TouchableOpacity>
+          <Text style={styles.footerText}>Version {version} • Atlasys </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={sharingDisabledModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSharingDisabledModal(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>{t("Sharing_disabled_title")}</Text>
+            <Text style={styles.modalText}>
+              {killSwitchText(t, sharingDisabledReason, sharingDisabledMessage)}
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSharingDisabledModal(false);
+                  void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+                }}
+                style={styles.modalPrimaryButton}
+              >
+                <Text
+                  style={[
+                    styles.modalButtonText,
+                    styles.modalPrimaryButtonText,
+                  ]}
+                >
+                  {t("Sharing_support_contact")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setSharingDisabledModal(false)}
+                style={styles.modalCancelButton}
+              >
+                <Text style={styles.modalButtonText}>{t("Common_ok")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </GestureHandlerRootView>
   );
 }
@@ -285,6 +321,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
     bg,
     cardBg,
+    cardBgSecondary,
     textColor,
     subTextColor,
     borderColor,
@@ -292,6 +329,7 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     primary,
     white,
     chevronColor,
+    overlay,
   } = theme;
 
   const defaultRadius = isModern ? 24 : 20;
@@ -423,6 +461,60 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       fontFamily: fonts.medium,
       fontSize: 12,
       color: chevronColor,
+    },
+    modalBackground: {
+      flex: 1,
+      backgroundColor: overlay,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalBox: {
+      width: "85%",
+      backgroundColor: cardBg,
+      borderRadius: defaultRadius,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: borderColor,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontFamily: fonts.bold,
+      color: textColor,
+      textAlign: "center",
+      marginBottom: 12,
+    },
+    modalText: {
+      fontSize: 16,
+      color: subTextColor,
+      textAlign: "center",
+      marginBottom: 24,
+      lineHeight: 22,
+    },
+    modalButtons: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    modalPrimaryButton: {
+      flex: 1,
+      backgroundColor: primary,
+      paddingVertical: 14,
+      borderRadius: innerRadius,
+      alignItems: "center",
+    },
+    modalPrimaryButtonText: {
+      color: white,
+    },
+    modalCancelButton: {
+      flex: 1,
+      backgroundColor: cardBgSecondary,
+      paddingVertical: 14,
+      borderRadius: innerRadius,
+      alignItems: "center",
+    },
+    modalButtonText: {
+      fontSize: 16,
+      fontFamily: fonts.bold,
+      color: textColor,
     },
   });
 };

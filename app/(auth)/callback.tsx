@@ -21,7 +21,7 @@ export default function AuthCallback() {
     });
 
     return () => data.subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   return (
     <View

@@ -22,6 +22,7 @@ export default function Terms_of_Use() {
   const styles = getStyles(theme);
   const params = useLocalSearchParams<{ from?: string }>();
   const fromConsent = params.from === "consent";
+  const fromReconsent = params.from === "reconsent";
 
   const sections = useMemo(
     () =>
@@ -33,7 +34,9 @@ export default function Terms_of_Use() {
   );
 
   const handleBack = () => {
-    if (fromConsent) {
+    if (fromReconsent) {
+      router.replace("/consent");
+    } else if (fromConsent) {
       router.replace({
         pathname: "/onboarding",
         params: { showConsent: "true" },

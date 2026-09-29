@@ -16,8 +16,7 @@ import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
 import { configureNotificationChannels } from "@/lib/storage/notifications";
 import { SharingKillSwitchMonitor } from "@/components/overlays/SharingKillSwitchMonitor";
-
-
+import { hasAcceptedCurrentConsent } from "@/lib/consent";
 
 const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
 
@@ -147,6 +146,7 @@ function AppBootstrap() {
   const systemScheme = useColorScheme();
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const currentTheme = useAuthStore((s) => s.settings.theme);
+  const [routingReady, setRoutingReady] = useState(false);
 
   useEffect(() => {
     if (animationDone) return;
@@ -197,28 +197,49 @@ function AppBootstrap() {
     const inAuthGroup = segments[0] === "auth" || segments[0] === "(auth)";
     const inOnboarding = segments[0] === "onboarding";
     const inLegalScreen = segments[0] === "(legal)";
+    const inConsentScreen = segments[0] === "consent";
 
-    if (inLegalScreen) return;
-
-    if (
-      !isOnboardingCompleted &&
-      !inOnboarding &&
-      !inLegalScreen &&
-      !inAuthGroup
-    ) {
-      router.replace("/onboarding");
+    if (inLegalScreen || inConsentScreen) {
+      Promise.resolve().then(() => setRoutingReady(true));
       return;
     }
 
-    if (isOnboardingCompleted && !user && !inAuthGroup) {
-      router.replace("/auth");
-      return;
-    }
+    let cancelled = false;
 
-    if (isOnboardingCompleted && user && inAuthGroup) {
-      router.replace("/(tabs)/mapscreen");
-      return;
-    }
+    (async () => {
+      const consentAccepted = await hasAcceptedCurrentConsent();
+      if (cancelled) return;
+
+      if (!consentAccepted && isOnboardingCompleted) {
+        router.replace("/consent");
+        setRoutingReady(true);
+        return;
+      }
+
+      if (!isOnboardingCompleted && !inOnboarding && !inAuthGroup) {
+        router.replace("/onboarding");
+        setRoutingReady(true);
+        return;
+      }
+
+      if (isOnboardingCompleted && !user && !inAuthGroup) {
+        router.replace("/auth");
+        setRoutingReady(true);
+        return;
+      }
+
+      if (isOnboardingCompleted && user && inAuthGroup) {
+        router.replace("/(tabs)/mapscreen");
+        setRoutingReady(true);
+        return;
+      }
+
+      setRoutingReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     storeReady,
     isLoadingUser,
@@ -229,7 +250,8 @@ function AppBootstrap() {
     router,
   ]);
 
-  const isReady = storeReady && !isLoadingUser && i18nGate && fontsLoaded;
+  const isReady =
+    storeReady && !isLoadingUser && i18nGate && fontsLoaded && routingReady;
 
   if (!isReady) {
     return <AnimatedSplash onFinish={() => setAnimationDone(true)} />;

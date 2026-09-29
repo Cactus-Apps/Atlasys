@@ -38,6 +38,21 @@ type SavedPlace = {
   addedAt: string;
 };
 
+export type SavedPoi = {
+  osmId: number;
+  osmType?: string;
+  name: string;
+  category: string;
+  subclass: string;
+  latitude: number;
+  longitude: number;
+  image?: string | null;
+  openingHours?: string | null;
+  description?: string | null;
+  website?: string | null;
+  addedAt: string;
+};
+
 export type CustomPlace = {
   id: string;
   name: string;
@@ -90,6 +105,12 @@ type StoreAuth = {
   isPlaceSaved: (name: string) => boolean;
   _seededForUserId: string | null;
   seedDefaultPlace: () => void;
+
+  // Saved POIs (points of interest)
+  savedPois: SavedPoi[];
+  addPoi: (poi: Omit<SavedPoi, "addedAt">) => void;
+  removePoi: (osmId: number) => void;
+  isPoiSaved: (osmId: number) => boolean;
 
   // Custom places (long-press pins, e.g. Home/Work)
   customPlaces: CustomPlace[];
@@ -171,6 +192,7 @@ type StoreAuth = {
 
 const initialState = {
   savedPlaces: [],
+  savedPois: [],
   customPlaces: [],
   _seededForUserId: null,
   isOnboardingCompleted: false,
@@ -237,6 +259,24 @@ export const useAuthStore = create<StoreAuth>()(
       },
       isPlaceSaved: (name) => {
         return get().savedPlaces.some((p) => p.name === name);
+      },
+      savedPois: [],
+      addPoi: (poi) => {
+        const newPoi = { ...poi, addedAt: new Date().toISOString() };
+        set((state) => ({
+          savedPois: [
+            newPoi,
+            ...state.savedPois.filter((p) => p.osmId !== poi.osmId),
+          ],
+        }));
+      },
+      removePoi: (osmId) => {
+        set((state) => ({
+          savedPois: state.savedPois.filter((p) => p.osmId !== osmId),
+        }));
+      },
+      isPoiSaved: (osmId) => {
+        return get().savedPois.some((p) => p.osmId === osmId);
       },
       customPlaces: [],
       addCustomPlace: (place) => {
@@ -413,6 +453,7 @@ export const useAuthStore = create<StoreAuth>()(
         settings: state.settings,
         userId: state.userId,
         savedPlaces: state.savedPlaces,
+        savedPois: state.savedPois,
         customPlaces: state.customPlaces,
         searchHistory: state.searchHistory,
         avatarConfig: state.avatarConfig,

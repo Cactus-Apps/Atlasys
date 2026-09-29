@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
     "postinstall": "node scripts/patch-tts.js && node -e \"const fs=require('fs'),p=require('path');['react-native-webview','expo-asset'].forEach(mod=>{const d=p.join('node_modules/react-native-maplibre-gl-js/node_modules',mod);if(fs.existsSync(d)){fs.rmSync(d,{recursive:true,force:true});console.log('Removed nested '+mod)}});const dndPkg=p.join('node_modules/react-native-reanimated-dnd/package.json');if(fs.existsSync(dndPkg)){const pkg=JSON.parse(fs.readFileSync(dndPkg,'utf8'));if(pkg.exports){delete pkg.exports;fs.writeFileSync(dndPkg,JSON.stringify(pkg,null,2)+'\\n');console.log('Fixed react-native-reanimated-dnd exports')}}\""
   },
   "dependencies": {
@@ -15,7 +16,6 @@
     "@avatune/react-native": "^2.1.0",
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
-    "@expo/ui": "58.0.3",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@hcaptcha/react-native-hcaptcha": "^4.0.0",
     "@iternio/react-native-tts": "^5.0.1",
@@ -58,7 +58,6 @@
     "expo-task-manager": "~58.0.4",
     "expo-updates": "~58.0.5",
     "expo-web-browser": "~58.0.0",
-    "expo-widgets": "58.0.3",
     "i18next": "^25.6.0",
     "live-update-notification": "file:modules/live-update-notification",
     "lottie-react-native": "~7.5.0",

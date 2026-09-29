@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import { useAuthStore } from "../storage/zustand";
 import * as Sentry from "@sentry/react-native";
 import * as WebBrowser from "expo-web-browser";
-import { syncConsentToServer } from "@/app/onboarding";
+import { syncConsentToServer } from "@/lib/consent";
 import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 import { generateRandomAvatarConfig } from "@/lib/avatar/avatar-utils";
@@ -37,53 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true);
   const isSigningInRef = React.useRef(false);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const timeout = setTimeout(() => {
-        setIsLoadingUser(false);
-      }, 10000);
-
-      try {
-        const { data } = await supabase.auth.getSession();
-        const sessionUser = data.session?.user ?? null;
-        setUser(sessionUser);
-        if (sessionUser) {
-          await syncStateFromMetadata(sessionUser);
-          sendDailyPing();
-        }
-      } catch (err: any) {
-        if (
-          err?.message?.includes("Invalid Refresh Token") ||
-          err?.code === "refresh_token_not_found"
-        ) {
-          await supabase.auth.signOut();
-        }
-        Sentry.captureException(err);
-      } finally {
-        clearTimeout(timeout);
-        setIsLoadingUser(false);
-      }
-    };
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        const { clearStore } = useAuthStore.getState();
-        if (currentUser) {
-          await syncStateFromMetadata(currentUser);
-          useAuthStore.getState().seedDefaultPlace();
-          sendDailyPing();
-        } else {
-          clearStore({ preserveOnboarding: true });
-        }
-      },
-    );
-
-    loadUser();
-    return () => listener.subscription.unsubscribe();
-  }, []);
 
   const syncStateFromMetadata = async (targetUser: User) => {
     try {
@@ -121,6 +74,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       Sentry.captureException(err);
     }
   };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const timeout = setTimeout(() => {
+        setIsLoadingUser(false);
+      }, 10000);
+
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionUser = data.session?.user ?? null;
+        setUser(sessionUser);
+        if (sessionUser) {
+          await syncStateFromMetadata(sessionUser);
+          await syncConsentToServer(sessionUser.id, supabase);
+          sendDailyPing();
+        }
+      } catch (err: any) {
+        if (
+          err?.message?.includes("Invalid Refresh Token") ||
+          err?.code === "refresh_token_not_found"
+        ) {
+          await supabase.auth.signOut();
+        }
+        Sentry.captureException(err);
+      } finally {
+        clearTimeout(timeout);
+        setIsLoadingUser(false);
+      }
+    };
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        const { clearStore } = useAuthStore.getState();
+        if (currentUser) {
+          await syncStateFromMetadata(currentUser);
+          useAuthStore.getState().seedDefaultPlace();
+          sendDailyPing();
+        } else {
+          clearStore({ preserveOnboarding: true });
+        }
+      },
+    );
+
+    loadUser();
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const syncStateToMetadata = async () => {
     if (!user) return;

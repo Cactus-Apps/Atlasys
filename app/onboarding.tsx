@@ -11,7 +11,11 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "@/lib/storage/zustand";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  CONSENT_VERSION,
+  APP_VERSION,
+  saveConsentLocally,
+} from "@/lib/consent";
 import Animated, {
   FadeIn,
   SlideInRight,
@@ -32,43 +36,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
-import * as Application from "expo-application";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
-
-const CONSENT_VERSION = "1.0";
-const CONSENT_KEY = "atlasys_consent_v" + CONSENT_VERSION;
-const APP_VERSION = Application.nativeApplicationVersion ?? "dev";
-
-async function saveConsentLocally(): Promise<void> {
-  await AsyncStorage.setItem(
-    CONSENT_KEY,
-    JSON.stringify({
-      version: CONSENT_VERSION,
-      acceptedAt: new Date().toISOString(),
-      platform: Platform.OS,
-    }),
-  );
-}
-
-export async function syncConsentToServer(
-  userId: string,
-  supabase: any,
-): Promise<void> {
-  try {
-    const raw = await AsyncStorage.getItem(CONSENT_KEY);
-    if (!raw) return;
-    const consent = JSON.parse(raw);
-    await supabase.from("user_consents").upsert({
-      user_id: userId,
-      consent_version: consent.version,
-      accepted_at: consent.acceptedAt,
-      platform: consent.platform,
-    });
-  } catch (error) {
-    Sentry.captureException(error);
-  }
-}
 
 const { width, height } = Dimensions.get("window");
 
