@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  type ScrollViewInstance,
 } from "react-native";
 import {
   MapPin,
@@ -69,7 +68,7 @@ export default function UpdateScreen({ visible, version, onClose }: Props) {
   const theme = useAppTheme();
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
-  const scrollRef = useRef<ScrollViewInstance>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const pingOn = useAuthStore((s) => s.settings.ping === true);
   const updateSettings = useAuthStore((s) => s.updateSettings);
 

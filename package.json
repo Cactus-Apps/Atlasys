@@ -1,7 +1,7 @@
 {
   "name": "atlasys",
   "main": "index.ts",
-  "version": "1.0.0",
+  "version": "1.9.0",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "postinstall": "node scripts/patch-tts.js && node -e \"const fs=require('fs'),p=require('path');['react-native-webview','expo-asset'].forEach(mod=>{const d=p.join('node_modules/react-native-maplibre-gl-js/node_modules',mod);if(fs.existsSync(d)){fs.rmSync(d,{recursive:true,force:true});console.log('Removed nested '+mod)}});const dndPkg=p.join('node_modules/react-native-reanimated-dnd/package.json');if(fs.existsSync(dndPkg)){const pkg=JSON.parse(fs.readFileSync(dndPkg,'utf8'));if(pkg.exports){delete pkg.exports;fs.writeFileSync(dndPkg,JSON.stringify(pkg,null,2)+'\\n');console.log('Fixed react-native-reanimated-dnd exports')}}\""
+    "postinstall": "node scripts/patch-tts.js && node -e \"const fs=require('fs'),p=require('path');['react-native-webview','expo-asset'].forEach(mod=>{const d=p.join('node_modules/react-native-maplibre-gl-js/node_modules',mod);if(fs.existsSync(d)){fs.rmSync(d,{recursive:true,force:true});console.log('Removed nested '+mod)}})\""
   },
   "dependencies": {
     "@avatune/nevmstas-theme": "^3.2.1",
@@ -59,7 +59,6 @@
     "expo-updates": "~57.0.22",
     "expo-web-browser": "~57.0.3",
     "i18next": "^25.6.0",
-    "live-update-notification": "file:modules/live-update-notification",
     "lottie-react-native": "~7.3.8",
     "lucide-react-native": "^0.546.0",
     "posthog-react-native": "^4.45.0",

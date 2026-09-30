@@ -20,6 +20,102 @@ const UpdateLog = () => {
 
   const logs = [
     {
+      version: "1.8.9",
+      date: "2026-09-30",
+      text: "Moved to the stable Expo SDK and refreshed the whole dependency tree for a more reliable build, smaller app size and smoother performance.",
+      type: "improvement",
+    },
+    {
+      version: "1.8.8",
+      date: "2026-09-29",
+      text: "New consent screen, so privacy-relevant changes are always explained before they apply. Redesigned Saved Places with cached map thumbnails and a new icon set for points of interest, reworked navigation instructions and more robust marker backups.",
+      type: "feature",
+    },
+    {
+      version: "1.8.7",
+      date: "2026-09-19",
+      text: "Location sharing is safer than ever: a kill switch can cut a session off remotely, background location keeps sharing with the screen off, and a live monitor keeps you in control. Streamlined the sharing channel and removed leftover internal test code.",
+      type: "feature",
+    },
+    {
+      version: "1.8.6",
+      date: "2026-09-18",
+      text: "Fixed Wikipedia articles and images that failed to load, city info now appears even when the image pipeline fails, and map requests are cancelled cleanly. Added internal tooling for automated map snapshots.",
+      type: "improvement",
+    },
+    {
+      version: "1.8.5",
+      date: "2026-09-17",
+      text: "People you are sharing with now appear directly on the map, and the sharing screen got a clearer layout. DM Sans and Lora are bundled, so typography renders instantly without a download. Navigation sidebar polish.",
+      type: "feature",
+    },
+    {
+      version: "1.8.4",
+      date: "2026-09-12",
+      text: "The big one: end-to-end encrypted location sharing. Share your live position with friends and family via QR code, protected by biometrics, with your keys stored only on your device. Plus a revamped navigation sidebar and an updated privacy policy.",
+      type: "feature",
+    },
+    {
+      version: "1.8.3",
+      date: "2026-09-12",
+      text: "Smoother map interaction: fewer re-renders while panning and zooming, a steadier compass heading and faster globe transitions.",
+      type: "improvement",
+    },
+    {
+      version: "1.8.2",
+      date: "2026-08-30",
+      text: "Faster and more reliable city details with improved transit and sights lookup, a shared request helper with better error handling, and routing upgrades.",
+      type: "feature",
+    },
+    {
+      version: "1.8.1",
+      date: "2026-08-29",
+      text: "Added an accessibility statement, a deeper navigation overhaul with clearer turn prompts, and further map improvements. Legal pages are now reachable straight from About.",
+      type: "feature",
+    },
+    {
+      version: "1.8.0",
+      date: "2026-08-29",
+      text: "Multi-stop route planning: add as many stops as you like and get one continuous route. Saved Places grew substantially, offline storage moved into a dedicated screen, and navigation got smarter.",
+      type: "feature",
+    },
+    {
+      version: "1.7.9",
+      date: "2026-08-29",
+      text: "Drop Pin: mark any spot on the map with a name, note and category. Added file backup for your markers so you can restore them later, place categories, and a redesigned offline maps screen.",
+      type: "feature",
+    },
+    {
+      version: "1.7.8",
+      date: "2026-07-20",
+      text: "Polished the full-screen update screen and made the update check lighter and more reliable across the app.",
+      type: "improvement",
+    },
+    {
+      version: "1.7.7",
+      date: "2026-07-17",
+      text: "Weather on the map: current conditions and a 7-day forecast for wherever you are. New city map icon, refreshed map styles, and a full-screen update screen with feature highlights.",
+      type: "feature",
+    },
+    {
+      version: "1.7.2",
+      date: "2026-07-11",
+      text: "New in-app update flow with a full-screen highlight of everything that changed, plus a redesigned onboarding and settings screen.",
+      type: "feature",
+    },
+    {
+      version: "1.7.1",
+      date: "2026-07-11",
+      text: "Polish pass across the app: cleaner map, account, sign-in, city and offline map screens, plus updated legal pages and licenses.",
+      type: "improvement",
+    },
+    {
+      version: "1.7.0",
+      date: "2026-07-05",
+      text: "New stop toast during navigation, bundled app fonts, a redesigned Saved Places screen, and a bigger theme overhaul.",
+      type: "feature",
+    },
+    {
       version: "1.7.6",
       date: "2026-07-16",
       text: "Redesigned loading skeleton for city places and transit. Fixed POI detail click on map, improved map click detection with proper feature querying. Full-screen update screen with feature highlights.",
@@ -41,6 +137,12 @@ const UpdateLog = () => {
       version: "1.7.3",
       date: "2026-07-11",
       text: "Live notifications with @notifee/react-native for navigation and offline map downloads. Fixed map flickering during navigation, POI modal first-click issue, POI details loading, empty modal after close, and full map re-render on GPS updates.",
+      type: "feature",
+    },
+    {
+      version: "1.6.9",
+      date: "2026-06-21",
+      text: "Renamed the satellite map style, improved the route sheet and the draw-bounds overlay, and refreshed the licenses screen.",
       type: "feature",
     },
     {
