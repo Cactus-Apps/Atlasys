@@ -26,8 +26,6 @@ consent given during onboarding.
 persistently).
 • Proof of consent: Timestamp and version of your acceptance of our Terms of
 Service and Privacy Policy, stored as required by Art. 7 GDPR.
-• Crash reports: Anonymous technical error data via Sentry to help us fix bugs.
-No location data is included.
 
 ## 2. LOCATION DATA
 
@@ -65,7 +63,7 @@ with Ed25519 signatures). They can only be decrypted on the recipients'
 devices. We never hold decryption keys.
 
 • **No location database and no group database.** Shared positions travel as
-*ephemeral* realtime broadcast messages through our relay. Nothing is stored,
+_ephemeral_ realtime broadcast messages through our relay. Nothing is stored,
 there are no database rows, and messages are deleted by the system as they are
 delivered. "Position" and "sharing ended" messages are deliberately identical
 in size so that not even a passive observer can tell them apart.
@@ -98,7 +96,7 @@ indicator so that encrypted positions keep flowing after the app leaves the
 foreground. That notice only states that sharing is active — coordinates
 never appear in it, and you can stop sharing at any time to remove it.
 
-• **Honest limitation.** A relay-based system cannot hide that *some* network
+• **Honest limitation.** A relay-based system cannot hide that _some_ network
 traffic exists, at what time it occurs, or over which IP it flows.
 Infrastructure-level logs (load balancers, hosting providers, network
 operators) may therefore observe connection metadata — but they can never
@@ -129,10 +127,6 @@ is required under GDPR, one is in place.
 • Supabase (authentication, database, and storage)
 Data stored in the EU (Frankfurt). A data processing agreement is in place.
 Privacy policy: supabase.com/privacy
-
-• Sentry (crash reporting)
-Anonymous technical error reports only. No location data included.
-Privacy policy: sentry.io/privacy
 
 • PostHog (usage daily ping, only with your consent)
 You choose the level of daily ping, or none.
@@ -173,7 +167,6 @@ applicable law. Deleted within 30 days of an account deletion request.
 security purposes, then deleted.
 • Proof of consent: Retained as long as required to demonstrate compliance or
 until you withdraw consent.
-• Crash reports (Sentry): Retained according to Sentry's own retention policy.
 • Local app data (offline maps, settings): Stored only on your device. Deleted
 when you uninstall the app or clear app data.
 • Live location sharing: Nothing is retained. Realtime broadcast messages are
@@ -184,7 +177,7 @@ your account. No location data is ever written to our database.
 ## 6. INTERNATIONAL DATA TRANSFERS
 
 Account data is stored on Supabase servers in the EU (Frankfurt region). Where
-data is transferred outside the EU/EEA by a processor (e.g. Sentry),
+data is transferred outside the EU/EEA by a processor,
 this is done on the basis of appropriate safeguards such as an adequacy decision
 by the European Commission or EU Standard Contractual Clauses (SCCs).
 

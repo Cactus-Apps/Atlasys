@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
 import { ImageBackground } from "expo-image";
-import * as Sentry from "@sentry/react-native";
 import {
   MapPin,
   Share2,
@@ -197,9 +196,7 @@ export default function SavedScreen() {
         message: t("Share_place_message", { name: item.name, url }),
         url: url,
       });
-    } catch (err) {
-      Sentry.captureException(err);
-    }
+    } catch (err) {}
   };
 
   const handlePoiNavigate = (poi: any) => {

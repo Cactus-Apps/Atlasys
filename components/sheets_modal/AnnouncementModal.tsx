@@ -15,7 +15,6 @@ import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
 
 import { Image } from "expo-image";
-import * as Sentry from "@sentry/react-native";
 
 const ORION_STORE_URL = "com.orion.store://";
 const ORION_STORE_FALLBACK =
@@ -145,17 +144,13 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
       } else {
         await Linking.openURL(ORION_STORE_FALLBACK);
       }
-    } catch (error) {
-      Sentry.captureException(error);
-    }
+    } catch (error) {}
   }, []);
 
   const handleReleasePage = useCallback(async () => {
     try {
       await Linking.openURL(RELEASE_PAGE_URL);
-    } catch (error) {
-      Sentry.captureException(error);
-    }
+    } catch (error) {}
   }, []);
 
   if (!announcements.length) return null;

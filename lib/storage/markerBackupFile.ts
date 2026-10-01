@@ -8,7 +8,6 @@ import {
   readAsStringAsync,
 } from "expo-file-system/legacy";
 import { Platform } from "react-native";
-import * as Sentry from "@sentry/react-native";
 import {
   serializeMarkers,
   parseMarkers,
@@ -118,7 +117,6 @@ export async function importMarkersFromFile(): Promise<{
       canceled: false,
     };
   } catch (e) {
-    if (!(e instanceof BackupFormatError)) Sentry.captureException(e);
     throw e;
   }
 }

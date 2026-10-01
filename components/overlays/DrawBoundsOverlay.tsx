@@ -12,7 +12,6 @@ import { Check, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
-import * as Sentry from "@sentry/react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -113,7 +112,6 @@ export default function DrawBoundsOverlay({
       const se = await mapRef.current.unproject([box.right, box.bottom]);
       onConfirm([nw.lng, se.lat, se.lng, nw.lat]); // west, south, east, north
     } catch (err) {
-      Sentry.captureException(err);
       onCancel();
     }
   };

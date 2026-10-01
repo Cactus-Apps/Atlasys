@@ -16,7 +16,6 @@ import {
 } from "lucide-react-native";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import * as Sentry from "@sentry/react-native";
 import {
   ActivityIndicator,
   Alert,
@@ -414,7 +413,6 @@ export default function AccountScreen() {
         .single();
 
       if (error) {
-        Sentry.captureException(error);
         Alert.alert(t("Error"), t("Request_could_not_be_sent"));
       } else {
         Alert.alert(t("Success"), t("deletion_request_created"));
@@ -422,7 +420,6 @@ export default function AccountScreen() {
         updateProgress("pending");
       }
     } catch (err) {
-      Sentry.captureException(err);
       Alert.alert(t("Error"), t("Request_could_not_be_sent"));
     } finally {
       setLoading(false);

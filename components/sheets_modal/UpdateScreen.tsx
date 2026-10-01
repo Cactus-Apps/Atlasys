@@ -45,16 +45,31 @@ interface Slide {
   icon: string;
   titleKey: string;
   bodyKey: string;
-  showPingToggle?: boolean;
 }
 
 const SLIDES: Slide[] = [
-  { icon: "sparkles", titleKey: "US_welcome_title", bodyKey: "US_welcome_body" },
+  {
+    icon: "sparkles",
+    titleKey: "US_welcome_title",
+    bodyKey: "US_welcome_body",
+  },
   { icon: "map-pin", titleKey: "US_poi_title", bodyKey: "US_poi_body" },
-  { icon: "satellite", titleKey: "US_satellite_title", bodyKey: "US_satellite_body" },
-  { icon: "bookmark", titleKey: "US_citymaps_title", bodyKey: "US_citymaps_body" },
-  { icon: "navigation", titleKey: "US_navigation_title", bodyKey: "US_navigation_body" },
-  { icon: "shield", titleKey: "US_privacy_title", bodyKey: "US_privacy_body", showPingToggle: true },
+  {
+    icon: "satellite",
+    titleKey: "US_satellite_title",
+    bodyKey: "US_satellite_body",
+  },
+  {
+    icon: "bookmark",
+    titleKey: "US_citymaps_title",
+    bodyKey: "US_citymaps_body",
+  },
+  {
+    icon: "navigation",
+    titleKey: "US_navigation_title",
+    bodyKey: "US_navigation_body",
+  },
+  { icon: "shield", titleKey: "US_privacy_title", bodyKey: "US_privacy_body" },
   { icon: "bug", titleKey: "US_bugfixes_title", bodyKey: "US_bugfixes_body" },
 ];
 
@@ -69,7 +84,6 @@ export default function UpdateScreen({ visible, version, onClose }: Props) {
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
-  const pingOn = useAuthStore((s) => s.settings.ping === true);
   const updateSettings = useAuthStore((s) => s.updateSettings);
 
   const s = useMemo(
@@ -159,9 +173,7 @@ export default function UpdateScreen({ visible, version, onClose }: Props) {
           width: 40,
           height: 40,
           borderRadius: 12,
-          backgroundColor: pingOn
-            ? theme.primaryLight
-            : "rgba(128,128,128,0.1)",
+          backgroundColor: theme.primaryLight,
           alignItems: "center",
           justifyContent: "center",
         },
@@ -231,7 +243,7 @@ export default function UpdateScreen({ visible, version, onClose }: Props) {
           color: theme.white,
         },
       }),
-    [theme, pingOn],
+    [theme],
   );
 
   const isLast = page === SLIDES.length - 1;
@@ -296,39 +308,10 @@ export default function UpdateScreen({ visible, version, onClose }: Props) {
                 <View style={s.iconCircle}>
                   <IconComponent size={40} color={theme.primary} />
                 </View>
-                <Text style={s.slideTitle}>{t(slide.titleKey, { version })}</Text>
+                <Text style={s.slideTitle}>
+                  {t(slide.titleKey, { version })}
+                </Text>
                 <Text style={s.slideBody}>{t(slide.bodyKey)}</Text>
-
-                {slide.showPingToggle && (
-                  <View style={s.toggleRow}>
-                    <View style={s.toggleIconWrap}>
-                      <Activity
-                        size={20}
-                        color={pingOn ? theme.primary : theme.subTextColor}
-                      />
-                    </View>
-                    <View style={s.toggleText}>
-                      <Text style={s.toggleLabel}>
-                        {t("UpdateScreen_ping_label")}
-                      </Text>
-                      <Text style={s.toggleSub}>
-                        {t("UpdateScreen_ping_sub")}
-                      </Text>
-                    </View>
-                    <Switch
-                      value={pingOn}
-                      onValueChange={(v) => updateSettings({ ping: v })}
-                      trackColor={{
-                        false: theme.borderColor,
-                        true: theme.primaryLight,
-                      }}
-                      thumbColor={pingOn ? theme.primary : theme.white}
-                      ios_backgroundColor={
-                        Platform.OS === "ios" ? theme.borderColor : undefined
-                      }
-                    />
-                  </View>
-                )}
               </View>
             );
           })}

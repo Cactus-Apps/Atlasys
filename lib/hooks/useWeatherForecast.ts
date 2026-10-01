@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import * as Sentry from "@sentry/react-native";
 
 export type DailyForecast = {
   date: string; // ISO date, e.g. "2026-07-18"
@@ -48,9 +47,7 @@ export function useWeatherForecast(city: City | null | undefined) {
             daily,
           });
         }
-      } catch (error) {
-        Sentry.captureException(error);
-      }
+      } catch (error) {}
     };
 
     fetchWeather();

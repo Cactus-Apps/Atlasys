@@ -21,12 +21,10 @@ import {
   EyeIcon,
   EyeOffIcon,
 } from "lucide-react-native";
-import * as Sentry from "@sentry/react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { fonts } from "@/lib/fonts";
 import { useAppTheme } from "@/lib/theme";
-import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons";
 
 export default function AuthScreen() {
   const { t } = useTranslation();
@@ -96,7 +94,6 @@ export default function AuthScreen() {
       if (err) setError(err);
       else router.replace("/");
     } catch (err) {
-      Sentry.captureException(err);
       setError(t("Auth_error_unexpected"));
     } finally {
       setLoading(false);
@@ -126,7 +123,6 @@ export default function AuthScreen() {
       if (err) setError(err);
       else router.replace("/");
     } catch (err) {
-      Sentry.captureException(err);
       setError(t("Auth_error_unexpected"));
     } finally {
       setOauthLoading(false);
@@ -279,18 +275,6 @@ export default function AuthScreen() {
               onMessage={onMessage}
             />
           </View>
-
-          <Animated.View entering={FadeInDown.delay(600)} style={styles.footer}>
-            <Text style={[styles.footerText, { color: theme.subTextColor }]}>
-              Or continue with
-            </Text>
-            <OAuthProviderButtons
-              isDark={isDark}
-              onGooglePress={handleGoogleAuth}
-              googleLoading={oauthLoading}
-              disabled={loading}
-            />
-          </Animated.View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

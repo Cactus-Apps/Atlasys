@@ -1,5 +1,4 @@
 import * as Updates from "expo-updates";
-import * as Sentry from "@sentry/react-native";
 import { EventEmitter } from "eventemitter3";
 
 export type UpdateStatus =
@@ -51,7 +50,6 @@ class UpdateManager extends EventEmitter {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
       this.setState({ status: "idle", error: errorMsg });
-      Sentry.captureException(error);
     }
   }
 
@@ -77,7 +75,6 @@ class UpdateManager extends EventEmitter {
       const errorMsg =
         error instanceof Error ? error.message : "Download failed";
       this.setState({ status: "idle", error: errorMsg });
-      Sentry.captureException(error);
     }
   }
 
@@ -85,9 +82,7 @@ class UpdateManager extends EventEmitter {
     try {
       this.setState({ status: "idle" });
       await Updates.reloadAsync();
-    } catch (error) {
-      Sentry.captureException(error);
-    }
+    } catch (error) {}
   }
 
   dismissUpdate(): void {

@@ -9,7 +9,6 @@ import {
   EncodingType,
 } from "expo-file-system/legacy";
 import { tilesForBounds, ensureDir, MBTILES_DIR, MBTilesInfo } from "./mbtiles";
-import * as Sentry from "@sentry/react-native";
 
 const TILE_URL = "https://tiles.openfreemap.org/planet/v3";
 const CONCURRENT_DOWNLOADS = 3;
@@ -47,7 +46,6 @@ async function downloadSingleTile(
     await deleteAsync(result.uri, { idempotent: true });
     return base64;
   } catch (err: any) {
-    Sentry.captureException(err);
     await deleteAsync(localUri, { idempotent: true });
     return null;
   }
@@ -180,8 +178,6 @@ export async function downloadRegion(
             );
             downloaded++;
           } catch (err) {
-            Sentry.captureException(err);
-
             failed++;
           }
         } else {
@@ -225,13 +221,7 @@ export async function downloadRegion(
     onProgress({ total, downloaded, failed, percent: 100, status: "done" });
     return info;
   } catch (err) {
-    Sentry.captureException(err);
-
-    await db.closeAsync().catch(() => {
-      {
-        Sentry.captureException(err);
-      }
-    });
+    await db.closeAsync();
     await deleteAsync(dbPath, { idempotent: true });
     onProgress({
       total,

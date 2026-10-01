@@ -7,7 +7,6 @@ import {
   GeoJSONSource,
 } from "react-native-maplibre-gl-js";
 import * as Location from "expo-location";
-import * as Sentry from "@sentry/react-native";
 import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
 import Tts from "@iternio/react-native-tts";
 
@@ -206,7 +205,8 @@ export default function NavigationScreen() {
   const steps = useMemo(() => navRoute?.steps || [], [navRoute?.steps]);
   const currentStep = steps[currentStepIdx];
   const nextStep = steps[currentStepIdx + 1];
-  const destCoords = navRoute?.destinationCoords;  const mapOptions = useMemo(
+  const destCoords = navRoute?.destinationCoords;
+  const mapOptions = useMemo(
     () => ({
       style: mapStyle,
       center: coords[0] || [0, 0],
@@ -225,7 +225,6 @@ export default function NavigationScreen() {
       try {
         return await fetchOsrmRoutes(from, to, profile);
       } catch (e) {
-        Sentry.captureException(e);
         return null;
       }
     },
@@ -299,19 +298,13 @@ export default function NavigationScreen() {
       } catch (e) {
         const err = e as Error;
         console.warn("[Speech] Fehler:", err?.message ?? e);
-        Sentry.captureException(e);
         const msg = err?.message ?? String(e);
         setSpeechError(true);
         setSpeechNoEngine(msg === "no_engine" || msg === "not_ready");
         setSpeechErrorMsg(msg);
       }
     },
-    [
-      voiceEnabled,
-      setSpeechError,
-      setSpeechErrorMsg,
-      setSpeechNoEngine,
-    ],
+    [voiceEnabled, setSpeechError, setSpeechErrorMsg, setSpeechNoEngine],
   );
 
   const installSpeechEngine = useCallback(async () => {
@@ -327,7 +320,6 @@ export default function NavigationScreen() {
       }
     } catch (e) {
       console.warn("[Speech] Engine-Installation fehlgeschlagen:", e);
-      Sentry.captureException(e);
       setSpeechErrorMsg(t("Nav_engine_install_failed"));
     }
   }, [t, setSpeechError, setSpeechErrorMsg, setSpeechNoEngine]);
@@ -400,9 +392,7 @@ export default function NavigationScreen() {
         },
       );
       if (!cancelled) subRef.current = sub;
-    } catch (e) {
-      Sentry.captureException(e);
-    }
+    } catch (e) {}
   }, [stopped]);
 
   useEffect(() => {
@@ -926,14 +916,14 @@ export default function NavigationScreen() {
             {speechNoEngine && (
               <TouchableOpacity
                 onPress={installSpeechEngine}
-                style={[s.engineBtn, { backgroundColor: theme.primary || "#2563EB" }]}
+                style={[
+                  s.engineBtn,
+                  { backgroundColor: theme.primary || "#2563EB" },
+                ]}
                 accessibilityRole="button"
               >
                 <Text
-                  style={[
-                    s.engineBtnText,
-                    { color: theme.white || "#fff" },
-                  ]}
+                  style={[s.engineBtnText, { color: theme.white || "#fff" }]}
                 >
                   {t("Nav_engine_install")}
                 </Text>

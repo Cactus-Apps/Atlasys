@@ -9,7 +9,6 @@ import {
   GeoJSONSource,
 } from "react-native-maplibre-gl-js";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as Sentry from "@sentry/react-native";
 import Svg, {
   Circle,
   Polygon,
@@ -408,20 +407,31 @@ export default function MapScreen() {
 
   const searchBarVisible = !drawMode && !routePickMode;
 
-  const { destLat, destLon, destName, poiName, poiLat, poiLon, poiType, poiSubclass, poiOsmId, poiOsmType, handledAt } =
-    useLocalSearchParams<{
-      destLat: string;
-      destLon: string;
-      destName: string;
-      poiName: string;
-      poiLat: string;
-      poiLon: string;
-      poiType: string;
-      poiSubclass: string;
-      poiOsmId: string;
-      poiOsmType: string;
-      handledAt: string;
-    }>();
+  const {
+    destLat,
+    destLon,
+    destName,
+    poiName,
+    poiLat,
+    poiLon,
+    poiType,
+    poiSubclass,
+    poiOsmId,
+    poiOsmType,
+    handledAt,
+  } = useLocalSearchParams<{
+    destLat: string;
+    destLon: string;
+    destName: string;
+    poiName: string;
+    poiLat: string;
+    poiLon: string;
+    poiType: string;
+    poiSubclass: string;
+    poiOsmId: string;
+    poiOsmType: string;
+    handledAt: string;
+  }>();
 
   const handleSetFilter = (filterId: string | null) => {
     activeFilterRef.current = filterId;
@@ -579,9 +589,7 @@ export default function MapScreen() {
             ensureGlobe();
           }
         }
-      } catch (e) {
-        Sentry.captureException(e);
-      }
+      } catch (e) {}
 
       const s = await Location.watchPositionAsync(
         {
@@ -616,7 +624,6 @@ export default function MapScreen() {
         subRef.current = s;
       }
     } catch (e) {
-      Sentry.captureException(e);
       setLocationReady(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -719,9 +726,7 @@ export default function MapScreen() {
         message: `Loook at thaaat 🤩: ${city.name}\n${url}`,
         url: url,
       });
-    } catch (error) {
-      Sentry.captureException(error);
-    }
+    } catch (error) {}
   };
 
   const openCityMap = () => {
@@ -745,8 +750,7 @@ export default function MapScreen() {
     const hasPoi = !!poiOsmId && !!poiLat && !!poiLon && !!poiName;
     if (!hasDest && !hasPoi) return;
 
-    const sig =
-      `${destLat}|${destLon}|${destName}|${poiOsmId}|${poiLat}|${poiLon}|${poiName}|${handledAt}`;
+    const sig = `${destLat}|${destLon}|${destName}|${poiOsmId}|${poiLat}|${poiLon}|${poiName}|${handledAt}`;
     if (handledParamsSig.current === sig) return;
 
     const dLat = parseFloat(poiLat || destLat);
@@ -789,7 +793,19 @@ export default function MapScreen() {
     };
 
     setTimeout(tryNavigate, 500);
-  }, [destLat, destLon, destName, poiOsmId, poiLat, poiLon, poiName, poiType, poiSubclass, poiOsmType, handledAt]);
+  }, [
+    destLat,
+    destLon,
+    destName,
+    poiOsmId,
+    poiLat,
+    poiLon,
+    poiName,
+    poiType,
+    poiSubclass,
+    poiOsmType,
+    handledAt,
+  ]);
 
   // Wikipedia logic
   useEffect(() => {
@@ -885,9 +901,7 @@ export default function MapScreen() {
                 [];
             }
           }
-        } catch (error) {
-          Sentry.captureException(error);
-        }
+        } catch (error) {}
 
         if (!imageTitles.length) {
           const imagesPropRes = await fetch(
@@ -1055,7 +1069,6 @@ export default function MapScreen() {
           images: imageUrls,
         });
       } catch (error) {
-        if (!isAbortError(error)) Sentry.captureException(error);
         if (isCurrent() && !articlePublished) setError(t("Article_not_found"));
       } finally {
         if (isCurrent()) setLoading(false);
@@ -1160,7 +1173,6 @@ export default function MapScreen() {
         }));
         setResults(arr);
       } catch (error) {
-        Sentry.captureException(error);
         setResults([]);
       } finally {
         setLoadingSearch(false);
@@ -1361,9 +1373,7 @@ export default function MapScreen() {
           },
         );
       }
-    } catch (e) {
-      Sentry.captureException(e);
-    }
+    } catch (e) {}
   };
 
   // Open PoiSheet after render when a POI is selected
@@ -1559,9 +1569,7 @@ export default function MapScreen() {
       if (Math.abs(b - lastBearingRef.current) < 0.5) return;
       lastBearingRef.current = b;
       setBearing(b);
-    } catch (error) {
-      Sentry.captureException(error);
-    }
+    } catch (error) {}
   };
 
   const mapHandlersRef = useRef({
@@ -1829,9 +1837,7 @@ export default function MapScreen() {
                       label =
                         data.display_name?.split(",").slice(0, 2).join(", ") ??
                         label;
-                    } catch (error) {
-                      Sentry.captureException(error);
-                    }
+                    } catch (error) {}
 
                     const point: RoutePoint = { label, coordinate: [lng, lat] };
                     if (routePickMode === "start") setRouteStart(point);
@@ -2977,9 +2983,7 @@ export default function MapScreen() {
               pickStopIndexRef.current = index;
               setPickMode("stop");
             }}
-            onAddStop={() =>
-              setRouteStops((prev) => [...prev, { label: "" }])
-            }
+            onAddStop={() => setRouteStops((prev) => [...prev, { label: "" }])}
             onRemoveStop={(index) =>
               setRouteStops((prev) => prev.filter((_, i) => i !== index))
             }

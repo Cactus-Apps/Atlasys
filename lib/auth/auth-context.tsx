@@ -3,13 +3,11 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { router } from "expo-router";
 import { useAuthStore } from "../storage/zustand";
-import * as Sentry from "@sentry/react-native";
 import * as WebBrowser from "expo-web-browser";
 import { syncConsentToServer } from "@/lib/consent";
 import * as Linking from "expo-linking";
 import { Platform } from "react-native";
 import { generateRandomAvatarConfig } from "@/lib/avatar/avatar-utils";
-import { sendDailyPing } from "./daily-ping";
 import i18n from "@/app/i18n";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -70,9 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
-    } catch (err) {
-      Sentry.captureException(err);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -88,7 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (sessionUser) {
           await syncStateFromMetadata(sessionUser);
           await syncConsentToServer(sessionUser.id, supabase);
-          sendDailyPing();
         }
       } catch (err: any) {
         if (
@@ -97,7 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) {
           await supabase.auth.signOut();
         }
-        Sentry.captureException(err);
       } finally {
         clearTimeout(timeout);
         setIsLoadingUser(false);
@@ -112,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentUser) {
           await syncStateFromMetadata(currentUser);
           useAuthStore.getState().seedDefaultPlace();
-          sendDailyPing();
         } else {
           clearStore({ preserveOnboarding: true });
         }
@@ -135,9 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           saved_places: savedPlaces,
         },
       });
-    } catch (err) {
-      Sentry.captureException(err);
-    }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -169,7 +160,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.replace("/(tabs)/mapscreen");
       }
     } catch (err) {
-      Sentry.captureException(err);
       setUser(null);
     } finally {
       setIsLoadingUser(false);
@@ -209,7 +199,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await getUser();
       return null;
     } catch (err: any) {
-      Sentry.captureException(err);
       return err.message || i18n.t("Auth_signup_error");
     }
   };
@@ -229,7 +218,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await getUser();
       return null;
     } catch (err: any) {
-      Sentry.captureException(err);
       return err.message || i18n.t("Auth_signin_error");
     }
   };
@@ -315,7 +303,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         const { data: sessionData } = await supabase.auth.getSession();
-        Sentry.captureException(err);
         if (sessionData.session) {
           await getUser();
           return null;
@@ -325,7 +312,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await getUser();
       return null;
     } catch (err: any) {
-      Sentry.captureException(err);
       return err.message ?? i18n.t("Auth_google_signin_failed");
     } finally {
       isSigningInRef.current = false;
@@ -338,9 +324,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setUser(null);
       router.replace("/auth");
-    } catch (err) {
-      Sentry.captureException(err);
-    }
+    } catch (err) {}
   };
 
   return (

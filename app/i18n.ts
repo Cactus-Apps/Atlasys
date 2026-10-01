@@ -3,7 +3,6 @@ import { initReactI18next } from "react-i18next";
 import de from "../locales/de.json";
 import en from "../locales/en.json";
 import es from "../locales/es.json";
-import * as Sentry from "@sentry/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LANGUAGE_KEY = "userLanguage";
@@ -40,9 +39,7 @@ export function ensureTranslationsLoaded() {
 const storeLanguage = async (lng: any) => {
   try {
     await AsyncStorage.setItem(LANGUAGE_KEY, lng);
-  } catch (err) {
-    Sentry.captureException(err);
-  }
+  } catch (err) {}
 };
 
 const loadLanguage = async () => {
@@ -52,9 +49,7 @@ const loadLanguage = async () => {
       // eslint-disable-next-line import/no-named-as-default-member
       await i18n.changeLanguage(lng);
     }
-  } catch (err) {
-    Sentry.captureException(err);
-  }
+  } catch (err) {}
 };
 
 const changeLanguage = async (lng: any) => {

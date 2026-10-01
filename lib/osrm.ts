@@ -1,5 +1,3 @@
-import * as Sentry from "@sentry/react-native";
-
 export type OsrmProfile = "driving" | "cycling" | "walking";
 
 /**
@@ -61,17 +59,8 @@ export async function fetchOsrmRoutes(
           continue;
         }
         if (json?.routes?.length) return json.routes;
-      } catch (e) {
-        sentryLogOnce(e);
-      }
+      } catch (e) {}
     }
   }
   return null;
-}
-
-let loggedSentry = false;
-function sentryLogOnce(e: any): void {
-  if (loggedSentry) return;
-  loggedSentry = true;
-  Sentry.captureException(e);
 }

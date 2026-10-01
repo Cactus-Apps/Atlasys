@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/react-native";
 import i18n from "@/app/i18n";
 
 async function safeJson(res: Response): Promise<any> {
@@ -489,9 +488,7 @@ function orderWaySegments(segments: number[][][]): number[][] {
           const fwd = ptsKey(seg[0]) === currentKey;
           const segCoords = fwd ? seg : [...seg].reverse();
           path =
-            path.length === 0
-              ? segCoords
-              : [...path, ...segCoords.slice(1)];
+            path.length === 0 ? segCoords : [...path, ...segCoords.slice(1)];
           currentKey = ptsKey(segCoords[segCoords.length - 1]);
           found = true;
           break;
@@ -544,10 +541,7 @@ function orderWaySegments(segments: number[][][]): number[][] {
 
   const first = ordered[0];
   const last = ordered[ordered.length - 1];
-  const endToStart = Math.hypot(
-    last[0] - first[0],
-    last[1] - first[1],
-  );
+  const endToStart = Math.hypot(last[0] - first[0], last[1] - first[1]);
 
   if (endToStart < 0.005 && ordered.length > 20) {
     let maxDistSq = 0;
@@ -591,17 +585,11 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       }
     }
     if (!data?.elements?.length) {
-      Sentry.captureMessage("fetchTransitRouteDetails: empty response", {
-        extra: { osmId },
-      });
       return null;
     }
 
     const relation = data.elements.find((el: any) => el.type === "relation");
     if (!relation) {
-      Sentry.captureMessage("fetchTransitRouteDetails: no relation found", {
-        extra: { osmId, elementCount: data.elements.length },
-      });
       return null;
     }
 
@@ -698,7 +686,6 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       stops,
     };
   } catch (e) {
-    Sentry.captureException(e);
     return null;
   }
 }

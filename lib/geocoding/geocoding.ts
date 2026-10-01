@@ -1,5 +1,3 @@
-import * as Sentry from "@sentry/react-native";
-
 export async function reverseGeocode(
   lat: number,
   lng: number,
@@ -23,7 +21,6 @@ export async function reverseGeocode(
       data.display_name?.split(",").slice(0, 2).join(", ") ?? defaultFallback
     );
   } catch (err: any) {
-    Sentry.captureException(err);
     return defaultFallback;
   }
 }
@@ -50,7 +47,6 @@ export async function reverseGeocodeAddress(
       region: data.address?.state,
     };
   } catch (err: any) {
-    Sentry.captureException(err);
     return {};
   }
 }

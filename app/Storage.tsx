@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import { useAppTheme } from "@/lib/theme";
-import * as Sentry from "@sentry/react-native";
 import {
   Trash2,
   Map,
@@ -373,7 +372,6 @@ export default function Storage() {
         message: t("Backup_exported", { count: places.length }),
       });
     } catch (err) {
-      Sentry.captureException(err);
       setAlertBox({ message: t("Backup_error") });
     } finally {
       setBackupBusy(false);
@@ -405,7 +403,6 @@ export default function Storage() {
           t("Backup_imported", { added, updated }) + skipSuffix + capSuffix,
       });
     } catch (err) {
-      Sentry.captureException(err);
       setAlertBox({
         message:
           err instanceof BackupFormatError
@@ -429,9 +426,7 @@ export default function Storage() {
     try {
       const total = await getTotalDiskCapacityAsync();
       if (total) setTotalBytes(total);
-    } catch (err: any) {
-      Sentry.captureException(err);
-    }
+    } catch (err: any) {}
   };
 
   useEffect(() => {
@@ -441,7 +436,7 @@ export default function Storage() {
       const dir =
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("expo-file-system/legacy").documentDirectory + "mbtiles/";
-      readDirectoryAsync(dir).catch((err) => Sentry.captureException(err));
+      readDirectoryAsync(dir);
     });
   }, []);
 

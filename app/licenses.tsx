@@ -229,14 +229,6 @@ Full license text: https://github.com/Cactus-Apps/Atlasys/blob/master/LICENSE`,
     content: mit("Copyright (c) Supabase"),
   },
   {
-    title: "@sentry/react-native",
-    content: mit("Copyright (c) Functional Software, Inc. d/b/a Sentry"),
-  },
-  {
-    title: "posthog-react-native",
-    content: mit("Copyright (c) PostHog, Inc."),
-  },
-  {
     title: "react-native-maplibre-gl-js & MapLibre GL JS",
     content: `${mit("Copyright (c) MapLibre contributors")}
 
@@ -368,7 +360,7 @@ Content licensed under CC BY-SA 4.0 (text) and
 CC BY-SA 4.0 / public domain (images & media).
 https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use
 
-Supabase · Sentry · PostHog · hCaptcha
+Supabase · hCaptcha
 Backend, crash reporting, opt-in analytics and bot protection,
 each governed by its own terms and privacy policy.`,
   },

@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Sentry from "@sentry/react-native";
 import * as Application from "expo-application";
 import { Platform } from "react-native";
 
@@ -21,7 +20,6 @@ export async function getStoredConsent(): Promise<StoredConsent | null> {
     if (!parsed || typeof parsed !== "object") return null;
     return parsed as StoredConsent;
   } catch (error) {
-    Sentry.captureException(error);
     return null;
   }
 }
@@ -55,7 +53,5 @@ export async function syncConsentToServer(
       accepted_at: consent.acceptedAt,
       platform: consent.platform,
     });
-  } catch (error) {
-    Sentry.captureException(error);
-  }
+  } catch (error) {}
 }

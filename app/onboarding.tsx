@@ -34,7 +34,6 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import * as Sentry from "@sentry/react-native";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
@@ -303,7 +302,6 @@ export default function OnboardingScreen() {
   const [showConsent, setShowConsent] = useState(params.showConsent === "true");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [pingEnabled, setPingEnabled] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const theme = useAppTheme();
   const s = useMemo(() => getStyles(theme), [theme]);
@@ -339,9 +337,7 @@ export default function OnboardingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       await saveConsentLocally();
-      updateSettings({ ping: pingEnabled });
     } catch (error) {
-      Sentry.captureException(error);
     } finally {
       setOnboardingCompleted(true);
       router.replace("/auth");
@@ -349,7 +345,6 @@ export default function OnboardingScreen() {
   }, [
     acceptedTerms,
     acceptedPrivacy,
-    pingEnabled,
     router,
     setOnboardingCompleted,
     updateSettings,
@@ -471,24 +466,6 @@ export default function OnboardingScreen() {
                     {t("Onboarding_privacy_link")}
                   </Text>{" "}
                   {t("Onboarding_accept_privacy_suffix")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={s.checkboxRow}
-                onPress={() => {
-                  setPingEnabled((v) => !v);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={[s.checkbox, pingEnabled && s.checkboxChecked]}>
-                  {pingEnabled && (
-                    <Check size={13} color="#fff" strokeWidth={3} />
-                  )}
-                </View>
-                <Text style={s.checkboxText}>
-                  {t("Onboarding_analytics_toggle")}
                 </Text>
               </TouchableOpacity>
             </View>

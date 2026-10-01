@@ -115,7 +115,10 @@ type StoreAuth = {
   // Custom places (long-press pins, e.g. Home/Work)
   customPlaces: CustomPlace[];
   addCustomPlace: (place: Omit<CustomPlace, "id" | "addedAt">) => void;
-  updateCustomPlace: (id: string, updates: Partial<Omit<CustomPlace, "id" | "addedAt">>) => void;
+  updateCustomPlace: (
+    id: string,
+    updates: Partial<Omit<CustomPlace, "id" | "addedAt">>,
+  ) => void;
   removeCustomPlace: (id: string) => void;
   importCustomPlaces: (places: Omit<CustomPlace, "id" | "addedAt">[]) => {
     added: number;
@@ -133,13 +136,7 @@ type StoreAuth = {
   setLastSeenUpdateVersion: (val: string) => void;
   settings: {
     notifications: boolean;
-    analytics: boolean;
-    /** Sentry: false = don't send crash reports (absent → enabled) */
-    crashReports?: boolean;
-    /** Expo Updates: background check (absent → enabled) */
     autoUpdateCheck?: boolean;
-    /** Daily analytics ping (absent → disabled) */
-    ping?: boolean;
     theme: AppTheme; // ← replaces both old fields
     /** Fine control; missing in old saves → fallback to `notifications` */
     tabTheme: TabTheme;
@@ -200,8 +197,6 @@ const initialState = {
   lastSeenUpdateVersion: "",
   settings: {
     notifications: false,
-    analytics: true,
-    crashReports: true,
     autoUpdateCheck: true,
     theme: "light" as AppTheme,
     tabTheme: "modern" as TabTheme,
@@ -364,16 +359,14 @@ export const useAuthStore = create<StoreAuth>()(
         });
       },
 
-  isOnboardingCompleted: false,
-  setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
-  seenAnalyticsUpdate: false,
-  setSeenAnalyticsUpdate: (val) => set({ seenAnalyticsUpdate: val }),
-  lastSeenUpdateVersion: "",
-  setLastSeenUpdateVersion: (val) => set({ lastSeenUpdateVersion: val }),
+      isOnboardingCompleted: false,
+      setOnboardingCompleted: (val) => set({ isOnboardingCompleted: val }),
+      seenAnalyticsUpdate: false,
+      setSeenAnalyticsUpdate: (val) => set({ seenAnalyticsUpdate: val }),
+      lastSeenUpdateVersion: "",
+      setLastSeenUpdateVersion: (val) => set({ lastSeenUpdateVersion: val }),
       settings: {
         notifications: false,
-        analytics: true,
-        crashReports: true,
         autoUpdateCheck: true,
         theme: "light" as AppTheme,
         tabTheme: "modern" as TabTheme,

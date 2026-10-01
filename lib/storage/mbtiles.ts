@@ -6,7 +6,6 @@ import {
   readAsStringAsync,
   deleteAsync,
 } from "expo-file-system/legacy";
-import * as Sentry from "@sentry/react-native";
 
 export const MBTILES_DIR = documentDirectory + "mbtiles/";
 
@@ -46,7 +45,6 @@ export async function listMBTiles(): Promise<MBTilesInfo[]> {
     return results.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error: any) {
     if (error?.message?.includes("doesn't exist")) return [];
-    Sentry.captureException(error);
     return [];
   }
 }

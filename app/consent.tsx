@@ -11,7 +11,6 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
-import * as Sentry from "@sentry/react-native";
 import { ShieldAlert, Check, ChevronRight } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
@@ -46,9 +45,7 @@ export default function ConsentUpdateScreen() {
       if (user) {
         await syncConsentToServer(user.id, supabase);
       }
-    } catch (error) {
-      Sentry.captureException(error);
-    }
+    } catch (error) {}
     router.replace(user ? "/(tabs)/mapscreen" : "/auth");
   }, [acceptedTerms, acceptedPrivacy, user, router]);
 

@@ -56,25 +56,17 @@ export default function Settings() {
 
   const currentLanguageLabel =
     languages.find((l) => l.code === i18n.language)?.label || "English";
-
-  const crashReportsOn = appSettings.crashReports !== false;
   const autoUpdateOn = appSettings.autoUpdateCheck !== false;
-  const pingOn = appSettings.ping === true;
 
   const togglePrivacy = (
-    key: "crashReports" | "autoUpdateCheck" | "ping",
+    key: "crashReports" | "autoUpdateCheck",
     value: boolean,
   ) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (key === "crashReports") {
-      updateSettings({ crashReports: value });
-      return;
-    }
     if (key === "autoUpdateCheck") {
       updateSettings({ autoUpdateCheck: value });
       return;
     }
-    updateSettings({ ping: value });
   };
 
   const THEME_OPTIONS: {
@@ -483,10 +475,7 @@ export default function Settings() {
           <View style={styles.card}>
             <View style={styles.toggleRow}>
               <View style={styles.menuIconContainer}>
-                <SettingsIcon
-                  size={22}
-                  color={crashReportsOn ? theme.primary : theme.subTextColor}
-                />
+                <SettingsIcon size={22} color={theme.primary} />
               </View>
               <View style={styles.menuTextContainer}>
                 <TouchableOpacity onPress={() => Linking.openSettings()}>
@@ -495,36 +484,6 @@ export default function Settings() {
                 </TouchableOpacity>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
-            </View>
-
-            <View style={styles.separator} />
-            <View style={styles.toggleRow}>
-              <View style={styles.menuIconContainer}>
-                <Bug
-                  size={22}
-                  color={crashReportsOn ? theme.primary : theme.subTextColor}
-                />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>
-                  {t("Settings_crash_reports_label")}
-                </Text>
-                <Text style={styles.menuValue}>
-                  {t("Settings_crash_reports_sub")}
-                </Text>
-              </View>
-              <Switch
-                value={crashReportsOn}
-                onValueChange={(v) => togglePrivacy("crashReports", v)}
-                trackColor={{
-                  false: theme.cardBgSecondary,
-                  true: theme.primaryLight,
-                }}
-                thumbColor={crashReportsOn ? theme.primary : theme.white}
-                ios_backgroundColor={
-                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
-                }
-              />
             </View>
             <View style={styles.separator} />
             <View style={styles.toggleRow}>
@@ -550,35 +509,6 @@ export default function Settings() {
                   true: theme.primaryLight,
                 }}
                 thumbColor={autoUpdateOn ? theme.primary : theme.white}
-                ios_backgroundColor={
-                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
-                }
-              />
-            </View>
-            <View style={styles.separator} />
-            <View style={styles.toggleRow}>
-              <View style={styles.menuIconContainer}>
-                <BarChart3
-                  size={22}
-                  color={pingOn ? theme.primary : theme.subTextColor}
-                />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>
-                  {t("Settings_analytics_toggle")}
-                </Text>
-                <Text style={styles.menuValue}>
-                  {t("Settings_analytics_toggle_sub")}
-                </Text>
-              </View>
-              <Switch
-                value={pingOn}
-                onValueChange={(v) => togglePrivacy("ping", v)}
-                trackColor={{
-                  false: theme.cardBgSecondary,
-                  true: theme.primaryLight,
-                }}
-                thumbColor={pingOn ? theme.primary : theme.white}
                 ios_backgroundColor={
                   Platform.OS === "ios" ? theme.cardBgSecondary : undefined
                 }

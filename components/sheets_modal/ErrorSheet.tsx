@@ -14,7 +14,6 @@ import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
-import * as Sentry from "@sentry/react-native";
 
 interface Props {
   open: boolean;
@@ -85,8 +84,6 @@ export default function ErrorSheet({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      Sentry.captureException(err);
-
       console.warn("Failed to copy to clipboard:", err);
     }
   };
@@ -313,7 +310,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       borderWidth: 0.5,
       borderColor: borderColor,
     },
-    btnSecondaryText: { fontSize: 14, fontFamily: fonts.medium, color: textColor },
+    btnSecondaryText: {
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: textColor,
+    },
     btnPrimary: {
       flex: 1,
       flexDirection: "row",

@@ -74,8 +74,8 @@ npm start
 
 The app requires a few external services to run fully. For most contributions
 (UI, navigation logic, offline maps) you only need the map-related variables.
-Supabase, Sentry, and RevenueCat keys are only needed if you are working on
-auth, crash reporting, or premium features.
+Supabase keys are only needed if you are working on
+auth.
 
 See `.env.example` for the full list.
 

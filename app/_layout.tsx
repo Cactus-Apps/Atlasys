@@ -6,58 +6,14 @@ import { runExpoUpdateCheck } from "@/lib/hooks/expoUpdateCheck";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import AnimatedSplash from "@/components/overlays/SplashScreen";
-import * as Sentry from "@sentry/react-native";
 import * as ImagePicker from "expo-image-picker";
 import { AppState, useColorScheme } from "react-native";
 import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
-import { PostHogProvider } from "posthog-react-native";
-import { posthog } from "@/lib/config/posthog";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
 import { configureNotificationChannels } from "@/lib/storage/notifications";
 import { SharingKillSwitchMonitor } from "@/components/overlays/SharingKillSwitchMonitor";
 import { hasAcceptedCurrentConsent } from "@/lib/consent";
-
-const SENTRY_DSN_init = process.env.EXPO_PUBLIC_SENTRY_DSN_INIT;
-
-function sentryBeforeSend(
-  event: Sentry.ErrorEvent,
-  _hint: any,
-): Sentry.ErrorEvent | null {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { useAuthStore: store } = require("@/lib/storage/zustand");
-    if (store.getState().settings.crashReports === false) {
-      return null;
-    }
-  } catch (err) {
-    Sentry.captureException(err);
-  }
-  const message = event.exception?.values?.[0]?.value ?? "";
-  const ignoredNetworkErrors = [
-    "tiles.openfreemap.org",
-    "overpass-api.de",
-    "kumi.systems",
-    "nominatim.openstreetmap.org",
-    "routing.openstreetmap.de",
-    "router.project-osrm.org",
-    "Failed to check for update",
-    "doesn't exist or isn't a directory",
-    "Location request failed due to unsatisfied device settings",
-    "Network request failed",
-    "expo-updates: Network request failed",
-    "LocationModule",
-    "RuntimeScheduler_Modern",
-    "SIGSEGV",
-    "timeout",
-  ];
-
-  if (ignoredNetworkErrors.some((e) => message.includes(e))) {
-    return null;
-  }
-
-  return event;
-}
 
 const handleChooseImage = async (addScreenshot: (uri: string) => void) => {
   const result = await ImagePicker.launchImageLibraryAsync({
@@ -71,41 +27,6 @@ const handleChooseImage = async (addScreenshot: (uri: string) => void) => {
     addScreenshot(uri);
   }
 };
-
-Sentry.init({
-  dsn: SENTRY_DSN_init,
-  beforeSend: sentryBeforeSend,
-  integrations: [
-    Sentry.feedbackIntegration({
-      enableScreenshot: true,
-      isEmailRequired: true,
-      shouldValidateEmail: true,
-      onAddScreenshot: handleChooseImage,
-      enableTakeScreenshot: true,
-      styles: {
-        submitButton: {
-          backgroundColor: "#E24B4A",
-        },
-        container: {
-          backgroundColor: "transparent",
-          shadowColor: "transparent",
-        },
-      },
-      screenshotButtonOptions: {
-        triggerLabel: "Take Screenshot",
-        styles: {
-          triggerButton: {
-            marginBottom: 75,
-          },
-        },
-      },
-
-      namePlaceholder: "Fullname",
-    }),
-  ],
-  sendDefaultPii: false,
-  enableLogs: true,
-});
 
 setupMapLibreLogger("error");
 
@@ -268,7 +189,7 @@ function AppBootstrap() {
   );
 }
 
-export default Sentry.wrap(function RooLayout() {
+export default function RooLayout() {
   const themeZustand = useAuthStore((s) => s.settings.theme);
   const isDarkTheme = ["chill", "dark", "midnight", "ocean"].includes(
     themeZustand,
@@ -276,14 +197,12 @@ export default Sentry.wrap(function RooLayout() {
   const theme = isDarkTheme ? "light" : "dark";
 
   return (
-    <PostHogProvider client={posthog}>
-      <UpdateProvider>
-        <AuthProvider>
-          <TelemetrySync />
-          <StatusBar style={theme} />
-          <AppBootstrap />
-        </AuthProvider>
-      </UpdateProvider>
-    </PostHogProvider>
+    <UpdateProvider>
+      <AuthProvider>
+        <TelemetrySync />
+        <StatusBar style={theme} />
+        <AppBootstrap />
+      </AuthProvider>
+    </UpdateProvider>
   );
-});
+}

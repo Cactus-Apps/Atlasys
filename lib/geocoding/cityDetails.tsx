@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
 
 export async function fetchCityDetails(cityName: string, countryCode?: string) {
@@ -31,8 +30,6 @@ export async function fetchCityDetails(cityName: string, countryCode?: string) {
       type: "city",
     };
   } catch (err: any) {
-    Sentry.captureException(err);
-
     return null;
   }
 }

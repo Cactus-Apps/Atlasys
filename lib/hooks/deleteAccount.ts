@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/auth/supabase";
 import { useAuthStore } from "@/lib/storage/zustand";
-import * as Sentry from "@sentry/react-native";
 
 export interface DeleteRequest {
   id: string;
@@ -48,9 +47,7 @@ export async function revokeGoogleToken() {
         }
       });
     }
-  } catch (err) {
-    Sentry.captureException(err);
-  }
+  } catch (err) {}
 }
 
 export async function clearAllUserData(signOut: () => Promise<void>) {
@@ -62,18 +59,12 @@ export async function clearAllUserData(signOut: () => Promise<void>) {
         data: { saved_places: [], settings: {} },
       });
     }
-  } catch (err) {
-    Sentry.captureException(err);
-  }
+  } catch (err) {}
   try {
     await signOut();
-  } catch (err) {
-    Sentry.captureException(err);
-  }
+  } catch (err) {}
 
   try {
     useAuthStore.getState().clearStore({ preserveOnboarding: true });
-  } catch (err) {
-    Sentry.captureException(err);
-  }
+  } catch (err) {}
 }

@@ -116,8 +116,6 @@ For security vulnerabilities, please email **cactus_apps@proton.me** instead of 
 | Offline storage   | AsyncStorage + expo-secure-store          |
 | Animations        | react-native-reanimated + gesture-handler |
 | State             | Zustand                                   |
-| Crash reporting   | Sentry (opt-out)                          |
-| Analytics         | PostHog (opt-in)                          |
 | Navigation voices | react-native-tts                          |
 | Translations      | i18next (en, de, es)                      |
 

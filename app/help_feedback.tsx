@@ -21,7 +21,6 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import * as Sentry from "@sentry/react-native";
 
 const HelpFeedback = () => {
   const theme = useAppTheme();
@@ -30,21 +29,16 @@ const HelpFeedback = () => {
   const styles = getStyles(theme);
 
   const openGithub = () => {
-    Linking.openURL("https://github.com/Cactus-Apps/Atlasys/issues/new").catch(
-      (err) => Sentry.captureException(err),
-    );
+    Linking.openURL(
+      "https://github.com/Cactus-Apps/Atlasys/issues/new",
+    ).catch();
   };
 
   const openEmail = () => {
-    Linking.openURL("mailto:cactus_apps@proton.me").catch((err) =>
-      Sentry.captureException(err),
-    );
+    Linking.openURL("mailto:cactus_apps@proton.me");
   };
 
-  const handleBug = () => {
-    Sentry.setTag("type", "bug");
-    Sentry.showFeedbackWidget();
-  };
+  const handleBug = () => {};
 
   return (
     <SafeAreaView style={styles.container}>

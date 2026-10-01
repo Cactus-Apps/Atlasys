@@ -50,14 +50,6 @@
       "favicon": "assets/images/icon.png"
     },
     "plugins": [
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "react-native",
-          "organization": "cactus-apps"
-        }
-      ],
       "expo-router",
       "expo-notifications",
       "expo-secure-store",
@@ -66,7 +58,6 @@
       "expo-font",
       "expo-image",
       "expo-sqlite",
-      "@sentry/react-native",
       "expo-status-bar",
       [
         "expo-camera",

@@ -23,7 +23,6 @@ import {
   Plus,
   X,
 } from "lucide-react-native";
-import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
 import type { CustomPlace } from "@/lib/storage/zustand";
 import {
@@ -226,7 +225,6 @@ export default function RouteSheet({
       const data = JSON.parse(text);
       return Array.isArray(data) ? data : [];
     } catch (err: any) {
-      Sentry.captureException(err);
       return [];
     }
   };
@@ -304,7 +302,6 @@ export default function RouteSheet({
       });
       onRouteReady(routes, profile);
     } catch (err: any) {
-      Sentry.captureException(err);
       setRouteError(t("Route_error_load"));
     } finally {
       setLoading(false);
@@ -413,7 +410,9 @@ export default function RouteSheet({
         style={s.markerSuggestionItem}
         onPress={() => selectMarker(marker, field)}
       >
-        <View style={[s.markerSuggestionIcon, { backgroundColor: color + "20" }]}>
+        <View
+          style={[s.markerSuggestionIcon, { backgroundColor: color + "20" }]}
+        >
           {Icon ? (
             <Icon size={16} color={color} />
           ) : (
@@ -479,9 +478,7 @@ export default function RouteSheet({
         {showMarkers && (
           <>
             <View style={s.suggestSectionHeader}>
-              <Text style={s.suggestSectionTitle}>
-                {t("Route_my_markers")}
-              </Text>
+              <Text style={s.suggestSectionTitle}>{t("Route_my_markers")}</Text>
             </View>
             {matching.map((m) => renderMarkerSuggestionItem(m, field))}
           </>
@@ -659,8 +656,7 @@ export default function RouteSheet({
                   <X size={16} color={theme.subTextColor} />
                 </TouchableOpacity>
               </View>
-              {focusedStopIndex === index &&
-                renderMarkerSuggestions("stop")}
+              {focusedStopIndex === index && renderMarkerSuggestions("stop")}
             </React.Fragment>
           ))}
 
@@ -860,7 +856,11 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       backgroundColor: cardBgSecondary,
     },
     modeBtnActive: { backgroundColor: tabIndicator },
-    modeLabel: { fontSize: 13, fontFamily: fonts.semibold, color: subTextColor },
+    modeLabel: {
+      fontSize: 13,
+      fontFamily: fonts.semibold,
+      color: subTextColor,
+    },
     modeLabelActive: { color: white },
     fields: { marginBottom: 16 },
     fieldWrapper: {

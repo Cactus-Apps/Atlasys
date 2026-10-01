@@ -7,7 +7,6 @@ import {
   GeoJSONSource,
 } from "react-native-maplibre-gl-js";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as Sentry from "@sentry/react-native";
 import {
   ArrowLeft,
   Heart,
@@ -184,7 +183,9 @@ export default function CityScreen() {
   const addPoi = useAuthStore((s) => s.addPoi);
   const removePoi = useAuthStore((s) => s.removePoi);
   const poiSaved = useAuthStore((s) =>
-    selectedPOI ? s.savedPois.some((p) => p.osmId === selectedPOI.osmId) : false,
+    selectedPOI
+      ? s.savedPois.some((p) => p.osmId === selectedPOI.osmId)
+      : false,
   );
 
   const poiDetailsCache = useRef<Record<number, OverpassPOIDetails>>({});
@@ -255,7 +256,6 @@ export default function CityScreen() {
       .catch((err: any) => {
         if (!cancelled) {
           const msg = err?.message || String(err);
-          Sentry.captureException(err);
           setErrorPOI(msg.substring(0, 120));
           setLoadingPOI(false);
         }
@@ -281,7 +281,6 @@ export default function CityScreen() {
       .catch((err: any) => {
         if (!cancelled) {
           const msg = err?.message || String(err);
-          Sentry.captureException(err);
           setErrorTransit(msg.substring(0, 120));
           setLoadingTransit(false);
         }
@@ -343,7 +342,8 @@ export default function CityScreen() {
               );
               const cmData = await safeFetchJson(cmRes);
               const imageTitles =
-                cmData?.query?.categorymembers?.map((cm: any) => cm.title) || [];
+                cmData?.query?.categorymembers?.map((cm: any) => cm.title) ||
+                [];
 
               if (imageTitles.length > 0) {
                 const titlesQuery = imageTitles
@@ -358,18 +358,34 @@ export default function CityScreen() {
                   const isJunk = (url: string) => {
                     const lower = url.toLowerCase();
                     return [
-                      "locator_map", "location_map", "relief_map",
-                      "topographic", "orthophoto", "_map.", "karte.",
-                      "flag_of", "flagge_", "coat_of_arms", "wappen_",
-                      "klimadiagramm", "climograph", "icon", "logo",
-                      ".svg", "blank_", "placeholder", "no_image",
+                      "locator_map",
+                      "location_map",
+                      "relief_map",
+                      "topographic",
+                      "orthophoto",
+                      "_map.",
+                      "karte.",
+                      "flag_of",
+                      "flagge_",
+                      "coat_of_arms",
+                      "wappen_",
+                      "klimadiagramm",
+                      "climograph",
+                      "icon",
+                      "logo",
+                      ".svg",
+                      "blank_",
+                      "placeholder",
+                      "no_image",
                       "transparent",
                     ].some((w) => lower.includes(w));
                   };
                   Object.values(iiData.query.pages).forEach((p: any) => {
                     const info = p.imageinfo?.[0];
                     const raw = info?.thumburl || info?.url;
-                    const canonical = raw ? raw.split("?")[0].split("#")[0] : raw;
+                    const canonical = raw
+                      ? raw.split("?")[0].split("#")[0]
+                      : raw;
                     if (
                       canonical &&
                       !isJunk(canonical) &&
@@ -388,9 +404,7 @@ export default function CityScreen() {
               }
             }
           }
-        } catch (e) {
-          Sentry.captureException(e);
-        }
+        } catch (e) {}
 
         const thumbnail = imageUrls[0]?.previewUrl || null;
         setArticle({
@@ -400,7 +414,6 @@ export default function CityScreen() {
           images: imageUrls,
         });
       } catch (e) {
-        Sentry.captureException(e);
       } finally {
         finished = true;
         if (!controller.signal.aborted) setLoadingArticle(false);
@@ -456,8 +469,7 @@ export default function CityScreen() {
         latitude: poi.lat,
         longitude: poi.lon,
         image: poi.image || null,
-        openingHours:
-          poiDetails?.openingHours || poi.openingHours || null,
+        openingHours: poiDetails?.openingHours || poi.openingHours || null,
         description: poiDetails?.description || poi.description || null,
         website: poiDetails?.website || poi.website || null,
       });
@@ -818,7 +830,11 @@ export default function CityScreen() {
             onPress={togglePoiSave}
             style={[
               styles.poiIconBtn,
-              { backgroundColor: poiSaved ? theme.primary + "22" : theme.cardBgSecondary },
+              {
+                backgroundColor: poiSaved
+                  ? theme.primary + "22"
+                  : theme.cardBgSecondary,
+              },
             ]}
           >
             {poiSaved ? (
@@ -1066,7 +1082,6 @@ export default function CityScreen() {
         <FlashList
           data={pois.slice(0, visiblePoiCount)}
           keyExtractor={(item) => String(item.osmId)}
-
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 16 }}
           renderItem={({ item }) => {
@@ -1148,9 +1163,7 @@ export default function CityScreen() {
             visiblePoiCount < pois.length ? (
               <TouchableOpacity
                 onPress={() =>
-                  setVisiblePoiCount((prev) =>
-                    Math.min(prev + 10, pois.length),
-                  )
+                  setVisiblePoiCount((prev) => Math.min(prev + 10, pois.length))
                 }
                 style={styles.showMoreBtn}
               >

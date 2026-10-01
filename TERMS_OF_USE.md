@@ -103,8 +103,6 @@ Atlasys uses external services governed by their own terms and privacy policies:
 • OSRM – routing.openstreetmap.de: route calculation
 • Nominatim – nominatim.openstreetmap.org: reverse geocoding
 • Supabase: authentication and data storage
-• Sentry: crash reporting
-• PostHog: usage daily ping (only with your consent)
 
 Cactus Apps is not responsible for the content, availability, security, or data
 practices of these third-party services and accepts no liability for damages
