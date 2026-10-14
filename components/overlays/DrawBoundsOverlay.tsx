@@ -111,7 +111,7 @@ export default function DrawBoundsOverlay({
       const nw = await mapRef.current.unproject([box.left, box.top]);
       const se = await mapRef.current.unproject([box.right, box.bottom]);
       onConfirm([nw.lng, se.lat, se.lng, nw.lat]); // west, south, east, north
-    } catch (err) {
+    } catch {
       onCancel();
     }
   };

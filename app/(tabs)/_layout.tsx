@@ -10,7 +10,6 @@ import UpdateScreen from "@/components/sheets_modal/UpdateScreen";
 import { fetchCurrentVersion } from "@/lib/hooks/useUpdateInfo";
 import SurveyModal from "@/components/sheets_modal/SurveyModal";
 import GitHubStarModal from "@/components/sheets_modal/GitHubStarModal";
-import FeedbackModal from "@/components/sheets_modal/FeedbackModal";
 import { supabase } from "@/lib/auth/supabase";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -181,9 +180,7 @@ export default function TabsLayout() {
         version={updateVersion}
         onClose={() => {
           if (updateVersion) {
-            useAuthStore
-              .getState()
-              .setLastSeenUpdateVersion(updateVersion);
+            useAuthStore.getState().setLastSeenUpdateVersion(updateVersion);
           }
           setShowUpdateScreen(false);
           setUpdateVersion("");
@@ -196,10 +193,6 @@ export default function TabsLayout() {
       />
       <GitHubStarModal
         visible={coldStartModal === "github"}
-        onClose={handleColdStartModalClose}
-      />
-      <FeedbackModal
-        visible={coldStartModal === "feedback"}
         onClose={handleColdStartModalClose}
       />
     </>

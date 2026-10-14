@@ -419,7 +419,7 @@ export default function AccountScreen() {
         setRequest(data);
         updateProgress("pending");
       }
-    } catch (err) {
+    } catch {
       Alert.alert(t("Error"), t("Request_could_not_be_sent"));
     } finally {
       setLoading(false);

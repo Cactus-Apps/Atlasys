@@ -1,57 +1,17 @@
 import { ensureTranslationsLoaded } from "./i18n";
 import { AuthProvider, useAuth } from "@/lib/auth/auth-context";
-import { UpdateProvider } from "@/lib/hooks/update-context";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { runExpoUpdateCheck } from "@/lib/hooks/expoUpdateCheck";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import AnimatedSplash from "@/components/overlays/SplashScreen";
-import * as ImagePicker from "expo-image-picker";
-import { AppState, useColorScheme } from "react-native";
+import { useColorScheme } from "react-native";
 import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
-import { configureNotificationChannels } from "@/lib/storage/notifications";
 import { SharingKillSwitchMonitor } from "@/components/overlays/SharingKillSwitchMonitor";
 import { hasAcceptedCurrentConsent } from "@/lib/consent";
 
-const handleChooseImage = async (addScreenshot: (uri: string) => void) => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    quality: 0.8,
-  });
-
-  if (result.canceled) {
-  } else {
-    const uri = result.assets[0].uri;
-    addScreenshot(uri);
-  }
-};
-
 setupMapLibreLogger("error");
-
-function TelemetrySync() {
-  const autoUpdateCheck = useAuthStore(
-    (s) => s.settings.autoUpdateCheck !== false,
-  );
-
-  useEffect(() => {
-    if (!autoUpdateCheck) return;
-    runExpoUpdateCheck();
-    const onAppState = (state: string) => {
-      if (state === "active") runExpoUpdateCheck();
-    };
-    const sub = AppState.addEventListener("change", onAppState);
-    const sixHours = 6 * 60 * 60 * 1000;
-    const interval = setInterval(runExpoUpdateCheck, sixHours);
-    return () => {
-      sub.remove();
-      clearInterval(interval);
-    };
-  }, [autoUpdateCheck]);
-
-  return null;
-}
 
 function AppBootstrap() {
   const { isLoadingUser, user } = useAuth();
@@ -77,10 +37,6 @@ function AppBootstrap() {
 
     return () => clearTimeout(fallbackTimer);
   }, [animationDone]);
-
-  useEffect(() => {
-    configureNotificationChannels();
-  }, []);
 
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
@@ -197,12 +153,9 @@ export default function RooLayout() {
   const theme = isDarkTheme ? "light" : "dark";
 
   return (
-    <UpdateProvider>
-      <AuthProvider>
-        <TelemetrySync />
-        <StatusBar style={theme} />
-        <AppBootstrap />
-      </AuthProvider>
-    </UpdateProvider>
+    <AuthProvider>
+      <StatusBar style={theme} />
+      <AppBootstrap />
+    </AuthProvider>
   );
 }

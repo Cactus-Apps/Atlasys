@@ -1,9 +1,10 @@
-const path = require("path");
+const { getDefaultConfig } = require("expo/metro-config");
+
+const config = getDefaultConfig(__dirname);
 
 // Handle .wasm files for expo-sqlite
-config.resolver.assetExts = [...(config.resolver.assetExts || []), "wasm"];
-
-// Properly resolve .wasm imports
-config.resolver.sourceExts = [...(config.resolver.sourceExts || []), "wasm"];
+if (!config.resolver.assetExts.includes("wasm")) {
+  config.resolver.assetExts.push("wasm");
+}
 
 module.exports = config;

@@ -30,7 +30,6 @@ export default function AuthScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const theme = useAppTheme();
-  const isDark = theme.isDark;
   const [captchaToken, setCaptchaToken] = useState<string | undefined>(
     undefined,
   );
@@ -43,8 +42,7 @@ export default function AuthScreen() {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const captcha = useRef<any>(null);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const [oauthLoading, setOauthLoading] = useState(false);
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   const onMessage = (event: any) => {
     const data = event?.nativeEvent?.data;
@@ -93,7 +91,7 @@ export default function AuthScreen() {
 
       if (err) setError(err);
       else router.replace("/");
-    } catch (err) {
+    } catch {
       setError(t("Auth_error_unexpected"));
     } finally {
       setLoading(false);
@@ -112,21 +110,6 @@ export default function AuthScreen() {
     setIsSignUp(!isSignUp);
     setError(null);
     setCaptchaToken(undefined);
-  };
-
-  const handleGoogleAuth = async () => {
-    setOauthLoading(true);
-    setError(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      const err = await signInWithGoogle();
-      if (err) setError(err);
-      else router.replace("/");
-    } catch (err) {
-      setError(t("Auth_error_unexpected"));
-    } finally {
-      setOauthLoading(false);
-    }
   };
 
   const getInputBorderColor = (name: string) => {
@@ -234,10 +217,10 @@ export default function AuthScreen() {
                   backgroundColor: theme.primary,
                   shadowColor: theme.primary,
                 },
-                (loading || oauthLoading) && { opacity: 0.7 },
+                loading && { opacity: 0.7 },
               ]}
               onPress={handleAuth}
-              disabled={loading || oauthLoading}
+              disabled={loading}
             >
               <Text style={styles.mainBtnText}>
                 {loading

@@ -224,7 +224,7 @@ export default function RouteSheet({
       if (!text || !res.ok) return [];
       const data = JSON.parse(text);
       return Array.isArray(data) ? data : [];
-    } catch (err: any) {
+    } catch {
       return [];
     }
   };
@@ -301,7 +301,7 @@ export default function RouteSheet({
         duration: routes[0].duration,
       });
       onRouteReady(routes, profile);
-    } catch (err: any) {
+    } catch {
       setRouteError(t("Route_error_load"));
     } finally {
       setLoading(false);

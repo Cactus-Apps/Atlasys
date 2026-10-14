@@ -178,11 +178,7 @@
   "Opening_hours_closed_opens": "Closed · opens {{time}}",
   "Opening_hours_closed_opens_tomorrow": "Closed · opens tomorrow {{time}}",
   "Opening_hours_closed_today": "Closed today",
-  "Update_available": "Update available",
-  "Update_downloading_sub": "Downloading new version…",
-  "Update_download_in_progress": "Download in progress",
-  "Update_ready_title": "Update ready!",
-  "Update_ready_subtitle": "Tap to restart",
+  
   "Theme_label_light": "Light",
   "Theme_label_dark": "Dark",
   "Theme_label_modern": "Modern",
@@ -240,8 +236,7 @@
   "Settings_location_sub": "Map and weather use your position.",
   "Settings_crash_reports_label": "Crash reports",
   "Settings_crash_reports_sub": "Send error reports via Sentry.",
-  "Settings_auto_update_label": "Automatic update check",
-  "Settings_auto_update_sub": "Look for Expo OTA updates in the background.",
+  
   "Help_hero_title": "How can we help?",
   "Help_hero_sub": "We are here to help with questions or issues.",
   "Help_section_contact": "Contact options",

@@ -1,4 +1,4 @@
-import * as Location from "expo-location";
+import * as Location from "@/lib/location";
 import { supabase } from "@/lib/auth/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useSharingStore } from "./state";
@@ -10,12 +10,6 @@ import {
   MSG_END,
 } from "./crypto";
 import { fetchSharingConfig } from "./killSwitch";
-import {
-  registerBackgroundLocationHandler,
-  clearBackgroundLocationHandler,
-  startShareLocationTask,
-  stopShareLocationTask,
-} from "./background";
 import {
   loadSession,
   saveSession,
@@ -113,11 +107,7 @@ class ShareChannelManager {
     };
   }
 
-  async start(
-    session: ShareSession,
-    sending: boolean,
-    notification?: { title: string; body: string },
-  ): Promise<void> {
+  async start(session: ShareSession, sending: boolean): Promise<void> {
     this.stop();
     await this.refreshKillSwitch();
     if (useSharingStore.getState().disabledReason) {
@@ -169,7 +159,7 @@ class ShareChannelManager {
     this.channel = channel;
 
     if (sending) {
-      await this.startSending(notification);
+      await this.startSending();
     }
 
     this.heartbeatTimer = setInterval(() => {
@@ -177,10 +167,7 @@ class ShareChannelManager {
     }, HEARTBEAT_SCAN_MS);
   }
 
-  async startSending(notification?: {
-    title: string;
-    body: string;
-  }): Promise<void> {
+  async startSending(): Promise<void> {
     const store = useSharingStore.getState();
     store.setSending(true);
 
@@ -191,46 +178,24 @@ class ShareChannelManager {
       return;
     }
 
-    let backgroundGranted = false;
+    // No background location on this build: sharing runs while the app is in
+    // the foreground, so a plain watch is all we need.
     try {
-      const bg = await Location.requestBackgroundPermissionsAsync();
-      backgroundGranted = bg.status === "granted";
+      this.locationWatcher = await Location.watchPositionAsync(
+        {
+          accuracy: "balanced",
+          timeInterval: LOCATION_TIME_INTERVAL_MS,
+          distanceInterval: LOCATION_DISTANCE_INTERVAL_M,
+        },
+        (loc) => {
+          this.lastLocation = loc;
+        },
+      );
     } catch {
-      backgroundGranted = false;
-    }
-
-    try {
-      registerBackgroundLocationHandler((loc) => {
-        this.lastLocation = loc;
-        void this.publishPosition();
-      });
-      await startShareLocationTask({
-        accuracy: Location.Accuracy.Balanced,
-        minimumUpdateMs: LOCATION_TIME_INTERVAL_MS,
-        distanceMeters: LOCATION_DISTANCE_INTERVAL_M,
-        notificationTitle:
-          notification?.title ?? "ShareLocationNotificationTitle",
-        notificationBody: notification?.body ?? "ShareLocationNotificationBody",
-      });
-    } catch {
-      clearBackgroundLocationHandler();
-      try {
-        this.locationWatcher = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: LOCATION_TIME_INTERVAL_MS,
-            distanceInterval: LOCATION_DISTANCE_INTERVAL_M,
-          },
-          (loc) => {
-            this.lastLocation = loc;
-          },
-        );
-      } catch {
-        store.setLastError("location-watch-failed");
-        store.setSending(false);
-        this.sendTimer && clearInterval(this.sendTimer);
-        return;
-      }
+      store.setLastError("location-watch-failed");
+      store.setSending(false);
+      this.sendTimer && clearInterval(this.sendTimer);
+      return;
     }
 
     this.sendTimer = setInterval(() => {
@@ -238,9 +203,9 @@ class ShareChannelManager {
     }, SEND_INTERVAL_MS);
     void this.publishPosition();
 
-    if (!backgroundGranted) {
-      store.setLastError("background-location-denied");
-    }
+    // Always surface this: without background location the family will stop
+    // seeing updates as soon as the app goes away.
+    store.setLastError("background-location-denied");
   }
 
   private lastPublishedAt = 0;
@@ -395,8 +360,6 @@ class ShareChannelManager {
       this.locationWatcher.remove();
       this.locationWatcher = null;
     }
-    clearBackgroundLocationHandler();
-    void stopShareLocationTask();
     if (this.sendTimer) {
       clearInterval(this.sendTimer);
       this.sendTimer = null;

@@ -136,7 +136,6 @@ type StoreAuth = {
   setLastSeenUpdateVersion: (val: string) => void;
   settings: {
     notifications: boolean;
-    autoUpdateCheck?: boolean;
     theme: AppTheme; // ← replaces both old fields
     /** Fine control; missing in old saves → fallback to `notifications` */
     tabTheme: TabTheme;
@@ -197,7 +196,6 @@ const initialState = {
   lastSeenUpdateVersion: "",
   settings: {
     notifications: false,
-    autoUpdateCheck: true,
     theme: "light" as AppTheme,
     tabTheme: "modern" as TabTheme,
     notificationTopics: {
@@ -367,7 +365,6 @@ export const useAuthStore = create<StoreAuth>()(
       setLastSeenUpdateVersion: (val) => set({ lastSeenUpdateVersion: val }),
       settings: {
         notifications: false,
-        autoUpdateCheck: true,
         theme: "light" as AppTheme,
         tabTheme: "modern" as TabTheme,
         notificationTopics: {

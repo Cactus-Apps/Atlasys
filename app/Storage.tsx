@@ -371,7 +371,7 @@ export default function Storage() {
       setAlertBox({
         message: t("Backup_exported", { count: places.length }),
       });
-    } catch (err) {
+    } catch {
       setAlertBox({ message: t("Backup_error") });
     } finally {
       setBackupBusy(false);
@@ -426,7 +426,7 @@ export default function Storage() {
     try {
       const total = await getTotalDiskCapacityAsync();
       if (total) setTotalBytes(total);
-    } catch (err: any) {}
+    } catch {}
   };
 
   useEffect(() => {

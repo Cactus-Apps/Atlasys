@@ -197,7 +197,7 @@ Full license text: https://github.com/Cactus-Apps/Atlasys/blob/master/LICENSE`,
     title: "Expo SDK modules",
     content:
       mit("Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)") +
-      "\n\nIncludes npm packages used in this app: expo-application, expo-asset, expo-blur, expo-camera, expo-clipboard, expo-constants, expo-crypto, expo-dev-client, expo-device, expo-document-picker, expo-file-system, expo-font, expo-haptics, expo-image, expo-image-picker, expo-keep-awake, expo-linear-gradient, expo-linking, expo-local-authentication, expo-location, expo-notifications, expo-router, expo-screen-capture, expo-secure-store, expo-sharing, expo-sqlite, expo-status-bar, expo-symbols, expo-system-ui, expo-task-manager, expo-updates, expo-web-browser.",
+      "\n\nIncludes npm packages used in this app: expo-application, expo-asset, expo-blur, expo-clipboard, expo-constants, expo-crypto, expo-dev-client, expo-device, expo-document-picker, expo-file-system, expo-font, expo-haptics, expo-image, expo-image-picker, expo-keep-awake, expo-linear-gradient, expo-linking, expo-local-authentication, expo-notifications, expo-router, expo-screen-capture, expo-secure-store, expo-sharing, expo-sqlite, expo-status-bar, expo-symbols, expo-system-ui, expo-web-browser.",
   },
   {
     title: "React",
@@ -309,6 +309,30 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`,
     content: mit("Copyright (c) Mathieu Acthernoene"),
   },
   {
+    title: "react-native-vision-camera, worklets & Nitro modules",
+    content:
+      mit("Copyright (c) Marc Rousavy") +
+      "\n\nIncludes: react-native-vision-camera, react-native-vision-camera-worklets, react-native-nitro-modules, react-native-nitro-image.",
+  },
+  {
+    title: "react-native-geolocation-service",
+    content: mit("Copyright (c) Transistor Soft"),
+  },
+  {
+    title: "@zxing/library",
+    content: `Apache License, Version 2.0\n\nCopyright (c) ZXing authors\n\nLicensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.`,
+  },
+  {
     title: "@avatune/react-native & @avatune/nevmstas-theme",
     content: mit("Copyright (c) avatune"),
   },
@@ -318,10 +342,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`,
       "Copyright (c) Intuition Machines, Inc. and hCaptcha contributors",
     ),
   },
-  {
-    title: "eventemitter3",
-    content: mit("Copyright (c) Arnout Kazemier and contributors"),
-  },
+  
   {
     title: "@shopify/flash-list",
     content: mit("Copyright (c) 2022 Shopify"),

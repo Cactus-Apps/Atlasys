@@ -3,6 +3,7 @@ module.exports = ({ config }) => ({
   plugins: [
     ...config.plugins,
     "./plugins/withAndroidSizeOptimization",
+    "./plugins/withFossAndroidDependencies",
     "expo-document-picker",
     "expo-sharing",
   ],

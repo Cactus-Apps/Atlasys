@@ -45,7 +45,7 @@ export default function ConsentUpdateScreen() {
       if (user) {
         await syncConsentToServer(user.id, supabase);
       }
-    } catch (error) {}
+    } catch {}
     router.replace(user ? "/(tabs)/mapscreen" : "/auth");
   }, [acceptedTerms, acceptedPrivacy, user, router]);
 

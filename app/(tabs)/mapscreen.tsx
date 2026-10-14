@@ -19,7 +19,7 @@ import Svg, {
   RadialGradient,
   Stop,
 } from "react-native-svg";
-import * as Location from "expo-location";
+import * as Location from "@/lib/location";
 import {
   Cloud,
   ImageIcon,
@@ -129,9 +129,6 @@ export const darken = (hex: string, amount: number) => {
   const b = Math.max(0, parseInt(c.substring(4, 6), 16) * (1 - amount));
   return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 };
-
-const isAbortError = (error: any) =>
-  error?.name === "AbortError" || error?.message === "Aborted";
 
 // Wikimedia imageinfo URLs now carry tracking params, e.g.
 // ".../File.jpg?utm_source=...&utm_campaign=imageinfo". Strip them before
@@ -589,11 +586,11 @@ export default function MapScreen() {
             ensureGlobe();
           }
         }
-      } catch (e) {}
+      } catch {}
 
       const s = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
+          accuracy: "high",
           timeInterval: 1000,
           distanceInterval: 1,
         },
@@ -623,7 +620,7 @@ export default function MapScreen() {
       if (!cancelled) {
         subRef.current = s;
       }
-    } catch (e) {
+    } catch {
       setLocationReady(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -726,7 +723,7 @@ export default function MapScreen() {
         message: `Loook at thaaat 🤩: ${city.name}\n${url}`,
         url: url,
       });
-    } catch (error) {}
+    } catch {}
   };
 
   const openCityMap = () => {
@@ -901,7 +898,7 @@ export default function MapScreen() {
                 [];
             }
           }
-        } catch (error) {}
+        } catch {}
 
         if (!imageTitles.length) {
           const imagesPropRes = await fetch(
@@ -1068,7 +1065,7 @@ export default function MapScreen() {
           thumbnail: finalThumbnail,
           images: imageUrls,
         });
-      } catch (error) {
+      } catch {
         if (isCurrent() && !articlePublished) setError(t("Article_not_found"));
       } finally {
         if (isCurrent()) setLoading(false);
@@ -1172,7 +1169,7 @@ export default function MapScreen() {
           population: it.population,
         }));
         setResults(arr);
-      } catch (error) {
+      } catch {
         setResults([]);
       } finally {
         setLoadingSearch(false);
@@ -1373,7 +1370,7 @@ export default function MapScreen() {
           },
         );
       }
-    } catch (e) {}
+    } catch {}
   };
 
   // Open PoiSheet after render when a POI is selected
@@ -1569,7 +1566,7 @@ export default function MapScreen() {
       if (Math.abs(b - lastBearingRef.current) < 0.5) return;
       lastBearingRef.current = b;
       setBearing(b);
-    } catch (error) {}
+    } catch {}
   };
 
   const mapHandlersRef = useRef({
@@ -1837,7 +1834,7 @@ export default function MapScreen() {
                       label =
                         data.display_name?.split(",").slice(0, 2).join(", ") ??
                         label;
-                    } catch (error) {}
+                    } catch {}
 
                     const point: RoutePoint = { label, coordinate: [lng, lat] };
                     if (routePickMode === "start") setRouteStart(point);

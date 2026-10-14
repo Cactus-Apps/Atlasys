@@ -404,7 +404,7 @@ export default function CityScreen() {
               }
             }
           }
-        } catch (e) {}
+        } catch {}
 
         const thumbnail = imageUrls[0]?.previewUrl || null;
         setArticle({
@@ -413,7 +413,7 @@ export default function CityScreen() {
           thumbnail,
           images: imageUrls,
         });
-      } catch (e) {
+      } catch {
       } finally {
         finished = true;
         if (!controller.signal.aborted) setLoadingArticle(false);

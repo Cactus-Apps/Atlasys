@@ -196,7 +196,7 @@ export default function SavedScreen() {
         message: t("Share_place_message", { name: item.name, url }),
         url: url,
       });
-    } catch (err) {}
+    } catch {}
   };
 
   const handlePoiNavigate = (poi: any) => {

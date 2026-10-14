@@ -1,12 +1,9 @@
 import { useRouter } from "expo-router";
 import {
-  BarChart3,
-  Bug,
   Check,
   ChevronLeft,
   ChevronRight,
   LanguagesIcon,
-  RefreshCw,
   SettingsIcon,
 } from "lucide-react-native";
 import * as Application from "expo-application";
@@ -16,10 +13,8 @@ import { useTranslation } from "react-i18next";
 import {
   Linking,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -56,18 +51,6 @@ export default function Settings() {
 
   const currentLanguageLabel =
     languages.find((l) => l.code === i18n.language)?.label || "English";
-  const autoUpdateOn = appSettings.autoUpdateCheck !== false;
-
-  const togglePrivacy = (
-    key: "crashReports" | "autoUpdateCheck",
-    value: boolean,
-  ) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (key === "autoUpdateCheck") {
-      updateSettings({ autoUpdateCheck: value });
-      return;
-    }
-  };
 
   const THEME_OPTIONS: {
     value: AppTheme;
@@ -484,35 +467,6 @@ export default function Settings() {
                 </TouchableOpacity>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
-            </View>
-            <View style={styles.separator} />
-            <View style={styles.toggleRow}>
-              <View style={styles.menuIconContainer}>
-                <RefreshCw
-                  size={22}
-                  color={autoUpdateOn ? theme.primary : theme.subTextColor}
-                />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>
-                  {t("Settings_auto_update_label")}
-                </Text>
-                <Text style={styles.menuValue}>
-                  {t("Settings_auto_update_sub")}
-                </Text>
-              </View>
-              <Switch
-                value={autoUpdateOn}
-                onValueChange={(v) => togglePrivacy("autoUpdateCheck", v)}
-                trackColor={{
-                  false: theme.cardBgSecondary,
-                  true: theme.primaryLight,
-                }}
-                thumbColor={autoUpdateOn ? theme.primary : theme.white}
-                ios_backgroundColor={
-                  Platform.OS === "ios" ? theme.cardBgSecondary : undefined
-                }
-              />
             </View>
           </View>
         </View>

@@ -31,7 +31,7 @@ import {
 } from "react-native-gesture-handler";
 import { useAppTheme } from "@/lib/theme";
 import * as Application from "expo-application";
-import { UpdateBanner } from "@/components/overlays/UpdateBanner";
+
 import { useAuthStore } from "@/lib/storage/zustand";
 import { fonts } from "@/lib/fonts";
 import { useSharingStore } from "@/lib/sharing/state";
@@ -212,8 +212,6 @@ export function ProfileScreen() {
             </View>
           </View>
         </TouchableOpacity>
-
-        <UpdateBanner />
 
         <View style={styles.listContainer}>
           {menuItems.map((group, gIdx) => (

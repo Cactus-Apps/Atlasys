@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Switch,
   Platform,
   ScrollView,
   Dimensions,
@@ -15,7 +14,6 @@ import {
   Satellite,
   Bookmark,
   Navigation,
-  Activity,
   ChevronRight,
   ChevronLeft,
   Check,
@@ -27,7 +25,6 @@ import {
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
-import { useAuthStore } from "@/lib/storage/zustand";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -84,7 +81,6 @@ export default function UpdateScreen({ visible, version, onClose }: Props) {
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
-  const updateSettings = useAuthStore((s) => s.updateSettings);
 
   const s = useMemo(
     () =>

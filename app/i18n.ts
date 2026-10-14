@@ -39,7 +39,7 @@ export function ensureTranslationsLoaded() {
 const storeLanguage = async (lng: any) => {
   try {
     await AsyncStorage.setItem(LANGUAGE_KEY, lng);
-  } catch (err) {}
+  } catch {}
 };
 
 const loadLanguage = async () => {
@@ -49,7 +49,7 @@ const loadLanguage = async () => {
       // eslint-disable-next-line import/no-named-as-default-member
       await i18n.changeLanguage(lng);
     }
-  } catch (err) {}
+  } catch {}
 };
 
 const changeLanguage = async (lng: any) => {

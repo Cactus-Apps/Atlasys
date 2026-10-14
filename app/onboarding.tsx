@@ -337,7 +337,7 @@ export default function OnboardingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       await saveConsentLocally();
-    } catch (error) {
+    } catch {
     } finally {
       setOnboardingCompleted(true);
       router.replace("/auth");

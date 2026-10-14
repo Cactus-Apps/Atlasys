@@ -144,13 +144,13 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
       } else {
         await Linking.openURL(ORION_STORE_FALLBACK);
       }
-    } catch (error) {}
+    } catch {}
   }, []);
 
   const handleReleasePage = useCallback(async () => {
     try {
       await Linking.openURL(RELEASE_PAGE_URL);
-    } catch (error) {}
+    } catch {}
   }, []);
 
   if (!announcements.length) return null;

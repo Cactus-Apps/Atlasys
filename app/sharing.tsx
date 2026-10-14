@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import QRCode from "react-native-qrcode-svg";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import QrScanner from "@/components/qr/QrScanner";
 import {
   Lock,
   MapPin,
@@ -93,6 +93,7 @@ export default function SharingScreen() {
     memberName: string;
   } | null>(null);
   const processingRef = useRef(false);
+  const [scanBlocked, setScanBlocked] = useState(false);
   const [confirmState, setConfirmState] = useState<{
     removingName?: string;
   } | null>(null);
@@ -104,8 +105,6 @@ export default function SharingScreen() {
   const disabledMessage = useSharingStore((s) => s.disabledMessage);
 
   const [rotated, setRotated] = useState(false);
-
-  const [permission, requestPermission] = useCameraPermissions();
 
   useFamilyScreenCaptureGuard();
   const { locked: sharingLocked, requestUnlock: unlockSharing } =
@@ -287,10 +286,7 @@ export default function SharingScreen() {
       } else {
         const session = await loadSession();
         if (!session) throw new Error(FAILED);
-        await sharingManager.start(session, true, {
-          title: t("Sharing_bg_notif_title"),
-          body: t("Sharing_bg_notif_body"),
-        });
+        await sharingManager.start(session, true);
       }
     } catch {
       setError("toggle-failed");
@@ -342,9 +338,11 @@ export default function SharingScreen() {
     void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
   };
 
-  const onBarcode = ({ data }: { data: string }) => {
+  const onBarcode = (data: string) => {
     if (processingRef.current) return;
     processingRef.current = true;
+    // Keep the decoder quiet while this hit is being handled.
+    setScanBlocked(true);
     try {
       const parsed = parseQrContent(data);
       if (!parsed) return;
@@ -356,6 +354,7 @@ export default function SharingScreen() {
     } finally {
       setTimeout(() => {
         processingRef.current = false;
+        setScanBlocked(false);
       }, 800);
     }
   };
@@ -468,7 +467,6 @@ export default function SharingScreen() {
                 style={[styles.secondaryBtn, busy && styles.disabled]}
                 disabled={busy}
                 onPress={() => {
-                  if (!permission?.granted) void requestPermission();
                   setRoute({ name: "scan-invite" });
                 }}
               >
@@ -532,28 +530,21 @@ export default function SharingScreen() {
               : t("Sharing_scan_invite")}
           </Text>
         </View>
-        {permission?.granted ? (
-          <CameraView
-            style={StyleSheet.absoluteFill}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={onBarcode}
-          />
-        ) : (
-          <View style={styles.cameraPrompt}>
-            <Text style={styles.cameraPromptText}>
-              {t("Sharing_camera_permission")}
-            </Text>
-            <Pressable
-              style={styles.primaryBtn}
-              onPress={() => void requestPermission()}
-            >
-              <Text style={styles.primaryBtnText}>
+        <QrScanner
+          active
+          blocked={scanBlocked}
+          onScanned={onBarcode}
+          renderPermissionPrompt={() => (
+            <View style={styles.cameraPrompt}>
+              <Text style={styles.cameraPromptText}>
+                {t("Sharing_camera_permission")}
+              </Text>
+              <Text style={styles.cameraPromptText}>
                 {t("Sharing_grant_camera")}
               </Text>
-            </Pressable>
-          </View>
-        )}
+            </View>
+          )}
+        />
         <View style={styles.cameraHint}>
           <Text style={styles.cameraHintText}>
             {t("Sharing_scan_in_person")}
@@ -696,7 +687,6 @@ export default function SharingScreen() {
             style={[styles.secondaryBtn, busy && styles.disabled]}
             disabled={busy}
             onPress={() => {
-              if (!permission?.granted) void requestPermission();
               setRoute({ name: "scan-identity" });
             }}
           >
@@ -749,7 +739,6 @@ export default function SharingScreen() {
                 style={[styles.secondaryBtn, busy && styles.disabled]}
                 disabled={busy}
                 onPress={() => {
-                  if (!permission?.granted) void requestPermission();
                   setRoute({ name: "scan-identity" });
                 }}
               >

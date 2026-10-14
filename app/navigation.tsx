@@ -6,7 +6,7 @@ import {
   MapRef,
   GeoJSONSource,
 } from "react-native-maplibre-gl-js";
-import * as Location from "expo-location";
+import * as Location from "@/lib/location";
 import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
 import Tts from "@iternio/react-native-tts";
 
@@ -224,7 +224,7 @@ export default function NavigationScreen() {
     ) => {
       try {
         return await fetchOsrmRoutes(from, to, profile);
-      } catch (e) {
+      } catch {
         return null;
       }
     },
@@ -334,7 +334,7 @@ export default function NavigationScreen() {
 
       const sub = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
+          accuracy: "high",
           timeInterval: 500,
           distanceInterval: 1,
         },
@@ -392,7 +392,7 @@ export default function NavigationScreen() {
         },
       );
       if (!cancelled) subRef.current = sub;
-    } catch (e) {}
+    } catch {}
   }, [stopped]);
 
   useEffect(() => {
