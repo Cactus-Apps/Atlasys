@@ -46,8 +46,8 @@
   "Select_new_status": "Select new status",
   "Please_fill_in_all_fields": "Please fill in all fields.",
   "at_least": "The password must be at least 6 characters long.",
-  "Sign_up_to_GPS": "Sign up to GPS",
-  "Sign_in_to_GPS": "Sign in to GPS",
+  "Sign_up_to_GPS": "Sign up to Atlasys",
+  "Sign_in_to_GPS": "Sign in to Atlasys",
   "Password": "Password",
   "Sign_up": "Sign up",
   "Login": "Login",
@@ -178,7 +178,7 @@
   "Opening_hours_closed_opens": "Closed · opens {{time}}",
   "Opening_hours_closed_opens_tomorrow": "Closed · opens tomorrow {{time}}",
   "Opening_hours_closed_today": "Closed today",
-  
+
   "Theme_label_light": "Light",
   "Theme_label_dark": "Dark",
   "Theme_label_modern": "Modern",
@@ -236,7 +236,7 @@
   "Settings_location_sub": "Map and weather use your position.",
   "Settings_crash_reports_label": "Crash reports",
   "Settings_crash_reports_sub": "Send error reports via Sentry.",
-  
+
   "Help_hero_title": "How can we help?",
   "Help_hero_sub": "We are here to help with questions or issues.",
   "Help_section_contact": "Contact options",
@@ -246,6 +246,8 @@
   "Help_bug_report_sub": "Report bugs you find in Atlasys.",
   "Help_section_support": "Support",
   "Help_email_label": "Email support",
+  "Help_location_issue_label": "Location not loading?",
+  "Help_location_issue_sub": "This is a known issue in the F-Droid version. F-Droid builds don't include Google Play services, so Atlasys cannot use Google's location services for improved accuracy.",
   "Help_feature_requests_label": "Feature requests",
   "Help_feature_requests_sub": "Suggest new ideas for Atlasys.",
   "Admin_empty_requests": "No deletion requests found",
@@ -709,6 +711,9 @@
   "GitHubStar_title": "Like Atlasys?",
   "GitHubStar_body": "If you enjoy using Atlasys, giving us a star on GitHub helps others discover the app. It only takes a moment!",
   "GitHubStar_btn": "Star on GitHub",
+  "FdroidNotice_title": "F-Droid version",
+  "FdroidNotice_body": "You are using the F-Droid build of Atlasys. This version differs from the GitHub version in a few important ways:\n\n• Location accuracy is much lower because the app cannot use Google Play services.\n• The app is considerably less stable and may crash more often.\n• Some features may not work as expected.\n• Background location sharing is not supported in the F-Droid build yet.",
+  "FdroidNotice_btn": "Got it",
   "Feedback_body": "Have a suggestion, found a bug, or just want to share your thoughts? Let us know!",
   "Feedback_privacy": "Your feedback is sent to Sentry for analysis. No personal data is stored.",
   "Feedback_thanks_title": "Thank you!",

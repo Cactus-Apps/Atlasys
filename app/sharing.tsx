@@ -367,7 +367,7 @@ export default function SharingScreen() {
           title={t("Sharing_title")}
           onBack={() =>
             router.canGoBack()
-              ? router.back()
+              ? router.navigate("/profilescreen")
               : router.navigate("/profilescreen")
           }
         />

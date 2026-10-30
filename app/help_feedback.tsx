@@ -14,10 +14,9 @@ import {
   ChevronRight,
   Github,
   Mail,
-  MessageSquare,
   LifeBuoy,
   ChevronLeft,
-  TriangleAlertIcon,
+  MapPinXInsideIcon,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -37,8 +36,6 @@ const HelpFeedback = () => {
   const openEmail = () => {
     Linking.openURL("mailto:cactus_apps@proton.me");
   };
-
-  const handleBug = () => {};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -73,10 +70,10 @@ const HelpFeedback = () => {
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: theme.cardBgSecondary },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <Github size={22} color={theme.subTextColor} />
+                <Github size={22} color={theme.white} />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>
@@ -85,30 +82,6 @@ const HelpFeedback = () => {
                 <Text style={styles.menuSub}>
                   {t("Help_github_report_sub")}
                 </Text>
-              </View>
-              <ChevronRight size={18} color={theme.chevronColor} />
-            </TouchableOpacity>
-
-            <View style={styles.separator} />
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              activeOpacity={0.7}
-              onPress={handleBug}
-            >
-              <View
-                style={[
-                  styles.menuIcon,
-                  { backgroundColor: theme.dangerLight },
-                ]}
-              >
-                <TriangleAlertIcon size={22} color={theme.danger} />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuLabel}>
-                  {t("Help_bug_report_label")}
-                </Text>
-                <Text style={styles.menuSub}>{t("Help_bug_report_sub")}</Text>
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
@@ -126,10 +99,10 @@ const HelpFeedback = () => {
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: theme.purpleLight },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <Mail size={22} color={theme.purple} />
+                <Mail size={22} color={theme.white} />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>{t("Help_email_label")}</Text>
@@ -137,31 +110,28 @@ const HelpFeedback = () => {
               </View>
               <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
-
             <View style={styles.separator} />
-
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.navigate("/feature_request")}
+              onPress={openGithub}
               activeOpacity={0.7}
             >
               <View
                 style={[
                   styles.menuIcon,
-                  { backgroundColor: theme.successLight },
+                  { backgroundColor: "rgba(255,255,255,0.05)" },
                 ]}
               >
-                <MessageSquare size={22} color={theme.success} />
+                <MapPinXInsideIcon size={22} color={theme.white} />
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuLabel}>
-                  {t("Help_feature_requests_label")}
+                  {t("Help_location_issue_label")}
                 </Text>
                 <Text style={styles.menuSub}>
-                  {t("Help_feature_requests_sub")}
+                  {t("Help_location_issue_sub")}
                 </Text>
               </View>
-              <ChevronRight size={18} color={theme.chevronColor} />
             </TouchableOpacity>
           </View>
         </View>

@@ -9,6 +9,11 @@ import { setupMapLibreLogger } from "@/lib/logs/mapLogger";
 import { StatusBar } from "expo-status-bar";
 import { useAppFonts } from "@/lib/fonts";
 import { SharingKillSwitchMonitor } from "@/components/overlays/SharingKillSwitchMonitor";
+import FdroidNoticeModal from "@/components/sheets_modal/FdroidNoticeModal";
+import {
+  markFdroidNoticeShown,
+  shouldShowFdroidNotice,
+} from "@/lib/hooks/fdroidNotice";
 import { hasAcceptedCurrentConsent } from "@/lib/consent";
 
 setupMapLibreLogger("error");
@@ -28,6 +33,7 @@ function AppBootstrap() {
   const updateSettings = useAuthStore((s) => s.updateSettings);
   const currentTheme = useAuthStore((s) => s.settings.theme);
   const [routingReady, setRoutingReady] = useState(false);
+  const [showFdroidNotice, setShowFdroidNotice] = useState(false);
 
   useEffect(() => {
     if (animationDone) return;
@@ -130,6 +136,24 @@ function AppBootstrap() {
   const isReady =
     storeReady && !isLoadingUser && i18nGate && fontsLoaded && routingReady;
 
+  useEffect(() => {
+    if (!isReady || !animationDone) return;
+
+    let cancelled = false;
+    shouldShowFdroidNotice().then((shouldShow) => {
+      if (!cancelled && shouldShow) setShowFdroidNotice(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isReady, animationDone]);
+
+  const handleFdroidNoticeClose = async () => {
+    setShowFdroidNotice(false);
+    await markFdroidNoticeShown();
+  };
+
   if (!isReady) {
     return <AnimatedSplash onFinish={() => setAnimationDone(true)} />;
   }
@@ -138,6 +162,10 @@ function AppBootstrap() {
     <>
       <Slot />
       <SharingKillSwitchMonitor />
+      <FdroidNoticeModal
+        visible={showFdroidNotice}
+        onClose={handleFdroidNoticeClose}
+      />
       {!animationDone && (
         <AnimatedSplash onFinish={() => setAnimationDone(true)} />
       )}

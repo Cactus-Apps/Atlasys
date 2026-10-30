@@ -485,7 +485,7 @@ export default function Settings() {
             <View style={styles.separator} />
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>{t("Settings_label_build")}</Text>
-              <Text style={styles.infoValue}>{buildNumber}</Text>
+              <Text style={styles.infoValue}>F-droid; {buildNumber}</Text>
             </View>
           </View>
         </View>

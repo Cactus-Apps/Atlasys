@@ -46,8 +46,8 @@
   "Select_new_status": "Seleccionar nuevo estado",
   "Please_fill_in_all_fields": "Por favor, completa todos los campos.",
   "at_least": "La contraseña debe tener al menos 6 caracteres.",
-  "Sign_up_to_GPS": "Registrarse en GPS",
-  "Sign_in_to_GPS": "Iniciar sesión en GPS",
+  "Sign_up_to_GPS": "Registrarse en Atlasys",
+  "Sign_in_to_GPS": "Iniciar sesión en Atlasys",
   "Password": "Contraseña",
   "Sign_up": "Registrarse",
   "Login": "Iniciar sesión",
@@ -178,7 +178,7 @@
   "Opening_hours_closed_opens": "Cerrado · abre a las {{time}}",
   "Opening_hours_closed_opens_tomorrow": "Cerrado · abre mañana a las {{time}}",
   "Opening_hours_closed_today": "Cerrado hoy",
-  
+
   "Theme_label_light": "Claro",
   "Theme_label_dark": "Oscuro",
   "Theme_label_modern": "Moderno",
@@ -216,7 +216,7 @@
   "Settings_location_sub": "El mapa y el clima usan tu posición.",
   "Settings_crash_reports_label": "Informes de fallos",
   "Settings_crash_reports_sub": "Enviar informes de error a través de Sentry.",
-  
+
   "Help_hero_title": "¿Cómo podemos ayudarte?",
   "Help_hero_sub": "Estamos aquí para ayudar con preguntas o problemas.",
   "Help_section_contact": "Opciones de contacto",
@@ -226,6 +226,8 @@
   "Help_bug_report_sub": "Reporta errores que encuentres en Atlasys.",
   "Help_section_support": "Soporte",
   "Help_email_label": "Soporte por correo",
+  "Help_location_issue_label": "¿No se carga la ubicación?",
+  "Help_location_issue_sub": "Este es un problema conocido en la versión de F-Droid. Las compilaciones de F-Droid no incluyen los servicios de Google Play, por lo que Atlasys no puede usar los servicios de ubicación de Google para mejorar la precisión.",
   "Help_feature_requests_label": "Solicitudes de funciones",
   "Help_feature_requests_sub": "Sugiere nuevas ideas para Atlasys.",
   "Admin_empty_requests": "No se encontraron solicitudes de eliminación",
@@ -689,6 +691,9 @@
   "GitHubStar_title": "¿Te gusta Atlasys?",
   "GitHubStar_body": "Si disfrutas usando Atlasys, darnos una estrella en GitHub ayuda a otros a descubrir la app. ¡Solo toma un momento!",
   "GitHubStar_btn": "Estrella en GitHub",
+  "FdroidNotice_title": "Versión de F-Droid",
+  "FdroidNotice_body": "Estás usando la versión de F-Droid de Atlasys. Esta versión se diferencia de la versión de GitHub en varios puntos importantes:\n\n• La precisión de la ubicación es mucho menor porque la app no puede usar los servicios de Google Play.\n• La app es considerablemente menos estable y puede cerrarse con más frecuencia.\n• Es posible que algunas funciones no funcionen como se espera.\n• La compartición de ubicación en segundo plano aún no es compatible con la versión de F-Droid.",
+  "FdroidNotice_btn": "Entendido",
   "Feedback_body": "¿Tienes una sugerencia, encontraste un error o simplemente quieres compartir tus pensamientos? ¡Haznos saber!",
   "Feedback_privacy": "Tu opinión se envía a Sentry para análisis. No se almacenan datos personales.",
   "Feedback_thanks_title": "¡Gracias!",
