@@ -84,9 +84,6 @@ const HEADERS = {
   "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
 };
 
-const PROXY_URL = process.env.EXPO_PUBLIC_OVERPASS_PROXY_URL;
-const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -133,38 +130,6 @@ async function overpassQuery(
   }
 
   // Proxy: ein Versuch (mit TTL-Cache). Fehler fallen auf die direkte API zurück.
-  if (PROXY_URL) {
-    try {
-      const proxyRes = await overpassFetch(
-        PROXY_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${API_KEY}`,
-          },
-          body: JSON.stringify({
-            query: finalQuery,
-            ttl: options?.ttl ?? 86400,
-            city_name: options?.cityName,
-            lat: options?.lat,
-            lon: options?.lon,
-          }),
-        },
-        12000,
-      );
-      if (proxyRes?.ok) {
-        try {
-          return JSON.parse(proxyRes.text);
-        } catch {
-          console.warn(
-            "Proxy JSON parse error, response starts with:",
-            proxyRes.text.slice(0, 100),
-          );
-        }
-      }
-    } catch {}
-  }
 
   // Direkte Overpass-API: mehrere Versuche mit Backoff, da die öffentliche
   // Instanz häufig transient fehlschlägt (429/Timeout/OOM).

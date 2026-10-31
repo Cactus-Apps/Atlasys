@@ -1,0 +1,2 @@
+Atlasys is a privacy-first, open-source map app. Plan multi-stop trips and share 
+your exact position with friends and family E2EE - without ads, trackers, or anyone selling your data.

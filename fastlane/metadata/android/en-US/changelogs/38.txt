@@ -1,0 +1,4 @@
+📍 Location sharing
+🎯 Move FloatingActionBar with Snap-to-Grid
+🗺️ Multi-stop route planning
+⭐ Saved Places (saved pois)

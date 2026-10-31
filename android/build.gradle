@@ -1,0 +1,32 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+  }
+}
+
+allprojects {
+  // f-droid: keep com.google.android.gms out of release builds.
+  // Only release* configs may carry the rule — excludes on generic configs
+  // (implementation/api) are inherited by debug* configs via extendsFrom.
+  configurations.configureEach { config ->
+    if (config.name.toLowerCase().contains("release")) {
+      exclude group: "com.google.android.gms"
+    }
+  }
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"

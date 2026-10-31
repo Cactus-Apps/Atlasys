@@ -1,0 +1,69 @@
+Atlasys
+
+The map app that doesn't track you.
+
+
+What is Atlasys?
+
+Atlasys is a privacy-first, open-source map app that gives you offline maps, 3D cities, smart routing and live location sharing — without ads,
+trackers, or anyone selling your data. Save your favourite places, plan multi-stop trips and share your exact position with friends
+and family end-to-end encrypted and fully GDPR compliant.
+
+Map data comes from https://openstreetmap.org under the ODbL license. Routing is powered by https://routing.openstreetmap.de.
+No proprietary map APIs. No hidden trackers.
+
+
+Features
+
+- 📍 Location sharing — Share your live position with friends and family, end-to-end encrypted. Pair via QR code, protect the view with biometrics, and cut off access at any time.
+- 🗺️ Multi-stop route planning — Plan routes with as many stops as you like, by car, bike or on foot, with turn-by-turn directions and spoken instructions.
+- ⭐ Saved Places — Save places, POIs and your own custom pins, back them up to a file and access them offline.
+- 🛡️ Zero tracking — No location data sold. No ads. No behavioral profiles.
+- 📶 Offline maps — Download a region before you travel and browse the map without a connection.
+- 🌍 3D globe & buildings — Explore cities in immersive 3D, tilt the map or zoom out to the whole planet.
+- 🍽️ POI filtering — Find restaurants, cafés, hotels, bars and more right on the map.
+- 📖 Wikipedia integration — Tap any city for info, photos and articles.
+- 🌦️ Weather — Current conditions and a 7-day forecast for wherever you are.
+- 🎨 Beautiful themes — Light, Dark, Modern, Chill, Midnight, Ocean and Forest, plus three tab bar styles.
+- 🔒 GDPR compliant — Built with European privacy standards from day one.
+- 💻 100% open source — Read every line of code on GitHub.
+
+
+Tech Stack
+
+| Layer             | Technology                                |
+| ----------------- | ----------------------------------------- |
+| Framework         | React Native + Expo                       |
+| Navigation        | expo-router (file-based)                  |
+| Maps              | MapLibre + OpenFreeMap / bundled styles   |
+| Routing           | OSRM (routing.openstreetmap.de)           |
+| Live sharing      | Supabase Realtime + NaCl encryption       |
+| Auth & sync       | Supabase (email, hCaptcha)                |
+| Offline maps      | expo-sqlite + custom MBTiles              |
+| Offline storage   | AsyncStorage + expo-secure-store          |
+| Animations        | react-native-reanimated + gesture-handler |
+| State             | Zustand                                   |
+| Navigation voices | react-native-tts                          |
+| Translations      | i18next (en, de, es)                      |
+
+
+Privacy
+
+Atlasys collects as little data as possible. Your GPS location stays on your device — including when you share it, since sharing sessions are end-to-end encrypted. We do not sell data, show ads, or build profiles about you.
+
+Read the full https://atlasys.vercel.app/privacy
+
+
+Links
+
+- Website: https://atlasys.vercel.app
+- Contact: cactus_apps@proton.me
+
+
+License
+
+This project is licensed under the GNU General Public License v3.0 (GPLv3).
+
+Everyone is free to use, modify, and distribute the code — but any derivative work must also be released under GPLv3.
+
+Made with ❤️ by Cactus Apps
