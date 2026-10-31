@@ -20,8 +20,6 @@ Depending on how you use the App, we may process the following categories:
 
 • Identification data: Email address (required for account creation).
 • Account data: Profile information, account ID.
-• Usage data: Anonymous usage statistics via PostHog, only with your explicit
-consent given during onboarding.
 • Connection data: Login timestamps, IP address (temporary, not stored
 persistently).
 • Proof of consent: Timestamp and version of your acceptance of our Terms of
@@ -110,11 +108,9 @@ claim is made.
 
 • Contract performance (Art. 6(1)(b)): Providing your account and core app
 functionality.
-• Consent (Art. 6(1)(a)): Location access, daily ping (PostHog), and crash
-reporting preferences chosen during onboarding. You may withdraw consent at
-any time in the app settings.
-• Legitimate interests (Art. 6(1)(f)): Security logs, fraud prevention, and
-anonymous crash reporting to maintain app stability. These interests are
+• Consent (Art. 6(1)(a)): Location access. You may withdraw consent at
+any time in settings.
+• Legitimate interests (Art. 6(1)(f)): fraud prevention. These interests are
 balanced against your rights and do not override them.
 • Legal obligation (Art. 6(1)(c)): Retention of consent records and compliance
 with applicable law.
@@ -127,10 +123,6 @@ is required under GDPR, one is in place.
 • Supabase (authentication, database, and storage)
 Data stored in the EU (Frankfurt). A data processing agreement is in place.
 Privacy policy: supabase.com/privacy
-
-• PostHog (usage daily ping, only with your consent)
-You choose the level of daily ping, or none.
-Privacy policy: posthog.com/privacy
 
 • OpenFreeMap / OpenStreetMap (map tiles)
 Anonymous tile requests. No personal data transmitted.
@@ -163,8 +155,6 @@ Your IP address is used once to determine approximate country. Not stored.
 
 • Account data: Retained as long as your account is active or as required by
 applicable law. Deleted within 30 days of an account deletion request.
-• Security and connection logs: Retained for a limited time for debugging and
-security purposes, then deleted.
 • Proof of consent: Retained as long as required to demonstrate compliance or
 until you withdraw consent.
 • Local app data (offline maps, settings): Stored only on your device. Deleted
