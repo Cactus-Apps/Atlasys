@@ -42,12 +42,14 @@ import {
 } from "@/lib/storage/thumbnailCache";
 import { parseOpeningHours } from "@/lib/geocoding/overpass";
 import { getPOIIcon, poiBgColor, poiColor } from "@/lib/geocoding/poiIcons";
+import { useLowPowerMode } from "@/lib/performance/lowPowerMode";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const theme = useAppTheme();
   const styles = getStyles(theme);
+  const { enabled: lowPowerEnabled } = useLowPowerMode();
   const statusBarTheme = theme.isDark ? "light" : "dark";
 
   const [activeTab, setActiveTab] = useState<"cities" | "places" | "markers">(
@@ -648,7 +650,13 @@ export default function SavedScreen() {
                 />
               </View>
               <Text style={styles.emptyTitle}>{t("No_saved_markers")}</Text>
-              <Text style={styles.emptySub}>{t("Add_markers_hint")}</Text>
+              <Text style={styles.emptySub}>
+                {t(
+                  lowPowerEnabled
+                    ? "Add_markers_hint_low_power"
+                    : "Add_markers_hint",
+                )}
+              </Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
                 onPress={() => router.push("/(tabs)/mapscreen")}

@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import * as Sentry from "@sentry/react-native";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANNON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_ANNON_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
 function createSupabaseStorage(): SupportedStorage {
   if (Platform.OS === "web" && typeof window !== "undefined") {

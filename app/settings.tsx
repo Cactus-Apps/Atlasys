@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Gauge,
   LanguagesIcon,
   RefreshCw,
   SettingsIcon,
@@ -26,6 +27,7 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useAuthStore } from "@/lib/storage/zustand";
+import { useLowPowerMode } from "@/lib/performance/lowPowerMode";
 import { AppTheme, TabTheme, useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { TabBarPreview } from "@/components/tab-bars/TabBarPreview";
@@ -41,6 +43,20 @@ export default function Settings() {
   const styles = getStyles(theme);
   const buildNumber = Application.nativeBuildVersion;
   const version = Application.nativeApplicationVersion;
+  const {
+    enabled: lowPowerEnabled,
+    preference: lowPowerPreference,
+    detectedLowEnd,
+  } = useLowPowerMode();
+
+  const LOW_POWER_OPTIONS: {
+    value: "auto" | "on" | "off";
+    labelKey: string;
+  }[] = [
+    { value: "auto", labelKey: "Settings_low_power_auto" },
+    { value: "on", labelKey: "Settings_low_power_on" },
+    { value: "off", labelKey: "Settings_low_power_off" },
+  ];
 
   const languages = [
     { code: "en", label: t("English") },
@@ -474,6 +490,96 @@ export default function Settings() {
               );
             })}
           </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {t("Settings_section_Performance")}
+          </Text>
+          <View style={styles.card}>
+            <View style={styles.toggleRow}>
+              <View style={styles.menuIconContainer}>
+                <Gauge
+                  size={22}
+                  color={lowPowerEnabled ? theme.primary : theme.subTextColor}
+                />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuLabel}>
+                  {t("Settings_low_power_label")}
+                </Text>
+                <Text style={styles.menuValue}>
+                  {lowPowerEnabled
+                    ? t("Settings_low_power_active")
+                    : t("Settings_low_power_inactive")}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.separator} />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {LOW_POWER_OPTIONS.map((opt) => {
+                const isActive = lowPowerPreference === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => {
+                      Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Medium,
+                      );
+                      updateSettings({ lowPowerMode: opt.value });
+                    }}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      borderRadius: 12,
+                      paddingVertical: 10,
+                      alignItems: "center",
+                      backgroundColor: isActive
+                        ? theme.primary
+                        : theme.cardBgSecondary,
+                      borderWidth: 1,
+                      borderColor: isActive
+                        ? theme.primary
+                        : theme.borderColor,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontFamily: fonts.bold,
+                        color: isActive ? theme.white : theme.textColor,
+                      }}
+                    >
+                      {t(opt.labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text
+              style={{
+                fontSize: 12,
+                lineHeight: 17,
+                color: theme.subTextColor,
+                marginTop: 10,
+              }}
+            >
+              {t("Settings_low_power_hint")}
+            </Text>
+            {detectedLowEnd && (
+              <Text
+                style={{
+                  fontSize: 12,
+                  lineHeight: 17,
+                  color: theme.primary,
+                  marginTop: 6,
+                  fontFamily: fonts.medium,
+                }}
+              >
+                {t("Settings_low_power_detected")}
+              </Text>
+            )}
+          </View>
         </View>
 
         <View style={styles.section}>

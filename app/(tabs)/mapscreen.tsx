@@ -110,6 +110,10 @@ import { fonts } from "@/lib/fonts";
 import { FILTER_CATEGORIES, FILTER_DEFS } from "@/lib/config/filters";
 import CityMapsButton from "@/components/city/CityMapsIcon";
 import { useWeatherForecast } from "@/lib/hooks/useWeatherForecast";
+import {
+  useAdaptivePerformanceProbe,
+  useLowPowerMode,
+} from "@/lib/performance/lowPowerMode";
 import WeeklyForecast from "@/components/overlays/WeeklyForecast";
 import DropPinSheet, {
   placeCategoryColor,
@@ -149,12 +153,32 @@ const escapeHtml = (value: string) =>
       ]!,
   );
 
-const renderPeerMarker = (color: string, name: string, status: string) => {
+const renderPeerMarker = (
+  color: string,
+  name: string,
+  status: string,
+  simplified = false,
+) => {
   const dim = status === "offline";
   const ended = status === "ended";
   const opacity = ended || dim ? (ended ? 0.85 : 0.6) : 1;
   const border = ended ? `3px solid ${color}` : `2.5px solid #ffffff`;
   const background = ended ? "#ffffff" : color;
+  if (simplified) {
+    return `
+<div style="display:flex; flex-direction:column; align-items:center; transform: translateY(-18px);">
+  <div style="
+    width:14px; height:14px; border-radius:50%;
+    background:${background};
+    border:2px solid #ffffff;
+    opacity:${opacity};
+  "></div>
+  <div style="margin-top:2px; padding:1px 5px; background: rgba(0,0,0,0.55); color:#fff; font-size:10px; border-radius:7px; max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+    ${escapeHtml(name)}
+  </div>
+</div>
+`;
+  }
   return `
 <div style="display:flex; flex-direction:column; align-items:center; transform: translateY(-20px);">
   <div style="
@@ -326,6 +350,8 @@ export default function MapScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const { enabled: lowPowerEnabled } = useLowPowerMode();
+  useAdaptivePerformanceProbe(mapReady);
   const sharingPeers = useSharingStore((s) => s.peers);
   const sharingActive = useSharingStore((s) => s.active);
   const { locked: sharingLocked, requestUnlock: unlockSharing } =
@@ -585,9 +611,11 @@ export default function MapScreen() {
 
       const s = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 1000,
-          distanceInterval: 1,
+          accuracy: lowPowerEnabled
+            ? Location.Accuracy.Balanced
+            : Location.Accuracy.High,
+          timeInterval: lowPowerEnabled ? 5000 : 1000,
+          distanceInterval: lowPowerEnabled ? 10 : 1,
         },
         (loc) => {
           if (cancelled) return;
@@ -620,7 +648,7 @@ export default function MapScreen() {
       setLocationReady(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lowPowerEnabled]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -679,22 +707,63 @@ export default function MapScreen() {
   };
 
   const resetPitch = () => {
+    if (lowPowerEnabled) return;
     const nextPitch = !pitch;
     mapRef.current?.easeTo({ pitch: nextPitch ? 60 : 0, duration: 500 });
     setPitch(nextPitch);
   };
 
   const ensureGlobe = async () => {
-    if (!mapRef.current) return;
+    if (lowPowerEnabled || !mapRef.current) return;
     await mapRef.current.setProjection({ type: "globe" });
   };
+
+  useEffect(() => {
+    if (!mapReady) return;
+    const map = mapRef.current;
+    if (!map) return;
+
+    let cancelled = false;
+    const applyLowPowerStyle = async () => {
+      try {
+        await map.setProjection({
+          type: lowPowerEnabled ? "mercator" : "globe",
+        });
+        const style = await map.getStyle();
+        if (cancelled) return;
+        const heavyLayers = new Set(["fill-extrusion", "hillshade"]);
+        for (const layer of (style as any)?.layers ?? []) {
+          if (!heavyLayers.has(layer.type)) continue;
+          await map.setLayoutProperty(
+            layer.id,
+            "visibility",
+            lowPowerEnabled ? "none" : "visible",
+          );
+        }
+        if (cancelled) return;
+        if (lowPowerEnabled) {
+          map.easeTo({ pitch: 0, duration: 0 });
+          setPitch(false);
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+      }
+    };
+
+    applyLowPowerStyle();
+    return () => {
+      cancelled = true;
+    };
+  }, [mapReady, lowPowerEnabled, MapStyle]);
 
   const toggleFavorite = () => {
     if (!city) return;
 
     if (!localSaved) {
-      setIsPlayingAnimation(true);
-      ref.current?.play();
+      if (!lowPowerEnabled) {
+        setIsPlayingAnimation(true);
+        ref.current?.play();
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       addPlace({
         name: city.name,
@@ -1377,6 +1446,7 @@ export default function MapScreen() {
 
   // Long-press to drop a pin (custom places)
   const handleMapTouchStart = (e: any) => {
+    if (lowPowerEnabled) return;
     if (e?.points?.length > 1) {
       longPressRef.current = null;
       return;
@@ -1535,7 +1605,26 @@ export default function MapScreen() {
     pinSheetRef.current?.close();
   };
 
-  const pinHtml = (color: string, iconSvg?: string) => `
+  const pinHtml = (color: string, iconSvg?: string, simplified = false) => {
+    const icon = iconSvg
+      ? `<svg xmlns="http://www.w3.org/2000/svg" width="${simplified ? 16 : 18}" height="${simplified ? 16 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>`
+      : "";
+    if (simplified) {
+      return `
+              <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 34px;
+                height: 34px;
+                background: ${color};
+                border-radius: 50%;
+              ">
+                ${icon}
+              </div>
+            `;
+    }
+    return `
               <div style="
                 display: flex;
                 align-items: center;
@@ -1548,9 +1637,10 @@ export default function MapScreen() {
                 position: relative;
                 cursor: pointer;
               " title="Location">
-                ${iconSvg ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>` : ""}
+                ${icon}
               </div>
             `;
+  };
 
   const updateBearing = async () => {
     try {
@@ -2125,6 +2215,7 @@ export default function MapScreen() {
                         : place.category
                           ? CATEGORY_SVG_ICONS[place.category]
                           : CATEGORY_SVG_ICONS["bookmark"],
+                      lowPowerEnabled,
                     ),
                   },
                 }}
@@ -2157,13 +2248,15 @@ export default function MapScreen() {
                           : theme.accentColor,
                       peer.name ?? peer.id.slice(0, 8),
                       peer.status,
+                      lowPowerEnabled,
                     ),
                   },
                 }}
               />
             ))}
-          <VectorTileSource
-            id="cities-source"
+          {!lowPowerEnabled && (
+            <VectorTileSource
+              id="cities-source"
             source={{
               type: "vector",
               tiles: [
@@ -2231,7 +2324,8 @@ export default function MapScreen() {
                 },
               },
             ]}
-          />
+            />
+          )}
 
           {searchBarVisible && (
             <View style={styles.searchWrapper}>
@@ -2324,7 +2418,7 @@ export default function MapScreen() {
                 !city &&
                 isSearching && (
                   <Animated.View
-                    entering={FadeInDown}
+                    entering={lowPowerEnabled ? undefined : FadeInDown}
                     style={styles.suggestionBox}
                   >
                     <View style={styles.historyHeader}>
@@ -2565,6 +2659,7 @@ export default function MapScreen() {
             setRouteSheetOpen={setRouteSheetOpen}
             setMapStyleSheetOpen={setMapStyleSheetOpen}
             setDrawMode={setDrawMode}
+            lowPower={lowPowerEnabled}
           />
 
           <PoiSheet
@@ -2852,7 +2947,10 @@ export default function MapScreen() {
                         </Text>
                       </TouchableOpacity>
                     )}
-                    <WeeklyForecast weather={weather} />
+                    <WeeklyForecast
+                      weather={weather}
+                      maxDays={lowPowerEnabled ? 3 : 7}
+                    />
                     <View style={styles.wikiFooter}>
                       <View style={styles.wikiFooterRow}>
                         <Info size={14} color={theme.subTextColor} />

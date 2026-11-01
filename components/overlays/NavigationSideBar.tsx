@@ -104,6 +104,7 @@ interface Props {
   setRouteSheetOpen: (v: boolean) => void;
   setMapStyleSheetOpen: (v: boolean) => void;
   setDrawMode: (v: boolean) => void;
+  lowPower?: boolean;
 }
 
 export default memo(function NavigationSideBar({
@@ -116,6 +117,7 @@ export default memo(function NavigationSideBar({
   setRouteSheetOpen,
   setMapStyleSheetOpen,
   setDrawMode,
+  lowPower = false,
 }: Props) {
   const { width: Wd, height: Hd } = useWindowDimensions();
   const snaps = useMemo(() => getSnaps(Wd, Hd), [Wd, Hd]);
@@ -213,6 +215,47 @@ export default memo(function NavigationSideBar({
     };
   }, [isHorizontal]);
 
+  const actions: {
+    icon: React.ReactNode;
+    onPress: () => void;
+    divider?: boolean;
+  }[] = [
+    {
+      icon: <Navigation color="#1E293B" size={22} />,
+      onPress: () => {
+        setRoute(null);
+        setDistanceInfo(null);
+        setRouteEnd(null);
+        setRouteStart(
+          markerPos
+            ? {
+                label: i18n.t("Poi_my_location"),
+                coordinate: markerPos,
+              }
+            : null,
+        );
+        setRouteSheetOpen(true);
+      },
+    },
+    {
+      icon: <MapIcon color="#1E293B" size={22} />,
+      onPress: () => setMapStyleSheetOpen(true),
+      divider: true,
+    },
+    ...(lowPower
+      ? []
+      : [
+          {
+            icon: <Box color="#1E293B" size={22} />,
+            onPress: resetPitch,
+          },
+        ]),
+    {
+      icon: <Download color="#1E293B" size={22} />,
+      onPress: () => setDrawMode(true),
+    },
+  ];
+
   return (
     <>
       {isDragging && (
@@ -232,38 +275,7 @@ export default memo(function NavigationSideBar({
       )}
       <GestureDetector gesture={pan}>
         <Animated.View style={[s.fab, isHorizontal && s.row, fabStyle]}>
-          {[
-            {
-              icon: <Navigation color="#1E293B" size={22} />,
-              onPress: () => {
-                setRoute(null);
-                setDistanceInfo(null);
-                setRouteEnd(null);
-                setRouteStart(
-                  markerPos
-                    ? {
-                        label: i18n.t("Poi_my_location"),
-                        coordinate: markerPos,
-                      }
-                    : null,
-                );
-                setRouteSheetOpen(true);
-              },
-            },
-            {
-              icon: <MapIcon color="#1E293B" size={22} />,
-              onPress: () => setMapStyleSheetOpen(true),
-              divider: true,
-            },
-            {
-              icon: <Box color="#1E293B" size={22} />,
-              onPress: resetPitch,
-            },
-            {
-              icon: <Download color="#1E293B" size={22} />,
-              onPress: () => setDrawMode(true),
-            },
-          ].map((item, idx) => (
+          {actions.map((item, idx) => (
             <React.Fragment key={idx}>
               {item.divider && (
                 <View style={isHorizontal ? s.dividerV : s.divider} />
@@ -271,7 +283,7 @@ export default memo(function NavigationSideBar({
               <TouchableOpacity onPress={item.onPress} style={s.btn}>
                 {item.icon}
               </TouchableOpacity>
-              {idx < 3 && !item.divider && (
+              {idx < actions.length - 1 && !item.divider && (
                 <View style={isHorizontal ? s.hairlineV : s.hairline} />
               )}
             </React.Fragment>

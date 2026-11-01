@@ -7,14 +7,15 @@ import type { WeatherState } from "@/lib/hooks/useWeatherForecast";
 
 type Props = {
   weather: WeatherState | null;
+  maxDays?: number;
 };
 
-export default function WeeklyForecast({ weather }: Props) {
+export default function WeeklyForecast({ weather, maxDays = 7 }: Props) {
   const theme = useAppTheme();
 
   if (!weather?.daily?.length) return null;
 
-  const data = weather.daily.slice(0, 7);
+  const data = weather.daily.slice(0, maxDays);
 
   return (
     <FlatList

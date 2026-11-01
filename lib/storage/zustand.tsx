@@ -140,6 +140,11 @@ type StoreAuth = {
     autoUpdateCheck?: boolean;
     /** Daily analytics ping (absent → disabled) */
     ping?: boolean;
+    /**
+     * Automatic low-power map mode. "auto" enables it on slow devices,
+     * "on" forces it and "off" disables it completely.
+     */
+    lowPowerMode?: "auto" | "on" | "off";
     theme: AppTheme; // ← replaces both old fields
     /** Fine control; missing in old saves → fallback to `notifications` */
     tabTheme: TabTheme;
@@ -203,6 +208,7 @@ const initialState = {
     analytics: true,
     crashReports: true,
     autoUpdateCheck: true,
+    lowPowerMode: "auto" as const,
     theme: "light" as AppTheme,
     tabTheme: "modern" as TabTheme,
     notificationTopics: {
@@ -375,6 +381,7 @@ export const useAuthStore = create<StoreAuth>()(
         analytics: true,
         crashReports: true,
         autoUpdateCheck: true,
+        lowPowerMode: "auto" as const,
         theme: "light" as AppTheme,
         tabTheme: "modern" as TabTheme,
         notificationTopics: {
