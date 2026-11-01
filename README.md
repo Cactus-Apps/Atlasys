@@ -6,6 +6,17 @@
 
 **The map app that doesn't track you.**
 
+<div align="center" padding=8>
+
+  <a href="https://rookieenough.github.io/Orion-Data/app/?id=atlasys">
+    <img src="https://raw.githubusercontent.com/RookieEnough/Orion-Store/refs/heads/main/assets/orion-badge.png" alt="Get it on Orion Store" width="160" height="48" />
+  </a>
+  <a href="https://github.com/Cactus-Apps/Atlasys/releases/latest">
+    <img src="https://raw.githubusercontent.com/Akylas/OSS-DocumentScanner/main/graphics/badge_github.png" alt="Get it on GitHub" width="160" height="48" />
+  </a>
+
+</div>
+
 [![Android](https://img.shields.io/badge/Android-Available-6ED28A?style=flat-square&logo=android&logoColor=white)](https://github.com/Cactus-Apps/Atlasys/releases)
 [![iOS](https://img.shields.io/badge/iOS-Coming_Soon-999?style=flat-square&logo=apple&logoColor=white)](https://github.com/Cactus-Apps/Atlasys/releases)
 [![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](LICENSE)
