@@ -860,5 +860,12 @@
   "Sharing_error_rotate-failed": "The key could not be rotated.",
   "Profile_live_sharing_sub_disabled": "Temporarily disabled",
   "Sharing_bg_notif_title": "Location sharing active",
-  "Sharing_bg_notif_body": "Your location is being shared with your family."
+  "Sharing_bg_notif_body": "Your location is being shared with your family.",
+  "Widget_route_label": "Route",
+  "Widget_route_empty": "No active route",
+  "Widget_route_unknown": "Choose a destination in Atlasys",
+  "Widget_route_continue": "Continue along the route",
+  "Widget_route_distance": "Distance",
+  "Widget_route_duration": "Time",
+  "Widget_route_updated": "Updated {{time}}"
 }

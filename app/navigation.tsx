@@ -46,6 +46,13 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 import { darken } from "./(tabs)/mapscreen";
 import { getInstructionText } from "@/lib/navigation/instructions";
+import {
+  hasRouteInfoWidget,
+  isWidgetSupportAvailable,
+  updateRouteInfoWidget,
+} from "@/modules/atlasys-widgets";
+import { buildRouteInfoWidgetSnapshot } from "@/lib/widgets/routeInfo";
+import { buildWidgetTheme } from "@/lib/widgets/theme";
 
 function pointToSegmentDist(
   px: number,
@@ -156,6 +163,18 @@ export default function NavigationScreen() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const navRoute = useAuthStore((s) => s.navRoute);
+  const widgetTheme = useMemo(() => buildWidgetTheme(theme), [theme]);
+  const widgetThemeRef = useRef(widgetTheme);
+  const tRef = useRef(t);
+  const localeRef = useRef(i18n.language);
+  const routeInfoPublishRef = useRef<() => void>(() => {});
+  const lastRouteInfoPushRef = useRef("");
+
+  useEffect(() => {
+    widgetThemeRef.current = widgetTheme;
+    tRef.current = t;
+    localeRef.current = i18n.language;
+  }, [widgetTheme, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -206,6 +225,62 @@ export default function NavigationScreen() {
   const steps = useMemo(() => navRoute?.steps || [], [navRoute?.steps]);
   const currentStep = steps[currentStepIdx];
   const nextStep = steps[currentStepIdx + 1];
+
+  useEffect(() => {
+    routeInfoPublishRef.current = () => {
+      const step = steps[currentStepIdx];
+      const snapshot = buildRouteInfoWidgetSnapshot(
+        {
+          hasRoute: Boolean(navRoute),
+          destinationName: navRoute?.destinationName,
+          distanceMeters: remainingDist,
+          durationSeconds: remainingTime,
+          profile: navRoute?.profile,
+          stepCount: steps.length,
+          stepIndex: currentStepIdx,
+          instruction: step ? getInstructionText(step, t) : null,
+          streetName: step?.name || null,
+          updatedAt: Date.now(),
+          locale: i18n.language,
+          t,
+        },
+        widgetTheme,
+      );
+      const serialized = JSON.stringify(snapshot);
+      if (serialized === lastRouteInfoPushRef.current) return;
+
+      lastRouteInfoPushRef.current = serialized;
+      updateRouteInfoWidget(snapshot);
+    };
+  });
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || !isWidgetSupportAvailable()) return;
+
+    const publish = () => {
+      if (!hasRouteInfoWidget()) return;
+      routeInfoPublishRef.current();
+    };
+
+    publish();
+    const interval = setInterval(publish, 1000);
+
+    return () => {
+      clearInterval(interval);
+      if (!hasRouteInfoWidget()) return;
+
+      updateRouteInfoWidget(
+        buildRouteInfoWidgetSnapshot(
+          {
+            hasRoute: false,
+            locale: localeRef.current,
+            t: tRef.current,
+          },
+          widgetThemeRef.current,
+        ),
+      );
+    };
+  }, []);
   const destCoords = navRoute?.destinationCoords;  const mapOptions = useMemo(
     () => ({
       style: mapStyle,

@@ -840,5 +840,12 @@
   "Sharing_error_rotate-failed": "No se pudo rotar la clave.",
   "Profile_live_sharing_sub_disabled": "Desactivado temporalmente",
   "Sharing_bg_notif_title": "Uso compartido de ubicación activo",
-  "Sharing_bg_notif_body": "Tu ubicación se comparte con tu familia."
+  "Sharing_bg_notif_body": "Tu ubicación se comparte con tu familia.",
+  "Widget_route_label": "Ruta",
+  "Widget_route_empty": "Sin ruta activa",
+  "Widget_route_unknown": "Elige un destino en Atlasys",
+  "Widget_route_continue": "Continúa por la ruta",
+  "Widget_route_distance": "Distancia",
+  "Widget_route_duration": "Duración",
+  "Widget_route_updated": "Actualizado {{time}}"
 }

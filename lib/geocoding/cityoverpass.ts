@@ -85,9 +85,6 @@ const HEADERS = {
   "User-Agent": `Atlasys/1.0 (${process.env.EXPO_PUBLIC_WIKIPEDIA_EMAIL || "atlasys@app"})`,
 };
 
-const PROXY_URL = process.env.EXPO_PUBLIC_OVERPASS_PROXY_URL;
-const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -118,8 +115,6 @@ async function overpassFetch(
 async function overpassQuery(
   query: string,
   options?: {
-    ttl?: number;
-    cityName?: string;
     lat?: number;
     lon?: number;
     radius?: number;
@@ -133,42 +128,8 @@ async function overpassQuery(
     finalQuery = query.replace(/{bbox}/g, bbox);
   }
 
-  // Proxy: ein Versuch (mit TTL-Cache). Fehler fallen auf die direkte API zurück.
-  if (PROXY_URL) {
-    try {
-      const proxyRes = await overpassFetch(
-        PROXY_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${API_KEY}`,
-          },
-          body: JSON.stringify({
-            query: finalQuery,
-            ttl: options?.ttl ?? 86400,
-            city_name: options?.cityName,
-            lat: options?.lat,
-            lon: options?.lon,
-          }),
-        },
-        12000,
-      );
-      if (proxyRes?.ok) {
-        try {
-          return JSON.parse(proxyRes.text);
-        } catch {
-          console.warn(
-            "Proxy JSON parse error, response starts with:",
-            proxyRes.text.slice(0, 100),
-          );
-        }
-      }
-    } catch {}
-  }
-
-  // Direkte Overpass-API: mehrere Versuche mit Backoff, da die öffentliche
-  // Instanz häufig transient fehlschlägt (429/Timeout/OOM).
+  // Direct Overpass API: multiple attempts with backoff because the public
+  // instance often fails transiently (429/timeout/OOM).
   const MAX_DIRECT_ATTEMPTS = 3;
   const backoff = [0, 400, 900];
   let lastStatus = 0;
@@ -195,12 +156,12 @@ async function overpassQuery(
         continue;
       }
     }
-    // 429 (Rate-Limit): länger warten, dann erneut versuchen.
+    // 429 (rate limit): wait longer, then retry.
     if (res.status === 429) await delay(1200);
   }
 
-  // Letzte Distingierung: Fehlercode protokollieren, damit Fehler #4/#7
-  // besser nachvollziehbar sind.
+  // Final diagnostic: log the error code so errors #4/#7
+  // are easier to trace.
   if (lastStatus >= 400) {
     console.warn(`[overpass] direct API failed with status ${lastStatus}`);
   }
@@ -404,8 +365,8 @@ export async function fetchTransitRoutes(
   `;
   const data = await overpassQuery(query, { lat, lon, radius: 3000 });
   if (!data?.elements) {
-    // Transienter Overpass-Ausfall – Zeige lieber "keine Routen" als einen
-    // Fehlerbanner. Nach den Retries in overpassQuery ist die API nicht erreichbar.
+    // Transient Overpass outage – prefer showing "no routes" over an
+    // error banner. After the retries in overpassQuery, the API is unreachable.
     return [];
   }
   const rawRoutes: TransitRoute[] = data.elements
@@ -580,7 +541,7 @@ export async function fetchTransitRouteDetails(osmId: number): Promise<{
       out geom;
   `;
   try {
-    // Mehrfach fragen, falls Overpass transient eine leere Antwort liefert (#7).
+    // Retry a few times in case Overpass transiently returns an empty response (#7).
     let data: any = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await delay(500 * attempt);

@@ -860,5 +860,12 @@
   "Sharing_error_rotate-failed": "Schlüssel konnte nicht rotiert werden.",
   "Profile_live_sharing_sub_disabled": "Temporär deaktiviert",
   "Sharing_bg_notif_title": "Standort-Teilung aktiv",
-  "Sharing_bg_notif_body": "Dein Standort wird an deine Familie geteilt."
+  "Sharing_bg_notif_body": "Dein Standort wird an deine Familie geteilt.",
+  "Widget_route_label": "Route",
+  "Widget_route_empty": "Keine aktive Route",
+  "Widget_route_unknown": "Wähle ein Ziel in Atlasys",
+  "Widget_route_continue": "Der Route weiter folgen",
+  "Widget_route_distance": "Distanz",
+  "Widget_route_duration": "Dauer",
+  "Widget_route_updated": "Aktualisiert {{time}}"
 }

@@ -1,0 +1,12 @@
+{
+  "name": "atlasys-widgets",
+  "version": "0.1.0",
+  "description": "Native Android home screen widgets for Atlasys",
+  "main": "index.ts",
+  "private": true,
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

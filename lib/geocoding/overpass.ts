@@ -43,7 +43,7 @@ export async function getOsmIdFromNominatim(
     const osm_id = Number(result.osm_id);
     if (!osm_id) return null;
     const osm_type = result.osm_type; // 'node', 'way', 'relation'
-    // For ways and relations, osm_id is positive, but we need to make it negative for ways if needed, but since we use abs, no need
+    // For ways and relations, osm_id is positive; since we use abs, no negation is needed.
     return { osm_id, osm_type };
   } catch {
     return null;
@@ -122,7 +122,7 @@ export async function fetchPOIDetails(
 ): Promise<OverpassPOIDetails | null> {
   const hasValidId = osmId > 0;
 
-  // ── 1. Try direct ID lookup ──
+  // ── 1. Direct lookup by ID ──
   if (hasValidId) {
     const absId = Math.abs(osmId);
     const validTypes = ["node", "way", "relation"];
@@ -153,7 +153,7 @@ export async function fetchPOIDetails(
     const json = await overpassPost(coordQuery);
     const elements: any[] = json?.elements ?? [];
     if (elements.length) {
-      // If we have a name, prefer the element whose name matches
+      // If a name is available, prefer the element with a matching name
       let best = pickBestElement(elements);
       if (fallbackName) {
         const lower = fallbackName.toLowerCase();
