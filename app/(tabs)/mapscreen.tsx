@@ -91,6 +91,9 @@ import MapStyleSheet, {
   buildSatellite3DStyle,
   MapTheme,
 } from "@/components/sheets_modal/MapStyleSheet";
+import TrafficLayer from "@/components/map/TrafficLayer";
+import { useTrafficConfig } from "@/lib/traffic/useTrafficConfig";
+import { TRAFFIC_LEGAL_URL } from "@/lib/traffic/config";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import RouteSheet, {
@@ -352,6 +355,11 @@ export default function MapScreen() {
   const styles = useMemo(() => getStyles(theme), [theme]);
   const { enabled: lowPowerEnabled } = useLowPowerMode();
   useAdaptivePerformanceProbe(mapReady);
+  const trafficConfig = useTrafficConfig();
+  const trafficPreference = useAuthStore((s) => s.settings.traffic ?? false);
+  const updateSettings = useAuthStore((s) => s.updateSettings);
+  const trafficVisible =
+    trafficPreference && trafficConfig.available && !lowPowerEnabled;
   const sharingPeers = useSharingStore((s) => s.peers);
   const sharingActive = useSharingStore((s) => s.active);
   const { locked: sharingLocked, requestUnlock: unlockSharing } =
@@ -2052,6 +2060,11 @@ export default function MapScreen() {
             </>
           )}
           <Map ref={mapRef} options={mapOptions} listeners={mapListeners} />
+          <TrafficLayer
+            enabled={trafficVisible && mapReady}
+            themeKey={currentThemeKey}
+            incidents={trafficConfig.incidentsEnabled}
+          />
           {!routeSheetOpen && (
             <Marker
               ref={markerRef}
@@ -3242,6 +3255,30 @@ export default function MapScreen() {
                 />
               ) : null,
             )}
+          {trafficVisible && (
+            <TouchableOpacity
+              style={[
+                styles.trafficAttribution,
+                {
+                  backgroundColor: theme.isDark
+                    ? "rgba(0,0,0,0.55)"
+                    : "rgba(255,255,255,0.85)",
+                },
+              ]}
+              onPress={() => Linking.openURL(TRAFFIC_LEGAL_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="© TomTom"
+            >
+              <Text
+                style={[
+                  styles.trafficAttributionText,
+                  { color: theme.isDark ? theme.white : theme.textColor },
+                ]}
+              >
+                © TomTom
+              </Text>
+            </TouchableOpacity>
+          )}
         </MapProvider>
       </View>
       <MapStyleSheet
@@ -3249,6 +3286,9 @@ export default function MapScreen() {
         currentTheme={currentThemeKey}
         onSelect={handleSelectTheme}
         onClose={() => setMapStyleSheetOpen(false)}
+        trafficEnabled={trafficPreference}
+        trafficAvailable={trafficConfig.available}
+        onToggleTraffic={(value) => updateSettings({ traffic: value })}
       />
       <FilterModal
         open={filterModalOpen}
@@ -3328,6 +3368,19 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     shareBadgeText: {
       color: white,
       fontSize: 13,
+      fontFamily: fonts.medium,
+    },
+    trafficAttribution: {
+      position: "absolute",
+      left: 12,
+      bottom: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+      zIndex: 60,
+    },
+    trafficAttributionText: {
+      fontSize: 10,
       fontFamily: fonts.medium,
     },
     input: {

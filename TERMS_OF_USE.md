@@ -105,6 +105,7 @@ Atlasys uses external services governed by their own terms and privacy policies:
 • Supabase: authentication and data storage
 • Sentry: crash reporting
 • PostHog: usage daily ping (only with your consent)
+• TomTom: real-time traffic data (if enabled)
 
 Cactus Apps is not responsible for the content, availability, security, or data
 practices of these third-party services and accepts no liability for damages

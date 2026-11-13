@@ -157,6 +157,11 @@ Coordinates only. No personal data transmitted.
 • ipapi.co (approximate country location on first launch)
 Your IP address is used once to determine approximate country. Not stored.
 
+• TomTom (real-time traffic data, if enabled)
+Tile requests are proxied through our Supabase Edge Function; TomTom does not
+receive your IP. Anonymous tile requests only.
+Privacy policy: tomtom.com/privacy
+
 #### What we do NOT do:
 
 • We do not sell your data.

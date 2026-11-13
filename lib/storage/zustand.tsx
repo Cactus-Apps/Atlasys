@@ -148,6 +148,8 @@ type StoreAuth = {
     theme: AppTheme; // ← replaces both old fields
     /** Fine control; missing in old saves → fallback to `notifications` */
     tabTheme: TabTheme;
+    /** Traffic layer (main map only; navigation forced on by remote flag) */
+    traffic?: boolean;
     notificationTopics?: {
       userAccount: boolean;
       coolPlaces: boolean;
@@ -211,6 +213,7 @@ const initialState = {
     lowPowerMode: "auto" as const,
     theme: "light" as AppTheme,
     tabTheme: "modern" as TabTheme,
+    traffic: false,
     notificationTopics: {
       userAccount: false,
       coolPlaces: false,
@@ -384,6 +387,7 @@ export const useAuthStore = create<StoreAuth>()(
         lowPowerMode: "auto" as const,
         theme: "light" as AppTheme,
         tabTheme: "modern" as TabTheme,
+        traffic: false,
         notificationTopics: {
           userAccount: false,
           coolPlaces: false,

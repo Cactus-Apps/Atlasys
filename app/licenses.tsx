@@ -368,6 +368,11 @@ Content licensed under CC BY-SA 4.0 (text) and
 CC BY-SA 4.0 / public domain (images & media).
 https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use
 
+TomTom Traffic
+Real-time traffic flow and incident tiles via a Supabase proxy.
+Requests are proxied through Atlasys' Supabase Edge Function; the TomTom API key stays server-side.
+https://www.tomtom.com/legal/
+
 Supabase · Sentry · PostHog · hCaptcha
 Backend, crash reporting, opt-in analytics and bot protection,
 each governed by its own terms and privacy policy.`,

@@ -6,6 +6,9 @@ import {
   MapRef,
   GeoJSONSource,
 } from "react-native-maplibre-gl-js";
+import TrafficLayer from "@/components/map/TrafficLayer";
+import { useTrafficConfig } from "@/lib/traffic/useTrafficConfig";
+import { TRAFFIC_LEGAL_URL } from "@/lib/traffic/config";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
 import { activateKeepAwake, deactivateKeepAwake } from "expo-keep-awake";
@@ -26,6 +29,7 @@ import {
   StatusBar,
   Platform,
   AppState,
+  Linking,
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { useAuthStore } from "@/lib/storage/zustand";
@@ -196,6 +200,8 @@ export default function NavigationScreen() {
   const [mapStyle] = useState<string>(
     "https://tiles.openfreemap.org/styles/bright",
   );
+  const trafficConfig = useTrafficConfig();
+  const trafficVisibleNav = trafficConfig.available; // navigation forced on by remote flag
   const mapRef = useRef<MapRef>(null);
   const subRef = useRef<Location.LocationSubscription | null>(null);
   const [stopped, setStopped] = useState(false);
@@ -687,6 +693,12 @@ export default function NavigationScreen() {
           }}
         />
 
+        <TrafficLayer
+          enabled={mapReady && trafficVisibleNav}
+          themeKey="bright"
+          incidents={trafficConfig.incidentsEnabled}
+        />
+
         {mapReady && navRoute?.geometry && (
           <GeoJSONSource
             key={`nav-route-${navRoute.id}-${navRoute.geometry.coordinates?.length ?? 0}`}
@@ -782,6 +794,31 @@ export default function NavigationScreen() {
           />
         )}
       </MapProvider>
+
+      {trafficVisibleNav && (
+        <TouchableOpacity
+          style={[
+            s.trafficAttribution,
+            {
+              backgroundColor: theme.isDark
+                ? "rgba(0,0,0,0.55)"
+                : "rgba(255,255,255,0.85)",
+            },
+          ]}
+          onPress={() => Linking.openURL(TRAFFIC_LEGAL_URL)}
+          accessibilityRole="link"
+          accessibilityLabel="© TomTom"
+        >
+          <Text
+            style={[
+              s.trafficAttributionText,
+              { color: theme.isDark ? theme.white : theme.textColor || "#111" },
+            ]}
+          >
+            © TomTom
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <View style={[s.topBar, { backgroundColor: theme.cardBg || "#fff" }]}>
         <View style={s.instructionRow}>
@@ -1133,6 +1170,18 @@ const s = StyleSheet.create({
     right: 16,
     top: Platform.OS === "ios" ? 130 : 100,
     gap: 8,
+  },
+  trafficAttribution: {
+    position: "absolute",
+    left: 16,
+    bottom: Platform.OS === "ios" ? 200 : 180,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  trafficAttributionText: {
+    fontSize: 10,
+    fontFamily: fonts.medium,
   },
   stepArrow: {
     width: 40,

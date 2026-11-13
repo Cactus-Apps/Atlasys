@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.9.2",
+    "version": "1.9.3",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",
@@ -99,6 +99,6 @@
     "updates": {
       "url": "https://u.expo.dev/753eb474-331e-49f0-a5a9-fa0d2431fe5e"
     },
-    "owner": "atlasys127"
+    "owner": "helloworld127"
   }
 }

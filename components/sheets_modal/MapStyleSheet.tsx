@@ -7,8 +7,9 @@ import {
   ScrollView,
   Modal,
   Platform,
+  Switch,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { X, Car } from "lucide-react-native";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
 import { useTranslation } from "react-i18next";
@@ -61,6 +62,9 @@ interface Props {
   currentTheme: string;
   onSelect: (theme: MapTheme) => void;
   onClose: () => void;
+  trafficEnabled?: boolean;
+  trafficAvailable?: boolean;
+  onToggleTraffic?: (value: boolean) => void;
 }
 
 export default function MapStyleSheet({
@@ -68,6 +72,9 @@ export default function MapStyleSheet({
   currentTheme,
   onSelect,
   onClose,
+  trafficEnabled = false,
+  trafficAvailable = false,
+  onToggleTraffic,
 }: Props) {
   const { t } = useTranslation();
   const theme = useAppTheme();
@@ -100,6 +107,58 @@ export default function MapStyleSheet({
             <X size={18} color={theme.subTextColor} />
           </TouchableOpacity>
         </View>
+
+        {/* Traffic toggle */}
+        <View style={[s.trafficRow, { borderColor: theme.borderColor }]}>
+          <View
+            style={[
+              s.trafficIcon,
+              {
+                backgroundColor:
+                  trafficEnabled && trafficAvailable
+                    ? theme.primaryLight
+                    : theme.iconBg,
+              },
+            ]}
+          >
+            <Car
+              size={18}
+              color={
+                trafficEnabled && trafficAvailable
+                  ? theme.primary
+                  : theme.subTextColor
+              }
+            />
+          </View>
+          <View style={s.trafficTextWrap}>
+            <Text style={[s.trafficTitle, { color: theme.textColor }]}>
+              {t("Map_traffic_title")}
+            </Text>
+            <Text style={[s.trafficSubtitle, { color: theme.subTextColor }]}>
+              {t(
+                trafficAvailable
+                  ? "Map_traffic_subtitle"
+                  : "Map_traffic_unavailable",
+              )}
+            </Text>
+          </View>
+          <Switch
+            value={trafficEnabled && trafficAvailable}
+            onValueChange={(value) => onToggleTraffic?.(value)}
+            disabled={!trafficAvailable || !onToggleTraffic}
+            trackColor={{
+              false: theme.cardBgSecondary,
+              true: theme.primaryLight,
+            }}
+            thumbColor={
+              trafficEnabled && trafficAvailable ? theme.primary : theme.white
+            }
+            ios_backgroundColor={
+              Platform.OS === "ios" ? theme.cardBgSecondary : undefined
+            }
+          />
+        </View>
+        <View style={[s.separator, { backgroundColor: theme.borderColor }]} />
 
         {/* Theme previews */}
         <ScrollView
@@ -350,6 +409,31 @@ const s = StyleSheet.create({
   },
   title: { fontSize: 20, fontFamily: fonts.bold },
   closeBtn: { borderRadius: 20, padding: 6 },
+  trafficRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 16,
+  },
+  trafficIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trafficTextWrap: { flex: 1 },
+  trafficTitle: { fontSize: 14, fontFamily: fonts.semibold, marginBottom: 2 },
+  trafficSubtitle: { fontSize: 12, fontFamily: fonts.regular },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginBottom: 16,
+    opacity: 0.6,
+  },
   previewRow: {
     flexDirection: "row",
     flexWrap: "wrap",
