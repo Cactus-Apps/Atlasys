@@ -182,7 +182,9 @@ export function ProfileScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
       >
-        <TouchableOpacity onPress={() => router.navigate("/account")}>
+        <TouchableOpacity
+          onPress={() => router.navigate("/account")}
+        >
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <Avatar

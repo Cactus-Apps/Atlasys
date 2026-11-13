@@ -3,5 +3,5 @@
 import { Redirect } from "expo-router";
 
 export default function IndexRedirect() {
-  return <Redirect href="/(tabs)/mapscreen" />;
+  return <Redirect href="/mapscreen" />;
 }

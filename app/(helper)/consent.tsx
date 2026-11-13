@@ -49,18 +49,18 @@ export default function ConsentUpdateScreen() {
     } catch (error) {
       Sentry.captureException(error);
     }
-    router.replace(user ? "/(tabs)/mapscreen" : "/auth");
+    router.replace(user ? "/mapscreen" : "/auth");
   }, [acceptedTerms, acceptedPrivacy, user, router]);
 
   const openTerms = () =>
     router.push({
-      pathname: "/(legal)/Terms_of_Use",
+      pathname: "/Terms_of_Use",
       params: { from: "reconsent" },
     });
 
   const openPrivacy = () =>
     router.push({
-      pathname: "/(legal)/Privacy_Policy",
+      pathname: "/Privacy_Policy",
       params: { from: "reconsent" },
     });
 

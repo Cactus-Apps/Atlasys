@@ -112,7 +112,7 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)/profilescreen")}
+          onPress={() => router.push("/profilescreen")}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel={t("Accessibility_back")}

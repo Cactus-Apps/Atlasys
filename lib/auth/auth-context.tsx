@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await syncConsentToServer(data.user.id, supabase);
       }
       if (data.user) {
-        router.replace("/(tabs)/mapscreen");
+        router.replace("/mapscreen");
       }
     } catch (err) {
       Sentry.captureException(err);

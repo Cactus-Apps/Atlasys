@@ -14,7 +14,20 @@ import {
   StatusBar,
 } from "react-native";
 
-const PRIVACY_SECTION_KEYS = ["0", "1", "2", "2a", "3", "4", "5", "6", "7", "8", "9", "10"];
+const PRIVACY_SECTION_KEYS = [
+  "0",
+  "1",
+  "2",
+  "2a",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+];
 
 export default function Privacy_Policy() {
   const { t } = useTranslation();
@@ -93,14 +106,7 @@ export default function Privacy_Policy() {
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
-  const {
-    bg,
-    cardBg,
-    textColor,
-    subTextColor,
-    borderColor,
-    isModern,
-  } = theme;
+  const { bg, cardBg, textColor, subTextColor, borderColor, isModern } = theme;
 
   return StyleSheet.create({
     root: {

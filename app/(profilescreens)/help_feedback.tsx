@@ -50,7 +50,7 @@ const HelpFeedback = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          onPress={() => router.navigate("/profilescreen")}
           style={styles.backButton}
         >
           <ChevronLeft size={24} color={theme.textColor} />

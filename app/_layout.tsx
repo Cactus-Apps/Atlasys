@@ -194,10 +194,14 @@ function AppBootstrap() {
   useEffect(() => {
     if (!storeReady || isLoadingUser || !i18nGate) return;
 
-    const inAuthGroup = segments[0] === "auth" || segments[0] === "(auth)";
-    const inOnboarding = segments[0] === "onboarding";
+    const inAuthGroup =
+      segments[0] === "(auth)" ||
+      (segments[0] === "(helper)" && segments[1] === "auth");
+    const inOnboarding =
+      segments[0] === "(helper)" && segments[1] === "onboarding";
     const inLegalScreen = segments[0] === "(legal)";
-    const inConsentScreen = segments[0] === "consent";
+    const inConsentScreen =
+      segments[0] === "(helper)" && segments[1] === "consent";
 
     if (inLegalScreen || inConsentScreen) {
       Promise.resolve().then(() => setRoutingReady(true));
@@ -229,7 +233,7 @@ function AppBootstrap() {
       }
 
       if (isOnboardingCompleted && user && inAuthGroup) {
-        router.replace("/(tabs)/mapscreen");
+        router.replace("/mapscreen");
         setRoutingReady(true);
         return;
       }

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
-import "./i18n";
+import "@/app/i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 

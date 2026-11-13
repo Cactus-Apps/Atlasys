@@ -48,7 +48,7 @@ import {
   VolumeX,
 } from "lucide-react-native";
 import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
-import { darken } from "./(tabs)/mapscreen";
+import { darken } from "../(tabs)/mapscreen";
 import { getInstructionText } from "@/lib/navigation/instructions";
 import {
   hasRouteInfoWidget,
@@ -287,7 +287,8 @@ export default function NavigationScreen() {
       );
     };
   }, []);
-  const destCoords = navRoute?.destinationCoords;  const mapOptions = useMemo(
+  const destCoords = navRoute?.destinationCoords;
+  const mapOptions = useMemo(
     () => ({
       style: mapStyle,
       center: coords[0] || [0, 0],
@@ -387,12 +388,7 @@ export default function NavigationScreen() {
         setSpeechErrorMsg(msg);
       }
     },
-    [
-      voiceEnabled,
-      setSpeechError,
-      setSpeechErrorMsg,
-      setSpeechNoEngine,
-    ],
+    [voiceEnabled, setSpeechError, setSpeechErrorMsg, setSpeechNoEngine],
   );
 
   const installSpeechEngine = useCallback(async () => {
@@ -1038,14 +1034,14 @@ export default function NavigationScreen() {
             {speechNoEngine && (
               <TouchableOpacity
                 onPress={installSpeechEngine}
-                style={[s.engineBtn, { backgroundColor: theme.primary || "#2563EB" }]}
+                style={[
+                  s.engineBtn,
+                  { backgroundColor: theme.primary || "#2563EB" },
+                ]}
                 accessibilityRole="button"
               >
                 <Text
-                  style={[
-                    s.engineBtnText,
-                    { color: theme.white || "#fff" },
-                  ]}
+                  style={[s.engineBtnText, { color: theme.white || "#fff" }]}
                 >
                   {t("Nav_engine_install")}
                 </Text>

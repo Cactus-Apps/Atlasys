@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atlasys",
     "slug": "atlasys",
-    "version": "1.9.3",
+    "version": "1.9.4",
     "orientation": "portrait",
     "icon": "assets/images/icons/adaptive-icon.png",
     "scheme": "atlasys",

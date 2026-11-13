@@ -324,7 +324,7 @@ function EmptyState({ dark }: { dark: boolean }) {
           paddingHorizontal: 30,
           elevation: 3,
         }}
-        onPress={() => router.push("/(tabs)/mapscreen")}
+        onPress={() => router.push("/mapscreen")}
       >
         <Text
           style={{
@@ -650,7 +650,7 @@ export default function Storage() {
         }}
       >
         <TouchableOpacity
-          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          onPress={() => router.navigate("/profilescreen")}
           style={{ padding: 8 }}
         >
           <ChevronLeft size={24} color={theme.textColor} />

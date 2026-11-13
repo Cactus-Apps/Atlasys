@@ -41,7 +41,7 @@ export default function Info() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.navigate("/(tabs)/profilescreen")}
+          onPress={() => router.navigate("/profilescreen")}
           style={styles.backButton}
         >
           <ChevronLeft size={24} color={textColor} />
@@ -103,7 +103,7 @@ export default function Info() {
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.navigate("/(legal)/Privacy_Policy")}
+              onPress={() => router.navigate("/Privacy_Policy")}
             >
               <View
                 style={[
@@ -123,7 +123,7 @@ export default function Info() {
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.navigate("/(legal)/Terms_of_Use")}
+              onPress={() => router.navigate("/Terms_of_Use")}
             >
               <View
                 style={[
@@ -144,7 +144,7 @@ export default function Info() {
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() =>
-                router.navigate("/(legal)/Accessibility_Statement")
+                router.navigate("/Accessibility_Statement")
               }
             >
               <View

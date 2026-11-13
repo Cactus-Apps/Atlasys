@@ -12,12 +12,12 @@ export default function AuthCallback() {
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        router.replace("/(tabs)/mapscreen");
+        router.replace("/mapscreen");
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace("/(tabs)/mapscreen");
+      if (session) router.replace("/mapscreen");
     });
 
     return () => data.subscription.unsubscribe();

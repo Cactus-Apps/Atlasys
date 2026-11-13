@@ -419,7 +419,7 @@ export default function CityScreen() {
       setSelectedPOI(null);
       return;
     }
-    router.navigate("/(tabs)/saved");
+    router.navigate("/saved");
   };
 
   const toggleFavorite = () => {

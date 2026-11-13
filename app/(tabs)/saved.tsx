@@ -138,7 +138,7 @@ export default function SavedScreen() {
   const handleMarkerNavigate = (marker: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
-      pathname: "/(tabs)/mapscreen",
+      pathname: "/mapscreen",
       params: {
         destLat: String(marker.latitude),
         destLon: String(marker.longitude),
@@ -161,7 +161,7 @@ export default function SavedScreen() {
   const handleNavigate = (place: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
-      pathname: "/(tabs)/mapscreen",
+      pathname: "/mapscreen",
       params: {
         destLat: String(place.latitude),
         destLon: String(place.longitude),
@@ -207,7 +207,7 @@ export default function SavedScreen() {
   const handlePoiNavigate = (poi: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
-      pathname: "/(tabs)/mapscreen",
+      pathname: "/mapscreen",
       params: {
         poiName: poi.name,
         poiLat: String(poi.latitude),
@@ -595,7 +595,7 @@ export default function SavedScreen() {
               <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
-                onPress={() => router.push("/(tabs)/mapscreen")}
+                onPress={() => router.push("/mapscreen")}
               >
                 <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
               </TouchableOpacity>
@@ -624,7 +624,7 @@ export default function SavedScreen() {
               <Text style={styles.emptySub}>{t("Explore_map_to_save")}</Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
-                onPress={() => router.push("/(tabs)/mapscreen")}
+                onPress={() => router.push("/mapscreen")}
               >
                 <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
               </TouchableOpacity>
@@ -659,7 +659,7 @@ export default function SavedScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.exploreBtn}
-                onPress={() => router.push("/(tabs)/mapscreen")}
+                onPress={() => router.push("/mapscreen")}
               >
                 <Text style={styles.exploreBtnText}>{t("Go_to_Map")}</Text>
               </TouchableOpacity>

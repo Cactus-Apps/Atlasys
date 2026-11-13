@@ -428,7 +428,7 @@ export default function OnboardingScreen() {
                     style={s.checkboxLink}
                     onPress={() =>
                       router.push({
-                        pathname: "/(legal)/Terms_of_Use",
+                        pathname: "/Terms_of_Use",
                         params: { from: "consent" },
                       })
                     }
@@ -463,7 +463,7 @@ export default function OnboardingScreen() {
                     style={s.checkboxLink}
                     onPress={() =>
                       router.push({
-                        pathname: "/(legal)/Privacy_Policy",
+                        pathname: "/Privacy_Policy",
                         params: { from: "consent" },
                       })
                     }
