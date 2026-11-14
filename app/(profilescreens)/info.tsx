@@ -26,6 +26,7 @@ import * as Application from "expo-application";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/lib/theme";
 import { fonts } from "@/lib/fonts";
+import { PromoCard } from "@/components/overlays/promoCard";
 
 export default function Info() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function Info() {
         <View style={styles.brandingSection}>
           <View style={styles.logoWrapper}>
             <Image
-              source={require("../assets/images/icons/cactus_apps-logo.png")}
+              source={require("@/assets/images/icons/cactus_apps-logo.png")}
               style={styles.logo}
             />
           </View>
@@ -85,6 +86,19 @@ export default function Info() {
               <Instagram size={20} color={textColor} />
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("Info_section_more_apps")}</Text>
+          <PromoCard
+            badge={t("Info_promo_badge_from_makers")}
+            title={t("Info_promo_nowhere_title")}
+            tagline={t("Info_promo_nowhere_tagline")}
+            cta={t("Info_promo_cta_get")}
+            url="https://github.com/Cactus-Apps/Nowhere/releases/"
+            logo={require("@/assets/images/Nowhere_logo_half_rectangle.png")}
+            preview={require("@/assets/images/nowhere_fake_drive.jpg")}
+          />
         </View>
 
         <View style={styles.section}>
@@ -143,9 +157,7 @@ export default function Info() {
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() =>
-                router.navigate("/Accessibility_Statement")
-              }
+              onPress={() => router.navigate("/Accessibility_Statement")}
             >
               <View
                 style={[

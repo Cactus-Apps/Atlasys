@@ -207,7 +207,7 @@ export default function AnnouncementModal({ announcements, onClose }: Props) {
               style={[s.storeLink, { backgroundColor: theme.orionStore }]}
             >
               <Image
-                source={require("../../assets/images/icon-foreground.png")}
+                source={require("@/assets/images/icon-foreground.png")}
                 style={{ height: 43, width: 43 }}
               />
               <Text style={[s.storeLinkText, { color: theme.white }]}>

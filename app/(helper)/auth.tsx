@@ -148,7 +148,7 @@ export default function AuthScreen() {
           <Animated.View entering={FadeInDown.delay(200)} style={styles.header}>
             <View style={styles.logoOuter}>
               <Image
-                source={require("../assets/images/icons/adaptive-icon.png")}
+                source={require("@/assets/images/icons/adaptive-icon.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />

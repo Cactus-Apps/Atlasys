@@ -105,7 +105,7 @@ function VisualPlaceholder({
     return (
       <View style={[s.frame, { borderColor: accent + "40" }]}>
         <Image
-          source={require("../assets/images/map-demo.jpg")}
+          source={require("@/assets/images/map-demo.jpg")}
           style={s.mapPreview}
           resizeMode="cover"
         />
@@ -118,7 +118,7 @@ function VisualPlaceholder({
       <View style={[s.frame, { borderColor: accent + "40" }]}>
         <View style={s.routeCard}>
           <Image
-            source={require("../assets/images/route-demo.jpg")}
+            source={require("@/assets/images/route-demo.jpg")}
             style={s.mapPreview2}
             resizeMode="cover"
           />
