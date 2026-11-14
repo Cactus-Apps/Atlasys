@@ -92,8 +92,11 @@ import MapStyleSheet, {
   MapTheme,
 } from "@/components/sheets_modal/MapStyleSheet";
 import TrafficLayer from "@/components/map/TrafficLayer";
+import TransitRouteLayer from "@/components/map/TransitRouteLayer";
 import { useTrafficConfig } from "@/lib/traffic/useTrafficConfig";
 import { TRAFFIC_LEGAL_URL } from "@/lib/traffic/config";
+import { TRANSIT_ATTRIBUTION_URL } from "@/lib/transit/config";
+import type { TransitItinerary } from "@/lib/transit/types";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import RouteSheet, {
@@ -267,6 +270,8 @@ export default function MapScreen() {
   const [pitch, setPitch] = useState(false);
   const lastLocRef = useRef<Location.LocationObject | null>(null);
   const [route, setRoute] = useState<any>(null);
+  const [transitItinerary, setTransitItinerary] =
+    useState<TransitItinerary | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const hasCenteredOnce = useRef(false);
   const initialCenter = useMemo<[number, number]>(() => {
@@ -506,6 +511,32 @@ export default function MapScreen() {
     setNavDisclaimerOpen(false);
     startNavigation();
   }, [setNavDisclaimerAccepted, startNavigation]);
+
+  useEffect(() => {
+    if (!mapReady || !transitItinerary || !mapRef.current) return;
+
+    const coords = transitItinerary.legs
+      .flatMap((leg) => leg.geometry)
+      .filter(
+        ([lon, lat]) =>
+          Number.isFinite(lon) &&
+          Number.isFinite(lat) &&
+          (lon !== 0 || lat !== 0),
+      );
+    if (!coords.length) return;
+
+    const lons = coords.map(([lon]) => lon);
+    const lats = coords.map(([, lat]) => lat);
+    mapRef.current.fitBounds(
+      [
+        Math.min(...lons),
+        Math.min(...lats),
+        Math.max(...lons),
+        Math.max(...lats),
+      ],
+      { padding: 80, duration: 800 },
+    );
+  }, [transitItinerary, mapReady]);
 
   const originalPoiFiltersRef = useRef<Record<string, unknown>>({});
   const originalMinzoomRef = useRef<Record<string, number>>({});
@@ -1592,6 +1623,7 @@ export default function MapScreen() {
 
   const handleRouteToCustomPlace = (lat: number, lon: number, name: string) => {
     setRoute(null);
+    setTransitItinerary(null);
     setDistanceInfo(null);
     setRouteStops([]);
     setRouteStart(
@@ -2665,7 +2697,10 @@ export default function MapScreen() {
           <NavigationSideBar
             markerPos={markerPos}
             resetPitch={resetPitch}
-            setRoute={setRoute}
+            setRoute={(nextRoute: any) => {
+              setRoute(nextRoute);
+              if (!nextRoute) setTransitItinerary(null);
+            }}
             setDistanceInfo={setDistanceInfo}
             setRouteEnd={setRouteEnd}
             setRouteStart={setRouteStart}
@@ -2686,6 +2721,7 @@ export default function MapScreen() {
             }}
             onRouteStart={(start, end) => {
               setRoute(null);
+              setTransitItinerary(null);
               setDistanceInfo(null);
               setRouteStops([]);
               setRouteStart(start);
@@ -2781,6 +2817,9 @@ export default function MapScreen() {
                       <View style={styles.headerActions}>
                         <TouchableOpacity
                           onPress={() => {
+                            setRoute(null);
+                            setTransitItinerary(null);
+                            setDistanceInfo(null);
                             setRouteStops([]);
                             setRouteStart(
                               markerPos
@@ -3079,8 +3118,14 @@ export default function MapScreen() {
               setRouteEnd(null);
               setRouteStops([]);
               setRoute(null);
+              setTransitItinerary(null);
               setDistanceInfo(null);
             }}
+            onClearRoute={() => {
+              setRoute(null);
+              setDistanceInfo(null);
+            }}
+            onTransitItineraryChange={setTransitItinerary}
             onPickStart={() => setPickMode("start")}
             onPickEnd={() => setPickMode("end")}
             onPickStop={(index) => {
@@ -3221,6 +3266,9 @@ export default function MapScreen() {
               </View>
             </View>
           </Modal>
+          <TransitRouteLayer
+            itinerary={mapReady ? transitItinerary : null}
+          />
           {mapReady &&
             route?.map((r: any, i: number) =>
               r.geometry ? (
@@ -3276,6 +3324,31 @@ export default function MapScreen() {
                 ]}
               >
                 © TomTom
+              </Text>
+            </TouchableOpacity>
+          )}
+          {transitItinerary && (
+            <TouchableOpacity
+              style={[
+                styles.trafficAttribution,
+                {
+                  bottom: trafficVisible ? 40 : 12,
+                  backgroundColor: theme.isDark
+                    ? "rgba(0,0,0,0.55)"
+                    : "rgba(255,255,255,0.85)",
+                },
+              ]}
+              onPress={() => Linking.openURL(TRANSIT_ATTRIBUTION_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="Transitous"
+            >
+              <Text
+                style={[
+                  styles.trafficAttributionText,
+                  { color: theme.isDark ? theme.white : theme.textColor },
+                ]}
+              >
+                {t("Route_transit_attribution")}
               </Text>
             </TouchableOpacity>
           )}

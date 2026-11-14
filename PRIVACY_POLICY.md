@@ -1,6 +1,6 @@
 # ATLASYS – PRIVACY POLICY
 
-Last updated: September 2026 · Version 1.2
+Last updated: November 2026 · Version 1.3
 Controller: Cactus Apps · cactus_apps@proton.me
 Open Source: github.com/Cactus-Apps/Atlasys
 
@@ -44,6 +44,13 @@ navigation features.
 For route calculation, start and destination coordinates are sent to OSRM
 (routing.openstreetmap.de), an open-source routing server. These coordinates
 are transmitted without any identifier linking them to your account or identity.
+
+For public transport planning, start, destination, via-stop coordinates and the
+requested departure time are sent to Transitous (api.transitous.org), an
+open-source routing service based on MOTIS. These coordinates are transmitted
+without any identifier linking them to your account or identity. Transitous
+usage is subject to its own upstream data sources; see
+transitous.org/sources for details.
 
 For approximate country-level positioning on first launch (before GPS is ready),
 a one-time request is made to ipapi.co using your IP address. No personal data
@@ -145,6 +152,10 @@ openfreemap.org / openstreetmap.org
 • OSRM – routing.openstreetmap.de (route calculation)
 Start and destination coordinates transmitted without any identity data.
 
+• Transitous / MOTIS – api.transitous.org (public transport planning)
+Start, destination and via-stop coordinates plus departure time. No identity
+data transmitted. transitous.org
+
 • Nominatim – nominatim.openstreetmap.org (reverse geocoding)
 Coordinates only. No personal data transmitted.
 
@@ -245,4 +256,4 @@ Cactus Apps
 Email: cactus_apps@proton.me
 GitHub: github.com/Cactus-Apps/Atlasys
 
-##### Last updated: September 2026 · Version 1.2
+##### Last updated: November 2026 · Version 1.3

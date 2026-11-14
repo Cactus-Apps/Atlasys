@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/react-native";
 import * as Application from "expo-application";
 import { Platform } from "react-native";
 
-export const CONSENT_VERSION = "1.2";
+export const CONSENT_VERSION = "1.3";
 export const CONSENT_KEY = "atlasys_consent_v" + CONSENT_VERSION;
 export const APP_VERSION = Application.nativeApplicationVersion ?? "dev";
 

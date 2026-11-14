@@ -36,6 +36,7 @@ import { useAuthStore } from "@/lib/storage/zustand";
 import { fonts } from "@/lib/fonts";
 import { useSharingStore } from "@/lib/sharing/state";
 import { killSwitchText, SUPPORT_EMAIL } from "@/lib/sharing/killSwitch";
+import { withSeasonalHat } from "@/lib/avatar/avatar-utils";
 
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -193,13 +194,15 @@ export function ProfileScreen() {
                 size={90}
                 accessories="none"
                 hats="none"
-                {...(avatarConfig
-                  ? Object.fromEntries(
-                      Object.entries(avatarConfig).filter(
-                        ([k]) => k !== "seed",
-                      ),
-                    )
-                  : {})}
+                {...withSeasonalHat(
+                  avatarConfig
+                    ? Object.fromEntries(
+                        Object.entries(avatarConfig).filter(
+                          ([k]) => k !== "seed",
+                        ),
+                      )
+                    : {},
+                )}
               />
             </View>
             <View style={styles.profileInfo}>

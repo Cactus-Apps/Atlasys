@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import BottomSheet, {
   BottomSheetScrollView,
@@ -22,6 +23,8 @@ import {
   ArrowLeftRight,
   Plus,
   X,
+  Bus,
+  CalendarClock,
 } from "lucide-react-native";
 import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
@@ -30,6 +33,12 @@ import {
   placeCategoryColor,
   placeCategoryMeta,
 } from "@/components/sheets_modal/DropPinSheet";
+import TransitDateTimePicker from "@/components/transit/TransitDateTimePicker";
+import TransitItineraryCard from "@/components/transit/TransitItineraryCard";
+import TransitItineraryDetails from "@/components/transit/TransitItineraryDetails";
+import { fetchTransitItineraries } from "@/lib/transit/client";
+import { TRANSIT_ENABLED } from "@/lib/transit/config";
+import type { TransitItinerary } from "@/lib/transit/types";
 
 type RoutePoint = {
   label: string;
@@ -42,7 +51,7 @@ export type RouteStop = {
   coordinate?: [number, number];
   isHome?: boolean;
 };
-type Profile = "driving" | "cycling" | "walking";
+type Profile = "driving" | "cycling" | "walking" | "transit";
 type FieldName = "start" | "end" | "stop";
 
 interface Props {
@@ -55,7 +64,7 @@ interface Props {
   onPickEnd: () => void;
   onPickStop: (index: number) => void;
   onSwap: () => void;
-  onRouteReady: (routes: any[], profile: Profile) => void;
+  onRouteReady: (routes: any[], profile: OsrmProfile) => void;
   pickMode: FieldName | null;
   pickStopIndex: number | null;
   onSetStart: (point: RoutePoint) => void;
@@ -65,17 +74,43 @@ interface Props {
   onRemoveStop: (index: number) => void;
   onStartNavigation: () => void;
   customPlaces: CustomPlace[];
+  onTransitItineraryChange?: (itinerary: TransitItinerary | null) => void;
+  onClearRoute?: () => void;
 }
 
 const PROFILE_DEFS: {
   key: Profile;
   labelKey: string;
   Icon: any;
+  color: string;
 }[] = [
-  { key: "driving", labelKey: "Route_profile_driving", Icon: Car },
-  { key: "cycling", labelKey: "Route_profile_cycling", Icon: Bike },
-  { key: "walking", labelKey: "Route_profile_walking", Icon: Footprints },
+  {
+    key: "driving",
+    labelKey: "Route_profile_driving",
+    Icon: Car,
+    color: "#3B82F6",
+  },
+  {
+    key: "cycling",
+    labelKey: "Route_profile_cycling",
+    Icon: Bike,
+    color: "#10B981",
+  },
+  {
+    key: "walking",
+    labelKey: "Route_profile_walking",
+    Icon: Footprints,
+    color: "#F59E0B",
+  },
+  {
+    key: "transit",
+    labelKey: "Route_profile_transit",
+    Icon: Bus,
+    color: "#EF4444",
+  },
 ];
+
+const MODE_INDICATOR_INSET = 12;
 
 type SearchResult = { display_name: string; lat: string; lon: string };
 
@@ -101,27 +136,84 @@ export default function RouteSheet({
   onRemoveStop,
   onStartNavigation,
   customPlaces,
+  onTransitItineraryChange,
+  onClearRoute,
 }: Props) {
   const sheetRef = useRef<BottomSheet>(null);
+  const requestIdRef = useRef(0);
   const { t, i18n } = useTranslation();
   const profiles = React.useMemo(
     () =>
-      PROFILE_DEFS.map((p) => ({
+      (TRANSIT_ENABLED
+        ? PROFILE_DEFS
+        : PROFILE_DEFS.filter((item) => item.key !== "transit")
+      ).map((p) => ({
         ...p,
         label: t(p.labelKey),
       })),
     [t],
   );
   const [profile, setProfile] = useState<Profile>("driving");
+  const [modeRowWidth, setModeRowWidth] = useState(0);
+  const [modeIndicatorX] = useState(() => new Animated.Value(0));
   const [loading, setLoading] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{
     distance: number;
     duration: number;
   } | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [transitDeparture, setTransitDeparture] = useState(() => new Date());
+  const [transitPickerOpen, setTransitPickerOpen] = useState(false);
+  const [transitItineraries, setTransitItineraries] = useState<
+    TransitItinerary[]
+  >([]);
+  const [selectedTransitId, setSelectedTransitId] = useState<string | null>(
+    null,
+  );
+  const [transitDetailsOpen, setTransitDetailsOpen] = useState(false);
 
   const theme = useAppTheme();
   const s = getStyles(theme);
+
+  const selectedTransitItinerary = React.useMemo(
+    () =>
+      transitItineraries.find((item) => item.id === selectedTransitId) ?? null,
+    [transitItineraries, selectedTransitId],
+  );
+
+  const modeIndex = Math.max(
+    profiles.findIndex((item) => item.key === profile),
+    0,
+  );
+  const activeProfile = profiles[modeIndex];
+  const profileColor =
+    PROFILE_DEFS.find((item) => item.key === profile)?.color ??
+    PROFILE_DEFS[0].color;
+  const modeTabWidth = profiles.length > 0 ? modeRowWidth / profiles.length : 0;
+  const modeLineWidth = Math.max(modeTabWidth - MODE_INDICATOR_INSET * 2, 24);
+
+  useEffect(() => {
+    if (!modeTabWidth) return;
+    Animated.timing(modeIndicatorX, {
+      toValue: modeIndex * modeTabWidth + (modeTabWidth - modeLineWidth) / 2,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [modeIndex, modeIndicatorX, modeLineWidth, modeTabWidth]);
+
+  const transitDepartureLabel = React.useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat(i18n.language || "en", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(transitDeparture);
+    } catch {
+      return transitDeparture.toLocaleString();
+    }
+  }, [transitDeparture, i18n.language]);
 
   // Search fields
   const [startQuery, setStartQuery] = useState("");
@@ -282,18 +374,49 @@ export default function RouteSheet({
 
   async function fetchRoute() {
     if (!start || !end) return;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setRouteError(null);
     try {
       const waypoints = stops
         .filter((st): st is RoutePoint => Boolean(st.coordinate))
         .map((st) => st.coordinate);
+
+      if (profile === "transit") {
+        setTransitItineraries([]);
+        setSelectedTransitId(null);
+        onTransitItineraryChange?.(null);
+
+        const itineraries = await fetchTransitItineraries(
+          start.coordinate,
+          end.coordinate,
+          waypoints,
+          transitDeparture,
+        );
+
+        if (requestId !== requestIdRef.current) return;
+        if (itineraries === null) {
+          setRouteError(t("Route_transit_error"));
+          return;
+        }
+        if (!itineraries.length) {
+          setRouteError(t("Route_transit_no_route"));
+          return;
+        }
+
+        setTransitItineraries(itineraries);
+        setSelectedTransitId(itineraries[0].id);
+        onTransitItineraryChange?.(itineraries[0]);
+        return;
+      }
+
       const routes = await fetchOsrmRoutes(
         start.coordinate,
         end.coordinate,
         profile as OsrmProfile,
         waypoints,
       );
+      if (requestId !== requestIdRef.current) return;
       if (!routes?.length) {
         setRouteError(t("Route_not_found"));
         return;
@@ -302,12 +425,17 @@ export default function RouteSheet({
         distance: routes[0].distance,
         duration: routes[0].duration,
       });
-      onRouteReady(routes, profile);
+      onRouteReady(routes, profile as OsrmProfile);
     } catch (err: any) {
       Sentry.captureException(err);
-      setRouteError(t("Route_error_load"));
+      if (requestId !== requestIdRef.current) return;
+      setRouteError(
+        profile === "transit"
+          ? t("Route_transit_error")
+          : t("Route_error_load"),
+      );
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }
 
@@ -319,7 +447,7 @@ export default function RouteSheet({
     const timer = setTimeout(() => fetchRoute(), 100);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start, end, profile, stops]);
+  }, [start, end, profile, stops, transitDeparture]);
 
   const selectResult = (
     result: SearchResult,
@@ -413,7 +541,9 @@ export default function RouteSheet({
         style={s.markerSuggestionItem}
         onPress={() => selectMarker(marker, field)}
       >
-        <View style={[s.markerSuggestionIcon, { backgroundColor: color + "20" }]}>
+        <View
+          style={[s.markerSuggestionIcon, { backgroundColor: color + "20" }]}
+        >
           {Icon ? (
             <Icon size={16} color={color} />
           ) : (
@@ -479,9 +609,7 @@ export default function RouteSheet({
         {showMarkers && (
           <>
             <View style={s.suggestSectionHeader}>
-              <Text style={s.suggestSectionTitle}>
-                {t("Route_my_markers")}
-              </Text>
+              <Text style={s.suggestSectionTitle}>{t("Route_my_markers")}</Text>
             </View>
             {matching.map((m) => renderMarkerSuggestionItem(m, field))}
           </>
@@ -521,310 +649,417 @@ export default function RouteSheet({
     onClose();
     setEndQuery("");
     setStartQuery("");
+    setTransitItineraries([]);
+    setSelectedTransitId(null);
+    setTransitDetailsOpen(false);
+    onTransitItineraryChange?.(null);
   }
 
   return (
-    <BottomSheet
-      ref={sheetRef}
-      index={-1}
-      snapPoints={["25%", "40%", "48%", "55%", "80%"]}
-      onClose={onSheetClose}
-      backgroundStyle={{
-        borderTopLeftRadius: theme.isModern ? 32 : 24,
-        borderTopRightRadius: theme.isModern ? 32 : 24,
-        backgroundColor: theme.bg,
-      }}
-      handleIndicatorStyle={{ backgroundColor: theme.subTextColor, width: 40 }}
-      keyboardBehavior="extend"
-    >
-      <BottomSheetScrollView
-        contentContainerStyle={s.container}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <BottomSheet
+        ref={sheetRef}
+        index={-1}
+        snapPoints={["25%", "40%", "48%", "55%", "80%"]}
+        onClose={onSheetClose}
+        backgroundStyle={{
+          borderTopLeftRadius: theme.isModern ? 32 : 24,
+          borderTopRightRadius: theme.isModern ? 32 : 24,
+          backgroundColor: theme.bg,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: theme.subTextColor,
+          width: 40,
+        }}
+        keyboardBehavior="extend"
       >
-        {/* Header */}
-        <View style={s.header}>
-          <Text style={s.title}>{t("Route_plan_title")}</Text>
-          <TouchableOpacity onPress={onSheetClose} style={s.closeBtn}>
-            <X size={20} color={theme.subTextColor} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={s.modeRow}>
-          {profiles.map(({ key, label, Icon }) => (
-            <TouchableOpacity
-              key={key}
-              style={[s.modeBtn, profile === key && s.modeBtnActive]}
-              onPress={() => {
-                setProfile(key);
-              }}
-            >
-              <Icon
-                size={20}
-                color={profile === key ? theme.white : theme.subTextColor}
-              />
-              <Text style={[s.modeLabel, profile === key && s.modeLabelActive]}>
-                {label}
-              </Text>
+        <BottomSheetScrollView
+          contentContainerStyle={s.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <View style={s.header}>
+            <Text style={s.title}>{t("Route_plan_title")}</Text>
+            <TouchableOpacity onPress={onSheetClose} style={s.closeBtn}>
+              <X size={20} color={theme.subTextColor} />
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
 
-        <View style={s.fields}>
           <View
-            style={[
-              s.fieldWrapper,
-              focusedField === "start" && s.fieldWrapperActive,
-            ]}
+            style={s.modeRow}
+            onLayout={(event) =>
+              setModeRowWidth(event.nativeEvent.layout.width)
+            }
           >
-            <View style={[s.dot, { backgroundColor: theme.success }]} />
-            <BottomSheetTextInput
-              style={s.fieldInput}
-              placeholder={t("Route_placeholder_start")}
-              placeholderTextColor={theme.subTextColor}
-              value={startQuery}
-              onChangeText={setStartQuery}
-              onFocus={() => setFocusedField("start")}
+            <View
+              style={[s.modeTrack, { backgroundColor: theme.borderColor }]}
             />
-            {searchingStart ? (
-              <ActivityIndicator size="small" color={theme.subTextColor} />
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  sheetRef.current?.snapToIndex(0);
-                  onPickStart();
-                }}
-              >
-                <MapPin
-                  size={16}
-                  color={
-                    pickMode === "start" ? theme.primary : theme.subTextColor
-                  }
-                />
-              </TouchableOpacity>
+            {profiles.map(({ key, label, Icon, color }) => {
+              const active = profile === key;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={s.modeBtn}
+                  onPress={() => {
+                    if (active) return;
+                    setProfile(key);
+                    setRouteError(null);
+                    if (key === "transit") {
+                      setRouteInfo(null);
+                      onClearRoute?.();
+                    } else {
+                      setTransitItineraries([]);
+                      setSelectedTransitId(null);
+                      onTransitItineraryChange?.(null);
+                    }
+                  }}
+                >
+                  <Icon size={20} color={active ? color : theme.subTextColor} />
+                  {active && (
+                    <Text numberOfLines={1} style={[s.modeLabel, { color }]}>
+                      {label}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            {modeRowWidth > 0 && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  s.modeIndicator,
+                  {
+                    width: modeLineWidth,
+                    backgroundColor: activeProfile?.color ?? theme.primary,
+                    transform: [{ translateX: modeIndicatorX }],
+                  },
+                ]}
+              />
             )}
           </View>
 
-          {/* Start suggestions */}
-          {renderMarkerSuggestions("start")}
+          {profile === "transit" && (
+            <TouchableOpacity
+              style={[s.dateButton, { borderColor: theme.borderColor }]}
+              onPress={() => setTransitPickerOpen(true)}
+            >
+              <CalendarClock size={17} color={profileColor} />
+              <View style={s.dateButtonText}>
+                <Text style={s.dateLabel}>{t("Route_transit_depart_at")}</Text>
+                <Text style={s.dateValue}>{transitDepartureLabel}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
-          {/* Intermediate stops */}
-          {stops.map((_stop, index) => (
-            <React.Fragment key={index}>
-              <View
-                style={[
-                  s.fieldWrapper,
-                  s.stopField,
-                  focusedField === "stop" &&
-                    focusedStopIndex === index &&
-                    s.fieldWrapperActive,
-                ]}
-              >
-                <View style={[s.dot, { backgroundColor: theme.warning }]} />
-                <BottomSheetTextInput
-                  style={s.fieldInput}
-                  placeholder={t("Route_placeholder_stop")}
-                  placeholderTextColor={theme.subTextColor}
-                  value={stopQueries[index] ?? ""}
-                  onChangeText={(v) => setStopQuery(index, v)}
-                  onFocus={() => {
-                    setFocusedField("stop");
-                    setFocusedStopIndex(index);
+          <View style={s.fields}>
+            <View
+              style={[
+                s.fieldWrapper,
+                focusedField === "start" && s.fieldWrapperActive,
+              ]}
+            >
+              <View style={[s.dot, { backgroundColor: theme.success }]} />
+              <BottomSheetTextInput
+                style={s.fieldInput}
+                placeholder={t("Route_placeholder_start")}
+                placeholderTextColor={theme.subTextColor}
+                value={startQuery}
+                onChangeText={setStartQuery}
+                onFocus={() => setFocusedField("start")}
+              />
+              {searchingStart ? (
+                <ActivityIndicator size="small" color={theme.subTextColor} />
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    sheetRef.current?.snapToIndex(0);
+                    onPickStart();
                   }}
-                />
-                {stopSearching[index] ? (
-                  <ActivityIndicator size="small" color={theme.subTextColor} />
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => {
+                >
+                  <MapPin
+                    size={16}
+                    color={
+                      pickMode === "start" ? theme.primary : theme.subTextColor
+                    }
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Start suggestions */}
+            {renderMarkerSuggestions("start")}
+
+            {/* Intermediate stops */}
+            {stops.map((_stop, index) => (
+              <React.Fragment key={index}>
+                <View
+                  style={[
+                    s.fieldWrapper,
+                    s.stopField,
+                    focusedField === "stop" &&
+                      focusedStopIndex === index &&
+                      s.fieldWrapperActive,
+                  ]}
+                >
+                  <View style={[s.dot, { backgroundColor: theme.warning }]} />
+                  <BottomSheetTextInput
+                    style={s.fieldInput}
+                    placeholder={t("Route_placeholder_stop")}
+                    placeholderTextColor={theme.subTextColor}
+                    value={stopQueries[index] ?? ""}
+                    onChangeText={(v) => setStopQuery(index, v)}
+                    onFocus={() => {
                       setFocusedField("stop");
                       setFocusedStopIndex(index);
-                      sheetRef.current?.snapToIndex(0);
-                      onPickStop(index);
                     }}
-                  >
-                    <MapPin
-                      size={16}
-                      color={
-                        pickMode === "stop" && pickStopIndex === index
-                          ? theme.primary
-                          : theme.subTextColor
-                      }
+                  />
+                  {stopSearching[index] ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={theme.subTextColor}
                     />
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setFocusedField("stop");
+                        setFocusedStopIndex(index);
+                        sheetRef.current?.snapToIndex(0);
+                        onPickStop(index);
+                      }}
+                    >
+                      <MapPin
+                        size={16}
+                        color={
+                          pickMode === "stop" && pickStopIndex === index
+                            ? theme.primary
+                            : theme.subTextColor
+                        }
+                      />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => onRemoveStop(index)}
+                    accessibilityLabel={t("Route_remove_stop")}
+                  >
+                    <X size={16} color={theme.subTextColor} />
                   </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => onRemoveStop(index)}
-                  accessibilityLabel={t("Route_remove_stop")}
-                >
-                  <X size={16} color={theme.subTextColor} />
-                </TouchableOpacity>
-              </View>
-              {focusedStopIndex === index &&
-                renderMarkerSuggestions("stop")}
-            </React.Fragment>
-          ))}
+                </View>
+                {focusedStopIndex === index && renderMarkerSuggestions("stop")}
+              </React.Fragment>
+            ))}
 
-          {/* Connector + Swap + Add stop */}
-          <View style={s.connectorRow}>
-            <View style={s.connectorLine} />
-            <TouchableOpacity onPress={onSwap} style={s.swapBtn}>
-              <ArrowLeftRight size={16} color={theme.subTextColor} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onAddStop}
-              style={s.addBtn}
-              accessibilityLabel={t("Route_add_stop")}
-            >
-              <Plus size={18} color={theme.white} />
-            </TouchableOpacity>
-          </View>
-
-          <View
-            style={[
-              s.fieldWrapper,
-              focusedField === "end" && s.fieldWrapperActive,
-            ]}
-          >
-            <View style={[s.dot, { backgroundColor: theme.danger }]} />
-            <BottomSheetTextInput
-              style={s.fieldInput}
-              placeholder={t("Route_placeholder_end")}
-              placeholderTextColor={theme.subTextColor}
-              value={endQuery}
-              onChangeText={setEndQuery}
-              onFocus={() => setFocusedField("end")}
-            />
-            {searchingEnd ? (
-              <ActivityIndicator size="small" color={theme.subTextColor} />
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  sheetRef.current?.snapToIndex(0);
-                  onPickEnd();
-                }}
-              >
-                <MapPin
-                  size={16}
-                  color={
-                    pickMode === "end" ? theme.primary : theme.subTextColor
-                  }
-                />
+            {/* Connector + Swap + Add stop */}
+            <View style={s.connectorRow}>
+              <View style={s.connectorLine} />
+              <TouchableOpacity onPress={onSwap} style={s.swapBtn}>
+                <ArrowLeftRight size={16} color={profileColor} />
               </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Destination suggestions */}
-          {renderMarkerSuggestions("end")}
-        </View>
-
-        {pickMode && (
-          <View style={s.pickHint}>
-            <Navigation size={16} color={theme.primary} />
-            <Text style={s.pickHintText}>
-              {pickMode === "start"
-                ? t("Route_pick_map_tap_hint_start")
-                : pickMode === "end"
-                  ? t("Route_pick_map_tap_hint_end")
-                  : t("Route_pick_map_tap_hint_stop")}
-            </Text>
-          </View>
-        )}
-
-        {loading && (
-          <View style={s.infoBox}>
-            <ActivityIndicator color={theme.primary} />
-            <Text style={s.infoText}>{t("Route_calculating")}</Text>
-          </View>
-        )}
-        {!loading && routeInfo && (
-          <View style={s.resultBox}>
-            <View style={s.resultItem}>
-              <Text style={s.resultValue}>
-                {formatDuration(routeInfo.duration)}
-              </Text>
-              <Text style={s.resultLabel}>{t("Route_duration_label")}</Text>
+              <TouchableOpacity
+                onPress={onAddStop}
+                style={[s.addBtn, { backgroundColor: profileColor }]}
+                accessibilityLabel={t("Route_add_stop")}
+              >
+                <Plus size={18} color={theme.white} />
+              </TouchableOpacity>
             </View>
-            <View style={s.resultDivider} />
-            <View style={s.resultItem}>
-              <Text style={s.resultValue}>
-                {formatDistance(routeInfo.distance)}
-              </Text>
-              <Text style={s.resultLabel}>{t("Route_distance_label")}</Text>
-            </View>
-          </View>
-        )}
-        {!loading && routeInfo && start && end && (
-          <TouchableOpacity
-            onPress={onStartNavigation}
-            style={{
-              marginTop: 12,
-              backgroundColor: theme.success,
-              borderRadius: 14,
-              paddingVertical: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-            }}
-          >
-            <Navigation size={20} color={theme.white} />
-            <Text
-              style={{
-                color: theme.white,
-                fontFamily: fonts.bold,
-                fontSize: 16,
-              }}
+
+            <View
+              style={[
+                s.fieldWrapper,
+                focusedField === "end" && s.fieldWrapperActive,
+              ]}
             >
-              {t("Poi_start_route")}
-            </Text>
-          </TouchableOpacity>
-        )}
-        {!loading && routeError && (
-          <View style={s.errorBox}>
-            <Text style={s.errorText}>{routeError}</Text>
-          </View>
-        )}
-        {start && end && (
-          <TouchableOpacity
-            onPress={fetchRoute}
-            style={{
-              marginTop: 16,
-              backgroundColor: theme.primary,
-              borderRadius: 14,
-              paddingVertical: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator color={theme.white} />
-            ) : (
-              <>
-                <Navigation size={20} color={theme.white} />
-                <Text
-                  style={{
-                    color: theme.white,
-                    fontFamily: fonts.bold,
-                    fontSize: 16,
+              <View style={[s.dot, { backgroundColor: theme.danger }]} />
+              <BottomSheetTextInput
+                style={s.fieldInput}
+                placeholder={t("Route_placeholder_end")}
+                placeholderTextColor={theme.subTextColor}
+                value={endQuery}
+                onChangeText={setEndQuery}
+                onFocus={() => setFocusedField("end")}
+              />
+              {searchingEnd ? (
+                <ActivityIndicator size="small" color={theme.subTextColor} />
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    sheetRef.current?.snapToIndex(0);
+                    onPickEnd();
                   }}
                 >
-                  {t("Route_calculate_button")}
+                  <MapPin
+                    size={16}
+                    color={
+                      pickMode === "end" ? theme.primary : theme.subTextColor
+                    }
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Destination suggestions */}
+            {renderMarkerSuggestions("end")}
+          </View>
+
+          {pickMode && (
+            <View style={s.pickHint}>
+              <Navigation size={16} color={theme.primary} />
+              <Text style={s.pickHintText}>
+                {pickMode === "start"
+                  ? t("Route_pick_map_tap_hint_start")
+                  : pickMode === "end"
+                    ? t("Route_pick_map_tap_hint_end")
+                    : t("Route_pick_map_tap_hint_stop")}
+              </Text>
+            </View>
+          )}
+
+          {loading && (
+            <View style={s.infoBox}>
+              <ActivityIndicator color={theme.primary} />
+              <Text style={s.infoText}>
+                {profile === "transit"
+                  ? t("Route_transit_loading")
+                  : t("Route_calculating")}
+              </Text>
+            </View>
+          )}
+          {!loading &&
+            profile === "transit" &&
+            transitItineraries.length > 0 && (
+              <View style={s.transitList}>
+                <Text style={s.transitListTitle}>
+                  {t("Route_transit_results")}
                 </Text>
-              </>
+                {transitItineraries.map((itinerary) => (
+                  <TransitItineraryCard
+                    key={itinerary.id}
+                    itinerary={itinerary}
+                    selected={itinerary.id === selectedTransitId}
+                    onPress={() => {
+                      setSelectedTransitId(itinerary.id);
+                      onTransitItineraryChange?.(itinerary);
+                      setTransitDetailsOpen(true);
+                    }}
+                  />
+                ))}
+                <TouchableOpacity
+                  onPress={() => setTransitPickerOpen(true)}
+                  style={s.transitFooter}
+                >
+                  <Text style={s.transitFooterText}>
+                    {t("Route_transit_change_time")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
-          </TouchableOpacity>
-        )}
-      </BottomSheetScrollView>
-    </BottomSheet>
+          {!loading && profile !== "transit" && routeInfo && (
+            <View style={s.resultBox}>
+              <View style={s.resultItem}>
+                <Text style={s.resultValue}>
+                  {formatDuration(routeInfo.duration)}
+                </Text>
+                <Text style={s.resultLabel}>{t("Route_duration_label")}</Text>
+              </View>
+              <View style={s.resultDivider} />
+              <View style={s.resultItem}>
+                <Text style={s.resultValue}>
+                  {formatDistance(routeInfo.distance)}
+                </Text>
+                <Text style={s.resultLabel}>{t("Route_distance_label")}</Text>
+              </View>
+            </View>
+          )}
+          {!loading && profile !== "transit" && routeInfo && start && end && (
+            <TouchableOpacity
+              onPress={onStartNavigation}
+              style={{
+                marginTop: 12,
+                backgroundColor: theme.success,
+                borderRadius: 14,
+                paddingVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              <Navigation size={20} color={theme.white} />
+              <Text
+                style={{
+                  color: theme.white,
+                  fontFamily: fonts.bold,
+                  fontSize: 16,
+                }}
+              >
+                {t("Poi_start_route")}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {!loading && routeError && (
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{routeError}</Text>
+            </View>
+          )}
+          {start && end && (
+            <TouchableOpacity
+              onPress={fetchRoute}
+              style={{
+                marginTop: 16,
+                backgroundColor: theme.primary,
+                borderRadius: 14,
+                paddingVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator color={theme.white} />
+              ) : (
+                <>
+                  <Navigation size={20} color={theme.white} />
+                  <Text
+                    style={{
+                      color: theme.white,
+                      fontFamily: fonts.bold,
+                      fontSize: 16,
+                    }}
+                  >
+                    {profile === "transit"
+                      ? t("Route_transit_search_button")
+                      : t("Route_calculate_button")}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
+      {transitPickerOpen && (
+        <TransitDateTimePicker
+          visible
+          value={transitDeparture}
+          onClose={() => setTransitPickerOpen(false)}
+          onApply={(date) => {
+            setTransitDeparture(date);
+            setTransitPickerOpen(false);
+          }}
+        />
+      )}
+      <TransitItineraryDetails
+        visible={transitDetailsOpen}
+        itinerary={selectedTransitItinerary}
+        onClose={() => setTransitDetailsOpen(false)}
+      />
+    </>
   );
 }
 
 const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
   const {
     cardBg,
-    cardBgSecondary,
     textColor,
     subTextColor,
     borderColor,
@@ -833,7 +1068,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     primary,
     primaryLight,
     tabIndicator,
-    white,
     danger,
     dangerLight,
   } = theme;
@@ -848,7 +1082,26 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
     },
     title: { fontSize: 20, fontFamily: fonts.bold, color: textColor },
     closeBtn: { backgroundColor: iconBg, borderRadius: 20, padding: 6 },
-    modeRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+    modeRow: {
+      flexDirection: "row",
+      marginBottom: 20,
+      position: "relative",
+    },
+    modeTrack: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: StyleSheet.hairlineWidth,
+      borderRadius: 1,
+    },
+    modeIndicator: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      height: 3,
+      borderRadius: 2,
+    },
     modeBtn: {
       flex: 1,
       flexDirection: "row",
@@ -856,12 +1109,41 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       justifyContent: "center",
       gap: 6,
       paddingVertical: 10,
-      borderRadius: isModern ? 16 : 12,
-      backgroundColor: cardBgSecondary,
     },
-    modeBtnActive: { backgroundColor: tabIndicator },
-    modeLabel: { fontSize: 13, fontFamily: fonts.semibold, color: subTextColor },
-    modeLabelActive: { color: white },
+    modeLabel: { fontSize: 13, fontFamily: fonts.semibold },
+    dateButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: isModern ? 16 : 12,
+      borderWidth: 1.5,
+      backgroundColor: cardBg,
+      marginBottom: 14,
+    },
+    dateButtonText: { flex: 1 },
+    dateLabel: { fontSize: 11, color: subTextColor, fontFamily: fonts.medium },
+    dateValue: {
+      fontSize: 14,
+      color: textColor,
+      fontFamily: fonts.semibold,
+      marginTop: 1,
+    },
+    transitList: { marginTop: 2 },
+    transitListTitle: {
+      fontSize: 12,
+      fontFamily: fonts.bold,
+      color: subTextColor,
+      textTransform: "uppercase",
+      letterSpacing: 1,
+    },
+    transitFooter: { alignSelf: "center", paddingVertical: 12 },
+    transitFooterText: {
+      fontSize: 13,
+      color: primary,
+      fontFamily: fonts.semibold,
+    },
     fields: { marginBottom: 16 },
     fieldWrapper: {
       flexDirection: "row",
@@ -895,7 +1177,6 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       padding: 6,
     },
     addBtn: {
-      backgroundColor: primary,
       borderRadius: 20,
       padding: 6,
     },

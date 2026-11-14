@@ -30,7 +30,7 @@
 
 Atlasys is a privacy-first, open-source map app that gives you offline maps, 3D cities, smart routing and live location sharing — without ads, trackers, or anyone selling your data. Save your favourite places, plan multi-stop trips and share your exact position with friends and family end-to-end encrypted and fully GDPR compliant.
 
-Map data comes from [OpenStreetMap](https://openstreetmap.org) under the ODbL license. Routing is powered by [OSRM](https://routing.openstreetmap.de). No proprietary map APIs. No hidden trackers.
+Map data comes from [OpenStreetMap](https://openstreetmap.org) under the ODbL license. Routing is powered by [OSRM](https://routing.openstreetmap.de), public transport connections by [Transitous](https://transitous.org). No proprietary map APIs. No hidden trackers.
 
 ---
 
@@ -121,6 +121,7 @@ For security vulnerabilities, please email **cactus_apps@proton.me** instead of 
 | Navigation        | expo-router (file-based)                  |
 | Maps              | MapLibre + OpenFreeMap / bundled styles   |
 | Routing           | OSRM (routing.openstreetmap.de)           |
+| Public transport  | Transitous / MOTIS 2 (api.transitous.org) |
 | Live sharing      | Supabase Realtime + NaCl encryption       |
 | Auth & sync       | Supabase (email, Google, hCaptcha)        |
 | Offline maps      | expo-sqlite + custom MBTiles              |

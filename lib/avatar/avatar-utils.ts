@@ -1,15 +1,28 @@
-type PartOption = {
+import { isChristmasSeason } from "../parser/date";
+
+export type PartOption = {
   label: string;
   value: string;
 };
 
-type PartCategory = {
+export type PartCategory = {
   key: string;
   label: string;
   options: PartOption[];
 };
 
-const PART_CATEGORIES: PartCategory[] = [
+export function withSeasonalHat<T extends Record<string, string | undefined>>(
+  config: T,
+): T {
+  const hats = isChristmasSeason()
+    ? "santa"
+    : config.hats === "santa"
+      ? "none"
+      : (config.hats ?? "none");
+  return { ...config, hats } as T;
+}
+
+export const PART_CATEGORIES: PartCategory[] = [
   {
     key: "hair",
     label: "Hair",
@@ -83,7 +96,7 @@ const PART_CATEGORIES: PartCategory[] = [
   },
 ];
 
-const HAIR_COLORS = [
+export const HAIR_COLORS = [
   "#1a1a1a",
   "#4a3728",
   "#6b4226",
@@ -98,7 +111,7 @@ const HAIR_COLORS = [
   "#8e44ad",
 ];
 
-const BODY_COLORS = [
+export const BODY_COLORS = [
   "#ffffff",
   "#1a1a1a",
   "#808080",
@@ -113,7 +126,7 @@ const BODY_COLORS = [
   "#1abc9c",
 ];
 
-const SKIN_COLORS = [
+export const SKIN_COLORS = [
   "#fde8d0",
   "#f5d0b0",
   "#e8b890",
@@ -126,7 +139,7 @@ const SKIN_COLORS = [
   "#3e2a1a",
 ];
 
-const BG_COLORS = [
+export const BG_COLORS = [
   "#ffffff",
   "#f0f0f0",
   "#e0e0e0",
@@ -152,5 +165,5 @@ export function generateRandomAvatarConfig(): Record<string, string> {
   config.headColor = pick(SKIN_COLORS);
   config.earsColor = config.headColor;
   config.backgroundColor = pick(BG_COLORS);
-  return config;
+  return withSeasonalHat(config);
 }
