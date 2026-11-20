@@ -183,9 +183,7 @@ export function ProfileScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
       >
-        <TouchableOpacity
-          onPress={() => router.navigate("/account")}
-        >
+        <TouchableOpacity onPress={() => router.navigate("/account")}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <Avatar
@@ -274,9 +272,12 @@ export function ProfileScreen() {
           ))}
         </View>
 
-        <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.footer}
+          onPress={() => router.navigate("/test")}
+        >
           <Text style={styles.footerText}>Version {version} • Atlasys </Text>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       <Modal

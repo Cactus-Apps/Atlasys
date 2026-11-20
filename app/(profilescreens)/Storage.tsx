@@ -11,6 +11,8 @@ import {
   Download,
   Upload,
   MapPin,
+  Building2,
+  CheckCircle2,
 } from "lucide-react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { getTotalDiskCapacityAsync } from "expo-file-system/legacy";
@@ -769,7 +771,9 @@ export default function Storage() {
           </View>
         }
         ListEmptyComponent={<EmptyState dark={dark} />}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const isCity = item.kind === "city";
+          return (
           <View
             style={{
               backgroundColor: cardBg,
@@ -796,22 +800,56 @@ export default function Storage() {
                 alignItems: "center",
               }}
             >
-              <Map size={22} color="#3B82F6" />
+              {isCity ? (
+                <Building2 size={22} color="#8B5CF6" />
+              ) : (
+                <Map size={22} color="#3B82F6" />
+              )}
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontFamily: fonts.bold,
-                  color: textPrimary,
-                }}
-                numberOfLines={1}
-              >
-                {item.name}
-              </Text>
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
               >
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 15,
+                    fontFamily: fonts.bold,
+                    color: textPrimary,
+                  }}
+                  numberOfLines={1}
+                >
+                  {item.name}
+                </Text>
+                {isCity && <CheckCircle2 size={15} color="#22C55E" />}
+              </View>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                {isCity && (
+                  <View
+                    style={{
+                      backgroundColor: dark ? "#241A3A" : "#F5F3FF",
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 20,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    <Building2 size={10} color="#8B5CF6" />
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#8B5CF6",
+                        fontFamily: fonts.bold,
+                      }}
+                    >
+                      {t("Storage_city_badge")}
+                    </Text>
+                  </View>
+                )}
                 <View
                   style={{
                     backgroundColor: dark ? "#0F2847" : "#EFF6FF",
@@ -860,6 +898,17 @@ export default function Storage() {
                 {item.tileCount.toLocaleString()} {t("Storage_tiles")} ·{" "}
                 {formatDate(item.createdAt)}
               </Text>
+              {isCity && (
+                <Text style={{ fontSize: 11, color: textSecondary }}>
+                  {t("Storage_city_pois", {
+                    n: item.pois?.length ?? 0,
+                  })}{" "}
+                  ·{" "}
+                  {t("Storage_city_transit", {
+                    n: item.transit?.length ?? 0,
+                  })}
+                </Text>
+              )}
             </View>
             <TouchableOpacity
               onPress={() => handleDelete(item.id, item.name)}
@@ -875,7 +924,8 @@ export default function Storage() {
               <Trash2 size={17} color="#EF4444" />
             </TouchableOpacity>
           </View>
-        )}
+          );
+        }}
       />
     </View>
   );

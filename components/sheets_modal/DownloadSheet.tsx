@@ -17,7 +17,7 @@ interface Props {
   onDownloadComplete: () => void;
 }
 
-function ZoomStepper({
+export function ZoomStepper({
   label,
   value,
   min,

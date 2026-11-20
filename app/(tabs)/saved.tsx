@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Share,
   Linking,
@@ -20,9 +21,11 @@ import {
   ExternalLinkIcon,
   Building2,
   Globe,
+  Download,
+  CheckCircle2,
 } from "lucide-react-native";
 import { useAuthStore } from "@/lib/storage/zustand";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -43,6 +46,8 @@ import {
 import { parseOpeningHours } from "@/lib/geocoding/overpass";
 import { getPOIIcon, poiBgColor, poiColor } from "@/lib/geocoding/poiIcons";
 import { useLowPowerMode } from "@/lib/performance/lowPowerMode";
+import { useCityDownloads } from "@/lib/storage/cityDownloadStore";
+import { cityKeyFromName } from "@/lib/storage/offlineCity";
 
 export default function SavedScreen() {
   const { t, i18n } = useTranslation();
@@ -62,6 +67,17 @@ export default function SavedScreen() {
   const removePoi = useAuthStore((state) => state.removePoi);
   const customPlaces = useAuthStore((state) => state.customPlaces);
   const removeCustomPlace = useAuthStore((state) => state.removeCustomPlace);
+
+  const cityPackages = useCityDownloads((state) => state.packages);
+  const cityTasks = useCityDownloads((state) => state.tasks);
+  const startCityDownload = useCityDownloads((state) => state.start);
+  const refreshCityDownloads = useCityDownloads((state) => state.refresh);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCityDownloads();
+    }, [refreshCityDownloads]),
+  );
 
   const poiCacheKey = (osmId: number) => `poi-${osmId}`;
   const navNonceRef = useRef(0);
@@ -188,6 +204,25 @@ export default function SavedScreen() {
     router.push(`/city/${cityId}?${q}` as any);
   };
 
+  const handleCityDownload = (place: any) => {
+    if (
+      !Number.isFinite(place.latitude) ||
+      !Number.isFinite(place.longitude)
+    ) {
+      return;
+    }
+    const cityId = cityKeyFromName(place.name);
+    if (cityPackages[cityId]) return;
+    if (cityTasks[cityId]?.status === "downloading") return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    startCityDownload({
+      cityId,
+      cityName: place.name,
+      latitude: place.latitude,
+      longitude: place.longitude,
+    });
+  };
+
   const handleShare = async (item: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -238,6 +273,31 @@ export default function SavedScreen() {
         getCachedThumbnailUri(item.name, item.thumbnail))
       : null;
     const hasThumbnail = !!localThumb || !!item.thumbnail;
+
+    const cityId = cityKeyFromName(item.name);
+    const cityPackage = cityPackages[cityId];
+    const cityTask = cityTasks[cityId];
+    const isCityDownloaded = !!cityPackage;
+    const isCityDownloading = cityTask?.status === "downloading";
+
+    const offlineButton = (
+      <TouchableOpacity
+        style={styles.downloadButton}
+        onPress={(e) => {
+          e.stopPropagation();
+          handleCityDownload(item);
+        }}
+        disabled={isCityDownloaded || isCityDownloading}
+      >
+        {isCityDownloaded ? (
+          <CheckCircle2 size={18} color={theme.success} />
+        ) : isCityDownloading ? (
+          <ActivityIndicator size="small" color={theme.primary} />
+        ) : (
+          <Download size={18} color={theme.primary} />
+        )}
+      </TouchableOpacity>
+    );
 
     const nameContent = (
       <View style={styles.textContainer}>
@@ -317,15 +377,18 @@ export default function SavedScreen() {
             <View style={styles.overlay}>
               <View style={styles.topRow}>
                 {nameContent}
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleRemove(item);
-                  }}
-                >
-                  <Trash2 size={18} color={theme.danger} />
-                </TouchableOpacity>
+                <View style={styles.topActions}>
+                  {offlineButton}
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleRemove(item);
+                    }}
+                  >
+                    <Trash2 size={18} color={theme.danger} />
+                  </TouchableOpacity>
+                </View>
               </View>
               <View style={styles.bottomRow}>{actionContent}</View>
             </View>
@@ -336,15 +399,18 @@ export default function SavedScreen() {
               <View style={styles.placeholderImage}>
                 <MapPin size={32} color={theme.chevronColor} />
               </View>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleRemove(item);
-                }}
-              >
-                <Trash2 size={18} color={theme.danger} />
-              </TouchableOpacity>
+              <View style={styles.topActions}>
+                {offlineButton}
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleRemove(item);
+                  }}
+                >
+                  <Trash2 size={18} color={theme.danger} />
+                </TouchableOpacity>
+              </View>
             </View>
             {nameContent}
             {actionContent}
@@ -779,6 +845,22 @@ const getStyles = (theme: ReturnType<typeof useAppTheme>) => {
       color: "rgba(255,255,255,0.75)",
     },
     removeButton: {
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: theme.black,
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    topActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    downloadButton: {
       backgroundColor: "rgba(255, 255, 255, 0.9)",
       width: 36,
       height: 36,

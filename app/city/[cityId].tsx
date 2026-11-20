@@ -38,6 +38,8 @@ import {
   TrainFront,
   Ship,
   ArrowRight,
+  Download,
+  CheckCircle2,
 } from "lucide-react-native";
 import React, {
   useEffect,
@@ -83,6 +85,10 @@ import {
   type TransitRoute,
 } from "@/lib/geocoding/cityoverpass";
 import { safeFetchJson } from "@/lib/fetchJson";
+import { rankCityPOIs } from "@/lib/geocoding/poiRanking";
+import CityDownloadSheet from "@/components/sheets_modal/CityDownloadSheet";
+import { useCityDownloads } from "@/lib/storage/cityDownloadStore";
+import { cityKeyFromName } from "@/lib/storage/offlineCity";
 import {
   fetchPOIDetails,
   parseOpeningHours,
@@ -154,6 +160,16 @@ export default function CityScreen() {
   const lon = params.longitude ? parseFloat(params.longitude) : NaN;
   const country = params.country || "";
   const region = params.region || "";
+  const cityId = params.cityId || cityKeyFromName(cityName);
+
+  const [downloadSheetOpen, setDownloadSheetOpen] = useState(false);
+  const cityPackage = useCityDownloads((s) => s.packages[cityId]);
+  const cityTask = useCityDownloads((s) => s.tasks[cityId]);
+  const refreshCityDownloads = useCityDownloads((s) => s.refresh);
+
+  useEffect(() => {
+    refreshCityDownloads();
+  }, [refreshCityDownloads]);
 
   const [activeTab, setActiveTab] = useState<TabName>("discover");
   const [activeTransitType, setActiveTransitType] = useState<string>("all");
@@ -193,31 +209,7 @@ export default function CityScreen() {
     bottom: (1 - splitPosition.value) * SCREEN_HEIGHT,
   }));
 
-  const rankPOIs = (pois: CityPOI[]): CityPOI[] => {
-    return pois
-      .map((poi) => {
-        let score = 0;
-        if (poi.image) score += 100000;
-        if (poi.stars === 5) score += 80000;
-        if (poi.stars && poi.stars >= 4) score += 70000;
-        const cat = (poi.category || "").toLowerCase();
-        const sub = (poi.subtype || "").toLowerCase();
-        if (cat === "museum" || sub === "museum") score += 60000;
-        if (cat === "attraction" || sub === "attraction") score += 60000;
-        if (poi.cuisine || cat === "food" || sub === "restaurant")
-          score += 40000;
-        if (cat === "monument" || sub === "monument") score += 20000;
-        if (cat === "artwork" || sub === "artwork") score += 10000;
-        if (poi.description) score += 2000;
-        if (poi.website) score += 1500;
-        if (poi.wikidata || poi.wikipedia) score += 1500;
-        if (poi.phone) score += 1000;
-        if (poi.openingHours) score += 1000;
-        return { poi, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .map(({ poi }) => poi);
-  };
+  const rankPOIs = (pois: CityPOI[]): CityPOI[] => rankCityPOIs(pois);
 
   const ROUTE_TYPE_ORDER: Record<string, number> = {
     subway: 0,
@@ -1609,43 +1601,35 @@ export default function CityScreen() {
             </Text>
             {selectedPOI ? (
               <Text style={styles.headerSub}>{selectedPOI.subtype}</Text>
-            ) : country ? (
-              <Text style={styles.headerSub}>{country}</Text>
-            ) : null}
-          </View>
-          <TouchableOpacity onPress={toggleFavorite} style={styles.headerBtn}>
-            <Heart
-              size={22}
-              color={localSaved ? theme.danger : theme.subTextColor}
-              fill={localSaved ? theme.danger : "transparent"}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.headerBtn}>
-            {selectedPOI || selectedRoute ? (
-              <ChevronLeft size={24} color={theme.textColor} />
-            ) : (
-              <ArrowLeft size={24} color={theme.textColor} />
-            )}
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {selectedPOI
-                ? selectedPOI.name
-                : selectedRoute
-                  ? selectedRoute.ref || selectedRoute.name
-                  : cityName}
-            </Text>
-            {selectedPOI ? (
-              <Text style={styles.headerSub}>{selectedPOI.subtype}</Text>
             ) : selectedRoute ? (
               <Text style={styles.headerSub}>{selectedRoute.routeType}</Text>
             ) : country ? (
               <Text style={styles.headerSub}>{country}</Text>
             ) : null}
           </View>
+          <TouchableOpacity
+            onPress={() => setDownloadSheetOpen(true)}
+            disabled={!Number.isFinite(lat) || !Number.isFinite(lon)}
+            style={[
+              styles.headerBtn,
+              (!Number.isFinite(lat) || !Number.isFinite(lon)) && {
+                opacity: 0.4,
+              },
+            ]}
+          >
+            {cityPackage || cityTask?.status === "done" ? (
+              <CheckCircle2 size={22} color={theme.success} />
+            ) : (
+              <Download
+                size={22}
+                color={
+                  cityTask?.status === "downloading"
+                    ? theme.primary
+                    : theme.subTextColor
+                }
+              />
+            )}
+          </TouchableOpacity>
           <TouchableOpacity onPress={toggleFavorite} style={styles.headerBtn}>
             <Heart
               size={22}
@@ -1774,6 +1758,15 @@ export default function CityScreen() {
           </>
         )}
       </BottomPanel>
+
+      <CityDownloadSheet
+        open={downloadSheetOpen}
+        cityId={cityId}
+        cityName={cityName}
+        latitude={lat}
+        longitude={lon}
+        onClose={() => setDownloadSheetOpen(false)}
+      />
     </GestureHandlerRootView>
   );
 }

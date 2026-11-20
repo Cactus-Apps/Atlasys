@@ -20,6 +20,12 @@ export type MBTilesInfo = {
   maxZoom: number;
   bounds: [number, number, number, number]; // west, south, east, north
   tileCount: number;
+  kind?: "region" | "city";
+  cityId?: string;
+  cityName?: string;
+  pois?: unknown[];
+  transit?: unknown[];
+  downloadedAt?: number;
 };
 
 // Ensure the MBTiles directory exists

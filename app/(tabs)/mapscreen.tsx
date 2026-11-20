@@ -95,7 +95,7 @@ import TrafficLayer from "@/components/map/TrafficLayer";
 import TransitRouteLayer from "@/components/map/TransitRouteLayer";
 import { useTrafficConfig } from "@/lib/traffic/useTrafficConfig";
 import { TRAFFIC_LEGAL_URL } from "@/lib/traffic/config";
-import { TRANSIT_ATTRIBUTION_URL } from "@/lib/transit/config";
+import { TRANSIT_ATTRIBUTION_URL, TRANSIT_ENABLED } from "@/lib/transit/config";
 import type { TransitItinerary } from "@/lib/transit/types";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -273,6 +273,7 @@ export default function MapScreen() {
   const [transitItinerary, setTransitItinerary] =
     useState<TransitItinerary | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [transitMapVersion, setTransitMapVersion] = useState(0);
   const hasCenteredOnce = useRef(false);
   const initialCenter = useMemo<[number, number]>(() => {
     const pos = useAuthStore.getState().mapPosition;
@@ -447,20 +448,31 @@ export default function MapScreen() {
 
   const searchBarVisible = !drawMode && !routePickMode;
 
-  const { destLat, destLon, destName, poiName, poiLat, poiLon, poiType, poiSubclass, poiOsmId, poiOsmType, handledAt } =
-    useLocalSearchParams<{
-      destLat: string;
-      destLon: string;
-      destName: string;
-      poiName: string;
-      poiLat: string;
-      poiLon: string;
-      poiType: string;
-      poiSubclass: string;
-      poiOsmId: string;
-      poiOsmType: string;
-      handledAt: string;
-    }>();
+  const {
+    destLat,
+    destLon,
+    destName,
+    poiName,
+    poiLat,
+    poiLon,
+    poiType,
+    poiSubclass,
+    poiOsmId,
+    poiOsmType,
+    handledAt,
+  } = useLocalSearchParams<{
+    destLat: string;
+    destLon: string;
+    destName: string;
+    poiName: string;
+    poiLat: string;
+    poiLon: string;
+    poiType: string;
+    poiSubclass: string;
+    poiOsmId: string;
+    poiOsmType: string;
+    handledAt: string;
+  }>();
 
   const handleSetFilter = (filterId: string | null) => {
     activeFilterRef.current = filterId;
@@ -853,8 +865,7 @@ export default function MapScreen() {
     const hasPoi = !!poiOsmId && !!poiLat && !!poiLon && !!poiName;
     if (!hasDest && !hasPoi) return;
 
-    const sig =
-      `${destLat}|${destLon}|${destName}|${poiOsmId}|${poiLat}|${poiLon}|${poiName}|${handledAt}`;
+    const sig = `${destLat}|${destLon}|${destName}|${poiOsmId}|${poiLat}|${poiLon}|${poiName}|${handledAt}`;
     if (handledParamsSig.current === sig) return;
 
     const dLat = parseFloat(poiLat || destLat);
@@ -897,7 +908,19 @@ export default function MapScreen() {
     };
 
     setTimeout(tryNavigate, 500);
-  }, [destLat, destLon, destName, poiOsmId, poiLat, poiLon, poiName, poiType, poiSubclass, poiOsmType, handledAt]);
+  }, [
+    destLat,
+    destLon,
+    destName,
+    poiOsmId,
+    poiLat,
+    poiLon,
+    poiName,
+    poiType,
+    poiSubclass,
+    poiOsmType,
+    handledAt,
+  ]);
 
   // Wikipedia logic
   useEffect(() => {
@@ -2302,73 +2325,74 @@ export default function MapScreen() {
           {!lowPowerEnabled && (
             <VectorTileSource
               id="cities-source"
-            source={{
-              type: "vector",
-              tiles: [
-                "https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf",
-              ],
-            }}
-            layers={[
-              {
-                layer: {
-                  id: "cities-layer",
-                  type: "symbol",
-                  "source-layer": "place",
-                  minzoom: 5,
-                  filter: [
-                    "in",
-                    ["get", "class"],
-                    ["literal", ["city", "town"]],
-                  ],
-                  layout: {
-                    "text-field": ["get", "name"],
-                    "text-size": 12,
+              source={{
+                type: "vector",
+                tiles: [
+                  "https://tiles.openfreemap.org/planet/v3/{z}/{x}/{y}.pbf",
+                ],
+              }}
+              layers={[
+                {
+                  layer: {
+                    id: "cities-layer",
+                    type: "symbol",
+                    "source-layer": "place",
+                    minzoom: 5,
+                    filter: [
+                      "in",
+                      ["get", "class"],
+                      ["literal", ["city", "town"]],
+                    ],
+                    layout: {
+                      "text-field": ["get", "name"],
+                      "text-size": 12,
+                    },
+                  },
+                  listeners: {
+                    click: async (e: any) => {
+                      if (routePickModeRef.current) return;
+                      if (!mapRef.current) return;
+
+                      const features =
+                        await mapRef.current.queryRenderedFeatures(e.point, {
+                          layers: ["cities-layer"],
+                        });
+
+                      if (!features.length) return;
+
+                      const closest = features.reduce(
+                        (best: any, curr: any) => {
+                          const [lon, lat] = curr.geometry.coordinates;
+                          const d =
+                            Math.abs(lon - e.lngLat.lng) +
+                            Math.abs(lat - e.lngLat.lat);
+
+                          if (!best) return { f: curr, d };
+                          return d < best.d ? { f: curr, d } : best;
+                        },
+                        null,
+                      ).f;
+
+                      const [lon, lat] = closest.geometry.coordinates;
+                      const address = await reverseGeocodeAddress(
+                        lat,
+                        lon,
+                        i18n.language,
+                      );
+
+                      setBottomSheetIndex(2);
+                      sheetRef.current?.snapToIndex(2);
+                      selectCity({
+                        name: closest.properties?.name ?? t("Unknown_poi"),
+                        latitude: lat,
+                        longitude: lon,
+                        country: address.country,
+                        region: address.region,
+                      });
+                    },
                   },
                 },
-                listeners: {
-                  click: async (e: any) => {
-                    if (routePickModeRef.current) return;
-                    if (!mapRef.current) return;
-
-                    const features = await mapRef.current.queryRenderedFeatures(
-                      e.point,
-                      {
-                        layers: ["cities-layer"],
-                      },
-                    );
-
-                    if (!features.length) return;
-
-                    const closest = features.reduce((best: any, curr: any) => {
-                      const [lon, lat] = curr.geometry.coordinates;
-                      const d =
-                        Math.abs(lon - e.lngLat.lng) +
-                        Math.abs(lat - e.lngLat.lat);
-
-                      if (!best) return { f: curr, d };
-                      return d < best.d ? { f: curr, d } : best;
-                    }, null).f;
-
-                    const [lon, lat] = closest.geometry.coordinates;
-                    const address = await reverseGeocodeAddress(
-                      lat,
-                      lon,
-                      i18n.language,
-                    );
-
-                    setBottomSheetIndex(2);
-                    sheetRef.current?.snapToIndex(2);
-                    selectCity({
-                      name: closest.properties?.name ?? t("Unknown_poi"),
-                      latitude: lat,
-                      longitude: lon,
-                      country: address.country,
-                      region: address.region,
-                    });
-                  },
-                },
-              },
-            ]}
+              ]}
             />
           )}
 
@@ -3133,9 +3157,7 @@ export default function MapScreen() {
               pickStopIndexRef.current = index;
               setPickMode("stop");
             }}
-            onAddStop={() =>
-              setRouteStops((prev) => [...prev, { label: "" }])
-            }
+            onAddStop={() => setRouteStops((prev) => [...prev, { label: "" }])}
             onRemoveStop={(index) =>
               setRouteStops((prev) => prev.filter((_, i) => i !== index))
             }
@@ -3266,9 +3288,7 @@ export default function MapScreen() {
               </View>
             </View>
           </Modal>
-          <TransitRouteLayer
-            itinerary={mapReady ? transitItinerary : null}
-          />
+          <TransitRouteLayer itinerary={mapReady ? transitItinerary : null} />
           {mapReady &&
             route?.map((r: any, i: number) =>
               r.geometry ? (

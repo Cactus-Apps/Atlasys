@@ -72,7 +72,7 @@ with Ed25519 signatures). They can only be decrypted on the recipients'
 devices. We never hold decryption keys.
 
 • **No location database and no group database.** Shared positions travel as
-*ephemeral* realtime broadcast messages through our relay. Nothing is stored,
+_ephemeral_ realtime broadcast messages through our relay. Nothing is stored,
 there are no database rows, and messages are deleted by the system as they are
 delivered. "Position" and "sharing ended" messages are deliberately identical
 in size so that not even a passive observer can tell them apart.
@@ -105,7 +105,7 @@ indicator so that encrypted positions keep flowing after the app leaves the
 foreground. That notice only states that sharing is active — coordinates
 never appear in it, and you can stop sharing at any time to remove it.
 
-• **Honest limitation.** A relay-based system cannot hide that *some* network
+• **Honest limitation.** A relay-based system cannot hide that _some_ network
 traffic exists, at what time it occurs, or over which IP it flows.
 Infrastructure-level logs (load balancers, hosting providers, network
 operators) may therefore observe connection metadata — but they can never
@@ -152,9 +152,9 @@ openfreemap.org / openstreetmap.org
 • OSRM – routing.openstreetmap.de (route calculation)
 Start and destination coordinates transmitted without any identity data.
 
-• Transitous / MOTIS – api.transitous.org (public transport planning)
-Start, destination and via-stop coordinates plus departure time. No identity
-data transmitted. transitous.org
+• Transitous / MOTIS – api.transitous.org (public transport planning )
+Start, destination and via-stop coordinates plus departure time. No
+identity data transmitted. transitous.org
 
 • Nominatim – nominatim.openstreetmap.org (reverse geocoding)
 Coordinates only. No personal data transmitted.
